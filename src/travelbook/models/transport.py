@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, time, timedelta
 
+from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
     _format_duration,
@@ -52,6 +53,9 @@ class Transport:
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
     paid: bool | None = None  # None = no badge
+    coordinate: Coordinate | None = None  # optional single label point
+    start_coordinate: Coordinate | None = None  # departure point
+    end_coordinate: Coordinate | None = None  # arrival point
 
     @property
     def title(self) -> str:
@@ -118,6 +122,9 @@ class Transport:
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),
             paid=_parse_paid(d.get("paid")),
+            coordinate=_parse_coordinate(d.get("coordinate")),
+            start_coordinate=_parse_coordinate(d.get("start_coordinate"), "start_coordinate"),
+            end_coordinate=_parse_coordinate(d.get("end_coordinate"), "end_coordinate"),
         )
 
 

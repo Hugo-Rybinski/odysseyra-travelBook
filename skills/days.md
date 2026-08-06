@@ -179,6 +179,24 @@ about 1h30, visiting the Château fort (a castle, ~45 min)."*
 }
 ```
 
+## Map coordinates (optional)
+
+If the trip renders maps, any locatable activity may carry a `coordinate` so it
+gets a pin:
+
+```json
+{ "type": "point_of_interest", "name": "...", "coordinate": { "lat": 43.0974, "long": -0.0583 } }
+```
+
+- `lat` / `long` are decimal degrees; add `"show_on_map": false` to keep a
+  coordinate without plotting it.
+- A `road` is a drive from A→B, so it takes **`start_coordinate`** and
+  **`end_coordinate`** (each a `{lat, long}` object) — the map draws the route
+  between them.
+- Only set coordinates you actually know. If the trip has
+  `infer_coordinates_from_address` on, missing ones are geocoded from the
+  name/address; otherwise only activities with a `coordinate` appear on the map.
+
 ## Rules that apply to every file
 
 - **Only include a field if the source actually states it.** Never invent

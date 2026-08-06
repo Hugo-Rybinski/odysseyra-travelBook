@@ -10,7 +10,15 @@
       "end": "Saint-Bertrand-de-Comminges",
       "distance_km": 96,
       "duration": "2h05",
-      "off_road": false
+      "off_road": false,
+      "start_coordinate": {
+        "lat": 42.69574,
+        "long": -0.0103
+      },
+      "end_coordinate": {
+        "lat": 43.02693,
+        "long": 0.57091
+      }
     },
     {
       "type": "point_of_interest",
@@ -18,7 +26,11 @@
       "category": "church",
       "address": "Le Plan, Saint-Bertrand-de-Comminges",
       "duration": "1h",
-      "description": "A hilltop cathedral dominating the ancient Roman town of Lugdunum Convenarum."
+      "description": "A hilltop cathedral dominating the ancient Roman town of Lugdunum Convenarum.",
+      "coordinate": {
+        "lat": 43.02668,
+        "long": 0.57143
+      }
     },
     {
       "type": "buffer",
@@ -30,7 +42,11 @@
       "category": "ruins",
       "address": "Valcabrère",
       "duration": "45 min",
-      "description": "Remains of the forum, theatre and thermal baths of the old Roman settlement."
+      "description": "Remains of the forum, theatre and thermal baths of the old Roman settlement.",
+      "coordinate": {
+        "lat": 43.033,
+        "long": 0.5834
+      }
     }
   ]
 }

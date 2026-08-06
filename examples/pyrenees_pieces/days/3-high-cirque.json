@@ -17,9 +17,21 @@
           "type": "meal",
           "meal_type": "breakfast",
           "restaurant": "Café de Gèdre",
-          "address": "Gèdre village"
+          "address": "Gèdre village",
+          "coordinate": {
+            "lat": 42.789,
+            "long": -0.018
+          }
         }
-      ]
+      ],
+      "start_coordinate": {
+        "lat": 43.09409,
+        "long": -0.0465
+      },
+      "end_coordinate": {
+        "lat": 42.75674,
+        "long": -0.00029
+      }
     },
     {
       "type": "hike",
@@ -35,7 +47,11 @@
           "meal_type": "snack",
           "area": "the Grande Cascade viewpoint"
         }
-      ]
+      ],
+      "coordinate": {
+        "lat": 42.69574,
+        "long": -0.0103
+      }
     },
     {
       "type": "point_of_interest",
@@ -56,12 +72,20 @@
           "meal_type": "picnic",
           "area": "the cascade base"
         }
-      ]
+      ],
+      "coordinate": {
+        "lat": 42.69332,
+        "long": -0.00445
+      }
     },
     {
       "type": "meal",
       "meal_type": "picnic",
-      "area": "Gavarnie"
+      "area": "Gavarnie",
+      "coordinate": {
+        "lat": 42.6956,
+        "long": -0.0105
+      }
     }
   ]
 }

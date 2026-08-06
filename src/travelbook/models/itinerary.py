@@ -13,6 +13,7 @@ from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
 from .currency import SecondaryCurrency, to_default
 from .parsers import (
     ItineraryError,
+    _parse_bool,
     _parse_date,
     _parse_duration,
     _parse_float,
@@ -58,6 +59,9 @@ class Itinerary:
     default_meal_duration_min: int = 0
     default_currency: str = "EUR"  # all prices are in this unless they say otherwise
     secondary_currencies: list[SecondaryCurrency] = field(default_factory=list)
+    include_maps_in_render: bool = False  # draw a per-day map (opt-in)
+    infer_coordinates_from_address: bool = False  # geocode missing coordinates
+    inference_countries: list[str] = field(default_factory=list)  # ISO codes; [] = any
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -98,6 +102,11 @@ class Itinerary:
         secondary_currencies = cls._parse_secondary_currencies(
             defaults.get("secondary_currencies")
         )
+        include_maps = _parse_bool(defaults.get("include_maps_in_render", False))
+        infer_coords = _parse_bool(defaults.get("infer_coordinates_from_address", False))
+        inference_countries = cls._parse_inference_countries(
+            defaults.get("inference_countries")
+        )
         transport_data = data.get("transport", data.get("transports", []))
         itinerary = cls(
             title=str(desc["title"]),
@@ -113,6 +122,9 @@ class Itinerary:
             default_meal_duration_min=meal_duration,
             default_currency=default_currency,
             secondary_currencies=secondary_currencies,
+            include_maps_in_render=include_maps,
+            infer_coordinates_from_address=infer_coords,
+            inference_countries=inference_countries,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],
@@ -164,6 +176,27 @@ class Itinerary:
                 raise ItineraryError("change_rate must be a positive number")
             result.append(SecondaryCurrency(code, rate))
         return result
+
+    @staticmethod
+    def _parse_inference_countries(raw) -> list[str]:
+        """ISO-3166-1 alpha-2 country codes constraining geocoding (upper-cased).
+        Accepts a list, or a single string; empty means "any country"."""
+        if raw in (None, ""):
+            return []
+        if isinstance(raw, str):
+            raw = [raw]
+        if not isinstance(raw, list):
+            raise ItineraryError("'inference_countries' must be an array of codes")
+        codes = []
+        for entry in raw:
+            code = str(entry).strip().upper()
+            if len(code) != 2 or not code.isalpha():
+                raise ItineraryError(
+                    f"inference_countries code {entry!r} must be a 2-letter ISO "
+                    "country code like 'FR'"
+                )
+            codes.append(code)
+        return codes
 
     def in_default(self, amount: float, code: str = "") -> float | None:
         """Convert ``amount`` (in currency ``code``, or the default when empty)

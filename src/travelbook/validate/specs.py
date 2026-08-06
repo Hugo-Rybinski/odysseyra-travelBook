@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from ..models import (
     ItineraryError,
+    _parse_coordinate,
     _parse_date,
     _parse_duration,
     _parse_paid,
@@ -122,6 +123,16 @@ def V_CURRENCY(value):
     return "must be a 3-letter currency code like 'EUR'"
 
 
+V_COORDINATE = _v(_parse_coordinate)
+
+
+def V_ISO_COUNTRY(value):
+    s = str(value).strip()
+    if len(s) == 2 and s.isalpha():
+        return None
+    return "must be a 2-letter ISO country code like 'FR'"
+
+
 # Trip-level groups
 TRAVEL_DESCRIPTION = [
     Spec("title", True, "the trip title shown on the cover", "any text"),
@@ -160,6 +171,16 @@ DEFAULTS = [
     Spec("secondary_currencies", False,
          "extra currencies to also show each price in, converted from the default",
          "an array of {currency, change_rate} objects", "[] (none shown)"),
+    Spec("include_maps_in_render", False,
+         "whether to draw a per-day OpenStreetMap with a pin for each activity",
+         "true or false", "false (no maps)", V_BOOL),
+    Spec("infer_coordinates_from_address", False,
+         "whether to geocode activities that lack an explicit coordinate",
+         "true or false",
+         "false (only activities with an explicit coordinate are mapped)", V_BOOL),
+    Spec("inference_countries", False,
+         "ISO country codes to restrict geocoding to (when inferring coordinates)",
+         "an array of 2-letter ISO codes like ['FR']", "[] (any country)"),
 ]
 
 # Activity scheduling fields (shared by every non-buffer activity)

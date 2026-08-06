@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import time
 
+from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
     _add_minutes,
@@ -29,6 +30,7 @@ class Activity:
     duration_min: int | None = None
     start_tz: int | None = None  # UTC offset; None means "use the trip default"
     end_tz: int | None = None
+    coordinate: Coordinate | None = None  # optional map location
 
     @property
     def time_range(self) -> str:
@@ -51,6 +53,7 @@ def _sched(d: dict) -> dict:
         "duration_min": _parse_duration(d.get("duration")),
         "start_tz": _parse_tz(d.get("start_tz", d.get("start_timezone"))),
         "end_tz": _parse_tz(d.get("end_tz", d.get("end_timezone"))),
+        "coordinate": _parse_coordinate(d.get("coordinate")),
     }
 
 
@@ -86,6 +89,8 @@ class Road(Activity):
     end: str = ""
     distance_km: float | None = None
     off_road: bool = False
+    start_coordinate: Coordinate | None = None  # drive start, for the route line
+    end_coordinate: Coordinate | None = None  # drive end
     activities: list[Activity] = field(default_factory=list)
 
     @property
@@ -106,6 +111,8 @@ class Road(Activity):
             end=str(d["end"]),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
+            start_coordinate=_parse_coordinate(d.get("start_coordinate"), "start_coordinate"),
+            end_coordinate=_parse_coordinate(d.get("end_coordinate"), "end_coordinate"),
             activities=[_nested_activity(m, "road") for m in d.get("activities", [])],
         )
 

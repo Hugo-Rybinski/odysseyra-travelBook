@@ -11,6 +11,7 @@ The model is split across submodules:
 
 from .accommodation import ACCOMMODATION_TYPES, Accommodation
 from .car_rental import CAR_TYPES, CarRental, CarRentalEvent, resolve_car_rental
+from .geo import Coordinate, _parse_coordinate
 from .currency import (
     CURRENCY_SYMBOLS,
     SecondaryCurrency,
@@ -56,6 +57,7 @@ __all__ = [
     "CarRental",
     "CarRentalEvent",
     "CAR_TYPES",
+    "Coordinate",
     "CURRENCY_SYMBOLS",
     "Day",
     "format_money",
@@ -77,6 +79,7 @@ __all__ = [
     "resolve_car_rental",
     "resolve_transport",
     "schedule_activities",
+    "_parse_coordinate",
     "_parse_currency",
     "_parse_price",
 ]

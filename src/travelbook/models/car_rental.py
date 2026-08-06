@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, time
 
+from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
     _add_minutes,
@@ -61,6 +62,9 @@ class CarRental:
     additional_drivers: int = 0
     pickup_duration_min: int | None = None
     dropoff_duration_min: int | None = None
+    coordinate: Coordinate | None = None  # optional single label point
+    pickup_coordinate: Coordinate | None = None
+    dropoff_coordinate: Coordinate | None = None
 
     @property
     def car_type_label(self) -> str:
@@ -147,6 +151,9 @@ class CarRental:
             additional_drivers=drivers,
             pickup_duration_min=_parse_duration(d.get("pickup_duration")),
             dropoff_duration_min=_parse_duration(d.get("dropoff_duration")),
+            coordinate=_parse_coordinate(d.get("coordinate")),
+            pickup_coordinate=_parse_coordinate(d.get("pickup_coordinate"), "pickup_coordinate"),
+            dropoff_coordinate=_parse_coordinate(d.get("dropoff_coordinate"), "dropoff_coordinate"),
         )
 
 

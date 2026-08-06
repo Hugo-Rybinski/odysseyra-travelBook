@@ -227,6 +227,9 @@ override and validation cross-checks the itinerary against them.
 | `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
 | `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
 | `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
+| `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |
+| `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
+| `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
 
 Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
 <number>}`, where `change_rate` is **units of that currency per one unit of the
@@ -236,6 +239,36 @@ each secondary conversion in parentheses, e.g. `€612 ($667, £520)` — conver
 amounts show two decimals below 25 and are rounded to whole numbers at or above
 25. Major currencies (`EUR`, `USD`, `GBP`, `JPY`) print with their symbol; others
 show the ISO code.
+
+#### Maps & coordinates
+
+When `defaults.include_maps_in_render` is `true`, each day page gets a small
+OpenStreetMap with a numbered pin for every located activity and the day's drives
+drawn as routes. A place (an `area`) is shown as a single pin, and — when it has
+two or more located sub-activities — a second map zoomed to those points is drawn
+right after it.
+
+**Every locatable object may carry a `coordinate`:**
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `lat` | ✅ | Latitude | number | −90…90 | — |
+| `long` | ✅ | Longitude | number | −180…180 | — |
+| `show_on_map` |  | Whether to plot this point | boolean | `true`/`false` | `true` when a coordinate is set |
+
+```json
+"coordinate": { "lat": 43.0974, "long": -0.0583 }
+```
+
+Segment objects that go from A→B carry endpoint coordinates instead of (or in
+addition to) a single `coordinate`: `road` and `transport` accept
+`start_coordinate` / `end_coordinate`, and `car_rentals` accept
+`pickup_coordinate` / `dropoff_coordinate`. Routes are drawn between the endpoints.
+
+With `infer_coordinates_from_address` off (the default) only objects with an
+explicit `coordinate` appear on the map, so builds stay deterministic and offline.
+Turn it on to geocode the rest from their `name`/`address` at build time
+(restricted to `inference_countries` when set).
 
 ### `days[]` — a day
 

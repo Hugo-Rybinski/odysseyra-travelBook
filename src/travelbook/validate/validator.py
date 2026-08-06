@@ -27,8 +27,16 @@ from .specs import (
     SCHEDULE,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
+    V_COORDINATE,
     V_CURRENCY,
+    V_ISO_COUNTRY,
     V_NUMBER,
+)
+
+# coordinate object keys accepted on itinerary objects (point + segment endpoints)
+COORDINATE_KEYS = (
+    "coordinate", "start_coordinate", "end_coordinate",
+    "pickup_coordinate", "dropoff_coordinate",
 )
 
 
@@ -186,6 +194,8 @@ class _Validator:
         df_obj = df if isinstance(df, dict) else {}
         self.check_object(df_obj, df_path or (), DEFAULTS)
         self._secondary_currencies(df_obj, df_path or ())
+        self._inference_countries(df_obj, df_path or ())
+        self._walk_coordinates(data, ())
 
         days = data.get("days")
         if not isinstance(days, list) or not days:
@@ -422,6 +432,42 @@ class _Validator:
                 self.add("error", epath + ("change_rate",),
                          "change_rate must be a positive number (got {value}).",
                          value=repr(rate))
+
+    def _inference_countries(self, df, base_path):
+        """Validate ``inference_countries`` — a list of 2-letter ISO codes."""
+        raw = df.get("inference_countries")
+        if raw is None:
+            return
+        entries = [raw] if isinstance(raw, str) else raw
+        if not isinstance(entries, list):
+            self.add("error", base_path + ("inference_countries",),
+                     "'inference_countries' must be an array of 2-letter ISO "
+                     "country codes like ['FR'].")
+            return
+        for i, code in enumerate(entries):
+            err = V_ISO_COUNTRY(code)
+            if err:
+                self.add("error", base_path + ("inference_countries", i),
+                         "inference country {value} is invalid — {error}.",
+                         value=repr(code), error=err)
+
+    def _walk_coordinates(self, node, path):
+        """Recursively validate every coordinate object (``coordinate`` and the
+        segment endpoint variants) wherever it appears in the document."""
+        if isinstance(node, dict):
+            for key, value in node.items():
+                child = path + (key,)
+                if key in COORDINATE_KEYS:
+                    err = V_COORDINATE(value)
+                    if err:
+                        self.add("error", child,
+                                 "field '{name}' is invalid — {error}.",
+                                 name=key, error=err)
+                else:
+                    self._walk_coordinates(value, child)
+        elif isinstance(node, list):
+            for i, item in enumerate(node):
+                self._walk_coordinates(item, path + (i,))
 
     def _check_price_currency(self, obj, path):
         """A price's explicit ``currency`` must be the default or a declared

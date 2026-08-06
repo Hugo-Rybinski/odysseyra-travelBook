@@ -12,7 +12,9 @@
     "secondary_currencies": [
       { "currency": "USD", "change_rate": "par" },
       { "currency": "US", "change_rate": -1 }
-    ]
+    ],
+    "include_maps_in_render": "maybe",
+    "inference_countries": ["France", "FR"]
   },
   "days": [
     {
@@ -27,7 +29,7 @@
       "activities": [
         { "type": "road", "start": "A", "end": "B", "distance_km": 0, "start_time": "09:00", "end_time": "23:00",
           "activities": [ { "type": "point_of_interest", "name": "Not allowed on a road" } ] },
-        { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h" },
+        { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
         { "type": "spaceship", "start": "A", "end": "B" },
         { "type": "hike", "route": "zigzag", "duration": "0 min" },
         { "type": "buffer", "duration": "0 min" },

@@ -51,6 +51,9 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
     `_price/_currency`, formatters) and `ItineraryError` (raised on any invalid data).
   - `currency.py` — `SecondaryCurrency`, `to_default` (convert to the default
     currency), `format_money`, and the `CURRENCY_SYMBOLS` table.
+  - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
+    optional map location attached to activities, transport, accommodation and
+    car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     and `schedule_activities` (the day timeline pass).
@@ -87,9 +90,20 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
-  `lunch_until` 16:00, `meal_duration` 0, `currency` EUR, and
-  `secondary_currencies`) — plus content arrays `days` (required,
-  non-empty), `transport`, `accommodations`. The older flat layout still parses.
+  `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
+  `secondary_currencies`, and the maps switches `include_maps_in_render` false /
+  `infer_coordinates_from_address` false / `inference_countries` []) — plus
+  content arrays `days` (required, non-empty), `transport`, `accommodations`.
+  The older flat layout still parses.
+- **Maps & coordinates.** Every locatable object may carry an optional
+  `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
+  segments use `start_/end_coordinate` (road, transport) or
+  `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
+  per-day OSM map with a pin per located activity + drives as routes; areas get a
+  single pin plus a second zoomed map of their nested points.
+  `infer_coordinates_from_address` (default off → deterministic/offline, only
+  explicit coordinates are mapped) geocodes the rest, restricted to
+  `inference_countries` (2-letter ISO codes).
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).
