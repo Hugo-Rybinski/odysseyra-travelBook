@@ -76,13 +76,14 @@ class CoverMixin:
         for item in self._day_items(day):
             if item.kind in ("point_of_interest", "place", "hike"):
                 titles.append(item.title)
-            elif item.kind == "meal" and (item.restaurant or item.area):
-                titles.append(item.restaurant or item.area)
+            elif item.kind == "road" and (item.duration_min or 0) > 60:
+                titles.append(f"{self.t('Road')} {item.title}".strip())
             elif item.kind == "transport":
                 ty = self.t(item.type).title() if item.type else ""
                 titles.append(f"{ty} {item.title}".strip())
         if not titles:  # a pure transit/driving day — fall back to the drives
-            titles = [a.title for a in day.activities if a.kind == "road"]
+            titles = [f"{self.t('Road')} {a.title}".strip()
+                      for a in day.activities if a.kind == "road"]
         return ", ".join(titles) if titles else "—"
 
     def _sleep_label(self, day) -> str:

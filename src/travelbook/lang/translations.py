@@ -66,6 +66,7 @@ _FR = {
     "on board": "à bord",
     "Overnight {type}": "{type} de nuit",
     "Overnight travel": "Trajet de nuit",
+    "Road": "Route",
     "{nights} night": "{nights} nuit",
     "{nights} nights": "{nights} nuits",
     # -- validation: message templates --
