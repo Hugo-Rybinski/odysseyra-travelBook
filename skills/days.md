@@ -33,6 +33,12 @@ types. **Timing is usually inferred** — you rarely need to give every time:
 So: capture the **order** and whatever concrete times/durations the source
 gives; leave the rest out.
 
+**Guidebook page references.** If the source cites guidebook pages for a place,
+activity, or zone (e.g. "Lonely Planet p. 142" or "see pp. 88–91"), keep that
+reference verbatim in that activity's `description` (append it if a description
+already exists). It carries over to any `point_of_interest`, `place`, or `hike`
+that has a `description` field.
+
 ### Scheduling fields (any non-`buffer` activity may include these)
 
 | Field | Format | Notes |
@@ -51,6 +57,11 @@ gives; leave the rest out.
 | `distance_km` | no | positive number | Driving distance. |
 | `off_road` | no | boolean | `true` if part is off-road. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
+
+**Roads are an exception to "omit what you don't know".** If a `road` is missing
+its distance (`distance_km`) or duration (`duration`), still add each missing
+field with a `"FIXME"` value so the user is prompted to fill it in — e.g.
+`"distance_km": "FIXME"`, `"duration": "FIXME"`.
 
 ### Type `point_of_interest` — a specific sight
 
@@ -81,6 +92,12 @@ gives; leave the rest out.
 | `end` | no | text | End point. |
 | `route` | no | enum (default `back_and_forth`) | One of `loop`, `back_and_forth`, `one_way`. For `loop`/`back_and_forth`, `end` should match `start` (or be omitted); for `one_way`, `end` should differ. |
 | `activities` | no | array of **meal** objects | Meal stops along the hike. |
+
+**Hikes are the exception to "omit what you don't know".** If a hike is missing
+its distance (`distance_km`), route type (`route`), duration (`duration`), or
+elevation (`elevation_m`), still add each missing field with a `"FIXME"` value
+so the user is prompted to fill it in — e.g. `"distance_km": "FIXME"`,
+`"route": "FIXME"`, `"duration": "FIXME"`, `"elevation_m": "FIXME"`.
 
 ### Type `meal` — a stop to eat
 
