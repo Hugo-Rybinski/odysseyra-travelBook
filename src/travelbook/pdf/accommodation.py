@@ -1,0 +1,104 @@
+"""The accommodation summary page and its booking cards."""
+
+from __future__ import annotations
+
+from .base import FONT, INK, LIGHT, MUTED
+
+
+class AccommodationMixin:
+    def accommodations(self) -> None:
+        self.add_page()
+        self._band_header(self.t("WHERE YOU'LL STAY"), self.t("Accommodation"))
+        for acc in self.itinerary.accommodations:
+            self._accommodation_card(acc)
+
+    def _booked_text(self, acc) -> str:
+        bits = []
+        if acc.booking_source:
+            bits.append(self.t("Booked via {source}").format(source=acc.booking_source))
+        if acc.price:
+            bits.append(acc.price)
+        return "  ·  ".join(bits)
+
+    def _acc_date_line(self, acc) -> str:
+        bits = []
+        if acc.arrival and acc.departure:
+            bits.append(f"{self.d(acc.arrival, 'md')} → {self.d(acc.departure, 'md')}")
+        elif acc.arrival:
+            bits.append(self.d(acc.arrival, "md"))
+        if acc.nights is not None:
+            key = "{nights} night" if acc.nights == 1 else "{nights} nights"
+            bits.append(self.t(key).format(nights=acc.nights))
+        if acc.type:
+            bits.append(self.t(acc.type).capitalize())
+        return "  ·  ".join(bits)
+
+    def _accommodation_card(self, acc) -> None:
+        pad = 5
+        inner_w = self.content_width - 2 * pad
+        addr_lines = self._measure_lines(acc.address, inner_w)
+        contact_lines = self._measure_lines(acc.contact, inner_w)
+        booked = self._booked_text(acc)
+        date_line = self._acc_date_line(acc)
+
+        h = pad * 2 + 7
+        if date_line:
+            h += 5.5
+        h += addr_lines * 5 + contact_lines * 5
+        if booked:
+            h += 5
+        if acc.breakfast_included:
+            h += 6
+
+        y = self.get_y()
+        if y + h > self.h - self.b_margin:
+            self.add_page()
+            y = self.get_y()
+
+        self._card_bg(y, h)
+
+        cx = self.l_margin + pad
+        yy = y + pad
+        self._pay_badge(acc, yy)  # right-aligned, on the name row
+        self.set_xy(cx, yy)
+        self.set_font(FONT, "B", 13)
+        self.set_text_color(*INK)
+        self.cell(inner_w - 32, 7, acc.name)
+        yy += 7
+
+        if date_line:
+            self.set_xy(cx, yy)
+            self.set_font(FONT, "B", 9)
+            self.set_text_color(*self.accent)
+            self.cell(inner_w, 5, date_line)
+            yy += 5.5
+
+        self.set_text_color(*MUTED)
+        if acc.address:
+            self.set_xy(cx, yy)
+            self.set_font(FONT, "", 10)
+            self.multi_cell(inner_w, 5, acc.address)
+            yy += addr_lines * 5
+        if acc.contact:
+            self.set_xy(cx, yy)
+            self.set_font(FONT, "", 10)
+            self.multi_cell(inner_w, 5, acc.contact)
+            yy += contact_lines * 5
+        if booked:
+            self.set_xy(cx, yy)
+            self.set_font(FONT, "", 10)
+            self.cell(inner_w, 5, booked)
+            yy += 5
+        if acc.breakfast_included:
+            self.set_xy(cx, yy + 1)
+            self.set_font(FONT, "B", 9)
+            self.set_text_color(*self.accent)
+            self.cell(inner_w, 5, self.t("✓  Breakfast included"))
+
+        self.set_y(y + h + 4)
+
+    def _pay_badge(self, acc, y: float) -> None:
+        label = self.t("PAID ONLINE") if acc.paid_online else self.t("TO PAY")
+        x = self.w - self.r_margin - 5 - self._pill_w(label)
+        self._pill(label, x, y, filled=acc.paid_online)
+

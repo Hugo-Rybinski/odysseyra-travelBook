@@ -1,0 +1,201 @@
+{
+  "travel_description": {
+    "title": "Pyrenees Road Trip",
+    "subtitle": "A week of mountains, monasteries and long drives",
+    "cover_color": "#2f6b4f",
+    "summary": "Crossing the Pyrenees from the Atlantic side toward the high peaks — mixing scenic drives, old towns, monuments and a proper mountain hike, with two nights based in Lourdes."
+  },
+  "default": {
+    "start_time": "09:00",
+    "end_time": "19:00",
+    "buffer": "15 min",
+    "timezone": "+02:00"
+  },
+  "days": [
+    {
+      "date": "2026-06-08",
+      "city": "Paris → Lourdes",
+      "title": "Arrival in the Pyrenees",
+      "description": "Land in Paris off the red-eye, take the TGV south, then pick up the car and drive the last stretch into Lourdes.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Pau",
+          "end": "Lourdes",
+          "distance_km": 45,
+          "start_time": "18:45",
+          "duration": "50 min",
+          "off_road": false
+        }
+      ]
+    },
+    {
+      "date": "2026-06-09",
+      "city": "Lourdes",
+      "title": "The Sanctuary & Old Town",
+      "description": "A full day in Lourdes: the pilgrimage sanctuary in the morning and the château fort quarter in the afternoon.",
+      "activities": [
+        {
+          "type": "point_of_interest",
+          "name": "Sanctuary of Our Lady of Lourdes",
+          "category": "church",
+          "address": "1 Av. Mgr Théas, Lourdes",
+          "end_time": "12:30",
+          "description": "One of the most visited pilgrimage sites in the world, set along the Gave de Pau river. Ends at lunchtime — duration is inferred from the end time."
+        },
+        {
+          "type": "place",
+          "name": "Lourdes old town",
+          "start_time": "13:30",
+          "duration": "1h30",
+          "description": "Wander the streets around the château fort. The explicit start leaves a gap after lunch, shown as a buffer.",
+          "points_of_interest": [
+            {
+              "name": "Château fort de Lourdes",
+              "category": "castle",
+              "address": "25 Rue du Fort, Lourdes",
+              "duration": "45 min",
+              "description": "Medieval fortress housing the Pyrenean museum, with sweeping valley views."
+            },
+            "Pont Vieux"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-06-10",
+      "city": "Cirque de Gavarnie",
+      "title": "The High Cirque",
+      "description": "Leave Lourdes for the high mountains: a rough drive to the trailhead, the classic hike up to the great cirque, and a night in the refuge.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Lourdes",
+          "end": "Gavarnie trailhead",
+          "distance_km": 52,
+          "start_time": "08:00",
+          "duration": "1h20",
+          "off_road": true
+        },
+        {
+          "type": "hike",
+          "name": "Cirque de Gavarnie",
+          "start": "Gavarnie village",
+          "distance_km": 13,
+          "elevation_m": 550,
+          "duration": "4h30",
+          "route": "back_and_forth"
+        }
+      ]
+    },
+    {
+      "date": "2026-06-11",
+      "city": "Saint-Bertrand-de-Comminges",
+      "title": "Ruins & the Night Train Home",
+      "description": "Drop back down the valley to explore Roman ruins and a hilltop cathedral, then drop the car in Montréjeau and take the overnight train back to Paris.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Gavarnie",
+          "end": "Saint-Bertrand-de-Comminges",
+          "distance_km": 96,
+          "duration": "2h05",
+          "off_road": false
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Cathédrale Sainte-Marie",
+          "category": "church",
+          "address": "Le Plan, Saint-Bertrand-de-Comminges",
+          "duration": "1h",
+          "description": "A hilltop cathedral dominating the ancient Roman town of Lugdunum Convenarum."
+        },
+        {
+          "type": "buffer",
+          "duration": "45 min"
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Roman ruins of Lugdunum Convenarum",
+          "category": "ruins",
+          "address": "Valcabrère",
+          "duration": "45 min",
+          "description": "Remains of the forum, theatre and thermal baths of the old Roman settlement."
+        }
+      ]
+    }
+  ],
+  "transport": [
+    {
+      "type": "plane",
+      "start": "New York JFK",
+      "end": "Paris CDG",
+      "start_date": "2026-06-07",
+      "end_date": "2026-06-08",
+      "start_time": "22:30",
+      "start_tz": "-04:00",
+      "end_time": "11:45",
+      "end_tz": "+02:00",
+      "booking_number": "AF1234-XY",
+      "booking_source": "AirFrance website",
+      "status": "confirmed",
+      "price": "€612",
+      "paid": "paid"
+    },
+    {
+      "type": "train",
+      "start": "Paris Montparnasse",
+      "end": "Pau",
+      "start_date": "2026-06-08",
+      "start_time": "13:50",
+      "duration": "4h20",
+      "booking_number": "TGV-8841",
+      "booking_source": "SNCF Connect",
+      "status": "booked",
+      "price": "€89",
+      "paid": "to pay"
+    },
+    {
+      "type": "train",
+      "start": "Montréjeau",
+      "end": "Paris Austerlitz",
+      "start_date": "2026-06-11",
+      "end_date": "2026-06-12",
+      "start_time": "22:10",
+      "end_time": "06:45",
+      "booking_number": "IC-3711",
+      "booking_source": "SNCF Connect",
+      "status": "confirmed",
+      "price": "€74",
+      "paid": "paid"
+    }
+  ],
+  "accommodations": [
+    {
+      "name": "Hôtel Gallia & Londres",
+      "arrival": "2026-06-08",
+      "departure": "2026-06-10",
+      "city": "Lourdes",
+      "type": "hotel",
+      "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
+      "contact": "+33 5 62 94 35 44",
+      "booking_source": "Booking.com",
+      "price": "€256",
+      "paid_online": true,
+      "breakfast_included": true
+    },
+    {
+      "name": "Refuge de la Brèche de Roland",
+      "arrival": "2026-06-10",
+      "departure": "2026-06-11",
+      "city": "Gavarnie",
+      "type": "other",
+      "address": "Vallée de Gavarnie, 65120 Gavarnie",
+      "contact": "refuge@gavarnie.example",
+      "booking_source": "Hotel website",
+      "price": "€52",
+      "paid_online": false,
+      "breakfast_included": false
+    }
+  ]
+}

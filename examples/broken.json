@@ -1,0 +1,45 @@
+{
+  "travel_description": {
+    "subtitle": "Intentionally broken, to demonstrate `travelbook validate`",
+    "start_date": "2026-06-12",
+    "end_date": "2026-06-08",
+    "cover_color": "not-a-color"
+  },
+  "default": {
+    "start_time": "9am",
+    "timezone": "Mars"
+  },
+  "days": [
+    {
+      "title": "Day one",
+      "city": "Lyon",
+      "date": "2026-06-09",
+      "activities": []
+    },
+    {
+      "title": "Day two",
+      "date": "2026-06-10",
+      "activities": [
+        { "type": "road", "start": "A", "end": "B", "distance_km": 0, "start_time": "09:00", "end_time": "23:00" },
+        { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h" },
+        { "type": "spaceship", "start": "A", "end": "B" },
+        { "type": "hike", "route": "zigzag", "duration": "0 min" },
+        { "type": "buffer", "duration": "0 min" }
+      ]
+    },
+    {
+      "title": "Day three",
+      "date": "2026-06-11",
+      "activities": []
+    }
+  ],
+  "transport": [
+    { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "status": "confirmed" },
+    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later" }
+  ],
+  "accommodations": [
+    { "name": "Hotel A", "city": "Paris", "arrival": "2026-06-09", "departure": "2026-06-10" },
+    { "name": "Hotel B", "arrival": "2026-06-09", "departure": "2026-06-10" },
+    { "arrival": "not-a-date" }
+  ]
+}
