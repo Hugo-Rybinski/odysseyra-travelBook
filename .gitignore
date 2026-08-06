@@ -12,7 +12,6 @@ venv/
 
 # Generated output
 *.pdf
-!examples/**/*.pdf
 
 # OS / editor
 .DS_Store

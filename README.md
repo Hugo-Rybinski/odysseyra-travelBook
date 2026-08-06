@@ -316,14 +316,11 @@ Each package's `__init__.py` re-exports its public API, so imports like
 
 ### Example files
 
-- `examples/pyrenees.json` — a full, valid itinerary.
-- `examples/pyrenees.pdf` — the PDF built from it (`travelbook build
-  examples/pyrenees.json -o examples/pyrenees.pdf`), committed as a reference of
-  the standard output.
-- `examples/pyrenees_inksaver.pdf` — the same itinerary built with `--ink-saver`,
-  showing the low-ink rendering.
+- `examples/pyrenees.json` — a full, valid itinerary. Build it with
+  `travelbook build examples/pyrenees.json -o pyrenees.pdf` (add `--ink-saver`
+  for the low-ink rendering).
 - `examples/pyrenees_fr.json` — the same trip authored in French (build it with
-  `--lang fr` for a fully French PDF); `examples/pyrenees_fr.pdf` is the result.
+  `--lang fr` for a fully French PDF).
 - `examples/broken.json` — an intentionally broken itinerary that exercises the
   validator (missing/invalid fields and incoherences).
 - `examples/broken_validator_output.txt` — the expected `validate` output for
