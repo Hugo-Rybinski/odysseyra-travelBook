@@ -4,7 +4,8 @@
 
 Trip-wide defaults that fill gaps the individual days/legs don't specify: the
 day's default start time, the timezone that applies to all times, an automatic
-buffer between activities, and the meal-classification thresholds.
+buffer between activities, the meal-classification thresholds, and the currency
+prices are given in (plus any extra currencies to convert them into).
 
 This file is **entirely optional** — omit it and every field below takes its
 default. Only create it when the source material implies a global setting (e.g.
@@ -21,11 +22,22 @@ default. Only create it when the source material implies a global setting (e.g.
 | `breakfast_until` | no | time `HH:MM` | `"10:00"` | A meal with no `meal_type` starting at/before this is a **breakfast**. |
 | `lunch_until` | no | time `HH:MM` | `"16:00"` | A meal starting after breakfast and at/before this is **lunch**; later is **dinner**. |
 | `meal_duration` | no | duration (`"1h"`) | `0` | Default length of a meal that gives neither a duration nor an end time. |
+| `currency` | no | 3-letter ISO code | `"EUR"` | The currency every price is in unless the price sets its own `currency`. |
+| `secondary_currencies` | no | array of `{currency, change_rate}` | `[]` | Extra currencies each price is *also* shown in on the PDF (converted from the default). |
+
+### `secondary_currencies`
+
+Each entry is `{"currency": "<ISO code>", "change_rate": <number>}`. The
+`change_rate` is **units of that currency per one unit of the default currency**
+— with a `EUR` default, `{"currency": "USD", "change_rate": 1.09}` means
+1 € = $1.09. On the PDF every price is printed in the default currency followed
+by each secondary conversion in parentheses (e.g. `€612 ($667, £520)`).
 
 ## Example
 
 Source: *"Local time is UTC+2. Plan days from 9:00 to 19:00, leave 15 minutes
-between stops, and count sit-down meals as an hour."*
+between stops, and count sit-down meals as an hour. Prices are in euros; also
+show them in US dollars (1 € ≈ $1.09) and pounds (1 € ≈ £0.85)."*
 
 ```json
 {
@@ -33,7 +45,12 @@ between stops, and count sit-down meals as an hour."*
   "end_time": "19:00",
   "buffer": "15 min",
   "timezone": "+02:00",
-  "meal_duration": "1h"
+  "meal_duration": "1h",
+  "currency": "EUR",
+  "secondary_currencies": [
+    { "currency": "USD", "change_rate": 1.09 },
+    { "currency": "GBP", "change_rate": 0.85 }
+  ]
 }
 ```
 

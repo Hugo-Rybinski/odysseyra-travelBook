@@ -9,9 +9,11 @@ from .parsers import (
     ItineraryError,
     _format_duration,
     _min_to_time,
+    _parse_currency,
     _parse_date,
     _parse_duration,
     _parse_paid,
+    _parse_price,
     _parse_time,
     _parse_tz,
     _tmin,
@@ -47,7 +49,8 @@ class Transport:
     booking_number: str = ""
     booking_source: str = ""
     status: str = ""  # "" | "booked" | "confirmed"
-    price: str = ""
+    price: float | None = None
+    currency: str = ""  # "" → the trip's default currency
     paid: bool | None = None  # None = no badge
 
     @property
@@ -96,7 +99,6 @@ class Transport:
             raise ItineraryError(
                 f"transport status must be 'booked' or 'confirmed', got {status!r}"
             )
-        price = d.get("price", "")
         return cls(
             type=ttype,
             start=str(d.get("start", "")),
@@ -113,7 +115,8 @@ class Transport:
             booking_number=str(d.get("booking_number", "")),
             booking_source=str(d.get("booking_source", "")),
             status=status,
-            price="" if price == "" or price is None else str(price),
+            price=_parse_price(d.get("price")),
+            currency=_parse_currency(d.get("currency")),
             paid=_parse_paid(d.get("paid")),
         )
 

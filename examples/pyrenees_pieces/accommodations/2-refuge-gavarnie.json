@@ -7,7 +7,7 @@
   "address": "Vallée de Gavarnie, 65120 Gavarnie",
   "contact": "refuge@gavarnie.example",
   "booking_source": "Hotel website",
-  "price": "€52",
+  "price": 52,
   "paid_online": false,
   "breakfast_included": false
 }

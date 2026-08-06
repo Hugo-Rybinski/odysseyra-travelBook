@@ -3,5 +3,10 @@
   "end_time": "19:00",
   "buffer": "15 min",
   "timezone": "+02:00",
-  "meal_duration": "1h"
+  "meal_duration": "1h",
+  "currency": "EUR",
+  "secondary_currencies": [
+    { "currency": "USD", "change_rate": 1.09 },
+    { "currency": "GBP", "change_rate": 0.85 }
+  ]
 }

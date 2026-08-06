@@ -32,7 +32,8 @@ who you booked with, the **price**, and whether it's **paid**.
 | `booking_number` | no | text | none | Reservation reference / PNR. |
 | `booking_source` | no | text | none | Where booked (e.g. "SNCF Connect"). |
 | `status` | no | `booked` or `confirmed` | none | Reservation status. |
-| `price` | no | text or number | none | e.g. `"€89"`. |
+| `price` | no | number | none | The amount only, e.g. `89` (no currency symbol). |
+| `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price is in a different currency than the trip default. |
 | `paid` | no | `paid` / `to pay` | none | Payment state. |
 
 ## Notes for extraction
@@ -57,6 +58,11 @@ who you booked with, the **price**, and whether it's **paid**.
   aboard it, so don't also add a hotel for that night.
 - If `status` or `paid` is set, include the matching `booking_number` / `price`
   when available (`validate` warns otherwise).
+- **`price` is a bare number** (no symbol): write `89`, not `"€89"`. Prices are
+  assumed to be in the trip's default currency; only add `currency` (a 3-letter
+  ISO code) when the source states a different one, and that code must be the
+  default or one of `defaults.secondary_currencies` (`validate` errors
+  otherwise).
 - **`flight_number` / `train_number` vs `booking_number`.** The flight/train
   number is the public service identifier (e.g. `AF9`, `TGV 8541`); the booking
   number is your reservation reference / PNR (e.g. `AF1234-XY`). They're
@@ -65,7 +71,7 @@ who you booked with, the **price**, and whether it's **paid**.
 
 ## Example
 
-Source: *"Air France flight AF9, ref AF1234-XY, confirmed & paid €612. JFK
+Source: *"Air France flight AF9, ref AF1234-XY, confirmed & paid $667. JFK
 22:30 (Jun 7, EDT) → Paris CDG 11:45 (Jun 8, CEST). Booked on the AirFrance
 website."*
 
@@ -84,10 +90,14 @@ website."*
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
   "status": "confirmed",
-  "price": "€612",
+  "price": 667,
+  "currency": "USD",
   "paid": "paid"
 }
 ```
+
+(The trip's default currency here is EUR, so this leg sets `currency` to `USD`
+because it was priced in dollars; a leg priced in euros would just omit it.)
 
 ## Rules that apply to every file
 

@@ -30,8 +30,6 @@ class TransportMixin:
             bits.append(self.t("Ref {ref}").format(ref=t.booking_number))
         if t.booking_source:
             bits.append(self.t("Booked via {source}").format(source=t.booking_source))
-        if t.price:
-            bits.append(t.price)
         return "  ·  ".join(bits)
 
     def _transport_date(self, t) -> str:
@@ -85,6 +83,8 @@ class TransportMixin:
             h += 5.5
         if booking:
             h += 5
+        if t.price is not None:
+            h += 5
 
         y = self.get_y()
         if y + h > self.h - self.b_margin:
@@ -126,5 +126,8 @@ class TransportMixin:
             self.set_font(FONT, "", 9.5)
             self.set_text_color(*MUTED)
             self.cell(inner_w, 5, booking)
+            yy += 5
+        if t.price is not None:
+            self._draw_price(cx, yy, inner_w, t.price, t.currency)
 
         self.set_y(y + h + 4)

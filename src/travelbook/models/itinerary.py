@@ -10,10 +10,12 @@ from pathlib import Path
 from .accommodation import Accommodation
 from .activities import Activity, activity_from_dict, schedule_activities
 from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
+from .currency import SecondaryCurrency, to_default
 from .parsers import (
     ItineraryError,
     _parse_date,
     _parse_duration,
+    _parse_float,
     _parse_time,
     _parse_tz,
 )
@@ -54,6 +56,8 @@ class Itinerary:
     default_meal_breakfast_until: time = time(10, 0)
     default_meal_lunch_until: time = time(16, 0)
     default_meal_duration_min: int = 0
+    default_currency: str = "EUR"  # all prices are in this unless they say otherwise
+    secondary_currencies: list[SecondaryCurrency] = field(default_factory=list)
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -90,6 +94,10 @@ class Itinerary:
         breakfast_until = _parse_time(defaults.get("breakfast_until")) or time(10, 0)
         lunch_until = _parse_time(defaults.get("lunch_until")) or time(16, 0)
         meal_duration = _parse_duration(defaults.get("meal_duration")) or 0
+        default_currency = str(defaults.get("currency", "EUR")).strip().upper() or "EUR"
+        secondary_currencies = cls._parse_secondary_currencies(
+            defaults.get("secondary_currencies")
+        )
         transport_data = data.get("transport", data.get("transports", []))
         itinerary = cls(
             title=str(desc["title"]),
@@ -103,6 +111,8 @@ class Itinerary:
             default_meal_breakfast_until=breakfast_until,
             default_meal_lunch_until=lunch_until,
             default_meal_duration_min=meal_duration,
+            default_currency=default_currency,
+            secondary_currencies=secondary_currencies,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],
@@ -130,6 +140,36 @@ class Itinerary:
                 day.activities, default_start, default_buffer
             )
         return itinerary
+
+    @staticmethod
+    def _parse_secondary_currencies(raw) -> list[SecondaryCurrency]:
+        """Build the ``secondary_currencies`` list from the defaults object.
+        Each entry is ``{"currency": <ISO code>, "change_rate": <float>}`` with
+        the rate given as units of that currency per one unit of the default."""
+        if raw in (None, ""):
+            return []
+        if not isinstance(raw, list):
+            raise ItineraryError("'secondary_currencies' must be an array")
+        result = []
+        for entry in raw:
+            if not isinstance(entry, dict):
+                raise ItineraryError("Each secondary currency must be an object")
+            code = str(entry.get("currency", "")).strip().upper()
+            rate = _parse_float(entry.get("change_rate"), "change_rate")
+            if not code or rate is None:
+                raise ItineraryError(
+                    "A secondary currency needs a 'currency' and a 'change_rate'"
+                )
+            if rate <= 0:
+                raise ItineraryError("change_rate must be a positive number")
+            result.append(SecondaryCurrency(code, rate))
+        return result
+
+    def in_default(self, amount: float, code: str = "") -> float | None:
+        """Convert ``amount`` (in currency ``code``, or the default when empty)
+        into the trip's default currency; ``None`` if ``code`` has no rate."""
+        return to_default(amount, code, self.default_currency,
+                          self.secondary_currencies)
 
     def _infer_dates(self) -> None:
         """Fill missing day dates from the trip start + the day index, then set

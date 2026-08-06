@@ -93,7 +93,10 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   - a `start_time`/`end_time`/`duration` trio that doesn't add up,
   - a non-positive `distance_km` or `duration`,
   - a car rental whose pick-up/drop-off falls outside its booking period (or a
-    reversed booking window, or a drop-off before the pick-up).
+    reversed booking window, or a drop-off before the pick-up),
+  - a price whose explicit `currency` is neither the default nor a declared
+    secondary currency (no rate to convert it), or a malformed
+    `secondary_currencies` entry.
 - ⚠️ **warnings** — a softer inconsistency worth attention:
   - a night with nowhere to sleep (no accommodation, no overnight transport),
   - a date outside a manual trip range, or a manual range that doesn't cover
@@ -222,6 +225,17 @@ override and validation cross-checks the itinerary against them.
 | `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
 | `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
 | `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
+| `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
+| `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
+
+Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
+<number>}`, where `change_rate` is **units of that currency per one unit of the
+default currency** (with a `EUR` default, a `USD` rate of `1.09` means
+1 € = $1.09). On the PDF every price prints in the default currency followed by
+each secondary conversion in parentheses, e.g. `€612 ($667, £520)` — converted
+amounts show two decimals below 25 and are rounded to whole numbers at or above
+25. Major currencies (`EUR`, `USD`, `GBP`, `JPY`) print with their symbol; others
+show the ISO code.
 
 ### `days[]` — a day
 
@@ -369,7 +383,8 @@ is inferred, across time zones when they differ.
 | `booking_number` |  | Reservation reference / PNR | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
-| `price` |  | Ticket price | string or number | text or number | `""` |
+| `price` |  | Ticket price (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
 
 ### `accommodations[]`
@@ -388,7 +403,8 @@ so the checkout day shows no bar.
 | `address` |  | Street address | string | any text | `""` |
 | `contact` |  | Phone or email | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
-| `price` |  | Price | string or number | text or number | `""` |
+| `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid_online` |  | Already paid? (badge **Paid online** / **To pay**) | boolean | `true` / `false` | `false` |
 | `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |
 
@@ -422,7 +438,8 @@ drop-off location defaults to the pick-up location.
 | `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `defaults.timezone` |
 | `company` |  | Rental company | string | any text | `""` |
 | `booking_number` |  | Reservation reference | string | any text | `""` |
-| `price` |  | Rental price | string or number | text or number | `""` |
+| `price` |  | Rental price (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
 | `car_type` |  | Car category, shown as the badge | string | `regular` \| `small` \| `SUV` \| `4x4` | `"regular"` |
 | `car_model` |  | Car make/model | string | any text | `""` |

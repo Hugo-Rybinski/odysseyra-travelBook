@@ -16,8 +16,6 @@ class AccommodationMixin:
         bits = []
         if acc.booking_source:
             bits.append(self.t("Booked via {source}").format(source=acc.booking_source))
-        if acc.price:
-            bits.append(acc.price)
         return "  ·  ".join(bits)
 
     def _acc_date_line(self, acc) -> str:
@@ -46,6 +44,8 @@ class AccommodationMixin:
             h += 5.5
         h += addr_lines * 5 + contact_lines * 5
         if booked:
+            h += 5
+        if acc.price is not None:
             h += 5
         if acc.breakfast_included:
             h += 6
@@ -88,6 +88,9 @@ class AccommodationMixin:
             self.set_xy(cx, yy)
             self.set_font(FONT, "", 10)
             self.cell(inner_w, 5, booked)
+            yy += 5
+        if acc.price is not None:
+            self._draw_price(cx, yy, inner_w, acc.price, acc.currency)
             yy += 5
         if acc.breakfast_included:
             self.set_xy(cx, yy + 1)

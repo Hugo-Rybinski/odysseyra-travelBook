@@ -25,7 +25,8 @@ online**, and whether **breakfast is included**.
 | `address` | no | text | none | Street address. |
 | `contact` | no | text | none | Phone or email. |
 | `booking_source` | no | text | none | e.g. "Booking.com". |
-| `price` | no | text or number | none | e.g. `"€256"` (total for the stay). |
+| `price` | no | number | none | The amount only for the whole stay, e.g. `256` (no currency symbol). |
+| `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price differs from the trip default currency. |
 | `paid_online` | no | boolean | `false` (shows a "To pay" badge) | `true` if already paid. |
 | `breakfast_included` | no | boolean | `false` | `true` if breakfast is included. |
 
@@ -40,6 +41,9 @@ online**, and whether **breakfast is included**.
   transport leg — that leg already covers that night.
 - If `paid_online` is `true`, include `price` when known (`validate` warns
   otherwise).
+- **`price` is a bare number** (no symbol): write `256`, not `"€256"`. It's in
+  the trip's default currency unless you add `currency` (a 3-letter ISO code
+  that must be the default or a declared secondary currency).
 
 ## Example
 
@@ -57,7 +61,7 @@ Source: *"Hôtel Gallia & Londres, Lourdes. Check-in Jun 8, check-out Jun 10.
   "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
   "contact": "+33 5 62 94 35 44",
   "booking_source": "Booking.com",
-  "price": "€256",
+  "price": 256,
   "paid_online": true,
   "breakfast_included": true
 }

@@ -9,9 +9,11 @@ from .parsers import (
     ItineraryError,
     _add_minutes,
     _format_duration,
+    _parse_currency,
     _parse_date,
     _parse_duration,
     _parse_paid,
+    _parse_price,
     _parse_time,
     _parse_tz,
 )
@@ -50,7 +52,8 @@ class CarRental:
     dropoff_location: str = ""  # defaults to pickup_location
     company: str = ""
     booking_number: str = ""
-    price: str = ""
+    price: float | None = None
+    currency: str = ""  # "" → the trip's default currency
     paid: bool | None = None  # None = no badge
     car_type: str = "regular"
     car_model: str = ""
@@ -117,7 +120,6 @@ class CarRental:
             raise ItineraryError(
                 f"additional_drivers must be a whole number, got {drivers!r}"
             ) from exc
-        price = d.get("price", "")
         pickup_location = str(d.get("pickup_location", ""))
         return cls(
             booking_start_date=_parse_date(d.get("booking_start_date")),
@@ -136,7 +138,8 @@ class CarRental:
             dropoff_location=str(d.get("dropoff_location", "")) or pickup_location,
             company=str(d.get("company", "")),
             booking_number=str(d.get("booking_number", "")),
-            price="" if price == "" or price is None else str(price),
+            price=_parse_price(d.get("price")),
+            currency=_parse_currency(d.get("currency")),
             paid=_parse_paid(d.get("paid")),
             car_type=ctype,
             car_model=str(d.get("car_model", "")),

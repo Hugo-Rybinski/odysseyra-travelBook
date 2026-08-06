@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from .parsers import ItineraryError, _parse_bool, _parse_date
+from .parsers import (
+    ItineraryError,
+    _parse_bool,
+    _parse_currency,
+    _parse_date,
+    _parse_price,
+)
 
 
 ACCOMMODATION_TYPES = ("hotel", "camping", "b&b", "other")
@@ -23,7 +29,8 @@ class Accommodation:
     address: str = ""
     contact: str = ""
     booking_source: str = ""  # e.g. "Booking.com", "Hotel website"
-    price: str = ""
+    price: float | None = None
+    currency: str = ""  # "" → the trip's default currency
     paid_online: bool = False  # True → "Paid online", False → "To pay"
     breakfast_included: bool = False
 
@@ -68,7 +75,6 @@ class Accommodation:
                 "accommodation type must be one of: "
                 f"{', '.join(ACCOMMODATION_TYPES)} (got {d.get('type')!r})"
             )
-        price = d.get("price", "")
         return cls(
             name=str(d["name"]),
             arrival=_parse_date(d.get("arrival")),
@@ -78,7 +84,8 @@ class Accommodation:
             address=str(d.get("address", "")),
             contact=str(d.get("contact", "")),
             booking_source=str(d.get("booking_source", "")),
-            price="" if price == "" or price is None else str(price),
+            price=_parse_price(d.get("price")),
+            currency=_parse_currency(d.get("currency")),
             paid_online=_parse_bool(d.get("paid_online", False)),
             breakfast_included=_parse_bool(d.get("breakfast_included", False)),
         )

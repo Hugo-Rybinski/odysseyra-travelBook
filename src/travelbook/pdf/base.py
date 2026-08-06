@@ -8,13 +8,14 @@ from pathlib import Path
 from fpdf import FPDF
 
 from ..lang import DEFAULT_LANGUAGE, fmt_date, tr
-from ..models import Itinerary, _format_tz
+from ..models import Itinerary, _format_tz, format_money
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 FONT = "DejaVu"  # bundled Unicode font: handles accents, CJK-latin, arrows, …
 
 INK = (33, 37, 41)
 MUTED = (108, 117, 125)
+FAINT = (152, 160, 168)  # lighter than MUTED — for de-emphasized secondary text
 LIGHT = (233, 236, 239)
 
 
@@ -208,6 +209,41 @@ class _PDFBase(FPDF):
         self.set_font(FONT, "", 10)
         self.set_text_color(*MUTED)
         self.multi_cell(w, 5, text)
+
+    # -- prices ---------------------------------------------------------
+    def _money(self, amount: float, code: str, converted: bool = False) -> str:
+        return format_money(amount, code, self.lang, converted)
+
+    def price_parts(self, amount, currency: str) -> tuple[str, str]:
+        """(primary, secondary) strings for a price: the amount in the trip's
+        default currency, plus a parenthesized list of the same amount in every
+        secondary currency (empty when there are none). An amount whose currency
+        has no known rate is shown as-is, with no conversions."""
+        it = self.itinerary
+        base = it.in_default(amount, currency)
+        if base is None:  # unknown currency — nothing to convert against
+            return self._money(amount, currency or it.default_currency), ""
+        # The primary is a conversion only when the price was given in a
+        # non-default currency; a native amount keeps its exact figure.
+        converted = bool(currency) and currency.strip().upper() != it.default_currency
+        primary = self._money(base, it.default_currency, converted=converted)
+        secs = [self._money(s.change_rate * base, s.currency, converted=True)
+                for s in it.secondary_currencies]
+        return primary, (f"({', '.join(secs)})" if secs else "")
+
+    def _draw_price(self, x: float, y: float, w: float, amount, currency: str) -> None:
+        """Draw a price row: the default-currency amount in bold, followed by
+        any secondary-currency conversions in a lighter, smaller face."""
+        primary, secondary = self.price_parts(amount, currency)
+        self.set_xy(x, y)
+        self.set_font(FONT, "B", 10)
+        self.set_text_color(*MUTED)
+        pw = self.get_string_width(primary)
+        self.cell(pw, 5, primary)
+        if secondary:
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*FAINT)
+            self.cell(w - pw, 5, "  " + secondary)
 
     def _chip(self, x: float, label: str) -> None:
         self.ln(0.8)

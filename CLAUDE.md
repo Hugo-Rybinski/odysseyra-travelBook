@@ -47,8 +47,10 @@ Four focused packages; each `__init__.py` re-exports its public API, so import
 paths are stable (`from travelbook.models import Itinerary`, etc.).
 
 - **`models/`** — the data model, built from JSON via `from_dict` classmethods.
-  - `parsers.py` — scalar parsers (`_parse_date/_time/_duration/_tz/_paid/_route`,
-    formatters) and `ItineraryError` (raised on any invalid data).
+  - `parsers.py` — scalar parsers (`_parse_date/_time/_duration/_tz/_paid/_route/`
+    `_price/_currency`, formatters) and `ItineraryError` (raised on any invalid data).
+  - `currency.py` — `SecondaryCurrency`, `to_default` (convert to the default
+    currency), `format_money`, and the `CURRENCY_SYMBOLS` table.
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     and `schedule_activities` (the day timeline pass).
@@ -85,7 +87,8 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
-  `lunch_until` 16:00, and `meal_duration` 0) — plus content arrays `days` (required,
+  `lunch_until` 16:00, `meal_duration` 0, `currency` EUR, and
+  `secondary_currencies`) — plus content arrays `days` (required,
   non-empty), `transport`, `accommodations`. The older flat layout still parses.
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
@@ -107,6 +110,16 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   only ever as breakfast/lunch/dinner (the other four are explicit-only). The
   inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
+- **Prices & currency.** A `price` is a bare `float` (no symbol); its `currency`
+  is a 3-letter ISO code that defaults to `defaults.currency` (EUR). Conversion
+  lives in `models/currency.py` (`SecondaryCurrency`, `to_default`,
+  `format_money`); `defaults.secondary_currencies` is a list of
+  `{currency, change_rate}` with the rate in *units of that currency per one
+  unit of the default*. The PDF prints each price in the default currency with
+  the secondary conversions faded in parentheses (`_draw_price` in `pdf/base.py`
+  — converted amounts show 2 decimals below 25, whole at/above). The validator
+  errors on a price currency that is neither the default nor a declared
+  secondary, and on malformed `secondary_currencies` entries.
 - **Validation has three levels**, filtered by `--verbose`: ❌ errors (missing
   required, invalid value, incoherence), ⚠️ warnings (soft inconsistencies:
   nowhere-to-sleep, city mismatch, hike route/endpoints, ends-after-`end_time`…),

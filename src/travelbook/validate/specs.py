@@ -115,6 +115,13 @@ def V_HEX(value):
     return "must be a hex color like '#2f6b4f'"
 
 
+def V_CURRENCY(value):
+    s = str(value).strip()
+    if len(s) == 3 and s.isalpha():
+        return None
+    return "must be a 3-letter currency code like 'EUR'"
+
+
 # Trip-level groups
 TRAVEL_DESCRIPTION = [
     Spec("title", True, "the trip title shown on the cover", "any text"),
@@ -148,6 +155,11 @@ DEFAULTS = [
     Spec("meal_duration", False,
          "the default length of a meal that gives no duration or end time",
          "a duration like '1h'", "0 (instant)", V_DUR),
+    Spec("currency", False, "the default currency all prices are given in",
+         "a 3-letter ISO code like 'EUR'", '"EUR"', V_CURRENCY),
+    Spec("secondary_currencies", False,
+         "extra currencies to also show each price in, converted from the default",
+         "an array of {currency, change_rate} objects", "[] (none shown)"),
 ]
 
 # Activity scheduling fields (shared by every non-buffer activity)
@@ -252,7 +264,10 @@ TRANSPORT_SPECS = [
     Spec("booking_source", False, "where it was booked", "any text", '""'),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
-    Spec("price", False, "the ticket price", "text or a number", '""'),
+    Spec("price", False, "the ticket price", "a number", "none (no price shown)",
+         V_NUMBER),
+    Spec("currency", False, "the currency this price is in",
+         "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
     Spec("paid", False, "the payment state", "'paid' or 'to pay'",
          "none (no badge)", V_PAID),
 ]
@@ -267,7 +282,9 @@ ACCOMMODATION_SPECS = [
     Spec("address", False, "the street address", "any text", '""'),
     Spec("contact", False, "a phone or email", "any text", '""'),
     Spec("booking_source", False, "where it was booked", "any text", '""'),
-    Spec("price", False, "the price", "text or a number", '""'),
+    Spec("price", False, "the price", "a number", "none (no price shown)", V_NUMBER),
+    Spec("currency", False, "the currency this price is in",
+         "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
     Spec("paid_online", False, "whether it is already paid", "true or false",
          "false (shows a 'To pay' badge)", V_BOOL),
     Spec("breakfast_included", False, "whether breakfast is included",
@@ -300,7 +317,10 @@ CAR_RENTAL_SPECS = [
          "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
     Spec("company", False, "the rental company", "any text", '""'),
     Spec("booking_number", False, "the reservation reference", "any text", '""'),
-    Spec("price", False, "the rental price", "text or a number", '""'),
+    Spec("price", False, "the rental price", "a number", "none (no price shown)",
+         V_NUMBER),
+    Spec("currency", False, "the currency this price is in",
+         "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
     Spec("paid", False, "the payment state", "'paid' or 'to pay'",
          "none (no badge)", V_PAID),
     Spec("car_type", False, "the car category",

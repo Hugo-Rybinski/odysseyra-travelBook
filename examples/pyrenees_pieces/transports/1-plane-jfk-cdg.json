@@ -12,6 +12,7 @@
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
   "status": "confirmed",
-  "price": "€612",
+  "price": 667,
+  "currency": "USD",
   "paid": "paid"
 }

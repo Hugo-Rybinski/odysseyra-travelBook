@@ -7,7 +7,12 @@
   },
   "defaults": {
     "start_time": "9am",
-    "timezone": "Mars"
+    "timezone": "Mars",
+    "currency": "EU",
+    "secondary_currencies": [
+      { "currency": "USD", "change_rate": "par" },
+      { "currency": "US", "change_rate": -1 }
+    ]
   },
   "days": [
     {
@@ -48,8 +53,8 @@
     }
   ],
   "transport": [
-    { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "status": "confirmed" },
-    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later", "flight_number": "AF999" }
+    { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "status": "confirmed", "price": 120, "currency": "CHF" },
+    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later", "flight_number": "AF999", "price": "lots" }
   ],
   "accommodations": [
     { "name": "Hotel A", "city": "Paris", "arrival": "2026-06-09", "departure": "2026-06-10" },

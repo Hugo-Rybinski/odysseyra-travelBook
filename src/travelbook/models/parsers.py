@@ -44,6 +44,32 @@ def _parse_float(value, name: str) -> float | None:
         raise ItineraryError(f"{name} must be a number, got {value!r}") from exc
 
 
+def _parse_price(value, name: str = "price") -> float | None:
+    """A price amount as a float. Numbers pass straight through; strings are
+    tolerated for legacy data (a leading/trailing currency symbol, ISO code,
+    thousands separators or spaces are stripped before parsing)."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ItineraryError(f"{name} must be a number, got {value!r}")
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = re.sub(r"[€$£¥]", "", str(value))
+    s = re.sub(r"[A-Za-z]{3}", "", s)  # a stray ISO code
+    s = s.replace(",", "").strip()
+    try:
+        return float(s)
+    except ValueError as exc:
+        raise ItineraryError(f"{name} must be a number, got {value!r}") from exc
+
+
+def _parse_currency(value) -> str:
+    """An ISO currency code, upper-cased ('' when unset → the trip default)."""
+    if value is None or value == "":
+        return ""
+    return str(value).strip().upper()
+
+
 def _parse_duration(value) -> int | None:
     """Parse a human duration into whole minutes.
 

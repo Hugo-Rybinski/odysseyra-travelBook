@@ -40,8 +40,6 @@ class CarRentalMixin:
             bits.append(cr.car_model)
         if cr.booking_number:
             bits.append(self.t("Ref {ref}").format(ref=cr.booking_number))
-        if cr.price:
-            bits.append(cr.price)
         if cr.additional_drivers:
             key = ("{n} additional driver" if cr.additional_drivers == 1
                    else "{n} additional drivers")
@@ -82,6 +80,8 @@ class CarRentalMixin:
             h += 5.5
         if meta:
             h += meta_n * 5
+        if cr.price is not None:
+            h += 5
 
         y = self.get_y()
         if y + h > self.h - self.b_margin:
@@ -123,5 +123,8 @@ class CarRentalMixin:
             self.set_font(FONT, "", 10)
             self.set_text_color(*MUTED)
             self.multi_cell(inner_w, 5, meta)
+            yy += meta_n * 5
+        if cr.price is not None:
+            self._draw_price(cx, yy, inner_w, cr.price, cr.currency)
 
         self.set_y(y + h + 4)

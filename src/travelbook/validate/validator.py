@@ -27,6 +27,8 @@ from .specs import (
     SCHEDULE,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
+    V_CURRENCY,
+    V_NUMBER,
 )
 
 
@@ -183,6 +185,7 @@ class _Validator:
         df_path = (df_key,) if isinstance(df, dict) else ()
         df_obj = df if isinstance(df, dict) else {}
         self.check_object(df_obj, df_path or (), DEFAULTS)
+        self._secondary_currencies(df_obj, df_path or ())
 
         days = data.get("days")
         if not isinstance(days, list) or not days:
@@ -346,9 +349,10 @@ class _Validator:
         if t.get("status") and not t.get("booking_number"):
             self.add("warning", path, "'status' is set but 'booking_number' is "
                      "missing — a confirmed/booked leg usually has a reference.")
-        if t.get("paid") is not None and not t.get("price"):
+        if t.get("paid") is not None and not self._has_price(t):
             self.add("warning", path, "'paid' is set but 'price' is missing — the "
                      "payment state is given without an amount.")
+        self._check_price_currency(t, path)
 
     def _accommodation(self, a, path):
         if not isinstance(a, dict):
@@ -359,14 +363,84 @@ class _Validator:
         if arr and dep and dep <= arr:
             self.add("error", path, "accommodation departure ({dep}) must be "
                      "after arrival ({arr}).", dep=dep, arr=arr)
-        if _truthy(a.get("paid_online")) and not a.get("price"):
+        if _truthy(a.get("paid_online")) and not self._has_price(a):
             self.add("warning", path, "'paid_online' is true but 'price' is "
                      "missing — marked paid without an amount.")
+        self._check_price_currency(a, path)
 
     def _defaults(self):
         """The trip-wide defaults object ("defaults", legacy alias "default")."""
         df = self.data.get("defaults", self.data.get("default"))
         return df if isinstance(df, dict) else {}
+
+    def _default_currency(self):
+        return str(self._defaults().get("currency", "EUR")).strip().upper() or "EUR"
+
+    def _known_currencies(self):
+        """The default currency plus every secondary currency's code."""
+        codes = {self._default_currency()}
+        raw = self._defaults().get("secondary_currencies")
+        if isinstance(raw, list):
+            for entry in raw:
+                if isinstance(entry, dict) and entry.get("currency"):
+                    codes.add(str(entry.get("currency")).strip().upper())
+        return codes
+
+    def _secondary_currencies(self, df, base_path):
+        """Validate the ``secondary_currencies`` array in the defaults object:
+        each entry needs a currency code and a positive numeric change rate."""
+        raw = df.get("secondary_currencies")
+        if raw is None:
+            return
+        if not isinstance(raw, list):
+            self.add("error", base_path + ("secondary_currencies",),
+                     "'secondary_currencies' must be an array of "
+                     "{currency, change_rate} objects.")
+            return
+        for i, entry in enumerate(raw):
+            epath = base_path + ("secondary_currencies", i)
+            if not isinstance(entry, dict):
+                self.add("error", epath, "each secondary currency must be an "
+                         "object with a 'currency' and a 'change_rate'.")
+                continue
+            cur = entry.get("currency")
+            if cur in (None, ""):
+                self.add("error", epath, "a secondary currency needs a 'currency' "
+                         "(a 3-letter ISO code like 'USD').")
+            elif V_CURRENCY(cur):
+                self.add("error", epath + ("currency",),
+                         "field 'currency' is invalid ({value}) — {error}.",
+                         value=repr(cur), error=V_CURRENCY(cur))
+            rate = entry.get("change_rate")
+            if rate in (None, ""):
+                self.add("error", epath, "a secondary currency needs a "
+                         "'change_rate' (units of it per 1 unit of the default).")
+            elif V_NUMBER(rate):
+                self.add("error", epath + ("change_rate",), "field 'change_rate' "
+                         "is invalid ({value}) — must be a number.", value=repr(rate))
+            elif float(rate) <= 0:
+                self.add("error", epath + ("change_rate",),
+                         "change_rate must be a positive number (got {value}).",
+                         value=repr(rate))
+
+    def _check_price_currency(self, obj, path):
+        """A price's explicit ``currency`` must be the default or a declared
+        secondary currency — otherwise there's no rate to convert it."""
+        cur = obj.get("currency")
+        if cur in (None, ""):
+            return
+        code = str(cur).strip().upper()
+        if V_CURRENCY(cur):  # malformed code — the field check already reported it
+            return
+        if code not in self._known_currencies():
+            self.add("error", path + ("currency",),
+                     "price currency '{cur}' is neither the default currency "
+                     "({default}) nor a declared secondary currency — add it to "
+                     "defaults.secondary_currencies or use a known currency.",
+                     cur=code, default=self._default_currency())
+
+    def _has_price(self, obj):
+        return obj.get("price") not in (None, "")
 
     def _default_tz(self):
         df = self._defaults()
@@ -413,9 +487,10 @@ class _Validator:
         if pu and do and do[0] < pu[0]:
             self.add("error", path, "car rental drop-off ({do}) is before the "
                      "pick-up ({pu}).", do=do[1], pu=pu[1])
-        if cr.get("paid") is not None and not cr.get("price"):
+        if cr.get("paid") is not None and not self._has_price(cr):
             self.add("warning", path, "'paid' is set but 'price' is missing — the "
                      "payment state is given without an amount.")
+        self._check_price_currency(cr, path)
 
     def _car_event_conflicts(self, car_rentals, day_date, occupied):
         """Warn when a car pick-up / drop-off on ``day_date`` overlaps any

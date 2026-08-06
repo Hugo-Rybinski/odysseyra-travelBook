@@ -9,6 +9,6 @@
   "booking_number": "TGV-8841",
   "booking_source": "SNCF Connect",
   "status": "booked",
-  "price": "€89",
+  "price": 89,
   "paid": "to pay"
 }

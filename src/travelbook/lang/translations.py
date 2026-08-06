@@ -194,6 +194,33 @@ _FR = {
     "amount.":
         "« paid_online » est vrai mais « price » manque — marqué payé sans "
         "montant.",
+    "'secondary_currencies' must be an array of {currency, change_rate} "
+    "objects.":
+        "« secondary_currencies » doit être un tableau d'objets "
+        "{currency, change_rate}.",
+    "each secondary currency must be an object with a 'currency' and a "
+    "'change_rate'.":
+        "chaque devise secondaire doit être un objet avec « currency » et "
+        "« change_rate ».",
+    "a secondary currency needs a 'currency' (a 3-letter ISO code like 'USD').":
+        "une devise secondaire a besoin d'un « currency » (un code ISO à 3 "
+        "lettres comme « USD »).",
+    "field 'currency' is invalid ({value}) — {error}.":
+        "champ « currency » invalide ({value}) — {error}.",
+    "a secondary currency needs a 'change_rate' (units of it per 1 unit of the "
+    "default).":
+        "une devise secondaire a besoin d'un « change_rate » (unités de cette "
+        "devise pour 1 unité de la devise par défaut).",
+    "field 'change_rate' is invalid ({value}) — must be a number.":
+        "champ « change_rate » invalide ({value}) — doit être un nombre.",
+    "change_rate must be a positive number (got {value}).":
+        "change_rate doit être un nombre positif (reçu {value}).",
+    "price currency '{cur}' is neither the default currency ({default}) nor a "
+    "declared secondary currency — add it to defaults.secondary_currencies or "
+    "use a known currency.":
+        "la devise du prix « {cur} » n'est ni la devise par défaut ({default}) "
+        "ni une devise secondaire déclarée — ajoutez-la à "
+        "defaults.secondary_currencies ou utilisez une devise connue.",
     "optional field 'car_rentals' is missing — the rental-car bookings. "
     "Expected an array of car rental objects. Defaulting to [] (no car rental "
     "page).":
@@ -320,6 +347,12 @@ _FR = {
         "déjeuner, les suivants le dîner",
     "the default length of a meal that gives no duration or end time":
         "la durée par défaut d'un repas sans durée ni heure de fin",
+    "the default currency all prices are given in":
+        "la devise par défaut de tous les prix",
+    "extra currencies to also show each price in, converted from the default":
+        "des devises supplémentaires pour afficher aussi chaque prix, "
+        "converties depuis la devise par défaut",
+    "the currency this price is in": "la devise de ce prix",
     "the clock time the activity starts": "l'heure de début de l'activité",
     "the clock time the activity ends": "l'heure de fin de l'activité",
     "how long the activity lasts": "la durée de l'activité",
@@ -423,6 +456,10 @@ _FR = {
     "a UTC offset like '+02:00'": "un décalage UTC comme « +02:00 »",
     "a UTC offset like '-04:00'": "un décalage UTC comme « -04:00 »",
     "a number": "un nombre",
+    "a 3-letter ISO code like 'EUR'": "un code ISO à 3 lettres comme « EUR »",
+    "a 3-letter ISO code like 'USD'": "un code ISO à 3 lettres comme « USD »",
+    "an array of {currency, change_rate} objects":
+        "un tableau d'objets {currency, change_rate}",
     "true or false": "true ou false",
     "'loop', 'back_and_forth' or 'one_way'":
         "« loop », « back_and_forth » ou « one_way »",
@@ -449,6 +486,10 @@ _FR = {
     '"10:00"': "« 10:00 »",
     '"16:00"': "« 16:00 »",
     "0 (instant)": "0 (instantané)",
+    '"EUR"': "« EUR »",
+    "[] (none shown)": "[] (aucune affichée)",
+    "none (no price shown)": "aucun (pas de prix affiché)",
+    "the trip's default currency": "la devise par défaut du voyage",
     "the previous activity's end, or the day's default start":
         "la fin de l'activité précédente, ou le début par défaut du jour",
     "start_time + duration": "start_time + duration",

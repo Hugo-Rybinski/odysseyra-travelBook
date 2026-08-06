@@ -53,7 +53,8 @@ Every skill uses these; they are shared across all objects.
 | **Payment flag** | `"paid"` (paid) or `"to pay"` (not yet) — omit if unknown | `"paid"`, `"to pay"` |
 | **Boolean** | `true` / `false` (also `"yes"` / `"no"`) | `true` |
 | **Hex color** | `"#RRGGBB"` or `"#RGB"` | `"#2f6b4f"` |
-| **Price** | free text or a number; keep the currency symbol | `"€89"`, `89` |
+| **Price** | a bare number, no currency symbol | `89`, `256.5` |
+| **Currency** | a 3-letter ISO code | `"EUR"`, `"USD"`, `"GBP"` |
 
 ## Rules that apply to every file
 

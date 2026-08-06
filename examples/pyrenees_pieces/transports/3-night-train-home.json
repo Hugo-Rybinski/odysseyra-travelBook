@@ -10,6 +10,6 @@
   "booking_number": "IC-3711",
   "booking_source": "SNCF Connect",
   "status": "confirmed",
-  "price": "€74",
+  "price": 74,
   "paid": "paid"
 }
