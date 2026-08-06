@@ -1,0 +1,95 @@
+# Skill: `car-rentals/car-rental-<INDEX>.json`
+
+**Target file:** `<ROOT>/car-rentals/car-rental-<INDEX>.json` — **one file per
+rental** (`car-rental-01.json`, …).
+
+One rental-car booking, with its booking window and the pick-up / drop-off
+events. This is the skill for a **car-rental confirmation** (Europcar/Hertz
+email, voucher, screenshot).
+
+## What to extract
+
+From the confirmation: the **booking window** (start/end date+time), the
+**pick-up** and **drop-off** date, time and **location**, the **company** and
+**booking reference**, the **car type/model**, the **price** and payment state,
+the number of **additional drivers**, and a contact.
+
+## Fields
+
+| Field | Required | Format | Default | Notes |
+|---|---|---|---|---|
+| `booking_start_date` | **yes** | date `YYYY-MM-DD` | — | When the booking window opens. |
+| `booking_start_time` | **yes** | time `HH:MM` | — | |
+| `booking_end_date` | **yes** | date `YYYY-MM-DD` | — | When it closes (must be after the start). |
+| `booking_end_time` | **yes** | time `HH:MM` | — | |
+| `pickup_date` | **yes** | date `YYYY-MM-DD` | — | Must fall within the booking window. |
+| `pickup_time` | **yes** | time `HH:MM` | — | |
+| `dropoff_date` | **yes** | date `YYYY-MM-DD` | — | Within the window and **after** the pick-up. |
+| `dropoff_time` | **yes** | time `HH:MM` | — | |
+| `pickup_location` | **yes** | text | — | Where you collect the car. |
+| `dropoff_location` | no | text | same as pick-up | Set it if you return elsewhere. |
+| `booking_start_tz` / `booking_end_tz` / `pickup_tz` / `dropoff_tz` | no | UTC offset | trip default timezone | Only if different from the trip's timezone. |
+| `company` | no | text | none | e.g. "Europcar". |
+| `booking_number` | no | text | none | Reservation reference. |
+| `price` | no | text or number | none | e.g. `"€228"`. |
+| `paid` | no | `paid` / `to pay` | none | Payment state. |
+| `car_type` | no | enum | `regular` | One of `regular`, `small`, `suv`, `4x4`. |
+| `car_model` | no | text | none | e.g. "Dacia Duster". |
+| `contact` | no | text | none | Phone/email for the rental desk. |
+| `additional_drivers` | no | whole number ≥ 0 | `0` | Extra named drivers. |
+| `pickup_duration` | no | duration (`"30 min"`) | none | How long collecting the car takes. |
+| `dropoff_duration` | no | duration (`"20 min"`) | none | How long returning it takes. |
+
+## Notes for extraction
+
+- The **booking window** (`booking_*`) is the contractual period; the
+  **pick-up / drop-off** are the actual events, which must fall inside it, with
+  drop-off after pick-up. If the source gives only the pick-up/drop-off, reuse
+  those for the booking window.
+- `pickup_duration` / `dropoff_duration` place the events on the day timeline;
+  set them only if the source implies a slot (otherwise leave them out).
+- If `paid` is set, include `price` when known (`validate` warns otherwise).
+
+## Example
+
+Source: *"Europcar EC-55231, SUV (Dacia Duster), €228 paid. Pick up Pau
+Airport Jun 8 18:15, drop off Montréjeau station Jun 11 19:30. Booking valid
+Jun 8 18:00 – Jun 11 20:00. 1 additional driver. +33 5 59 33 20 10."*
+
+```json
+{
+  "company": "Europcar",
+  "car_type": "suv",
+  "car_model": "Dacia Duster",
+  "booking_start_date": "2026-06-08",
+  "booking_start_time": "18:00",
+  "booking_end_date": "2026-06-11",
+  "booking_end_time": "20:00",
+  "pickup_date": "2026-06-08",
+  "pickup_time": "18:15",
+  "pickup_location": "Pau Airport",
+  "pickup_duration": "30 min",
+  "dropoff_date": "2026-06-11",
+  "dropoff_time": "19:30",
+  "dropoff_location": "Montréjeau station",
+  "dropoff_duration": "20 min",
+  "booking_number": "EC-55231",
+  "price": "€228",
+  "paid": "paid",
+  "additional_drivers": 1,
+  "contact": "+33 5 59 33 20 10"
+}
+```
+
+## Rules that apply to every file
+
+- **Only include a field if the source actually states it.** Never invent
+  bookings, prices, dates, or times. Omitting an optional field lets the tool
+  fall back to a sensible default (each skill lists them).
+- Each file is standalone JSON: a single top-level **object** (a file may also
+  hold a JSON **array** of such objects, in which case each element is one
+  entry).
+- Write dates/times exactly as the formats above; convert "6pm" → `"18:00"`,
+  "June 8, 2026" → `"2026-06-08"`.
+- When a value is unknown but the field is required, leave a clear
+  `"FIXME"` placeholder so `travelbook validate` (run by `stitch`) flags it.

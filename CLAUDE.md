@@ -144,7 +144,13 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
 - When adding/renaming a field or message, update: the model `from_dict`, the
   validator `specs.py` (+ any coherence check), the PDF renderer, both example
-  JSONs, the README tables, the French `translations.py`, regenerate the
-  snapshot, and re-render the example PDFs.
+  JSONs, the README tables, the French `translations.py`, **the matching
+  `skills/*.md` doc** (the field tables/examples an LLM uses to extract JSON),
+  regenerate the snapshot, and re-render the example PDFs.
+- **`skills/`** holds one LLM-facing `.md` per stitchable JSON part
+  (`travel_description`, `default`, `days`, `transports`, `accommodations`,
+  `car-rentals`) documenting its fields/formats so an LLM can turn raw
+  text/screenshots into the fragment files. **Any JSON-format change must be
+  mirrored here** — these are authoritative alongside the README.
 - `README.md` documents the JSON schema field-by-field (one table per object,
   with Required/Type/Format/Default) — keep it authoritative.
