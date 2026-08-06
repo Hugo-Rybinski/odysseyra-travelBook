@@ -20,3 +20,6 @@ venv/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Local-only extracted badge icons (kept on disk, not shipped)
+src/travelbook/icons/
