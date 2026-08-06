@@ -18,10 +18,11 @@ _FR = {
     "POINT": "POINT",
     "PLACE": "LIEU",
     "HIKE": "RANDO",
+    "MEAL": "REPAS",
     "TRANSPORT": "TRANSPORT",
     "OFF-ROAD SECTIONS": "SECTIONS HORS-ROUTE",
     "OVERNIGHT": "DE NUIT",
-    "POINTS OF INTEREST": "POINTS D'INTÉRÊT",
+    "INCLUDES": "COMPREND",
     "buffer": "pause",
     # meal types (from Meal.type) and the meal row head
     "breakfast": "petit-déjeuner",
@@ -46,6 +47,11 @@ _FR = {
     "castle": "château",
     "temple": "temple",
     "street": "rue",
+    "natural park": "parc naturel",
+    "mountain": "montagne",
+    "lake": "lac",
+    "beach": "plage",
+    "waterfall": "cascade",
     "other": "autre",
     # -- PDF: transport --
     "GETTING AROUND": "SE DÉPLACER",
@@ -121,6 +127,16 @@ _FR = {
         "a besoin d'au moins une activité.",
     "each activity must be an object with a 'type'":
         "chaque activité doit être un objet avec un « type »",
+    "a nested activity must be an object with a 'type' of one of: {allowed}.":
+        "une activité imbriquée doit être un objet avec un « type » parmi : "
+        "{allowed}.",
+    "a nested activity 'type' must be one of: {allowed} (got {kind}).":
+        "le « type » d'une activité imbriquée doit être l'un de : {allowed} "
+        "(reçu {kind}).",
+    "a nested activity can't contain its own nested activities — nesting is "
+    "only one level deep.":
+        "une activité imbriquée ne peut pas contenir ses propres activités "
+        "imbriquées — l'imbrication ne va que d'un niveau.",
     "required field 'type' is missing — the activity type. Expected one of: "
     "{kinds}.":
         "champ obligatoire « type » manquant — le type d'activité. Attendu : "
@@ -313,7 +329,12 @@ _FR = {
     "a description": "une description",
     "the place name": "le nom du lieu",
     "a description of the place": "une description du lieu",
-    "points of interest grouped here": "les points d'intérêt regroupés ici",
+    "nested points of interest, hikes and meals":
+        "les points d'intérêt, randonnées et repas imbriqués",
+    "nested meals (a stop along the drive)":
+        "les repas imbriqués (une halte pendant le trajet)",
+    "nested meals (a stop along the hike)":
+        "les repas imbriqués (une halte pendant la randonnée)",
     "the hike name": "le nom de la randonnée",
     "a description of the hike": "une description de la randonnée",
     "the hike distance in km": "la distance de la randonnée en km",
@@ -391,8 +412,11 @@ _FR = {
     "true or false": "true ou false",
     "'loop', 'back_and_forth' or 'one_way'":
         "« loop », « back_and_forth » ou « one_way »",
-    "an array of point-of-interest objects or name strings":
-        "un tableau d'objets point d'intérêt ou de noms",
+    "an array of point_of_interest, hike or meal objects, each with a 'type'":
+        "un tableau d'objets point_of_interest, hike ou meal, chacun avec un "
+        "« type »",
+    "an array of meal objects, each with a 'type'":
+        "un tableau d'objets meal, chacun avec un « type »",
     "'booked' or 'confirmed'": "« booked » ou « confirmed »",
     "'paid' or 'to pay'": "« paid » ou « to pay »",
     "text or a number": "un texte ou un nombre",
@@ -442,8 +466,10 @@ _FR = {
     # -- type enums (added-later requirements) --
     "the transport type": "le type de transport",
     "the kind of accommodation": "le type d'hébergement",
-    "one of: museum, church, building, viewpoint, ruins, castle, temple, street, other":
-        "l'un de : museum, church, building, viewpoint, ruins, castle, temple, street, other",
+    "one of: museum, church, building, viewpoint, ruins, castle, temple, street, "
+    "natural park, mountain, lake, beach, waterfall, other":
+        "l'un de : museum, church, building, viewpoint, ruins, castle, temple, street, "
+        "natural park, mountain, lake, beach, waterfall, other",
     "one of: plane, train, bus, taxi, other":
         "l'un de : plane, train, bus, taxi, other",
     "one of: hotel, camping, b&b, other": "l'un de : hotel, camping, b&b, other",

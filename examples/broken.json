@@ -20,7 +20,8 @@
       "title": "Day two",
       "date": "2026-06-10",
       "activities": [
-        { "type": "road", "start": "A", "end": "B", "distance_km": 0, "start_time": "09:00", "end_time": "23:00" },
+        { "type": "road", "start": "A", "end": "B", "distance_km": 0, "start_time": "09:00", "end_time": "23:00",
+          "activities": [ { "type": "point_of_interest", "name": "Not allowed on a road" } ] },
         { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h" },
         { "type": "spaceship", "start": "A", "end": "B" },
         { "type": "hike", "route": "zigzag", "duration": "0 min" },
@@ -31,7 +32,15 @@
     {
       "title": "Day three",
       "date": "2026-06-11",
-      "activities": []
+      "activities": [
+        { "type": "place", "name": "Nested demo", "activities": [
+          "just a name",
+          { "type": "meal", "restaurant": "R" },
+          { "type": "point_of_interest", "name": "Outer", "activities": [
+            { "type": "point_of_interest", "name": "Inner" }
+          ] }
+        ] }
+      ]
     }
   ],
   "transport": [

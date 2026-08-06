@@ -172,6 +172,8 @@ ACTIVITY_SPECS = {
              "none (not shown)", V_NUMBER),
         Spec("off_road", False, "whether part of the drive is off-road",
              "true or false", "false", V_BOOL),
+        Spec("activities", False, "nested meals (a stop along the drive)",
+             "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],
     "point_of_interest": [
         Spec("name", True, "the point-of-interest name", "any text"),
@@ -179,13 +181,16 @@ ACTIVITY_SPECS = {
              "one of: " + ", ".join(POI_CATEGORIES), '"other"', V_CATEGORY),
         Spec("address", False, "the address", "any text", '""'),
         Spec("description", False, "a description", "any text", '""'),
+        Spec("activities", False, "nested points of interest, hikes and meals",
+             "an array of point_of_interest, hike or meal objects, each with a 'type'",
+             "[] (none nested)"),
     ],
     "place": [
         Spec("name", True, "the place name", "any text"),
         Spec("description", False, "a description of the place", "any text", '""'),
-        Spec("points_of_interest", False, "points of interest grouped here",
-             "an array of point-of-interest objects or name strings",
-             "[] (none listed)"),
+        Spec("activities", False, "nested points of interest, hikes and meals",
+             "an array of point_of_interest, hike or meal objects, each with a 'type'",
+             "[] (none nested)"),
     ],
     "hike": [
         Spec("name", True, "the hike name", "any text"),
@@ -198,6 +203,8 @@ ACTIVITY_SPECS = {
         Spec("end", False, "the end address", "any text", '""'),
         Spec("route", False, "the route shape",
              "'loop', 'back_and_forth' or 'one_way'", '"back_and_forth"', V_ROUTE),
+        Spec("activities", False, "nested meals (a stop along the hike)",
+             "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],
     "meal": [
         Spec("meal_type", False, "which meal it is",

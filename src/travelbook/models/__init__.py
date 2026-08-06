@@ -13,6 +13,7 @@ from .accommodation import ACCOMMODATION_TYPES, Accommodation
 from .car_rental import CAR_TYPES, CarRental, CarRentalEvent, resolve_car_rental
 from .activities import (
     MEAL_TYPES,
+    NESTED_ACTIVITY_TYPES,
     POI_CATEGORIES,
     Activity,
     Buffer,
@@ -53,6 +54,7 @@ __all__ = [
     "ItineraryError",
     "Meal",
     "MEAL_TYPES",
+    "NESTED_ACTIVITY_TYPES",
     "Place",
     "POI_CATEGORIES",
     "PointOfInterest",

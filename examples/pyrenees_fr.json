@@ -56,15 +56,33 @@
           "start_time": "13:30",
           "duration": "1h30",
           "description": "Flânez dans les rues autour du château fort. Le départ fixé laisse un creux après le déjeuner, affiché comme une pause.",
-          "points_of_interest": [
+          "activities": [
             {
+              "type": "point_of_interest",
               "name": "Château fort de Lourdes",
               "category": "castle",
               "address": "25 Rue du Fort, Lourdes",
               "duration": "45 min",
               "description": "Forteresse médiévale abritant le musée pyrénéen, avec de vastes vues sur la vallée."
             },
-            "Pont Vieux"
+            {
+              "type": "point_of_interest",
+              "name": "Pont Vieux"
+            },
+            {
+              "type": "hike",
+              "name": "Boucle du Chemin de la Forêt",
+              "distance_km": 3.5,
+              "elevation_m": 120,
+              "route": "loop",
+              "description": "Une courte boucle en forêt montant à un point de vue sur le château."
+            },
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "restaurant": "Salon de thé du Fort",
+              "address": "Rue du Bourg, Lourdes"
+            }
           ]
         }
       ]
@@ -82,7 +100,15 @@
           "distance_km": 52,
           "start_time": "08:00",
           "duration": "1h20",
-          "off_road": true
+          "off_road": true,
+          "activities": [
+            {
+              "type": "meal",
+              "meal_type": "breakfast",
+              "restaurant": "Café de Gèdre",
+              "address": "Village de Gèdre"
+            }
+          ]
         },
         {
           "type": "hike",
@@ -92,7 +118,35 @@
           "elevation_m": 550,
           "duration": "4h30",
           "route": "back_and_forth",
-          "description": "Montée douce le long du gave jusqu'à la grande cascade, retour par le même sentier."
+          "description": "Montée douce le long du gave jusqu'à la grande cascade, retour par le même sentier.",
+          "activities": [
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "area": "le belvédère de la Grande Cascade"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Grande Cascade de Gavarnie",
+          "category": "waterfall",
+          "description": "La plus haute cascade d'Europe, chutant de 422 m depuis la paroi du cirque.",
+          "duration": "0h30",
+          "activities": [
+            {
+              "type": "hike",
+              "name": "Aller-retour au belvédère de la cascade",
+              "distance_km": 1.2,
+              "elevation_m": 80,
+              "route": "back_and_forth"
+            },
+            {
+              "type": "meal",
+              "meal_type": "picnic",
+              "area": "le pied de la cascade"
+            }
+          ]
         },
         {
           "type": "meal",

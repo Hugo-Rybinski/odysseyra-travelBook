@@ -8,6 +8,7 @@ from travelbook import (
     Hike,
     Itinerary,
     ItineraryError,
+    Meal,
     PointOfInterest,
     Road,
     Place,
@@ -132,8 +133,9 @@ def test_activity_types_parse():
                     "activities": [
                         {"type": "road", "start": "A", "end": "B", "distance_km": 10, "off_road": True},
                         {"type": "point_of_interest", "name": "M", "category": "museum"},
-                        {"type": "place", "name": "T", "points_of_interest": [
-                            {"name": "x", "category": "castle"}, "y"]},
+                        {"type": "place", "name": "T", "activities": [
+                            {"type": "point_of_interest", "name": "x", "category": "castle"},
+                            {"type": "hike", "name": "y", "route": "loop"}]},
                         {"type": "hike", "name": "H", "elevation_m": 300, "route": "loop"},
                     ],
                 }
@@ -145,9 +147,10 @@ def test_activity_types_parse():
     assert acts[0].distance_km == 10.0
     assert isinstance(acts[1], PointOfInterest) and acts[1].category == "museum"
     assert isinstance(acts[2], Place)
-    assert [m.name for m in acts[2].points_of_interest] == ["x", "y"]
-    assert isinstance(acts[2].points_of_interest[0], PointOfInterest)
-    assert acts[2].points_of_interest[0].category == "castle"
+    assert [m.name for m in acts[2].activities] == ["x", "y"]
+    assert isinstance(acts[2].activities[0], PointOfInterest)
+    assert acts[2].activities[0].category == "castle"
+    assert isinstance(acts[2].activities[1], Hike)
     assert isinstance(acts[3], Hike) and acts[3].route == "loop"
 
 
@@ -227,12 +230,43 @@ def test_hike_requires_name_and_route_default():
     assert it.days[0].activities[0].route == "back_and_forth"
 
 
-def test_place_accepts_points_of_interest_and_monuments_alias():
+def test_nested_activities_require_a_valid_type():
+    with pytest.raises(ItineraryError):  # a bare name string is no longer allowed
+        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
+            {"type": "place", "name": "P", "activities": ["x"]}]}]})
+    with pytest.raises(ItineraryError):  # a road may not be nested in a place
+        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
+            {"type": "place", "name": "P", "activities": [
+                {"type": "road", "start": "A", "end": "B"}]}]}]})
+    with pytest.raises(ItineraryError):  # a road accepts only nested meals
+        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
+            {"type": "road", "start": "A", "end": "B", "activities": [
+                {"type": "point_of_interest", "name": "X"}]}]}]})
+
+
+def test_point_of_interest_nests_a_hike():
     it = Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
-        {"type": "place", "name": "P", "monuments": ["x"]}]}]})  # legacy alias
-    place = it.days[0].activities[0]
-    assert isinstance(place, Place)
-    assert place.points_of_interest[0].name == "x"
+        {"type": "point_of_interest", "name": "Park", "activities": [
+            {"type": "hike", "name": "Trail", "route": "loop"}]}]}]})
+    poi = it.days[0].activities[0]
+    assert isinstance(poi, PointOfInterest)
+    assert isinstance(poi.activities[0], Hike)
+    assert poi.activities[0].name == "Trail"
+
+
+def test_meal_nests_under_road_hike_place_and_poi():
+    meal = {"type": "meal", "meal_type": "picnic", "area": "somewhere"}
+    for container in (
+        {"type": "road", "start": "A", "end": "B", "activities": [meal]},
+        {"type": "hike", "name": "H", "activities": [meal]},
+        {"type": "place", "name": "P", "activities": [meal]},
+        {"type": "point_of_interest", "name": "PoI", "activities": [meal]},
+    ):
+        it = Itinerary.from_dict(
+            {"title": "t", "days": [{"title": "d", "activities": [container]}]})
+        nested = it.days[0].activities[0].activities
+        assert isinstance(nested[0], Meal)
+        assert nested[0].type == "picnic"
 
 
 def test_missing_title_rejected():

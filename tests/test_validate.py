@@ -173,6 +173,41 @@ def test_poi_invalid_category_is_error():
     assert "'category' is invalid" in _messages(_errors(validate_text(json.dumps(doc))))
 
 
+def test_nested_activity_type_is_required_and_checked():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "place", "name": "P", "activities": [
+                   "bare string",
+                   {"type": "road", "start": "A", "end": "B"}]}]}]}
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "a nested activity must be an object" in msgs
+    assert "a nested activity 'type' must be one of" in msgs
+
+
+def test_road_and_hike_nest_only_meals():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "road", "start": "A", "end": "B", "activities": [
+                   {"type": "point_of_interest", "name": "X"}]}]}]}
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "a nested activity 'type' must be one of: meal" in msgs
+    # a meal nested under a road is accepted
+    ok = {"travel_description": {"title": "T"},
+          "days": [{"title": "d", "activities": [
+              {"type": "road", "start": "A", "end": "B", "activities": [
+                  {"type": "meal", "meal_type": "lunch"}]}]}]}
+    assert "nested activity" not in _messages(_errors(validate_text(json.dumps(ok))))
+
+
+def test_nested_poi_cannot_nest_further_is_error():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "Outer", "activities": [
+                   {"type": "point_of_interest", "name": "Inner", "activities": [
+                       {"type": "point_of_interest", "name": "Deep"}]}]}]}]}
+    assert "only one level deep" in _messages(_errors(validate_text(json.dumps(doc))))
+
+
 def _hike(**fields):
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [

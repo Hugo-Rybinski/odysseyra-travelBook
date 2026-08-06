@@ -86,6 +86,7 @@ class Road(Activity):
     end: str = ""
     distance_km: float | None = None
     off_road: bool = False
+    activities: list[Activity] = field(default_factory=list)
 
     @property
     def title(self) -> str:
@@ -105,12 +106,13 @@ class Road(Activity):
             end=str(d["end"]),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
+            activities=[_nested_activity(m, "road") for m in d.get("activities", [])],
         )
 
 
 POI_CATEGORIES = (
     "museum", "church", "building", "viewpoint", "ruins", "castle", "temple",
-    "street", "other",
+    "street", "natural park", "mountain", "lake", "beach", "waterfall", "other",
 )
 
 
@@ -123,6 +125,7 @@ class PointOfInterest(Activity):
     address: str = ""
     description: str = ""
     category: str = "other"
+    activities: list[Activity] = field(default_factory=list)
 
     @property
     def title(self) -> str:
@@ -144,17 +147,19 @@ class PointOfInterest(Activity):
             address=str(d.get("address", "")),
             description=str(d.get("description", "")),
             category=category,
+            activities=[_nested_activity(m, "point_of_interest")
+                        for m in d.get("activities", [])],
         )
 
 
 @dataclass
 class Place(Activity):
-    """A place (a town for instance) grouping several points of interest."""
+    """A place (a town for instance) grouping several nested activities."""
 
     kind = "place"
     name: str = ""
     description: str = ""
-    points_of_interest: list[PointOfInterest] = field(default_factory=list)
+    activities: list[Activity] = field(default_factory=list)
 
     @property
     def title(self) -> str:
@@ -164,24 +169,47 @@ class Place(Activity):
     def from_dict(cls, d: dict) -> "Place":
         if "name" not in d:
             raise ItineraryError("A 'place' activity needs a 'name'")
-        pois = d.get("points_of_interest", d.get("monuments", []))
         return cls(
             **_sched(d),
             name=str(d["name"]),
             description=str(d.get("description", "")),
-            points_of_interest=[_nested_poi(m) for m in pois],
+            activities=[_nested_activity(m, "place") for m in d.get("activities", [])],
         )
 
 
-def _nested_poi(entry) -> PointOfInterest:
-    """A place's point of interest may be a full object or a bare name string."""
-    if isinstance(entry, str):
-        return PointOfInterest(name=entry)
-    if isinstance(entry, dict):
-        return PointOfInterest.from_dict(entry)
-    raise ItineraryError(
-        "A place's point of interest must be an object or a name string"
-    )
+# Which activity types each container kind may nest under its ``activities``.
+# Nesting is only one level deep (enforced by the validator).
+NESTED_ACTIVITY_TYPES = {
+    "road": ("meal",),
+    "hike": ("meal",),
+    "place": ("point_of_interest", "hike", "meal"),
+    "point_of_interest": ("point_of_interest", "hike", "meal"),
+}
+
+
+def _or_list(values) -> str:
+    """'a', 'b', 'c' → \"'a', 'b' or 'c'\" (for a human-readable type list)."""
+    quoted = [f"'{v}'" for v in values]
+    if len(quoted) == 1:
+        return quoted[0]
+    return ", ".join(quoted[:-1]) + " or " + quoted[-1]
+
+
+def _nested_activity(entry, container_kind: str) -> Activity:
+    """A nested item inside a container (``road`` / ``hike`` / ``place`` /
+    ``point_of_interest``): an object whose ``type`` is one of the container's
+    allowed nested types."""
+    allowed = NESTED_ACTIVITY_TYPES[container_kind]
+    if not isinstance(entry, dict):
+        raise ItineraryError(
+            f"A nested activity must be an object with a 'type' of {_or_list(allowed)}"
+        )
+    kind = entry.get("type")
+    if kind not in allowed:
+        raise ItineraryError(
+            f"A nested activity 'type' must be {_or_list(allowed)} (got {kind!r})"
+        )
+    return _ACTIVITY_TYPES[kind].from_dict(entry)
 
 
 @dataclass
@@ -196,6 +224,7 @@ class Hike(Activity):
     start: str = ""
     end: str = ""
     route: str = "back_and_forth"  # "loop" or "back_and_forth"
+    activities: list[Activity] = field(default_factory=list)
 
     @property
     def title(self) -> str:
@@ -226,6 +255,7 @@ class Hike(Activity):
             start=str(d.get("start", "")),
             end=str(d.get("end", "")),
             route=_parse_route(d.get("route"), default="back_and_forth"),
+            activities=[_nested_activity(m, "hike") for m in d.get("activities", [])],
         )
 
 

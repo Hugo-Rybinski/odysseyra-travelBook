@@ -298,6 +298,8 @@ class DayMixin:
             return self.t("POINT")
         if act.kind == "place":
             return self.t("PLACE")
+        if act.kind == "meal":
+            return self.t("MEAL")
         return self.t("ROAD") if act.kind == "road" else self.t("HIKE")
 
     def _details_road(self, act, x: float, w: float) -> None:
@@ -307,6 +309,7 @@ class DayMixin:
         self._meta_line(x, w, parts)
         if act.off_road:
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
+        self._render_nested(x, w, act.activities)
 
     def _details_point_of_interest(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
@@ -315,19 +318,33 @@ class DayMixin:
         self._meta_line(x, w, parts)
         if act.description:
             self._para(x, w, act.description)
+        self._render_nested(x, w, act.activities)
 
     def _details_place(self, act, x: float, w: float) -> None:
         self._meta_line(x, w, [act.duration_display])
         if act.description:
             self._para(x, w, act.description)
-        if act.points_of_interest:
-            self.ln(1)
-            self.set_x(x)
-            self.set_font(FONT, "B", 8)
-            self.set_text_color(*self.accent)
-            self.cell(0, 5, self.t("POINTS OF INTEREST"), new_x="LMARGIN", new_y="NEXT")
-            for poi in act.points_of_interest:
-                self._nested_poi(x + 5, w - 5, poi)
+        self._render_nested(x, w, act.activities)
+
+    def _render_nested(self, x: float, w: float, activities) -> None:
+        """The nested activities grouped under a container, drawn as an indented
+        list under a small header — each row led by a compact type badge."""
+        if not activities:
+            return
+        self.ln(1)
+        self.set_x(x)
+        self.set_font(FONT, "B", 8)
+        self.set_text_color(*self.accent)
+        self.cell(0, 5, self.t("INCLUDES"), new_x="LMARGIN", new_y="NEXT")
+        # A single badge width across the group so every title lines up.
+        badge_w = max(self._nested_badge_width(self._badge_label(s)) for s in activities)
+        for sub in activities:
+            if sub.kind == "hike":
+                self._nested_hike(x + 5, w - 5, sub, badge_w)
+            elif sub.kind == "meal":
+                self._nested_meal(x + 5, w - 5, sub, badge_w)
+            else:
+                self._nested_poi(x + 5, w - 5, sub, badge_w)
 
     def _details_hike(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
@@ -341,24 +358,43 @@ class DayMixin:
             self._para(x, w, f"{act.start} → {act.end}")
         if act.description:
             self._para(x, w, act.description)
+        self._render_nested(x, w, act.activities)
 
-    def _nested_poi(self, x: float, w: float, poi) -> None:
+    def _nested_badge_width(self, label: str) -> float:
+        """The natural width of a nested type badge for ``label``."""
+        self.set_font(FONT, "B", 6)
+        return self.get_string_width(label) + 3
+
+    def _nested_badge(self, x: float, y: float, label: str, w: float) -> None:
+        """A compact type badge drawn inline before a nested item's title — a
+        smaller sibling of the gutter :meth:`_badge`, drawn at the fixed width
+        ``w`` so sibling badges align."""
+        bh = 4.4
+        if self.ink_saver:
+            self.set_draw_color(*self.accent)
+            self.set_line_width(0.3)
+            self.rect(x, y, w, bh, style="D")
+            text_col = self.accent
+        else:
+            self.set_fill_color(*self.accent)
+            self.rect(x, y, w, bh, style="F")
+            text_col = (255, 255, 255)
+        self.set_xy(x, y + 0.5)
+        self.set_font(FONT, "B", 6)
+        self.set_text_color(*text_col)
+        self.cell(w, 3.4, label, align="C")
+
+    def _nested_poi(self, x: float, w: float, poi, badge_w: float) -> None:
         top = self.get_y()
-        # Bullet marker in the accent color.
-        self.set_xy(x, top)
-        self.set_font(FONT, "B", 10)
-        self.set_text_color(*self.accent)
-        self.cell(4, 5, "•")
-
-        tx = x + 4
-        tw = w - 4
+        self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w)
+        tx = x + badge_w + 2
+        tw = w - badge_w - 2
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 10)
         self.set_text_color(*INK)
         self.multi_cell(tw, 5, poi.title)
 
-        category = self.t(poi.category) if poi.category != "other" else ""
-        parts = [p for p in (category, poi.duration_display, poi.address) if p]
+        parts = [p for p in (poi.duration_display, poi.address) if p]
         if parts:
             self.set_x(tx)
             self.set_font(FONT, "", 8.5)
@@ -369,6 +405,69 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(tw, 4.5, poi.description)
+        self.ln(1)
+
+    def _nested_hike(self, x: float, w: float, hike, badge_w: float) -> None:
+        top = self.get_y()
+        self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w)
+        tx = x + badge_w + 2
+        tw = w - badge_w - 2
+        self.set_xy(tx, top)
+        self.set_font(FONT, "B", 10)
+        self.set_text_color(*INK)
+        self.multi_cell(tw, 5, hike.title)
+
+        # The "HIKE" badge marks the type; then distance / elevation / route.
+        parts = []
+        if hike.distance_km is not None:
+            parts.append(f"{hike.distance_km:g} km")
+        if hike.elevation_m is not None:
+            parts.append(f"+{hike.elevation_m:g} m")
+        parts.append(self.t(hike.route_label))
+        if hike.duration_display:
+            parts.append(hike.duration_display)
+        self.set_x(tx)
+        self.set_font(FONT, "", 8.5)
+        self.set_text_color(*MUTED)
+        self.multi_cell(tw, 4.5, "  ·  ".join(p for p in parts if p))
+        if hike.name and hike.start and hike.end:
+            self.set_x(tx)
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*MUTED)
+            self.multi_cell(tw, 4.5, f"{hike.start} → {hike.end}")
+        if hike.description:
+            self.set_x(tx)
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*MUTED)
+            self.multi_cell(tw, 4.5, hike.description)
+        self.ln(1)
+
+    def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:
+        top = self.get_y()
+        self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w)
+        tx = x + badge_w + 2
+        tw = w - badge_w - 2
+        label = self.t(meal.type).capitalize()
+        if meal.restaurant:
+            head = self.t("{meal} at {restaurant}").format(
+                meal=label, restaurant=meal.restaurant)
+        elif meal.area:
+            head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
+        else:
+            head = label
+        # Accent-colored, bold head — echoing the non-nested meal row (see
+        # ``_meal``) rather than the INK title used for nested POIs / hikes.
+        self.set_xy(tx, top)
+        self.set_font(FONT, "B", 9.5)
+        self.set_text_color(*self.accent)
+        self.multi_cell(tw, 5, head)
+
+        parts = [p for p in (meal.duration_display, meal.address) if p]
+        if parts:
+            self.set_x(tx)
+            self.set_font(FONT, "", 8.5)
+            self.set_text_color(*MUTED)
+            self.multi_cell(tw, 4.5, "  ·  ".join(parts))
         self.ln(1)
 
 

@@ -56,15 +56,33 @@
           "start_time": "13:30",
           "duration": "1h30",
           "description": "Wander the streets around the château fort. The explicit start leaves a gap after lunch, shown as a buffer.",
-          "points_of_interest": [
+          "activities": [
             {
+              "type": "point_of_interest",
               "name": "Château fort de Lourdes",
               "category": "castle",
               "address": "25 Rue du Fort, Lourdes",
               "duration": "45 min",
               "description": "Medieval fortress housing the Pyrenean museum, with sweeping valley views."
             },
-            "Pont Vieux"
+            {
+              "type": "point_of_interest",
+              "name": "Pont Vieux"
+            },
+            {
+              "type": "hike",
+              "name": "Chemin de la Forêt loop",
+              "distance_km": 3.5,
+              "elevation_m": 120,
+              "route": "loop",
+              "description": "A short wooded loop climbing to a viewpoint over the château."
+            },
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "restaurant": "Salon de thé du Fort",
+              "address": "Rue du Bourg, Lourdes"
+            }
           ]
         }
       ]
@@ -82,7 +100,15 @@
           "distance_km": 52,
           "start_time": "08:00",
           "duration": "1h20",
-          "off_road": true
+          "off_road": true,
+          "activities": [
+            {
+              "type": "meal",
+              "meal_type": "breakfast",
+              "restaurant": "Café de Gèdre",
+              "address": "Gèdre village"
+            }
+          ]
         },
         {
           "type": "hike",
@@ -91,7 +117,35 @@
           "distance_km": 13,
           "elevation_m": 550,
           "duration": "4h30",
-          "route": "back_and_forth"
+          "route": "back_and_forth",
+          "activities": [
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "area": "the Grande Cascade viewpoint"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Grande Cascade de Gavarnie",
+          "category": "waterfall",
+          "description": "Europe's tallest waterfall, tumbling 422 m off the cirque wall.",
+          "duration": "0h30",
+          "activities": [
+            {
+              "type": "hike",
+              "name": "Cascade viewpoint spur",
+              "distance_km": 1.2,
+              "elevation_m": 80,
+              "route": "back_and_forth"
+            },
+            {
+              "type": "meal",
+              "meal_type": "picnic",
+              "area": "the cascade base"
+            }
+          ]
         },
         {
           "type": "meal",

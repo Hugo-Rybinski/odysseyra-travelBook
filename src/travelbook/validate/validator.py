@@ -6,6 +6,7 @@ from datetime import datetime, time, timedelta
 
 from ..lang import DEFAULT_LANGUAGE, tr
 from ..models import (
+    NESTED_ACTIVITY_TYPES,
     Itinerary,
     ItineraryError,
     _parse_date,
@@ -254,17 +255,39 @@ class _Validator:
         if kind == "meal" and act.get("restaurant") and act.get("area"):
             self.add("warning", path, "both 'restaurant' and 'area' are set — "
                      "'area' is ignored when a restaurant is named.")
-        if kind == "place":
-            pois = act.get("points_of_interest", act.get("monuments", []))
-            for k, poi in enumerate(pois or []):
-                if isinstance(poi, str):
-                    continue
-                if not isinstance(poi, dict):
-                    self.add("error", path + ("points_of_interest", k),
-                             "a point of interest must be an object or a name string")
-                    continue
-                self.check_object(poi, path + ("points_of_interest", k),
-                                  ACTIVITY_SPECS["point_of_interest"], skip_optional=True)
+        if kind in NESTED_ACTIVITY_TYPES:
+            self._nested_activities(act, kind, path)
+
+    def _nested_activities(self, act, container_kind, path):
+        """Validate the ``activities`` nested under a container (road / hike /
+        place / point of interest). Each entry must be an object whose ``type``
+        is one of the container's allowed nested types, and nesting is only one
+        level deep — a nested activity must not carry activities of its own."""
+        nested = act.get("activities")
+        if not isinstance(nested, list):
+            return
+        allowed = ", ".join(NESTED_ACTIVITY_TYPES[container_kind])
+        for k, sub in enumerate(nested):
+            spath = path + ("activities", k)
+            if not isinstance(sub, dict):
+                self.add("error", spath, "a nested activity must be an object with "
+                         "a 'type' of one of: {allowed}.", allowed=allowed)
+                continue
+            kind = sub.get("type")
+            if kind not in NESTED_ACTIVITY_TYPES[container_kind]:
+                self.add("error", spath + ("type",) if "type" in sub else spath,
+                         "a nested activity 'type' must be one of: {allowed} "
+                         "(got {kind}).", allowed=allowed, kind=repr(kind))
+                continue
+            self.check_object(sub, spath, ACTIVITY_SPECS[kind], skip_optional=True)
+            if kind == "hike":
+                self._hike_route_endpoints(sub, spath)
+            if kind == "meal" and sub.get("restaurant") and sub.get("area"):
+                self.add("warning", spath, "both 'restaurant' and 'area' are set — "
+                         "'area' is ignored when a restaurant is named.")
+            if sub.get("activities"):
+                self.add("error", spath, "a nested activity can't contain its own "
+                         "nested activities — nesting is only one level deep.")
 
     def _transport(self, t, path):
         if not isinstance(t, dict):

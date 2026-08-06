@@ -217,23 +217,33 @@ A tz label is only shown in the PDF when it differs from `default.timezone`.
 | `end` | ✅ | Arrival address | string | any text | — |
 | `distance_km` |  | Driving distance | number | positive number | none |
 | `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
+| `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
 #### `point_of_interest` — a specific place
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Point-of-interest name | string | any text | — |
-| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `other` | `"other"` |
+| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `lake` \| `beach` \| `waterfall` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
+| `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
-#### `place` — a place (a town, say) grouping several points of interest
+#### `place` — a place (a town, say) grouping several nested activities
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Place name | string | any text | — |
 | `description` |  | Description | string | any text | `""` |
-| `points_of_interest` |  | Points of interest grouped here | array | `point_of_interest` objects (minus `type`) or name strings | `[]` |
+| `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
+
+`road`, `hike`, `place` and `point_of_interest` may each carry an `activities`
+array of nested activities. Every entry must be an object with an explicit
+`type`, and the allowed types depend on the container: `place` and
+`point_of_interest` accept `point_of_interest`, `hike` or `meal`; `road` and
+`hike` accept `meal` only. A missing or disallowed `type` is an error. Nesting is
+only **one level deep** — a nested activity that carries its own `activities` is
+a validation error.
 
 #### `hike`
 
@@ -246,6 +256,7 @@ A tz label is only shown in the PDF when it differs from `default.timezone`.
 | `start` |  | Trailhead address | string | any text | `""` |
 | `end` |  | End address | string | any text | `""` |
 | `route` |  | Route shape | string | `loop` \| `back_and_forth` \| `one_way` | `"back_and_forth"` |
+| `activities` |  | Nested meals (a stop along the hike) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
 For a `loop` / `back_and_forth` hike, `end` should equal `start` (or be omitted)
 — validation warns otherwise; for a `one_way` hike, `end` should differ from
