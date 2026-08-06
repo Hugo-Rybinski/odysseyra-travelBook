@@ -11,10 +11,12 @@ The model is split across submodules:
 
 from .accommodation import ACCOMMODATION_TYPES, Accommodation
 from .activities import (
+    MEAL_TYPES,
     POI_CATEGORIES,
     Activity,
     Buffer,
     Hike,
+    Meal,
     Place,
     PointOfInterest,
     Road,
@@ -45,6 +47,8 @@ __all__ = [
     "Hike",
     "Itinerary",
     "ItineraryError",
+    "Meal",
+    "MEAL_TYPES",
     "Place",
     "POI_CATEGORIES",
     "PointOfInterest",

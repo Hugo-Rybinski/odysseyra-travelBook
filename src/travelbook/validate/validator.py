@@ -241,6 +241,9 @@ class _Validator:
                          "suppresses the trip's default buffer here and draws no line.")
         if kind == "hike":
             self._hike_route_endpoints(act, path)
+        if kind == "meal" and act.get("restaurant") and act.get("area"):
+            self.add("warning", path, "both 'restaurant' and 'area' are set — "
+                     "'area' is ignored when a restaurant is named.")
         if kind == "place":
             pois = act.get("points_of_interest", act.get("monuments", []))
             for k, poi in enumerate(pois or []):

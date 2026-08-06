@@ -1,5 +1,5 @@
-"""Activity types (road / point_of_interest / place / hike / buffer) and the
-day-scheduling pass."""
+"""Activity types (road / point_of_interest / place / hike / meal / buffer) and
+the day-scheduling pass."""
 
 from __future__ import annotations
 
@@ -229,7 +229,81 @@ class Hike(Activity):
         )
 
 
-_ACTIVITY_TYPES = {c.kind: c for c in (Road, PointOfInterest, Place, Hike, Buffer)}
+# Valid ``meal_type`` values. Only the first three are ever inferred from the
+# start time; the rest (brunch/snack/picnic/meal) must be set explicitly.
+MEAL_TYPES = ("breakfast", "lunch", "dinner", "brunch", "snack", "picnic", "meal")
+
+# Default thresholds for inferring a meal's type from its start time: a meal
+# starting before ``BREAKFAST_UNTIL`` is breakfast, up to and including
+# ``LUNCH_UNTIL`` is lunch, and after that dinner. Overridable per trip via
+# ``default.breakfast_until`` / ``default.lunch_until``.
+DEFAULT_BREAKFAST_UNTIL = time(10, 0)
+DEFAULT_LUNCH_UNTIL = time(16, 0)
+
+
+@dataclass
+class Meal(Activity):
+    """A meal — breakfast, lunch or dinner — optionally at a named restaurant.
+
+    Scheduled like any other activity (give any two of start_time / end_time /
+    duration); the restaurant name and address are both optional. ``meal_type``
+    may be given explicitly, otherwise it is inferred from the start time using
+    the ``breakfast_until`` / ``lunch_until`` thresholds (defaulting to 10:00
+    and 16:00, but set per trip from the ``default`` object).
+    """
+
+    kind = "meal"
+    restaurant: str = ""
+    address: str = ""
+    area: str = ""  # town/region to eat in; used when no restaurant is named
+    meal_type: str = ""  # explicit override; "" → infer from the start time
+    breakfast_until: time = DEFAULT_BREAKFAST_UNTIL
+    lunch_until: time = DEFAULT_LUNCH_UNTIL
+
+    @property
+    def type(self) -> str:
+        """The meal type — the explicit ``meal_type`` if set, else inferred from
+        the (possibly inferred) start time; falls back to lunch with no time."""
+        if self.meal_type:
+            return self.meal_type
+        t = self.start_time
+        if t is None:
+            return "lunch"
+        if t < self.breakfast_until:
+            return "breakfast"
+        if t <= self.lunch_until:
+            return "lunch"
+        return "dinner"
+
+    @property
+    def title(self) -> str:
+        label = self.type.capitalize()
+        if self.restaurant:
+            return f"{label} at {self.restaurant}"
+        if self.area:
+            return f"{label} near {self.area}"
+        return label
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Meal":
+        meal_type = str(d.get("meal_type", "")).strip().lower()
+        if meal_type and meal_type not in MEAL_TYPES:
+            raise ItineraryError(
+                "meal meal_type must be one of: "
+                f"{', '.join(MEAL_TYPES)} (got {d.get('meal_type')!r})"
+            )
+        return cls(
+            **_sched(d),
+            restaurant=str(d.get("restaurant", "")),
+            address=str(d.get("address", "")),
+            area=str(d.get("area", "")),
+            meal_type=meal_type,
+        )
+
+
+_ACTIVITY_TYPES = {
+    c.kind: c for c in (Road, PointOfInterest, Place, Hike, Meal, Buffer)
+}
 
 
 def activity_from_dict(data: dict) -> Activity:

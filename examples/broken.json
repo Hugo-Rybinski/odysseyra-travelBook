@@ -24,7 +24,8 @@
         { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h" },
         { "type": "spaceship", "start": "A", "end": "B" },
         { "type": "hike", "route": "zigzag", "duration": "0 min" },
-        { "type": "buffer", "duration": "0 min" }
+        { "type": "buffer", "duration": "0 min" },
+        { "type": "meal", "meal_type": "feast", "restaurant": "Chez Moon", "area": "Mars Base" }
       ]
     },
     {

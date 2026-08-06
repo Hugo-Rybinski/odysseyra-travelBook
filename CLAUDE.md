@@ -43,9 +43,9 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **`models/`** — the data model, built from JSON via `from_dict` classmethods.
   - `parsers.py` — scalar parsers (`_parse_date/_time/_duration/_tz/_paid/_route`,
     formatters) and `ItineraryError` (raised on any invalid data).
-  - `activities.py` — `Activity` base + the 5 activity types (`road`,
-    `point_of_interest`, `place`, `hike`, `buffer`), `activity_from_dict`, and
-    `schedule_activities` (the day timeline pass).
+  - `activities.py` — `Activity` base + the 6 activity types (`road`,
+    `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
+    and `schedule_activities` (the day timeline pass).
   - `transport.py` — `Transport` + `resolve_transport` (tz-aware time inference).
   - `accommodation.py` — `Accommodation`.
   - `itinerary.py` — `Day` and `Itinerary` (top-level `from_dict`, date inference).
@@ -70,7 +70,8 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `default` (`start_time` 08:00,
-  `end_time`, `buffer`, `timezone` GMT) — plus content arrays `days` (required,
+  `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
+  `lunch_until` 16:00, and `meal_duration` 0) — plus content arrays `days` (required,
   non-empty), `transport`, `accommodations`. The older flat layout still parses.
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
@@ -87,7 +88,11 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   `other`); hike `route` (loop/back_and_forth/one_way, default back_and_forth);
   transport `type` (plane/train/bus/taxi/other, default other); accommodation
   `type` (hotel/camping/b&b/other, default hotel); `status` (booked/confirmed);
-  `paid`/`paid_online`.
+  `paid`/`paid_online`. Meal `meal_type` (breakfast/lunch/dinner/brunch/snack/
+  picnic/meal) is optional; when omitted it is inferred from the start time, but
+  only ever as breakfast/lunch/dinner (the other four are explicit-only). The
+  inference thresholds and a default meal duration live in `default`
+  (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
 - **Validation has three levels**, filtered by `--verbose`: ❌ errors (missing
   required, invalid value, incoherence), ⚠️ warnings (soft inconsistencies:
   nowhere-to-sleep, city mismatch, hike route/endpoints, ends-after-`end_time`…),
@@ -110,9 +115,19 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it
   with `UPDATE_SNAPSHOTS=1 pytest`.
+- **Re-render the example PDFs after every code change.** The rendered PDFs are
+  the primary way changes get reviewed, so keep them current — they are
+  gitignored (`*.pdf`) and untracked, so nothing else updates them. Rebuild all
+  three:
+  ```bash
+  .venv/bin/travelbook build examples/pyrenees.json -o examples/pyrenees.pdf
+  .venv/bin/travelbook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
+  .venv/bin/travelbook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf
+  ```
+  (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
 - When adding/renaming a field or message, update: the model `from_dict`, the
   validator `specs.py` (+ any coherence check), the PDF renderer, both example
-  JSONs, the README tables, the French `translations.py`, and regenerate the
-  snapshot.
+  JSONs, the README tables, the French `translations.py`, regenerate the
+  snapshot, and re-render the example PDFs.
 - `README.md` documents the JSON schema field-by-field (one table per object,
   with Required/Type/Format/Default) — keep it authoritative.

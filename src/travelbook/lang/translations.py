@@ -23,6 +23,16 @@ _FR = {
     "OVERNIGHT": "DE NUIT",
     "POINTS OF INTEREST": "POINTS D'INTÉRÊT",
     "buffer": "pause",
+    # meal types (from Meal.type) and the meal row head
+    "breakfast": "petit-déjeuner",
+    "lunch": "déjeuner",
+    "dinner": "dîner",
+    "brunch": "brunch",
+    "snack": "collation",
+    "picnic": "pique-nique",
+    "meal": "repas",
+    "{meal} at {restaurant}": "{meal} chez {restaurant}",
+    "{meal} near {area}": "{meal} près de {area}",
     # route labels (from Hike.route_label)
     "Loop": "Boucle",
     "Back and forth": "Aller-retour",
@@ -113,6 +123,10 @@ _FR = {
     "a 'one_way' hike should have an 'end' that differs from its 'start'.":
         "une randonnée « one_way » devrait avoir un « end » différent de son "
         "« start ».",
+    "both 'restaurant' and 'area' are set — 'area' is ignored when a restaurant "
+    "is named.":
+        "« restaurant » et « area » sont tous deux définis — « area » est ignoré "
+        "lorsqu'un restaurant est nommé.",
     "a point of interest must be an object or a name string":
         "un point d'intérêt doit être un objet ou une chaîne de caractères",
     "each transport must be an object": "chaque transport doit être un objet",
@@ -225,6 +239,13 @@ _FR = {
         "une pause insérée entre deux activités consécutives",
     "the default UTC offset for all times":
         "le décalage UTC par défaut pour toutes les heures",
+    "meals starting before this are categorized as breakfast":
+        "les repas commençant avant cette heure sont classés petit-déjeuner",
+    "meals starting up to this (after breakfast) are lunch, later ones dinner":
+        "les repas jusqu'à cette heure (après le petit-déjeuner) sont le "
+        "déjeuner, les suivants le dîner",
+    "the default length of a meal that gives no duration or end time":
+        "la durée par défaut d'un repas sans durée ni heure de fin",
     "the clock time the activity starts": "l'heure de début de l'activité",
     "the clock time the activity ends": "l'heure de fin de l'activité",
     "how long the activity lasts": "la durée de l'activité",
@@ -254,6 +275,10 @@ _FR = {
     "the trailhead address": "l'adresse du départ de rando",
     "the end address": "l'adresse d'arrivée",
     "the route shape": "la forme de l'itinéraire",
+    "which meal it is": "de quel repas il s'agit",
+    "the restaurant name": "le nom du restaurant",
+    "the town/region to eat in (used when no restaurant is named)":
+        "la ville/région où manger (utilisée si aucun restaurant n'est nommé)",
     "the length of the free time": "la durée du temps libre",
     "the transport type (plane/train/bus…)":
         "le type de transport (avion/train/bus…)",
@@ -288,6 +313,7 @@ _FR = {
     "a duration like '1h30' or '45 min'": "une durée comme « 1h30 » ou « 45 min »",
     "a duration like '30 min'": "une durée comme « 30 min »",
     "a duration like '4h20'": "une durée comme « 4h20 »",
+    "a duration like '1h'": "une durée comme « 1h »",
     "an offset like '+02:00', 'UTC-3' or 'Z'":
         "un décalage comme « +02:00 », « UTC-3 » ou « Z »",
     "a UTC offset like '+02:00'": "un décalage UTC comme « +02:00 »",
@@ -311,6 +337,9 @@ _FR = {
     "none (no end-of-day check)": "aucune (pas de contrôle de fin de journée)",
     "0 (no buffer)": "0 (aucune pause)",
     "GMT (UTC+0)": "GMT (UTC+0)",
+    '"10:00"': "« 10:00 »",
+    '"16:00"': "« 16:00 »",
+    "0 (instant)": "0 (instantané)",
     "the previous activity's end, or the day's default start":
         "la fin de l'activité précédente, ou le début par défaut du jour",
     "start_time + duration": "start_time + duration",
@@ -347,6 +376,9 @@ _FR = {
     "one of: plane, train, bus, taxi, other":
         "l'un de : plane, train, bus, taxi, other",
     "one of: hotel, camping, b&b, other": "l'un de : hotel, camping, b&b, other",
+    "one of: breakfast, lunch, dinner, brunch, snack, picnic, meal":
+        "l'un de : breakfast, lunch, dinner, brunch, snack, picnic, meal",
+    "inferred from the start time": "déduit de l'heure de début",
     '"hotel"': "« hotel »",
     # transport type badge words (uppercased for the badge)
     "plane": "avion",

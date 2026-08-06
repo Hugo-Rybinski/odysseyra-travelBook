@@ -169,6 +169,9 @@ override and validation cross-checks the itinerary against them.
 | `end_time` |  | Latest an activity should end (validation warns past it) | string | `HH:MM` | none (no check) |
 | `buffer` |  | Buffer auto-inserted between consecutive activities | string | duration | `0` (no buffer) |
 | `timezone` |  | Default UTC offset for all times | string | offset (`+02:00`, `UTC-3`, `Z`) | `GMT` (UTC+0) |
+| `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
+| `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
+| `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
 
 ### `days[]` — a day
 
@@ -191,7 +194,7 @@ starts at `default.start_time`, each next one at the previous item's end.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
-| `type` | ✅ | The activity kind | string | `road` \| `point_of_interest` \| `place` \| `hike` \| `buffer` | — |
+| `type` | ✅ | The activity kind | string | `road` \| `point_of_interest` \| `place` \| `hike` \| `meal` \| `buffer` | — |
 | `start_time` |  | Clock time it starts | string | `HH:MM` | previous item's end, else `default.start_time` |
 | `end_time` |  | Clock time it ends | string | `HH:MM` | `start_time` + `duration` |
 | `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`, else 0 |
@@ -241,6 +244,35 @@ A tz label is only shown in the PDF when it differs from `default.timezone`.
 For a `loop` / `back_and_forth` hike, `end` should equal `start` (or be omitted)
 — validation warns otherwise; for a `one_way` hike, `end` should differ from
 `start` — validation warns if it's missing or the same.
+
+#### `meal` — a stop to eat
+
+A meal is scheduled like any other activity (the shared `start_time` /
+`end_time` / `duration` fields above) but rendered compactly, like a slightly
+accented buffer row rather than a full card — e.g. **Lunch at Le Magret**. A
+named restaurant is also listed in the cover overview's highlights.
+
+`meal_type` is optional. If omitted it is inferred from the start time —
+**breakfast** before `default.breakfast_until` (10:00), **lunch** up to
+`default.lunch_until` (16:00), **dinner** after (lunch when there's no start
+time at all). Those two thresholds are configurable per trip in the `default`
+object. `brunch`, `snack`, `picnic` and `meal` are also valid but are **never
+inferred** — set them explicitly.
+
+If a meal gives no `duration`/`end_time`, it uses `default.meal_duration` (0 —
+instant — unless you set one).
+
+The head shows the restaurant when named (**Lunch at Le Magret**); otherwise it
+falls back to `area` (**Lunch near Lourdes**), or just the meal type. Setting
+both `restaurant` and `area` triggers a validation warning — `area` is ignored
+when a restaurant is named.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `meal_type` |  | Which meal it is | string | `breakfast` \| `lunch` \| `dinner` \| `brunch` \| `snack` \| `picnic` \| `meal` (last four explicit-only) | inferred from `start_time` |
+| `restaurant` |  | Restaurant name | string | any text | `""` |
+| `area` |  | Town/region to eat in (used when no `restaurant` is named) | string | any text | `""` |
+| `address` |  | Address | string | any text | `""` |
 
 #### `buffer` — free time between activities
 

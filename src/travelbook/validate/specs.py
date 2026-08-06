@@ -74,6 +74,7 @@ def V_STATUS(value):
 
 from ..models import (  # noqa: E402
     ACCOMMODATION_TYPES,
+    MEAL_TYPES,
     POI_CATEGORIES,
     TRANSPORT_TYPES,
 )
@@ -90,6 +91,7 @@ def _enum_check(values):
 V_CATEGORY = _enum_check(POI_CATEGORIES)
 V_TTYPE = _enum_check(TRANSPORT_TYPES)
 V_ATYPE = _enum_check(ACCOMMODATION_TYPES)
+V_MEAL = _enum_check(MEAL_TYPES)
 
 
 def V_HEX(value):
@@ -123,6 +125,15 @@ DEFAULTS = [
          "a duration like '15 min'", "0 (no buffer)", V_DUR),
     Spec("timezone", False, "the default UTC offset for all times",
          "an offset like '+02:00', 'UTC-3' or 'Z'", "GMT (UTC+0)", V_TZ),
+    Spec("breakfast_until", False,
+         "meals starting before this are categorized as breakfast",
+         "a time HH:MM", '"10:00"', V_TIME),
+    Spec("lunch_until", False,
+         "meals starting up to this (after breakfast) are lunch, later ones dinner",
+         "a time HH:MM", '"16:00"', V_TIME),
+    Spec("meal_duration", False,
+         "the default length of a meal that gives no duration or end time",
+         "a duration like '1h'", "0 (instant)", V_DUR),
 ]
 
 # Activity scheduling fields (shared by every non-buffer activity)
@@ -173,6 +184,15 @@ ACTIVITY_SPECS = {
         Spec("end", False, "the end address", "any text", '""'),
         Spec("route", False, "the route shape",
              "'loop', 'back_and_forth' or 'one_way'", '"back_and_forth"', V_ROUTE),
+    ],
+    "meal": [
+        Spec("meal_type", False, "which meal it is",
+             "one of: " + ", ".join(MEAL_TYPES), "inferred from the start time",
+             V_MEAL),
+        Spec("restaurant", False, "the restaurant name", "any text", '""'),
+        Spec("area", False, "the town/region to eat in (used when no restaurant "
+             "is named)", "any text", '""'),
+        Spec("address", False, "the address", "any text", '""'),
     ],
     "buffer": [
         Spec("duration", True, "the length of the free time",

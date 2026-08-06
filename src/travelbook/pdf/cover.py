@@ -76,6 +76,8 @@ class CoverMixin:
         for item in self._day_items(day):
             if item.kind in ("point_of_interest", "place", "hike"):
                 titles.append(item.title)
+            elif item.kind == "meal" and (item.restaurant or item.area):
+                titles.append(item.restaurant or item.area)
             elif item.kind == "transport":
                 ty = self.t(item.type).title() if item.type else ""
                 titles.append(f"{ty} {item.title}".strip())

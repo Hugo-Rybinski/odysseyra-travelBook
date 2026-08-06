@@ -28,6 +28,8 @@ class DayMixin:
             for item in items:
                 if item.kind == "buffer":
                     self._buffer(item)
+                elif item.kind == "meal":
+                    self._meal(item)
                 elif item.kind == "transport":
                     self._transport_row(item)
                 else:
@@ -140,6 +142,41 @@ class DayMixin:
         self.set_text_color(*MUTED)
         label = buf.duration_display or "—"
         self.cell(0, 5, f"{self.t('buffer')}  ·  {label}", new_x="LMARGIN", new_y="NEXT")
+        self.ln(1.5)
+
+    def _meal(self, meal) -> None:
+        """A meal — laid out like a buffer (a compact inline row, no card) but
+        accented: the accent color, a bold '<meal type> at <restaurant>' head,
+        the start time in the gutter, and a muted duration/address line. The
+        meal type is explicit or inferred from the start time."""
+        top = self.get_y()
+        x = self.l_margin + self.GUTTER
+        gw = self.GUTTER - 5
+        if meal.start_time is not None:
+            self.set_xy(self.l_margin, top)
+            self.set_font(FONT, "B", 8)
+            self.set_text_color(*self.accent)
+            self.cell(gw, 5, f"{meal.start_time:%H:%M}", align="C")
+
+        label = self.t(meal.type).capitalize()
+        if meal.restaurant:
+            head = self.t("{meal} at {restaurant}").format(
+                meal=label, restaurant=meal.restaurant)
+        elif meal.area:
+            head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
+        else:
+            head = label
+        self.set_xy(x, top)
+        self.set_font(FONT, "B", 9.5)
+        self.set_text_color(*self.accent)
+        self.cell(0, 5, head, new_x="LMARGIN", new_y="NEXT")
+
+        meta = "  ·  ".join(p for p in (meal.duration_display, meal.address) if p)
+        if meta:
+            self.set_x(x)
+            self.set_font(FONT, "", 8.5)
+            self.set_text_color(*MUTED)
+            self.cell(0, 4.5, meta, new_x="LMARGIN", new_y="NEXT")
         self.ln(1.5)
 
     def _transport_row(self, t) -> None:

@@ -50,6 +50,9 @@ class Itinerary:
     default_end_time: time | None = None
     default_buffer_min: int = 0
     default_timezone: int = 0  # GMT / UTC+0
+    default_meal_breakfast_until: time = time(10, 0)
+    default_meal_lunch_until: time = time(16, 0)
+    default_meal_duration_min: int = 0
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -81,6 +84,9 @@ class Itinerary:
         default_tz = _parse_tz(defaults.get("timezone", data.get("timezone")))
         if default_tz is None:
             default_tz = 0  # GMT / UTC+0
+        breakfast_until = _parse_time(defaults.get("breakfast_until")) or time(10, 0)
+        lunch_until = _parse_time(defaults.get("lunch_until")) or time(16, 0)
+        meal_duration = _parse_duration(defaults.get("meal_duration")) or 0
         transport_data = data.get("transport", data.get("transports", []))
         itinerary = cls(
             title=str(desc["title"]),
@@ -91,6 +97,9 @@ class Itinerary:
             default_end_time=default_end,
             default_buffer_min=default_buffer,
             default_timezone=default_tz,
+            default_meal_breakfast_until=breakfast_until,
+            default_meal_lunch_until=lunch_until,
+            default_meal_duration_min=meal_duration,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],
@@ -103,6 +112,12 @@ class Itinerary:
             resolve_transport(transport, default_tz)
         itinerary._infer_dates()
         for day in itinerary.days:
+            for act in day.activities:
+                if act.kind == "meal":
+                    act.breakfast_until = breakfast_until
+                    act.lunch_until = lunch_until
+                    if act.duration_min is None and act.end_time is None:
+                        act.duration_min = meal_duration
             day.activities = schedule_activities(
                 day.activities, default_start, default_buffer
             )

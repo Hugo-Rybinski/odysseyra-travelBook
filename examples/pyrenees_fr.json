@@ -9,7 +9,8 @@
     "start_time": "09:00",
     "end_time": "19:00",
     "buffer": "15 min",
-    "timezone": "+02:00"
+    "timezone": "+02:00",
+    "meal_duration": "1h"
   },
   "days": [
     {
@@ -42,6 +43,12 @@
           "address": "1 Av. Mgr Théas, Lourdes",
           "end_time": "12:30",
           "description": "L'un des lieux de pèlerinage les plus visités au monde, au bord du Gave de Pau. Se termine à midi — la durée est déduite de l'heure de fin."
+        },
+        {
+          "type": "meal",
+          "restaurant": "Le Magret",
+          "address": "10 Rue de la Grotte, Lourdes",
+          "start_time": "12:30"
         },
         {
           "type": "place",
@@ -86,6 +93,11 @@
           "duration": "4h30",
           "route": "back_and_forth",
           "description": "Montée douce le long du gave jusqu'à la grande cascade, retour par le même sentier."
+        },
+        {
+          "type": "meal",
+          "meal_type": "picnic",
+          "area": "Gavarnie"
         }
       ]
     },
