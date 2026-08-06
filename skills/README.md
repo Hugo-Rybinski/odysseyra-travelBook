@@ -29,13 +29,13 @@ website, a hand-written plan — into the small JSON files that
 | Source material | Skill | File(s) to write |
 |---|---|---|
 | Trip name / theme / summary | [travel_description.md](travel_description.md) | `<ROOT>/travel_description.json` |
-| Global defaults (start time, timezone…) | [default.md](default.md) | `<ROOT>/default.json` |
+| Global defaults (start time, timezone…) | [defaults.md](defaults.md) | `<ROOT>/defaults.json` |
 | A day's plan (what you do, in order) | [days.md](days.md) | `<ROOT>/days/day-<INDEX>.json` |
-| A flight / train / bus / taxi booking | [transports.md](transports.md) | `<ROOT>/transports/transport-<INDEX>.json` |
+| A flight / train / bus / taxi / ferry booking | [transports.md](transports.md) | `<ROOT>/transports/transport-<INDEX>.json` |
 | A hotel / lodging booking | [accommodations.md](accommodations.md) | `<ROOT>/accommodations/accommodation-<INDEX>.json` |
 | A rental-car booking | [car-rentals.md](car-rentals.md) | `<ROOT>/car-rentals/car-rental-<INDEX>.json` |
 
-`travel_description.json` and `default.json` are **single files**. The four
+`travel_description.json` and `defaults.json` are **single files**. The four
 folders hold **one entry per file**; the files are read in **filename order**,
 so use a zero-padded, increasing `<INDEX>` (`day-01.json`, `day-02.json`, …).
 For `days/` the file order **is** the day order — number them along the trip.

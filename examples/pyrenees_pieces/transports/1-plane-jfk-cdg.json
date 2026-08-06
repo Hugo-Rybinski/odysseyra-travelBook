@@ -8,6 +8,7 @@
   "start_tz": "-04:00",
   "end_time": "11:45",
   "end_tz": "+02:00",
+  "flight_number": "AF9",
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
   "status": "confirmed",

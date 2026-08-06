@@ -9,6 +9,7 @@ from ..models import (
     NESTED_ACTIVITY_TYPES,
     Itinerary,
     ItineraryError,
+    _format_duration,
     _parse_date,
     _parse_duration,
     _parse_route,
@@ -76,6 +77,16 @@ def _span(obj):
     if e <= s:
         e += 1440
     return (s, e)
+
+
+def _obj_minutes(obj):
+    """An activity's length in minutes from explicit fields (a `duration`, or a
+    start/end span), or None when it can't be determined."""
+    d = _dur(obj.get("duration"))
+    if d is not None:
+        return d
+    sp = _span(obj)
+    return (sp[1] - sp[0]) if sp else None
 
 
 def _acc_nights(a):
@@ -167,8 +178,9 @@ class _Validator:
         td_obj = td if isinstance(td, dict) else data
         self.check_object(td_obj, td_path, TRAVEL_DESCRIPTION)
 
-        df = data.get("default")
-        df_path = ("default",) if isinstance(df, dict) else ()
+        df_key = "defaults" if "defaults" in data else "default"
+        df = data.get(df_key)
+        df_path = (df_key,) if isinstance(df, dict) else ()
         df_obj = df if isinstance(df, dict) else {}
         self.check_object(df_obj, df_path or (), DEFAULTS)
 
@@ -257,6 +269,30 @@ class _Validator:
                      "'area' is ignored when a restaurant is named.")
         if kind in NESTED_ACTIVITY_TYPES:
             self._nested_activities(act, kind, path)
+            self._nested_duration_fit(act, path)
+
+    def _nested_duration_fit(self, act, path):
+        """Warn when the nested activities' total (explicit) length exceeds the
+        container's own duration — they can't all fit inside it."""
+        nested = act.get("activities")
+        if not isinstance(nested, list) or not nested:
+            return
+        parent = _obj_minutes(act)
+        if parent is None:
+            return
+        total, known = 0, False
+        for sub in nested:
+            if not isinstance(sub, dict):
+                continue
+            m = _obj_minutes(sub)
+            if m is not None:
+                total += m
+                known = True
+        if known and total > parent:
+            self.add("warning", path, "the nested activities last {total} in total, "
+                     "longer than this activity's {parent} — they can't all fit "
+                     "inside it.", total=_format_duration(total),
+                     parent=_format_duration(parent))
 
     def _nested_activities(self, act, container_kind, path):
         """Validate the ``activities`` nested under a container (road / hike /
@@ -300,6 +336,13 @@ class _Validator:
         if sd and ed and ed < sd:
             self.add("error", path, "transport end_date ({ed}) is before "
                      "start_date ({sd}).", ed=ed, sd=sd)
+        ttype = str(t.get("type", "")).strip().lower()
+        if t.get("flight_number") and ttype and ttype != "plane":
+            self.add("warning", path, "'flight_number' is set but the transport "
+                     "type is '{type}', not 'plane'.", type=ttype)
+        if t.get("train_number") and ttype and ttype != "train":
+            self.add("warning", path, "'train_number' is set but the transport "
+                     "type is '{type}', not 'train'.", type=ttype)
         if t.get("status") and not t.get("booking_number"):
             self.add("warning", path, "'status' is set but 'booking_number' is "
                      "missing — a confirmed/booked leg usually has a reference.")
@@ -320,8 +363,13 @@ class _Validator:
             self.add("warning", path, "'paid_online' is true but 'price' is "
                      "missing — marked paid without an amount.")
 
+    def _defaults(self):
+        """The trip-wide defaults object ("defaults", legacy alias "default")."""
+        df = self.data.get("defaults", self.data.get("default"))
+        return df if isinstance(df, dict) else {}
+
     def _default_tz(self):
-        df = self.data.get("default") if isinstance(self.data.get("default"), dict) else {}
+        df = self._defaults()
         return _tz(df.get("timezone", self.data.get("timezone")), 0)
 
     def _car_dt(self, obj, dkey, tkey, tzkey, default_tz):
@@ -438,7 +486,7 @@ class _Validator:
                      "differs from its 'start'.")
 
     def _default_start_min(self):
-        df = self.data.get("default") if isinstance(self.data.get("default"), dict) else {}
+        df = self._defaults()
         raw = df.get("start_time", self.data.get("default_start_time"))
         try:
             t = _parse_time(raw)
@@ -637,7 +685,7 @@ class _Validator:
                          "midnight — the schedule doesn't fit in a single day.")
 
         # activities ending after the day's default end_time
-        df = self.data.get("default") if isinstance(self.data.get("default"), dict) else {}
+        df = self._defaults()
         end_raw = df.get("end_time", self.data.get("default_end_time"))
         if end_raw is not None:
             try:

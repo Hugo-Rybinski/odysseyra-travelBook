@@ -246,6 +246,8 @@ TRANSPORT_SPECS = [
          "the trip's default timezone", V_TZ),
     Spec("duration", False, "the travel time", "a duration like '4h20'",
          "inferred from the two times", V_DUR),
+    Spec("flight_number", False, "the flight number (planes only)", "any text", '""'),
+    Spec("train_number", False, "the train number (trains only)", "any text", '""'),
     Spec("booking_number", False, "the reservation reference", "any text", '""'),
     Spec("booking_source", False, "where it was booked", "any text", '""'),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",

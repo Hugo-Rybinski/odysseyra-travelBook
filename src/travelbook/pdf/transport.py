@@ -22,6 +22,10 @@ class TransportMixin:
 
     def _transport_booking(self, t) -> str:
         bits = []
+        if t.type == "plane" and t.flight_number:
+            bits.append(self.t("Flight {number}").format(number=t.flight_number))
+        elif t.type == "train" and t.train_number:
+            bits.append(self.t("Train {number}").format(number=t.train_number))
         if t.booking_number:
             bits.append(self.t("Ref {ref}").format(ref=t.booking_number))
         if t.booking_source:

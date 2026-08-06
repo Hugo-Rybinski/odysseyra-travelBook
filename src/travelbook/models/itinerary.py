@@ -66,9 +66,10 @@ class Itinerary:
         if not isinstance(data, dict):
             raise ItineraryError("Top-level JSON must be an object")
         # Descriptive fields live under "travel_description" and default config
-        # under "default"; both fall back to top-level keys for compatibility.
+        # under "defaults" (legacy alias: "default"); both fall back to
+        # top-level keys for compatibility.
         desc = {**data, **(data.get("travel_description") or {})}
-        defaults = data.get("default") or {}
+        defaults = data.get("defaults", data.get("default")) or {}
 
         if "title" not in desc:
             raise ItineraryError("Itinerary needs a 'title'")

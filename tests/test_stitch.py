@@ -40,7 +40,7 @@ def _fragment_dir(tmp_path, *, dir_names=None, with_td=True, with_default=True):
         (root / "travel_description.json").write_text(
             json.dumps(src["travel_description"]), encoding="utf-8")
     if with_default:
-        (root / "default.json").write_text(json.dumps(src["default"]), encoding="utf-8")
+        (root / "defaults.json").write_text(json.dumps(src["defaults"]), encoding="utf-8")
     for key, folder in names.items():
         d = root / folder
         d.mkdir()

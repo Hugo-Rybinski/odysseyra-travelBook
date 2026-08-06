@@ -25,7 +25,7 @@ types. **Timing is usually inferred** — you rarely need to give every time:
 
 - Provide **any two** of `start_time` / `end_time` / `duration` and the third
   is computed. Give one, or none, and the chain fills in.
-- The first activity starts at the day's default start (`default.start_time`,
+- The first activity starts at the day's default start (`defaults.start_time`,
   else 08:00). Each next activity starts when the previous one ends.
 - Gaps (and the trip's default buffer) become **buffer** activities
   automatically — you seldom add those by hand.
@@ -86,7 +86,7 @@ gives; leave the rest out.
 
 | Field | Required | Format | Notes |
 |---|---|---|---|
-| `meal_type` | no | enum | One of `breakfast`, `lunch`, `dinner`, `brunch`, `snack`, `picnic`, `meal`. **If omitted it is inferred** from the start time as breakfast/lunch/dinner (using `default.breakfast_until`/`lunch_until`). Set it explicitly for brunch/snack/picnic/meal. |
+| `meal_type` | no | enum | One of `breakfast`, `lunch`, `dinner`, `brunch`, `snack`, `picnic`, `meal`. **If omitted it is inferred** from the start time as breakfast/lunch/dinner (using `defaults.breakfast_until`/`lunch_until`). Set it explicitly for brunch/snack/picnic/meal. |
 | `restaurant` | no | text | The restaurant's name. |
 | `area` | no | text | Where to eat, if no named restaurant. Ignored when `restaurant` is set. |
 | `address` | no | text | |
@@ -111,6 +111,12 @@ only** (a nested activity may not itself nest). Allowed nesting:
 | `hike` | `meal` |
 | `place` | `point_of_interest`, `hike`, `meal` |
 | `point_of_interest` | `point_of_interest`, `hike`, `meal` |
+
+The nested activities happen *inside* the container, so their durations should
+fit within it: if the container gives a `duration` (or a start/end span) and the
+nested activities' durations add up to more than that, `validate` warns. Leave
+the container's duration out if you're unsure — the warning only fires when both
+sides are known.
 
 ## Example
 

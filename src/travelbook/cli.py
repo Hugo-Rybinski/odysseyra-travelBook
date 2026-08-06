@@ -131,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("stitch", help="assemble one itinerary JSON from a "
                        "directory of fragment files")
     s.add_argument("directory", type=Path,
-                   help="directory holding travel_description.json, default.json "
+                   help="directory holding travel_description.json, defaults.json "
                         "and days/ transports/ accommodations/ car-rentals/ folders")
     s.add_argument("-v", "--verbose", type=int, choices=(1, 2, 3), default=2,
                    help="validation verbosity for the assembled JSON "

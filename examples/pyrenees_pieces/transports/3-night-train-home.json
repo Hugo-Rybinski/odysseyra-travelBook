@@ -6,6 +6,7 @@
   "end_date": "2026-06-12",
   "start_time": "22:10",
   "end_time": "06:45",
+  "train_number": "IC 3711",
   "booking_number": "IC-3711",
   "booking_source": "SNCF Connect",
   "status": "confirmed",

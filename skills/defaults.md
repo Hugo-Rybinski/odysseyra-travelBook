@@ -1,6 +1,6 @@
-# Skill: `default.json`
+# Skill: `defaults.json`
 
-**Target file:** `<ROOT>/default.json` (a **single** file, not indexed)
+**Target file:** `<ROOT>/defaults.json` (a **single** file, not indexed)
 
 Trip-wide defaults that fill gaps the individual days/legs don't specify: the
 day's default start time, the timezone that applies to all times, an automatic

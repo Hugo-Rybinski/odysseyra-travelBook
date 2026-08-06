@@ -5,7 +5,7 @@
     "end_date": "2026-06-08",
     "cover_color": "not-a-color"
   },
-  "default": {
+  "defaults": {
     "start_time": "9am",
     "timezone": "Mars"
   },
@@ -39,13 +39,17 @@
           { "type": "point_of_interest", "name": "Outer", "activities": [
             { "type": "point_of_interest", "name": "Inner" }
           ] }
+        ] },
+        { "type": "point_of_interest", "name": "Overstuffed", "duration": "1h", "activities": [
+          { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
+          { "type": "meal", "restaurant": "Slow", "duration": "45 min" }
         ] }
       ]
     }
   ],
   "transport": [
     { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "status": "confirmed" },
-    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later" }
+    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later", "flight_number": "AF999" }
   ],
   "accommodations": [
     { "name": "Hotel A", "city": "Paris", "arrival": "2026-06-09", "departure": "2026-06-10" },

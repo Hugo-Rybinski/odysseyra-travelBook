@@ -5,7 +5,7 @@
     "cover_color": "#2f6b4f",
     "summary": "Traversée des Pyrénées depuis le versant atlantique vers les hauts sommets — routes panoramiques, vieilles villes, monuments et une vraie randonnée en montagne, avec deux nuits à Lourdes."
   },
-  "default": {
+  "defaults": {
     "start_time": "09:00",
     "end_time": "19:00",
     "buffer": "15 min",
@@ -203,6 +203,7 @@
       "start_tz": "-04:00",
       "end_time": "11:45",
       "end_tz": "+02:00",
+      "flight_number": "AF9",
       "booking_number": "AF1234-XY",
       "booking_source": "Site Air France",
       "status": "confirmed",
@@ -216,6 +217,7 @@
       "start_date": "2026-06-08",
       "start_time": "13:50",
       "duration": "4h20",
+      "train_number": "TGV 8541",
       "booking_number": "TGV-8841",
       "booking_source": "SNCF Connect",
       "status": "booked",
@@ -230,6 +232,7 @@
       "end_date": "2026-06-12",
       "start_time": "22:10",
       "end_time": "06:45",
+      "train_number": "IC 3711",
       "booking_number": "IC-3711",
       "booking_source": "SNCF Connect",
       "status": "confirmed",

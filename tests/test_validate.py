@@ -50,7 +50,7 @@ def test_missing_required_title_is_error():
 def test_invalid_values_are_errors():
     text = json.dumps({
         "travel_description": {"title": "T", "cover_color": "nope"},
-        "default": {"timezone": "xyz", "start_time": "9am"},
+        "defaults": {"timezone": "xyz", "start_time": "9am"},
         "days": [{"title": "d", "date": "bad", "activities": [
             {"type": "point_of_interest", "name": "M"}]}],
     })
@@ -471,7 +471,7 @@ def test_nonpositive_duration_allowed_for_buffer():
 def test_activity_after_default_end_time_warns():
     doc = {
         "travel_description": {"title": "T"},
-        "default": {"start_time": "09:00", "end_time": "17:00"},
+        "defaults": {"start_time": "09:00", "end_time": "17:00"},
         "days": [{"title": "d", "activities": [
             {"type": "point_of_interest", "name": "Late", "duration": "10h"}]}],
     }
@@ -483,7 +483,7 @@ def test_activity_after_default_end_time_warns():
 def test_no_end_time_check_when_default_end_time_absent():
     doc = {
         "travel_description": {"title": "T"},
-        "default": {"start_time": "09:00"},
+        "defaults": {"start_time": "09:00"},
         "days": [{"title": "d", "activities": [
             {"type": "point_of_interest", "name": "Late", "duration": "10h"}]}],
     }

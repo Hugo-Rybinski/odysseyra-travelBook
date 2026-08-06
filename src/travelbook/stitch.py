@@ -4,7 +4,7 @@ The layout of the input directory mirrors the shape of the itinerary JSON:
 
     trip/
       travel_description.json     # -> "travel_description" (optional; prompted if absent)
-      default.json                # -> "default" (optional)
+      defaults.json               # -> "defaults" (optional; legacy name: default.json)
       days/*.json                 # -> "days"            (one entry per file)
       transports/*.json           # -> "transport"       (one entry per file)
       accommodations/*.json       # -> "accommodations"  (one entry per file)
@@ -109,12 +109,16 @@ def aggregate(directory: str | Path, ask: Callable[[str], str] = input) -> dict:
         td = _prompt_travel_description(ask)
     data["travel_description"] = td
 
-    default_file = directory / "default.json"
-    if default_file.is_file():
-        default = _load_json(default_file)
-        if not isinstance(default, dict):
-            raise StitchError("default.json must be a JSON object")
-        data["default"] = default
+    default_file = next(
+        (directory / n for n in ("defaults.json", "default.json")
+         if (directory / n).is_file()),
+        None,
+    )
+    if default_file is not None:
+        defaults = _load_json(default_file)
+        if not isinstance(defaults, dict):
+            raise StitchError(f"{default_file.name} must be a JSON object")
+        data["defaults"] = defaults
 
     for names, key in _ARRAY_SECTIONS:
         entries: list = []

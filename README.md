@@ -102,7 +102,7 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   - an accommodation city that differs from the day's,
   - a hike whose `route` and `start`/`end` disagree (a loop/back-and-forth with
     a different `end`, or a one-way with no distinct `end`),
-  - an activity that ends after the trip's `default.end_time`,
+  - an activity that ends after the trip's `defaults.end_time`,
   - a car-rental pick-up/drop-off that overlaps an activity or transport on the
     same day.
 - ℹ️ **info** — a low-priority note (hidden unless `-v 3`): an optional field is
@@ -120,7 +120,7 @@ mirrors the itinerary shape:
 ```
 examples/pyrenees_pieces/
   travel_description.json     # → "travel_description"  (optional; see below)
-  default.json                # → "default"             (optional)
+  defaults.json               # → "defaults"           (optional)
   days/*.json                 # → "days"            (one day per file)
   transports/*.json           # → "transport"       (one leg per file)
   accommodations/*.json       # → "accommodations"  (one stay per file)
@@ -163,7 +163,7 @@ The top-level object has two config groups and three content arrays:
 - **`travel_description`** *(object)* — what the trip is: cover title, summary,
   accent color, and an optional date range (inferred from the earliest/latest
   date across days, transport and accommodation when not set).
-- **`default`** *(object)* — fallback settings applied across the trip: the
+- **`defaults`** *(object)* — fallback settings applied across the trip: the
   day start time, inter-activity buffer, time zone, end-of-day check.
 - **`days`** *(array, required, non-empty)* — the itinerary, one per day.
 - **`transport`** *(array, optional)* — travel legs (also woven into the days).
@@ -178,7 +178,7 @@ The top-level object has two config groups and three content arrays:
     "cover_color": "#2f6b4f",
     "summary": "A short paragraph shown on the cover."
   },
-  "default": {
+  "defaults": {
     "start_time": "09:00",
     "end_time": "19:00",
     "buffer": "15 min",
@@ -211,7 +211,7 @@ override and validation cross-checks the itinerary against them.
 | `cover_color` |  | Accent color driving the whole palette | string | hex `#RRGGBB` | `"#1f4e5f"` |
 | `summary` |  | Paragraph shown on the cover | string | any text | `""` (hidden) |
 
-### `default`
+### `defaults`
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
@@ -240,18 +240,18 @@ Every day needs a `title` and a non-empty `activities` array.
 Every activity carries a `type`. All types except `buffer` share the scheduling
 fields below: provide any two of `start_time` / `end_time` / `duration` and the
 third is inferred (`end = start + duration`). Times chain — the first activity
-starts at `default.start_time`, each next one at the previous item's end.
+starts at `defaults.start_time`, each next one at the previous item's end.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `type` | ✅ | The activity kind | string | `road` \| `point_of_interest` \| `place` \| `hike` \| `meal` \| `buffer` | — |
-| `start_time` |  | Clock time it starts | string | `HH:MM` | previous item's end, else `default.start_time` |
+| `start_time` |  | Clock time it starts | string | `HH:MM` | previous item's end, else `defaults.start_time` |
 | `end_time` |  | Clock time it ends | string | `HH:MM` | `start_time` + `duration` |
 | `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`, else 0 |
-| `start_tz` |  | Start time zone | string | UTC offset | `default.timezone` |
-| `end_tz` |  | End time zone | string | UTC offset | `default.timezone` |
+| `start_tz` |  | Start time zone | string | UTC offset | `defaults.timezone` |
+| `end_tz` |  | End time zone | string | UTC offset | `defaults.timezone` |
 
-A tz label is only shown in the PDF when it differs from `default.timezone`.
+A tz label is only shown in the PDF when it differs from `defaults.timezone`.
 
 #### `road` — a drive/transfer
 
@@ -314,13 +314,13 @@ accented buffer row rather than a full card — e.g. **Lunch at Le Magret**. A
 named restaurant is also listed in the cover overview's highlights.
 
 `meal_type` is optional. If omitted it is inferred from the start time —
-**breakfast** before `default.breakfast_until` (10:00), **lunch** up to
-`default.lunch_until` (16:00), **dinner** after (lunch when there's no start
-time at all). Those two thresholds are configurable per trip in the `default`
+**breakfast** before `defaults.breakfast_until` (10:00), **lunch** up to
+`defaults.lunch_until` (16:00), **dinner** after (lunch when there's no start
+time at all). Those two thresholds are configurable per trip in the `defaults`
 object. `brunch`, `snack`, `picnic` and `meal` are also valid but are **never
 inferred** — set them explicitly.
 
-If a meal gives no `duration`/`end_time`, it uses `default.meal_duration` (0 —
+If a meal gives no `duration`/`end_time`, it uses `defaults.meal_duration` (0 —
 instant — unless you set one).
 
 The head shows the restaurant when named (**Lunch at Le Magret**); otherwise it
@@ -354,16 +354,18 @@ is inferred, across time zones when they differ.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
-| `type` |  | Transport kind, shown as the badge | string | `plane` \| `train` \| `bus` \| `taxi` \| `other` | `"other"` |
+| `type` |  | Transport kind, shown as the badge | string | `plane` \| `train` \| `bus` \| `taxi` \| `ferry` \| `other` | `"other"` |
 | `start` | ✅ | Departure address | string | any text | — |
 | `end` | ✅ | Arrival address | string | any text | — |
 | `start_date` | ✅ | Departure date; slots the leg into that day (alias: `date`) | string | `YYYY-MM-DD` | — |
 | `end_date` |  | Arrival date | string | `YYYY-MM-DD` | inferred (+1 day if it crosses midnight) |
 | `start_time` | ✅ | Departure time | string | `HH:MM` | — |
 | `end_time` |  | Arrival time | string | `HH:MM` | inferred (`start_time + duration`) |
-| `start_tz` |  | Departure time zone | string | UTC offset | `default.timezone` |
-| `end_tz` |  | Arrival time zone | string | UTC offset | `default.timezone` |
+| `start_tz` |  | Departure time zone | string | UTC offset | `defaults.timezone` |
+| `end_tz` |  | Arrival time zone | string | UTC offset | `defaults.timezone` |
 | `duration` |  | Travel time | string | duration | inferred from the two times |
+| `flight_number` |  | Flight number (planes only; shown on the card) | string | any text | `""` |
+| `train_number` |  | Train number (trains only; shown on the card) | string | any text | `""` |
 | `booking_number` |  | Reservation reference / PNR | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
@@ -399,7 +401,7 @@ end datetime; the pick-up and drop-off datetimes must fall inside that window �
 validation errors otherwise (and the drop-off must not precede the pick-up). A
 pick-up or drop-off that overlaps an activity or transport on the same day is a
 validation warning. Each of the four times takes an optional UTC offset that
-falls back to `default.timezone`; a tz label is only shown when it differs. The
+falls back to `defaults.timezone`; a tz label is only shown when it differs. The
 drop-off location defaults to the pick-up location.
 
 | Field | Required | Description | Type | Format | Default |
@@ -414,10 +416,10 @@ drop-off location defaults to the pick-up location.
 | `dropoff_time` | ✅ | Drop-off time | string | `HH:MM` | — |
 | `pickup_location` | ✅ | Where you pick up the car | string | any text | — |
 | `dropoff_location` |  | Where you drop off the car | string | any text | the pick-up location |
-| `booking_start_tz` |  | Booking-start time zone | string | UTC offset | `default.timezone` |
-| `booking_end_tz` |  | Booking-end time zone | string | UTC offset | `default.timezone` |
-| `pickup_tz` |  | Pick-up time zone | string | UTC offset | `default.timezone` |
-| `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `default.timezone` |
+| `booking_start_tz` |  | Booking-start time zone | string | UTC offset | `defaults.timezone` |
+| `booking_end_tz` |  | Booking-end time zone | string | UTC offset | `defaults.timezone` |
+| `pickup_tz` |  | Pick-up time zone | string | UTC offset | `defaults.timezone` |
+| `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `defaults.timezone` |
 | `company` |  | Rental company | string | any text | `""` |
 | `booking_number` |  | Reservation reference | string | any text | `""` |
 | `price` |  | Rental price | string or number | text or number | `""` |

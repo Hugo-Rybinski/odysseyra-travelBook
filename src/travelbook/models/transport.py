@@ -18,7 +18,7 @@ from .parsers import (
 )
 
 
-TRANSPORT_TYPES = ("plane", "train", "bus", "taxi", "other")
+TRANSPORT_TYPES = ("plane", "train", "bus", "taxi", "ferry", "other")
 
 
 @dataclass
@@ -42,6 +42,8 @@ class Transport:
     start_tz: int | None = None
     end_tz: int | None = None
     duration_min: int | None = None
+    flight_number: str = ""  # planes only
+    train_number: str = ""  # trains only
     booking_number: str = ""
     booking_source: str = ""
     status: str = ""  # "" | "booked" | "confirmed"
@@ -106,6 +108,8 @@ class Transport:
             start_tz=_parse_tz(d.get("start_tz", d.get("start_timezone"))),
             end_tz=_parse_tz(d.get("end_tz", d.get("end_timezone"))),
             duration_min=_parse_duration(d.get("duration")),
+            flight_number=str(d.get("flight_number", "")),
+            train_number=str(d.get("train_number", "")),
             booking_number=str(d.get("booking_number", "")),
             booking_source=str(d.get("booking_source", "")),
             status=status,

@@ -17,7 +17,7 @@ who you booked with, the **price**, and whether it's **paid**.
 
 | Field | Required | Format | Default | Notes |
 |---|---|---|---|---|
-| `type` | no | enum | `other` | One of `plane`, `train`, `bus`, `taxi`, `other`. |
+| `type` | no | enum | `other` | One of `plane`, `train`, `bus`, `taxi`, `ferry`, `other`. |
 | `start` | **yes** | text | — | Departure point (station/airport/city). |
 | `end` | **yes** | text | — | Arrival point. |
 | `start_date` | **yes** | date `YYYY-MM-DD` | — | Departure date. |
@@ -27,6 +27,8 @@ who you booked with, the **price**, and whether it's **paid**.
 | `start_tz` | no | UTC offset | trip default timezone | Departure zone — **set it for flights** between zones. |
 | `end_tz` | no | UTC offset | trip default timezone | Arrival zone. |
 | `duration` | no | duration (`"4h20"`) | inferred from the two times (timezone-aware) | Give it if the two times aren't both known. |
+| `flight_number` | no | text | none | **Planes only** — the flight number (e.g. `"AF9"`). Shown on the card. |
+| `train_number` | no | text | none | **Trains only** — the train number (e.g. `"TGV 8541"`). Shown on the card. |
 | `booking_number` | no | text | none | Reservation reference / PNR. |
 | `booking_source` | no | text | none | Where booked (e.g. "SNCF Connect"). |
 | `status` | no | `booked` or `confirmed` | none | Reservation status. |
@@ -44,11 +46,17 @@ who you booked with, the **price**, and whether it's **paid**.
   aboard it, so don't also add a hotel for that night.
 - If `status` or `paid` is set, include the matching `booking_number` / `price`
   when available (`validate` warns otherwise).
+- **`flight_number` / `train_number` vs `booking_number`.** The flight/train
+  number is the public service identifier (e.g. `AF9`, `TGV 8541`); the booking
+  number is your reservation reference / PNR (e.g. `AF1234-XY`). They're
+  different — capture both when the source gives them. Only set `flight_number`
+  on a `plane` and `train_number` on a `train` (`validate` warns on a mismatch).
 
 ## Example
 
-Source: *"Air France AF1234-XY, confirmed & paid €612. JFK 22:30 (Jun 7, EDT)
-→ Paris CDG 11:45 (Jun 8, CEST). Booked on the AirFrance website."*
+Source: *"Air France flight AF9, ref AF1234-XY, confirmed & paid €612. JFK
+22:30 (Jun 7, EDT) → Paris CDG 11:45 (Jun 8, CEST). Booked on the AirFrance
+website."*
 
 ```json
 {
@@ -61,6 +69,7 @@ Source: *"Air France AF1234-XY, confirmed & paid €612. JFK 22:30 (Jun 7, EDT)
   "start_tz": "-04:00",
   "end_time": "11:45",
   "end_tz": "+02:00",
+  "flight_number": "AF9",
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
   "status": "confirmed",

@@ -26,7 +26,7 @@ def test_grouped_default_and_travel_description():
                 "title": "Grouped Trip",
                 "cover_color": "#123456",
             },
-            "default": {
+            "defaults": {
                 "start_time": "10:00",
                 "buffer": "20 min",
                 "timezone": "+01:00",
@@ -337,7 +337,7 @@ def test_day_date_inferred_from_trip_start_and_index():
     it = Itinerary.from_dict(
         {
             "title": "t",
-            "default": {},
+            "defaults": {},
             "days": [
                 {"title": "d1", "date": "2026-07-01", "activities": []},
                 {"title": "d2", "activities": []},

@@ -57,6 +57,8 @@ _FR = {
     "GETTING AROUND": "SE DÉPLACER",
     "Transport": "Transport",
     "Ref {ref}": "Réf {ref}",
+    "Flight {number}": "Vol {number}",
+    "Train {number}": "Train {number}",
     "Booked via {source}": "Réservé via {source}",
     "BOOKED": "RÉSERVÉ",
     "CONFIRMED": "CONFIRMÉ",
@@ -161,11 +163,21 @@ _FR = {
     "is named.":
         "« restaurant » et « area » sont tous deux définis — « area » est ignoré "
         "lorsqu'un restaurant est nommé.",
+    "the nested activities last {total} in total, longer than this activity's "
+    "{parent} — they can't all fit inside it.":
+        "les activités imbriquées durent {total} au total, plus que la durée de "
+        "cette activité ({parent}) — elles ne peuvent pas toutes y tenir.",
     "a point of interest must be an object or a name string":
         "un point d'intérêt doit être un objet ou une chaîne de caractères",
     "each transport must be an object": "chaque transport doit être un objet",
     "transport end_date ({ed}) is before start_date ({sd}).":
         "la date d'arrivée du transport ({ed}) est avant la date de départ ({sd}).",
+    "'flight_number' is set but the transport type is '{type}', not 'plane'.":
+        "« flight_number » est défini mais le type de transport est « {type} », "
+        "pas « plane ».",
+    "'train_number' is set but the transport type is '{type}', not 'train'.":
+        "« train_number » est défini mais le type de transport est « {type} », "
+        "pas « train ».",
     "'status' is set but 'booking_number' is missing — a confirmed/booked leg "
     "usually has a reference.":
         "« status » est défini mais « booking_number » manque — un trajet "
@@ -356,6 +368,8 @@ _FR = {
     "the departure time zone": "le fuseau horaire de départ",
     "the arrival time zone": "le fuseau horaire d'arrivée",
     "the travel time": "le temps de trajet",
+    "the flight number (planes only)": "le numéro de vol (avions uniquement)",
+    "the train number (trains only)": "le numéro de train (trains uniquement)",
     "the reservation reference": "la référence de réservation",
     "where it was booked": "où cela a été réservé",
     "the reservation status": "l'état de la réservation",
@@ -470,8 +484,8 @@ _FR = {
     "natural park, mountain, lake, beach, waterfall, other":
         "l'un de : museum, church, building, viewpoint, ruins, castle, temple, street, "
         "natural park, mountain, lake, beach, waterfall, other",
-    "one of: plane, train, bus, taxi, other":
-        "l'un de : plane, train, bus, taxi, other",
+    "one of: plane, train, bus, taxi, ferry, other":
+        "l'un de : plane, train, bus, taxi, ferry, other",
     "one of: hotel, camping, b&b, other": "l'un de : hotel, camping, b&b, other",
     "one of: breakfast, lunch, dinner, brunch, snack, picnic, meal":
         "l'un de : breakfast, lunch, dinner, brunch, snack, picnic, meal",
@@ -482,6 +496,7 @@ _FR = {
     "train": "train",
     "bus": "bus",
     "taxi": "taxi",
+    "ferry": "ferry",
     # accommodation type words
     "hotel": "hôtel",
     "camping": "camping",

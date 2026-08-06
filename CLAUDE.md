@@ -71,7 +71,7 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
-  dict from a fragment directory (`travel_description.json`, `default.json`, and
+  dict from a fragment directory (`travel_description.json`, `defaults.json`, and
   `days/` `transports/` `accommodations/` `car-rentals/` folders — one array
   entry per JSON file, ordered by filename; alternate folder spellings accepted).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
@@ -83,7 +83,7 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 ## Key design decisions
 
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
-  optional manual `start_date`/`end_date`) and `default` (`start_time` 08:00,
+  optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
   `lunch_until` 16:00, and `meal_duration` 0) — plus content arrays `days` (required,
   non-empty), `transport`, `accommodations`. The older flat layout still parses.
@@ -91,7 +91,7 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).
   - A day's `date` defaults to trip-start + its index.
-  - Activities chain on a timeline: first starts at `default.start_time`, each next
+  - Activities chain on a timeline: first starts at `defaults.start_time`, each next
     at the previous end; give any two of `start_time`/`end_time`/`duration` and the
     third is inferred. Buffers (default, manual, or gap-inferred) fill gaps.
   - Transport requires `start_time`; the other of `end_time`/`duration` is inferred,
@@ -100,12 +100,12 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **Enums** (case-insensitive, validated in the model): PoI `category`
   (museum/church/building/viewpoint/ruins/castle/temple/street/other, default
   `other`); hike `route` (loop/back_and_forth/one_way, default back_and_forth);
-  transport `type` (plane/train/bus/taxi/other, default other); accommodation
+  transport `type` (plane/train/bus/taxi/ferry/other, default other); accommodation
   `type` (hotel/camping/b&b/other, default hotel); `status` (booked/confirmed);
   `paid`/`paid_online`. Meal `meal_type` (breakfast/lunch/dinner/brunch/snack/
   picnic/meal) is optional; when omitted it is inferred from the start time, but
   only ever as breakfast/lunch/dinner (the other four are explicit-only). The
-  inference thresholds and a default meal duration live in `default`
+  inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
 - **Validation has three levels**, filtered by `--verbose`: ❌ errors (missing
   required, invalid value, incoherence), ⚠️ warnings (soft inconsistencies:
@@ -148,7 +148,7 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   `skills/*.md` doc** (the field tables/examples an LLM uses to extract JSON),
   regenerate the snapshot, and re-render the example PDFs.
 - **`skills/`** holds one LLM-facing `.md` per stitchable JSON part
-  (`travel_description`, `default`, `days`, `transports`, `accommodations`,
+  (`travel_description`, `defaults`, `days`, `transports`, `accommodations`,
   `car-rentals`) documenting its fields/formats so an LLM can turn raw
   text/screenshots into the fragment files. **Any JSON-format change must be
   mirrored here** — these are authoritative alongside the README.
