@@ -1,0 +1,36 @@
+{
+  "date": "2026-06-11",
+  "city": "Saint-Bertrand-de-Comminges",
+  "title": "Ruins & the Night Train Home",
+  "description": "Drop back down the valley to explore Roman ruins and a hilltop cathedral, then drop the car in Montréjeau and take the overnight train back to Paris.",
+  "activities": [
+    {
+      "type": "road",
+      "start": "Gavarnie",
+      "end": "Saint-Bertrand-de-Comminges",
+      "distance_km": 96,
+      "duration": "2h05",
+      "off_road": false
+    },
+    {
+      "type": "point_of_interest",
+      "name": "Cathédrale Sainte-Marie",
+      "category": "church",
+      "address": "Le Plan, Saint-Bertrand-de-Comminges",
+      "duration": "1h",
+      "description": "A hilltop cathedral dominating the ancient Roman town of Lugdunum Convenarum."
+    },
+    {
+      "type": "buffer",
+      "duration": "45 min"
+    },
+    {
+      "type": "point_of_interest",
+      "name": "Roman ruins of Lugdunum Convenarum",
+      "category": "ruins",
+      "address": "Valcabrère",
+      "duration": "45 min",
+      "description": "Remains of the forum, theatre and thermal baths of the old Roman settlement."
+    }
+  ]
+}

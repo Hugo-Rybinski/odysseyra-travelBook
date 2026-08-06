@@ -1,0 +1,13 @@
+{
+  "name": "Hôtel Gallia & Londres",
+  "arrival": "2026-06-08",
+  "departure": "2026-06-10",
+  "city": "Lourdes",
+  "type": "hotel",
+  "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
+  "contact": "+33 5 62 94 35 44",
+  "booking_source": "Booking.com",
+  "price": "€256",
+  "paid_online": true,
+  "breakfast_included": true
+}

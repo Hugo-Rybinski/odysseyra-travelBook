@@ -32,6 +32,10 @@ travelbook validate examples/pyrenees_fr.json --lang fr
 # thin rules (much less colored ink when printing).
 travelbook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
 
+# Scaffold an empty fragment directory, then stitch it once it's filled in
+travelbook create-skeleton . mytrip        # creates ./mytrip/ with sub-folders
+travelbook stitch examples/pyrenees_pieces # assemble one JSON, then validate it
+
 # or without installing the entry point
 python -m travelbook.cli validate examples/pyrenees.json
 ```
@@ -106,6 +110,46 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
 
 Each finding names the field, its description, and the expected value. The
 command exits non-zero if there are any errors (warnings alone exit zero).
+
+### Stitching a directory of fragments
+
+Rather than maintaining one large JSON file, you can keep each piece in its own
+file and let `travelbook stitch <directory>` assemble them. The directory
+mirrors the itinerary shape:
+
+```
+examples/pyrenees_pieces/
+  travel_description.json     # → "travel_description"  (optional; see below)
+  default.json                # → "default"             (optional)
+  days/*.json                 # → "days"            (one day per file)
+  transports/*.json           # → "transport"       (one leg per file)
+  accommodations/*.json       # → "accommodations"  (one stay per file)
+  car-rentals/*.json          # → "car_rentals"     (one rental per file)
+```
+
+To start one from scratch, `travelbook create-skeleton <path> <name>` scaffolds
+`<path>/<name>/` with the four (empty) array sub-folders and a
+`travel_description.json` stub whose title is `"FIXME"` — fill in the pieces,
+then `stitch` it:
+
+```bash
+travelbook create-skeleton . mytrip     # → ./mytrip/{days,transports,…}/ + stub
+travelbook stitch mytrip                 # once you've added at least one day
+```
+
+Each array folder contributes one entry per JSON file, **ordered by file name**
+(so a numeric prefix like `1-arrival.json` keeps days in order); a file may also
+hold a JSON array, in which case each element becomes one entry. If
+`travel_description.json` is absent you are prompted for its fields (only
+`title` is required). The command validates the assembled JSON (respecting
+`--verbose` / `--lang`), prints the findings, and writes the result into the
+directory as `<title>.json` — e.g. `Pyrenees Road Trip.json`. It exits non-zero
+if validation found errors.
+
+```bash
+travelbook stitch examples/pyrenees_pieces            # → "Pyrenees Road Trip.json"
+travelbook stitch examples/pyrenees_pieces -v 3       # also show the ℹ️ notes
+```
 
 ## JSON format
 
@@ -407,6 +451,9 @@ Each package's `__init__.py` re-exports its public API, so imports like
 - `examples/pyrenees.json` — a full, valid itinerary. Build it with
   `travelbook build examples/pyrenees.json -o pyrenees.pdf` (add `--ink-saver`
   for the low-ink rendering).
+- `examples/pyrenees_pieces/` — the same trip split into per-file fragments,
+  for `travelbook stitch`. `stitch`ing it reproduces `pyrenees.json` exactly
+  (guarded by a test).
 - `examples/pyrenees_fr.json` — the same trip authored in French (build it with
   `--lang fr` for a fully French PDF).
 - `examples/broken.json` — an intentionally broken itinerary that exercises the

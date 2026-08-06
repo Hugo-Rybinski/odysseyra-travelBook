@@ -21,6 +21,12 @@ travelbook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not
 travelbook validate examples/pyrenees.json
 travelbook validate examples/pyrenees.json -v 3 --lang fr
 
+# scaffold an empty fragment dir (sub-folders + travel_description.json stub)
+travelbook create-skeleton . mytrip
+
+# stitch a directory of JSON fragments into one <title>.json (validates first)
+travelbook stitch examples/pyrenees_pieces
+
 pytest                                                  # all tests
 UPDATE_SNAPSHOTS=1 pytest tests/test_validate.py        # regenerate the snapshot (see below)
 ```
@@ -64,7 +70,15 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   render outlines + accent-colored text + thin rules instead of solid fills.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
-- `cli.py` — argparse CLI (`build` / `validate`, `--lang`, `--verbose`).
+- **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
+  dict from a fragment directory (`travel_description.json`, `default.json`, and
+  `days/` `transports/` `accommodations/` `car-rentals/` folders — one array
+  entry per JSON file, ordered by filename; alternate folder spellings accepted).
+  Prompts for `travel_description` when its file is absent. `create_skeleton`
+  scaffolds the reverse — an empty fragment dir (`SKELETON_DIRS` sub-folders +
+  a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
+- `cli.py` — argparse CLI (`build` / `validate` / `stitch` / `create-skeleton`,
+  `--lang`, `--verbose`).
 
 ## Key design decisions
 
@@ -110,8 +124,11 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   (it does its own parsing and never calls a mutating path except a guarded
   `Itinerary.from_dict` for the end-of-day check).
 - **Examples are kept in sync and tested.** `examples/pyrenees.json` (valid,
-  English), `examples/pyrenees_fr.json` (same trip in French — build with
-  `--lang fr`), `examples/broken.json` (exercises every validator rule).
+  English), `examples/pyrenees_pieces/` (the same trip split into per-file
+  fragments for `stitch` — a test asserts it reassembles `pyrenees.json`
+  exactly, so keep the two in sync), `examples/pyrenees_fr.json` (same trip in
+  French — build with `--lang fr`), `examples/broken.json` (exercises every
+  validator rule).
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it
   with `UPDATE_SNAPSHOTS=1 pytest`.

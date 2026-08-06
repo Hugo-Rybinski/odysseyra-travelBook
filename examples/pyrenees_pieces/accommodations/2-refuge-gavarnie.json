@@ -1,0 +1,13 @@
+{
+  "name": "Refuge de la Brèche de Roland",
+  "arrival": "2026-06-10",
+  "departure": "2026-06-11",
+  "city": "Gavarnie",
+  "type": "other",
+  "address": "Vallée de Gavarnie, 65120 Gavarnie",
+  "contact": "refuge@gavarnie.example",
+  "booking_source": "Hotel website",
+  "price": "€52",
+  "paid_online": false,
+  "breakfast_included": false
+}

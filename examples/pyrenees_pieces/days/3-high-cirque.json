@@ -1,0 +1,67 @@
+{
+  "date": "2026-06-10",
+  "city": "Cirque de Gavarnie",
+  "title": "The High Cirque",
+  "description": "Leave Lourdes for the high mountains: a rough drive to the trailhead, the classic hike up to the great cirque, and a night in the refuge.",
+  "activities": [
+    {
+      "type": "road",
+      "start": "Lourdes",
+      "end": "Gavarnie trailhead",
+      "distance_km": 52,
+      "start_time": "08:00",
+      "duration": "1h20",
+      "off_road": true,
+      "activities": [
+        {
+          "type": "meal",
+          "meal_type": "breakfast",
+          "restaurant": "Café de Gèdre",
+          "address": "Gèdre village"
+        }
+      ]
+    },
+    {
+      "type": "hike",
+      "name": "Cirque de Gavarnie",
+      "start": "Gavarnie village",
+      "distance_km": 13,
+      "elevation_m": 550,
+      "duration": "4h30",
+      "route": "back_and_forth",
+      "activities": [
+        {
+          "type": "meal",
+          "meal_type": "snack",
+          "area": "the Grande Cascade viewpoint"
+        }
+      ]
+    },
+    {
+      "type": "point_of_interest",
+      "name": "Grande Cascade de Gavarnie",
+      "category": "waterfall",
+      "description": "Europe's tallest waterfall, tumbling 422 m off the cirque wall.",
+      "duration": "0h30",
+      "activities": [
+        {
+          "type": "hike",
+          "name": "Cascade viewpoint spur",
+          "distance_km": 1.2,
+          "elevation_m": 80,
+          "route": "back_and_forth"
+        },
+        {
+          "type": "meal",
+          "meal_type": "picnic",
+          "area": "the cascade base"
+        }
+      ]
+    },
+    {
+      "type": "meal",
+      "meal_type": "picnic",
+      "area": "Gavarnie"
+    }
+  ]
+}

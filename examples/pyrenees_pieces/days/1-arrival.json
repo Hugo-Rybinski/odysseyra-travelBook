@@ -1,0 +1,17 @@
+{
+  "date": "2026-06-08",
+  "city": "Paris → Lourdes",
+  "title": "Arrival in the Pyrenees",
+  "description": "Land in Paris off the red-eye, take the TGV south, then pick up the car and drive the last stretch into Lourdes.",
+  "activities": [
+    {
+      "type": "road",
+      "start": "Pau",
+      "end": "Lourdes",
+      "distance_km": 45,
+      "start_time": "18:45",
+      "duration": "50 min",
+      "off_road": false
+    }
+  ]
+}

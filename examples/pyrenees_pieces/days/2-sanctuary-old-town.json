@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-09",
+  "city": "Lourdes",
+  "title": "The Sanctuary & Old Town",
+  "description": "A full day in Lourdes: the pilgrimage sanctuary in the morning and the château fort quarter in the afternoon.",
+  "activities": [
+    {
+      "type": "point_of_interest",
+      "name": "Sanctuary of Our Lady of Lourdes",
+      "category": "church",
+      "address": "1 Av. Mgr Théas, Lourdes",
+      "end_time": "12:30",
+      "description": "One of the most visited pilgrimage sites in the world, set along the Gave de Pau river. Ends at lunchtime — duration is inferred from the end time."
+    },
+    {
+      "type": "meal",
+      "restaurant": "Le Magret",
+      "address": "10 Rue de la Grotte, Lourdes",
+      "start_time": "12:30"
+    },
+    {
+      "type": "place",
+      "name": "Lourdes old town",
+      "start_time": "13:30",
+      "duration": "1h30",
+      "description": "Wander the streets around the château fort. The explicit start leaves a gap after lunch, shown as a buffer.",
+      "activities": [
+        {
+          "type": "point_of_interest",
+          "name": "Château fort de Lourdes",
+          "category": "castle",
+          "address": "25 Rue du Fort, Lourdes",
+          "duration": "45 min",
+          "description": "Medieval fortress housing the Pyrenean museum, with sweeping valley views."
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Pont Vieux"
+        },
+        {
+          "type": "hike",
+          "name": "Chemin de la Forêt loop",
+          "distance_km": 3.5,
+          "elevation_m": 120,
+          "route": "loop",
+          "description": "A short wooded loop climbing to a viewpoint over the château."
+        },
+        {
+          "type": "meal",
+          "meal_type": "snack",
+          "restaurant": "Salon de thé du Fort",
+          "address": "Rue du Bourg, Lourdes"
+        }
+      ]
+    }
+  ]
+}
