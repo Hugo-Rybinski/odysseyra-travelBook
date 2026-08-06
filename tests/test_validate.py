@@ -232,6 +232,94 @@ def test_accommodation_required_fields_and_type_enum():
     assert "'type' is invalid" in msgs
 
 
+def _car(**fields):
+    base = {
+        "booking_start_date": "2026-06-08", "booking_start_time": "09:00",
+        "booking_end_date": "2026-06-11", "booking_end_time": "20:00",
+        "pickup_date": "2026-06-08", "pickup_time": "10:00",
+        "dropoff_date": "2026-06-11", "dropoff_time": "18:00",
+        "pickup_location": "Pau Airport",
+    }
+    base.update(fields)
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "M"}]}],
+           "car_rentals": [base]}
+    return validate_text(json.dumps(doc))
+
+
+def test_car_rental_missing_required_and_bad_enum_are_errors():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "M"}]}],
+           "car_rentals": [{"car_type": "spaceship", "additional_drivers": -1}]}
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "required field 'booking_start_date'" in msgs
+    assert "required field 'pickup_location'" in msgs
+    assert "'car_type' is invalid" in msgs
+    assert "'additional_drivers' is invalid" in msgs
+
+
+def test_car_rental_pickup_outside_booking_period_is_error():
+    msgs = _messages(_errors(_car(pickup_date="2026-06-07")))
+    assert "pick-up (2026-06-07 10:00) is outside the booking period" in msgs
+
+
+def test_car_rental_dropoff_outside_and_before_pickup_are_errors():
+    msgs = _messages(_errors(_car(dropoff_date="2026-06-07", dropoff_time="08:00")))
+    assert "drop-off (2026-06-07 08:00) is outside the booking period" in msgs
+    assert "drop-off (2026-06-07 08:00) is before the pick-up" in msgs
+
+
+def test_car_rental_reversed_booking_window_is_error():
+    findings = _car(booking_start_date="2026-06-11", booking_end_date="2026-06-08")
+    msgs = _messages(_errors(findings))
+    assert "booking end (2026-06-08 20:00) must be after booking start" in msgs
+    # the window is invalid, so the within-period checks are suppressed
+    assert "outside the booking period" not in msgs
+
+
+def test_valid_car_rental_has_no_errors():
+    assert _errors(_car()) == []
+
+
+def test_car_rental_pickup_conflicting_with_activity_warns():
+    doc = {
+        "travel_description": {"title": "T"},
+        "days": [{"title": "d", "date": "2026-06-08", "activities": [
+            {"type": "point_of_interest", "name": "M",
+             "start_time": "09:00", "end_time": "12:00"}]}],
+        "car_rentals": [{
+            "booking_start_date": "2026-06-08", "booking_start_time": "08:00",
+            "booking_end_date": "2026-06-09", "booking_end_time": "20:00",
+            "pickup_date": "2026-06-08", "pickup_time": "10:00",
+            "pickup_duration": "30 min",
+            "dropoff_date": "2026-06-09", "dropoff_time": "18:00",
+            "pickup_location": "Airport"}],
+    }
+    msgs = _messages(_warnings(validate_text(json.dumps(doc))))
+    assert "pick-up (10:00) overlaps an activity or transport" in msgs
+
+
+def test_car_rental_pickup_not_conflicting_does_not_warn():
+    doc = {
+        "travel_description": {"title": "T"},
+        "days": [{"title": "d", "date": "2026-06-08", "activities": [
+            {"type": "point_of_interest", "name": "M",
+             "start_time": "09:00", "end_time": "12:00"}]}],
+        "car_rentals": [{
+            "booking_start_date": "2026-06-08", "booking_start_time": "08:00",
+            "booking_end_date": "2026-06-09", "booking_end_time": "20:00",
+            "pickup_date": "2026-06-08", "pickup_time": "12:00",
+            "pickup_duration": "30 min",
+            "dropoff_date": "2026-06-09", "dropoff_time": "18:00",
+            "pickup_location": "Airport"}],
+    }
+    # pick-up 12:00–12:30 begins exactly when the activity ends → no overlap
+    assert "overlaps an activity or transport" not in _messages(
+        validate_text(json.dumps(doc)))
+
+
 def test_empty_days_is_error():
     for days in ([], None):
         doc = {"travel_description": {"title": "T"}}

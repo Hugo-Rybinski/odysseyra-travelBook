@@ -109,5 +109,41 @@
 ℹ️  line 44: optional field 'price' is missing — the price. Expected text or a number. Defaulting to "".
 ℹ️  line 44: optional field 'paid_online' is missing — whether it is already paid. Expected true or false. Defaulting to false (shows a 'To pay' badge).
 ℹ️  line 44: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
+❌  line 47: car rental booking end (2026-06-08 09:00) must be after booking start (2026-06-11 20:00).
+⚠️  line 47: the car rental drop-off (10:00) overlaps an activity or transport on 2026-06-10.
+ℹ️  line 47: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
+ℹ️  line 47: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 47: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 47: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 47: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 47: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
+ℹ️  line 47: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 47: optional field 'price' is missing — the rental price. Expected text or a number. Defaulting to "".
+ℹ️  line 47: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+ℹ️  line 47: optional field 'car_type' is missing — the car category. Expected one of: regular, small, suv, 4x4. Defaulting to "regular".
+ℹ️  line 47: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
+ℹ️  line 47: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
+ℹ️  line 47: optional field 'additional_drivers' is missing — the number of additional drivers. Expected a whole number. Defaulting to 0.
+ℹ️  line 47: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+ℹ️  line 47: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+❌  line 52: car rental pick-up (2026-06-07 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
+❌  line 52: car rental drop-off (2026-06-06 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
+❌  line 52: car rental drop-off (2026-06-06 10:00) is before the pick-up (2026-06-07 10:00).
+⚠️  line 52: 'paid' is set but 'price' is missing — the payment state is given without an amount.
+ℹ️  line 52: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
+ℹ️  line 52: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 52: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 52: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 52: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 52: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
+ℹ️  line 52: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 52: optional field 'price' is missing — the rental price. Expected text or a number. Defaulting to "".
+ℹ️  line 52: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
+ℹ️  line 52: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
+ℹ️  line 52: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+ℹ️  line 52: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+❌  line 56: field 'car_type' is invalid ('spaceship') — the car category. Expected one of: regular, small, suv, 4x4 (must be one of: regular, small, suv, 4x4).
+❌  line 57: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
+❌  line 57: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-34 error(s), 7 warning(s), 70 info.
+41 error(s), 9 warning(s), 97 info.

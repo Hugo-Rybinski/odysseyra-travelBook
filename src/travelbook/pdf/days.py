@@ -32,14 +32,19 @@ class DayMixin:
                     self._meal(item)
                 elif item.kind == "transport":
                     self._transport_row(item)
+                elif item.kind in ("car_pickup", "car_dropoff"):
+                    self._car_rental_row(item)
                 else:
                     self._activity(item)
 
         self._day_stay(day)
 
     def _day_items(self, day):
-        """Activities and same-day transports, merged and sorted by start time."""
-        items = list(day.activities) + self.itinerary.transports_on(day.date)
+        """Activities, same-day transports and car pick-up/drop-off events,
+        merged and sorted by start time."""
+        items = (list(day.activities)
+                 + self.itinerary.transports_on(day.date)
+                 + self.itinerary.car_events_on(day.date))
         items.sort(key=lambda x: (x.start_time is None, x.start_time or time(0, 0)))
         return items
 
@@ -222,6 +227,62 @@ class DayMixin:
             self.multi_cell(detail_w, 5, meta)
         if t.overnight:
             self._chip(x, self.t("OVERNIGHT"))
+
+        self.set_y(max(self.get_y(), top + 15))
+        y = self.get_y()
+        self.set_draw_color(*LIGHT)
+        self.set_line_width(0.2)
+        self.line(x, y, self.w - self.r_margin, y)
+        self.ln(2)
+
+    def _car_descriptor(self, cr) -> str:
+        name = "  ·  ".join(p for p in (cr.company, cr.car_model) if p)
+        label = self.t(cr.car_type_label)
+        if label:
+            name = f"{name} ({label})" if name else label
+        return name
+
+    def _car_rental_row(self, ev) -> None:
+        """A car-rental pick-up or drop-off shown inline in a day's itinerary."""
+        top = self.get_y()
+        x = self.l_margin + self.GUTTER
+        detail_w = self.content_width - self.GUTTER
+        gw = self.GUTTER - 5
+
+        label = self.t("PICK-UP") if ev.kind == "car_pickup" else self.t("DROP-OFF")
+        self._badge(self.l_margin, top, gw, label)
+        if ev.start_time is not None:
+            stz = self._tz_label(ev.start_tz)
+            slbl = f"{ev.start_time:%H:%M}" + (f" {stz}" if stz else "")
+            self.set_xy(self.l_margin, top + 6.8)
+            self.set_font(FONT, "B", 7 if stz else 8)
+            self.set_text_color(*self.accent)
+            self.cell(gw, 4, slbl, align="C")
+            if ev.end_time is not None and ev.end_time != ev.start_time:
+                self.set_xy(self.l_margin, top + 10.6)
+                self.set_font(FONT, "", 7)
+                self.set_text_color(*MUTED)
+                self.cell(gw, 3.5, f"{ev.end_time:%H:%M}", align="C")
+
+        head = self.t("Pick up the rental car") if ev.kind == "car_pickup" \
+            else self.t("Drop off the rental car")
+        self.set_xy(x, top)
+        self.set_font(FONT, "B", 11)
+        self.set_text_color(*INK)
+        self.multi_cell(detail_w, 6, head)
+
+        cr = ev.rental
+        meta = "  ·  ".join(p for p in (
+            ev.location,
+            ev.duration_display,
+            self._car_descriptor(cr),
+            self.t("Ref {ref}").format(ref=cr.booking_number) if cr.booking_number else "",
+        ) if p)
+        if meta:
+            self.set_x(x)
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*MUTED)
+            self.multi_cell(detail_w, 5, meta)
 
         self.set_y(max(self.get_y(), top + 15))
         y = self.get_y()

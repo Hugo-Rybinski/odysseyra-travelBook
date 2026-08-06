@@ -10,6 +10,7 @@ The model is split across submodules:
 """
 
 from .accommodation import ACCOMMODATION_TYPES, Accommodation
+from .car_rental import CAR_TYPES, CarRental, CarRentalEvent, resolve_car_rental
 from .activities import (
     MEAL_TYPES,
     POI_CATEGORIES,
@@ -43,6 +44,9 @@ __all__ = [
     "ACCOMMODATION_TYPES",
     "Activity",
     "Buffer",
+    "CarRental",
+    "CarRentalEvent",
+    "CAR_TYPES",
     "Day",
     "Hike",
     "Itinerary",
@@ -56,6 +60,7 @@ __all__ = [
     "Transport",
     "TRANSPORT_TYPES",
     "activity_from_dict",
+    "resolve_car_rental",
     "resolve_transport",
     "schedule_activities",
 ]

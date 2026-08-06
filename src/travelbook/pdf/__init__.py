@@ -12,12 +12,14 @@ from ..lang import DEFAULT_LANGUAGE
 from ..models import Itinerary
 from .accommodation import AccommodationMixin
 from .base import _PDFBase
+from .car_rental import CarRentalMixin
 from .cover import CoverMixin
 from .days import DayMixin
 from .transport import TransportMixin
 
 
-class TravelPDF(CoverMixin, DayMixin, TransportMixin, AccommodationMixin, _PDFBase):
+class TravelPDF(CoverMixin, DayMixin, TransportMixin, AccommodationMixin,
+                CarRentalMixin, _PDFBase):
     """The travel-book PDF, assembled from per-section mixins."""
 
 
@@ -32,7 +34,7 @@ def build_pdf(itinerary: Itinerary, output: str | Path,
     pdf.cover()
     for i, day in enumerate(itinerary.days, start=1):
         pdf.day(i, day)
-    if itinerary.transports:
+    if itinerary.transports or itinerary.car_rentals:
         pdf.transports()
     if itinerary.accommodations:
         pdf.accommodations()

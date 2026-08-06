@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from ..lang import DEFAULT_LANGUAGE, tr
 from ..models import (
@@ -19,6 +19,7 @@ from .jsonpos import JSONPositionError, load_with_lines
 from .specs import (
     ACCOMMODATION_SPECS,
     ACTIVITY_SPECS,
+    CAR_RENTAL_SPECS,
     DAY_SPECS,
     DEFAULTS,
     SCHEDULE,
@@ -197,6 +198,15 @@ class _Validator:
             for i, a in enumerate(acc):
                 self._accommodation(a, ("accommodations", i))
 
+        cars = data.get("car_rentals")
+        if cars is None:
+            self.add("info", (), "optional field 'car_rentals' is missing — the "
+                     "rental-car bookings. Expected an array of car rental "
+                     "objects. Defaulting to [] (no car rental page).")
+        elif isinstance(cars, list):
+            for i, c in enumerate(cars):
+                self._car_rental(c, ("car_rentals", i))
+
         self._coherence(td_obj, days if isinstance(days, list) else [],
                         transport if isinstance(transport, list) else [],
                         acc if isinstance(acc, list) else [])
@@ -286,6 +296,87 @@ class _Validator:
         if _truthy(a.get("paid_online")) and not a.get("price"):
             self.add("warning", path, "'paid_online' is true but 'price' is "
                      "missing — marked paid without an amount.")
+
+    def _default_tz(self):
+        df = self.data.get("default") if isinstance(self.data.get("default"), dict) else {}
+        return _tz(df.get("timezone", self.data.get("timezone")), 0)
+
+    def _car_dt(self, obj, dkey, tkey, tzkey, default_tz):
+        """(comparable UTC datetime, local label) for a date/time/tz triple, or
+        None if either the date or time is missing/unparseable."""
+        d = _date(obj.get(dkey))
+        try:
+            t = _parse_time(obj.get(tkey))
+        except ItineraryError:
+            t = None
+        if d is None or t is None:
+            return None
+        tz = _tz(obj.get(tzkey), default_tz)
+        cmp = datetime.combine(d, t) - timedelta(minutes=tz)
+        return cmp, f"{d} {t:%H:%M}"
+
+    def _car_rental(self, cr, path):
+        if not isinstance(cr, dict):
+            self.add("error", path, "each car rental must be an object")
+            return
+        self.check_object(cr, path, CAR_RENTAL_SPECS)
+        default_tz = self._default_tz()
+        bs = self._car_dt(cr, "booking_start_date", "booking_start_time",
+                          "booking_start_tz", default_tz)
+        be = self._car_dt(cr, "booking_end_date", "booking_end_time",
+                          "booking_end_tz", default_tz)
+        pu = self._car_dt(cr, "pickup_date", "pickup_time", "pickup_tz", default_tz)
+        do = self._car_dt(cr, "dropoff_date", "dropoff_time", "dropoff_tz", default_tz)
+        if bs and be and be[0] <= bs[0]:
+            self.add("error", path, "car rental booking end ({end}) must be after "
+                     "booking start ({start}).", end=be[1], start=bs[1])
+        elif bs and be:  # a valid window — check the pick-up / drop-off fall in it
+            if pu and not (bs[0] <= pu[0] <= be[0]):
+                self.add("error", path, "car rental pick-up ({pu}) is outside the "
+                         "booking period ({start} → {end}).",
+                         pu=pu[1], start=bs[1], end=be[1])
+            if do and not (bs[0] <= do[0] <= be[0]):
+                self.add("error", path, "car rental drop-off ({do}) is outside the "
+                         "booking period ({start} → {end}).",
+                         do=do[1], start=bs[1], end=be[1])
+        if pu and do and do[0] < pu[0]:
+            self.add("error", path, "car rental drop-off ({do}) is before the "
+                     "pick-up ({pu}).", do=do[1], pu=pu[1])
+        if cr.get("paid") is not None and not cr.get("price"):
+            self.add("warning", path, "'paid' is set but 'price' is missing — the "
+                     "payment state is given without an amount.")
+
+    def _car_event_conflicts(self, car_rentals, day_date, occupied):
+        """Warn when a car pick-up / drop-off on ``day_date`` overlaps any
+        occupied (activity / transport) span on that day."""
+        for ci, cr in enumerate(car_rentals):
+            if not isinstance(cr, dict):
+                continue
+            for kind, dkey, tkey, durkey in (
+                ("pickup", "pickup_date", "pickup_time", "pickup_duration"),
+                ("dropoff", "dropoff_date", "dropoff_time", "dropoff_duration"),
+            ):
+                if _date(cr.get(dkey)) != day_date:
+                    continue
+                s = _tmin(cr.get(tkey))
+                if s is None:
+                    continue
+                e = s + (_dur(cr.get(durkey)) or 0)
+                clash = any(
+                    (s < ae and a0 < e) if e > s else (a0 <= s < ae)
+                    for a0, ae in occupied
+                )
+                if not clash:
+                    continue
+                when = f"{s // 60:02d}:{s % 60:02d}"
+                if kind == "pickup":
+                    self.add("warning", ("car_rentals", ci),
+                             "the car rental pick-up ({time}) overlaps an activity "
+                             "or transport on {date}.", time=when, date=day_date)
+                else:
+                    self.add("warning", ("car_rentals", ci),
+                             "the car rental drop-off ({time}) overlaps an activity "
+                             "or transport on {date}.", time=when, date=day_date)
 
     # -- coherence ------------------------------------------------------
     def _magnitudes(self, obj, path, kind):
@@ -472,6 +563,7 @@ class _Validator:
                              acc_city=repr(stay.get("city")))
 
         # (5,6) overlapping items on a day's timeline (activities + transports)
+        car_rentals = self.data.get("car_rentals") or []
         for di, day in enumerate(days):
             if not isinstance(day, dict):
                 continue
@@ -493,6 +585,12 @@ class _Validator:
                 if spans[k][0] < spans[k - 1][1]:
                     self.add("error", spans[k][2], "this overlaps the previous item "
                              "on the day's timeline — their start/end times collide.")
+
+            # a car pick-up / drop-off clashing with an activity or transport
+            # is a soft conflict (warning), not a hard overlap error
+            if day_date:
+                occupied = [(s, e) for s, e, _ in spans]
+                self._car_event_conflicts(car_rentals, day_date, occupied)
 
         # (7) a day whose schedule runs past midnight
         default_start = self._default_start_min()

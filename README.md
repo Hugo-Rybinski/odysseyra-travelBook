@@ -87,7 +87,9 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   - a day whose schedule runs past midnight,
   - duplicate or out-of-order day dates,
   - a `start_time`/`end_time`/`duration` trio that doesn't add up,
-  - a non-positive `distance_km` or `duration`.
+  - a non-positive `distance_km` or `duration`,
+  - a car rental whose pick-up/drop-off falls outside its booking period (or a
+    reversed booking window, or a drop-off before the pick-up).
 - ⚠️ **warnings** — a softer inconsistency worth attention:
   - a night with nowhere to sleep (no accommodation, no overnight transport),
   - a date outside a manual trip range, or a manual range that doesn't cover
@@ -96,7 +98,9 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   - an accommodation city that differs from the day's,
   - a hike whose `route` and `start`/`end` disagree (a loop/back-and-forth with
     a different `end`, or a one-way with no distinct `end`),
-  - an activity that ends after the trip's `default.end_time`.
+  - an activity that ends after the trip's `default.end_time`,
+  - a car-rental pick-up/drop-off that overlaps an activity or transport on the
+    same day.
 - ℹ️ **info** — a low-priority note (hidden unless `-v 3`): an optional field is
   missing (with the default that will be used), or a zero-minute buffer.
 
@@ -120,6 +124,7 @@ The top-level object has two config groups and three content arrays:
 - **`days`** *(array, required, non-empty)* — the itinerary, one per day.
 - **`transport`** *(array, optional)* — travel legs (also woven into the days).
 - **`accommodations`** *(array, optional)* — where you sleep.
+- **`car_rentals`** *(array, optional)* — rental-car bookings.
 
 ```json
 {
@@ -137,7 +142,8 @@ The top-level object has two config groups and three content arrays:
   },
   "days": [ /* day objects */ ],
   "transport": [ /* transport objects */ ],
-  "accommodations": [ /* accommodation objects */ ]
+  "accommodations": [ /* accommodation objects */ ],
+  "car_rentals": [ /* car rental objects */ ]
 }
 ```
 
@@ -329,6 +335,45 @@ so the checkout day shows no bar.
 | `paid_online` |  | Already paid? (badge **Paid online** / **To pay**) | boolean | `true` / `false` | `false` |
 | `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |
 
+### `car_rentals[]`
+
+A rental-car booking, rendered under the transport page, with its **pick-up**
+and **drop-off** also woven into their days' itineraries (on `pickup_date` /
+`dropoff_date`, at their times). The booking runs from a start datetime to an
+end datetime; the pick-up and drop-off datetimes must fall inside that window —
+validation errors otherwise (and the drop-off must not precede the pick-up). A
+pick-up or drop-off that overlaps an activity or transport on the same day is a
+validation warning. Each of the four times takes an optional UTC offset that
+falls back to `default.timezone`; a tz label is only shown when it differs. The
+drop-off location defaults to the pick-up location.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `booking_start_date` | ✅ | Booking start date | string | `YYYY-MM-DD` | — |
+| `booking_start_time` | ✅ | Booking start time | string | `HH:MM` | — |
+| `booking_end_date` | ✅ | Booking end date | string | `YYYY-MM-DD` | — |
+| `booking_end_time` | ✅ | Booking end time | string | `HH:MM` | — |
+| `pickup_date` | ✅ | Pick-up date (must be within the booking period) | string | `YYYY-MM-DD` | — |
+| `pickup_time` | ✅ | Pick-up time | string | `HH:MM` | — |
+| `dropoff_date` | ✅ | Drop-off date (must be within the booking period) | string | `YYYY-MM-DD` | — |
+| `dropoff_time` | ✅ | Drop-off time | string | `HH:MM` | — |
+| `pickup_location` | ✅ | Where you pick up the car | string | any text | — |
+| `dropoff_location` |  | Where you drop off the car | string | any text | the pick-up location |
+| `booking_start_tz` |  | Booking-start time zone | string | UTC offset | `default.timezone` |
+| `booking_end_tz` |  | Booking-end time zone | string | UTC offset | `default.timezone` |
+| `pickup_tz` |  | Pick-up time zone | string | UTC offset | `default.timezone` |
+| `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `default.timezone` |
+| `company` |  | Rental company | string | any text | `""` |
+| `booking_number` |  | Reservation reference | string | any text | `""` |
+| `price` |  | Rental price | string or number | text or number | `""` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `car_type` |  | Car category, shown as the badge | string | `regular` \| `small` \| `SUV` \| `4x4` | `"regular"` |
+| `car_model` |  | Car make/model | string | any text | `""` |
+| `contact` |  | Phone or email for the rental company | string | any text | `""` |
+| `additional_drivers` |  | Number of additional drivers | number | whole number ≥ 0 | `0` |
+| `pickup_duration` |  | How long the pick-up takes | string | duration | none (not shown) |
+| `dropoff_duration` |  | How long the drop-off takes | string | duration | none (not shown) |
+
 ## Development
 
 ```bash
@@ -337,9 +382,9 @@ pytest
 
 The code is organized into focused packages under `src/travelbook/`:
 
-- `models/` — `parsers`, `activities`, `transport`, `accommodation`, `itinerary`
+- `models/` — `parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `itinerary`
 - `validate/` — `jsonpos` (line-tracking parser), `findings`, `specs`, `validator`
-- `pdf/` — `base` + one mixin per section (`cover`, `days`, `transport`, `accommodation`)
+- `pdf/` — `base` + one mixin per section (`cover`, `days`, `transport`, `accommodation`, `car_rental`)
 - `lang/` — `dates` (localized names) and `translations` (the string maps)
 - `cli.py` — the command-line entry point
 
@@ -374,6 +419,7 @@ Each PDF has a colored cover page (title, traveler, dates, summary) with a
 **day-by-day overview table** (day number, date, main activities, and the town
 you sleep in). Then one section per day: a colored header band, an intro
 paragraph, the itinerary (each activity shown as a typed card with a badge and
-type-specific details), and a bottom bar for that night's stay. Finally a
-transport page and an accommodation summary page. The accent color is derived
-from `cover_color`.
+type-specific details, including any car pick-up/drop-off), and a bottom bar for
+that night's stay. Finally a transport page (transport legs plus rental-car
+bookings) and an accommodation summary page. The accent color is derived from
+`cover_color`.

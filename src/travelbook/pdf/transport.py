@@ -11,6 +11,14 @@ class TransportMixin:
         self._band_header(self.t("GETTING AROUND"), self.t("Transport"))
         for t in self.itinerary.transports:
             self._transport_card(t)
+        if self.itinerary.car_rentals:
+            if self.itinerary.transports:
+                self.ln(4)
+            if self.get_y() > self.h - self.b_margin - 34:
+                self.add_page()
+            self._section_title(self.t("Car rentals"))
+            for cr in self.itinerary.car_rentals:
+                self._car_rental_card(cr)
 
     def _transport_booking(self, t) -> str:
         bits = []

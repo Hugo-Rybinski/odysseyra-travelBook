@@ -69,6 +69,23 @@ _FR = {
     "Road": "Route",
     "{nights} night": "{nights} nuit",
     "{nights} nights": "{nights} nuits",
+    # -- PDF: car rentals --
+    "Car rentals": "Location de voiture",
+    "Car rental": "Location de voiture",
+    "Pick-up": "Retrait",
+    "Drop-off": "Restitution",
+    "Booked {start} → {end}": "Réservé {start} → {end}",
+    "Booked from {start}": "Réservé à partir de {start}",
+    "PICK-UP": "RETRAIT",
+    "DROP-OFF": "RESTITUTION",
+    "Pick up the rental car": "Retrait de la voiture de location",
+    "Drop off the rental car": "Restitution de la voiture de location",
+    "{n} additional driver": "{n} conducteur supplémentaire",
+    "{n} additional drivers": "{n} conducteurs supplémentaires",
+    "Regular": "Standard",
+    "Small": "Petite",
+    "SUV": "SUV",
+    "4x4": "4x4",
     # -- validation: message templates --
     "required field '{name}' is missing — {description}. Expected {expected}.":
         "champ obligatoire « {name} » manquant — {description}. Attendu : {expected}.",
@@ -149,6 +166,34 @@ _FR = {
     "amount.":
         "« paid_online » est vrai mais « price » manque — marqué payé sans "
         "montant.",
+    "optional field 'car_rentals' is missing — the rental-car bookings. "
+    "Expected an array of car rental objects. Defaulting to [] (no car rental "
+    "page).":
+        "champ optionnel « car_rentals » manquant — les locations de voiture. "
+        "Attendu : un tableau d'objets location de voiture. Valeur par défaut : "
+        "[] (pas de page location).",
+    "each car rental must be an object":
+        "chaque location de voiture doit être un objet",
+    "car rental booking end ({end}) must be after booking start ({start}).":
+        "la fin de réservation de la location ({end}) doit être après le début "
+        "de réservation ({start}).",
+    "car rental pick-up ({pu}) is outside the booking period ({start} → {end}).":
+        "le retrait de la location ({pu}) est hors de la période de réservation "
+        "({start} → {end}).",
+    "car rental drop-off ({do}) is outside the booking period "
+    "({start} → {end}).":
+        "la restitution de la location ({do}) est hors de la période de "
+        "réservation ({start} → {end}).",
+    "car rental drop-off ({do}) is before the pick-up ({pu}).":
+        "la restitution de la location ({do}) est avant le retrait ({pu}).",
+    "the car rental pick-up ({time}) overlaps an activity or transport on "
+    "{date}.":
+        "le retrait de la location ({time}) chevauche une activité ou un "
+        "transport le {date}.",
+    "the car rental drop-off ({time}) overlaps an activity or transport on "
+    "{date}.":
+        "la restitution de la location ({time}) chevauche une activité ou un "
+        "transport le {date}.",
     "distance_km must be a positive number (got {value}).":
         "distance_km doit être un nombre positif (reçu {value}).",
     "duration must be a positive length (got {value}).":
@@ -305,6 +350,29 @@ _FR = {
     "the price": "le prix",
     "whether it is already paid": "si c'est déjà payé",
     "whether breakfast is included": "si le petit-déjeuner est inclus",
+    "the booking start date": "la date de début de réservation",
+    "the booking start time": "l'heure de début de réservation",
+    "the booking end date": "la date de fin de réservation",
+    "the booking end time": "l'heure de fin de réservation",
+    "the pick-up date": "la date de retrait",
+    "the pick-up time": "l'heure de retrait",
+    "the drop-off date": "la date de restitution",
+    "the drop-off time": "l'heure de restitution",
+    "where you pick up the car": "où vous prenez la voiture",
+    "where you drop off the car": "où vous rendez la voiture",
+    "the booking start time zone": "le fuseau horaire de début de réservation",
+    "the booking end time zone": "le fuseau horaire de fin de réservation",
+    "the pick-up time zone": "le fuseau horaire de retrait",
+    "the drop-off time zone": "le fuseau horaire de restitution",
+    "the rental company": "la société de location",
+    "the rental price": "le prix de la location",
+    "the car category": "la catégorie de voiture",
+    "the car make/model": "la marque/le modèle de la voiture",
+    "a phone or email for the rental company":
+        "un téléphone ou email de la société de location",
+    "the number of additional drivers": "le nombre de conducteurs supplémentaires",
+    "how long the pick-up takes": "la durée de la prise en charge",
+    "how long the drop-off takes": "la durée de la restitution",
     # -- validation: expected values --
     "any text": "un texte",
     "a date YYYY-MM-DD": "une date AAAA-MM-JJ",
@@ -328,6 +396,8 @@ _FR = {
     "'booked' or 'confirmed'": "« booked » ou « confirmed »",
     "'paid' or 'to pay'": "« paid » ou « to pay »",
     "text or a number": "un texte ou un nombre",
+    "one of: regular, small, suv, 4x4": "l'un de : regular, small, suv, 4x4",
+    "a whole number": "un nombre entier",
     # -- validation: default descriptions --
     '"" (no subtitle shown)': "« » (aucun sous-titre)",
     "inferred from the earliest date": "déduite de la date la plus tôt",
@@ -390,6 +460,10 @@ _FR = {
     "hotel": "hôtel",
     "camping": "camping",
     "b&b": "b&b",
+    # car rental defaults
+    "the pick-up location": "le lieu de retrait",
+    '"regular"': "« regular »",
+    "0": "0",
 }
 
 TRANSLATIONS = {"fr": _FR}

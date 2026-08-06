@@ -4,6 +4,7 @@ import pytest
 
 from travelbook import (
     Accommodation,
+    CarRental,
     Hike,
     Itinerary,
     ItineraryError,
@@ -617,6 +618,53 @@ def test_accommodation_requires_fields_and_type_enum():
     with pytest.raises(ItineraryError):
         Accommodation.from_dict({**base, "type": "yurt"})
     assert Accommodation.from_dict(base).type == "hotel"  # default
+
+
+def test_car_rental_example_section():
+    it = Itinerary.from_json_file(EXAMPLE)
+    assert len(it.car_rentals) == 1
+    cr = it.car_rentals[0]
+    assert isinstance(cr, CarRental)
+    assert cr.company == "Europcar"
+    assert cr.car_type == "suv" and cr.car_type_label == "SUV"
+    assert cr.paid is True
+    assert cr.additional_drivers == 1
+    assert cr.pickup_duration_display == "30 min"
+    # all four offsets inherit the trip's +02:00 default
+    assert cr.pickup_tz == 120 and cr.dropoff_tz == 120
+
+
+def test_car_rental_requires_core_fields():
+    base = {
+        "booking_start_date": "2026-06-08", "booking_start_time": "09:00",
+        "booking_end_date": "2026-06-11", "booking_end_time": "20:00",
+        "pickup_date": "2026-06-08", "pickup_time": "10:00",
+        "dropoff_date": "2026-06-11", "dropoff_time": "18:00",
+        "pickup_location": "Pau Airport",
+    }
+    for drop in base:
+        with pytest.raises(ItineraryError):
+            CarRental.from_dict({k: v for k, v in base.items() if k != drop})
+    assert CarRental.from_dict(base).car_type == "regular"  # default
+
+
+def test_car_rental_type_enum_and_dropoff_defaults_to_pickup():
+    base = {
+        "booking_start_date": "2026-06-08", "booking_start_time": "09:00",
+        "booking_end_date": "2026-06-11", "booking_end_time": "20:00",
+        "pickup_date": "2026-06-08", "pickup_time": "10:00",
+        "dropoff_date": "2026-06-11", "dropoff_time": "18:00",
+        "pickup_location": "Pau Airport",
+    }
+    with pytest.raises(ItineraryError):
+        CarRental.from_dict({**base, "car_type": "spaceship"})
+    with pytest.raises(ItineraryError):
+        CarRental.from_dict({**base, "additional_drivers": "many"})
+    cr = CarRental.from_dict({**base, "car_type": "4x4"})
+    assert cr.car_type == "4x4" and cr.car_type_label == "4x4"
+    # drop-off location defaults to the pick-up location; drivers default to 0
+    assert cr.dropoff_location == "Pau Airport"
+    assert cr.additional_drivers == 0
 
 
 def test_activity_accepts_timezone():

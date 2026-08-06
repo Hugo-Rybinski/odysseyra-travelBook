@@ -72,8 +72,21 @@ def V_STATUS(value):
     return "must be 'booked' or 'confirmed'"
 
 
+def V_COUNT(value):
+    if isinstance(value, bool):
+        return "must be a whole number"
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return "must be a whole number"
+    if n < 0:
+        return "must be zero or more"
+    return None
+
+
 from ..models import (  # noqa: E402
     ACCOMMODATION_TYPES,
+    CAR_TYPES,
     MEAL_TYPES,
     POI_CATEGORIES,
     TRANSPORT_TYPES,
@@ -92,6 +105,7 @@ V_CATEGORY = _enum_check(POI_CATEGORIES)
 V_TTYPE = _enum_check(TRANSPORT_TYPES)
 V_ATYPE = _enum_check(ACCOMMODATION_TYPES)
 V_MEAL = _enum_check(MEAL_TYPES)
+V_CAR_TYPE = _enum_check(CAR_TYPES)
 
 
 def V_HEX(value):
@@ -249,5 +263,47 @@ ACCOMMODATION_SPECS = [
          "false (shows a 'To pay' badge)", V_BOOL),
     Spec("breakfast_included", False, "whether breakfast is included",
          "true or false", "false", V_BOOL),
+]
+
+CAR_RENTAL_SPECS = [
+    Spec("booking_start_date", True, "the booking start date",
+         "a date YYYY-MM-DD", "", V_DATE),
+    Spec("booking_start_time", True, "the booking start time",
+         "a time HH:MM", "", V_TIME),
+    Spec("booking_end_date", True, "the booking end date",
+         "a date YYYY-MM-DD", "", V_DATE),
+    Spec("booking_end_time", True, "the booking end time",
+         "a time HH:MM", "", V_TIME),
+    Spec("pickup_date", True, "the pick-up date", "a date YYYY-MM-DD", "", V_DATE),
+    Spec("pickup_time", True, "the pick-up time", "a time HH:MM", "", V_TIME),
+    Spec("dropoff_date", True, "the drop-off date", "a date YYYY-MM-DD", "", V_DATE),
+    Spec("dropoff_time", True, "the drop-off time", "a time HH:MM", "", V_TIME),
+    Spec("pickup_location", True, "where you pick up the car", "any text"),
+    Spec("dropoff_location", False, "where you drop off the car", "any text",
+         "the pick-up location"),
+    Spec("booking_start_tz", False, "the booking start time zone",
+         "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
+    Spec("booking_end_tz", False, "the booking end time zone",
+         "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
+    Spec("pickup_tz", False, "the pick-up time zone",
+         "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
+    Spec("dropoff_tz", False, "the drop-off time zone",
+         "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
+    Spec("company", False, "the rental company", "any text", '""'),
+    Spec("booking_number", False, "the reservation reference", "any text", '""'),
+    Spec("price", False, "the rental price", "text or a number", '""'),
+    Spec("paid", False, "the payment state", "'paid' or 'to pay'",
+         "none (no badge)", V_PAID),
+    Spec("car_type", False, "the car category",
+         "one of: " + ", ".join(CAR_TYPES), '"regular"', V_CAR_TYPE),
+    Spec("car_model", False, "the car make/model", "any text", '""'),
+    Spec("contact", False, "a phone or email for the rental company",
+         "any text", '""'),
+    Spec("additional_drivers", False, "the number of additional drivers",
+         "a whole number", "0", V_COUNT),
+    Spec("pickup_duration", False, "how long the pick-up takes",
+         "a duration like '30 min'", "none (not shown)", V_DUR),
+    Spec("dropoff_duration", False, "how long the drop-off takes",
+         "a duration like '30 min'", "none (not shown)", V_DUR),
 ]
 

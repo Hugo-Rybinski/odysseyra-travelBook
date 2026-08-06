@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .accommodation import Accommodation
 from .activities import Activity, activity_from_dict, schedule_activities
+from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
 from .parsers import (
     ItineraryError,
     _parse_date,
@@ -58,6 +59,7 @@ class Itinerary:
     days: list[Day] = field(default_factory=list)
     accommodations: list[Accommodation] = field(default_factory=list)
     transports: list[Transport] = field(default_factory=list)
+    car_rentals: list[CarRental] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Itinerary":
@@ -107,9 +109,14 @@ class Itinerary:
                 Accommodation.from_dict(a) for a in data.get("accommodations", [])
             ],
             transports=[Transport.from_dict(t) for t in transport_data],
+            car_rentals=[
+                CarRental.from_dict(c) for c in data.get("car_rentals", [])
+            ],
         )
         for transport in itinerary.transports:
             resolve_transport(transport, default_tz)
+        for car_rental in itinerary.car_rentals:
+            resolve_car_rental(car_rental, default_tz)
         itinerary._infer_dates()
         for day in itinerary.days:
             for act in day.activities:
@@ -138,6 +145,7 @@ class Itinerary:
             else:
                 seeds = [t.start_date for t in self.transports if t.start_date]
                 seeds += [a.arrival for a in self.accommodations if a.arrival]
+                seeds += [c.pickup_date for c in self.car_rentals if c.pickup_date]
                 day0 = min(seeds) if seeds else None
         if day0 is not None:
             for i, day in enumerate(self.days):
@@ -149,6 +157,9 @@ class Itinerary:
             dates += [d for d in (t.start_date, t.end_date) if d]
         for a in self.accommodations:
             dates += [d for d in (a.arrival, a.departure) if d]
+        for c in self.car_rentals:
+            dates += [d for d in (c.booking_start_date, c.booking_end_date,
+                                  c.pickup_date, c.dropoff_date) if d]
         if self.start_date is None:
             self.start_date = min(dates) if dates else None
         if self.end_date is None:
@@ -185,6 +196,18 @@ class Itinerary:
         if day is None:
             return []
         return [t for t in self.transports if t.start_date == day]
+
+    def car_events_on(self, day: date | None) -> list[CarRentalEvent]:
+        """Car-rental pick-up / drop-off events falling on ``day``."""
+        if day is None:
+            return []
+        events = []
+        for cr in self.car_rentals:
+            if cr.pickup_date == day:
+                events.append(cr.pickup_event())
+            if cr.dropoff_date == day:
+                events.append(cr.dropoff_event())
+        return events
 
     def night_transport(self, day: date | None) -> Transport | None:
         """An overnight leg departing on ``day`` — you sleep aboard it."""

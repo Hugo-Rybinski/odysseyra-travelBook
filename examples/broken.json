@@ -42,5 +42,18 @@
     { "name": "Hotel A", "city": "Paris", "arrival": "2026-06-09", "departure": "2026-06-10" },
     { "name": "Hotel B", "arrival": "2026-06-09", "departure": "2026-06-10" },
     { "arrival": "not-a-date" }
+  ],
+  "car_rentals": [
+    { "booking_start_date": "2026-06-11", "booking_start_time": "20:00",
+      "booking_end_date": "2026-06-08", "booking_end_time": "09:00",
+      "pickup_date": "2026-06-09", "pickup_time": "10:00",
+      "dropoff_date": "2026-06-10", "dropoff_time": "10:00",
+      "pickup_location": "Pau Airport" },
+    { "booking_start_date": "2026-06-08", "booking_start_time": "09:00",
+      "booking_end_date": "2026-06-11", "booking_end_time": "20:00",
+      "pickup_date": "2026-06-07", "pickup_time": "10:00",
+      "dropoff_date": "2026-06-06", "dropoff_time": "10:00",
+      "pickup_location": "X", "car_type": "spaceship",
+      "additional_drivers": -1, "paid": "later" }
   ]
 }
