@@ -41,6 +41,17 @@ who you booked with, the **price**, and whether it's **paid**.
   derives the third. Departure date + time are always required.
 - **Timezones matter.** For a flight `22:30 (UTC-4) → 11:45 (UTC+2)`, set both
   `start_tz` and `end_tz` so the duration comes out right (here 7h15).
+- **If the source doesn't state the timezones, look them up.** For a flight,
+  resolve each airport's zone from its code (e.g. `JFK` → `America/New_York`,
+  `CDG` → `Europe/Paris`); for a train, resolve each station's zone from its
+  name/city. Use the UTC offset in effect on the travel date (mind DST), and set
+  `start_tz` / `end_tz` accordingly. Only skip this when both endpoints clearly
+  share the trip's default timezone.
+- **One file per leg.** If a flight or train has several legs — e.g. Paris → New
+  York *via* London — create a separate JSON per leg (one Paris → London, one
+  London → New York), each with its own times, timezones, and (where they
+  differ) flight/train numbers. Don't collapse a multi-leg journey into a single
+  entry.
 - An **overnight** leg (arrival time earlier than departure, or `end_date`
   after `start_date`) is treated as *that night's accommodation* — you sleep
   aboard it, so don't also add a hotel for that night.
@@ -90,3 +101,9 @@ website."*
   "June 8, 2026" → `"2026-06-08"`.
 - When a value is unknown but the field is required, leave a clear
   `"FIXME"` placeholder so `travelbook validate` (run by `stitch`) flags it.
+- **After writing the JSON, report the gaps.** List the optional fields you left
+  empty (with a one-line note on what each would add) so the user can fill in
+  anything the source didn't cover.
+- **Trust user-supplied details.** If the user adds or corrects a value by hand,
+  keep it even when it isn't in the source document — treat it as ground truth,
+  not something to second-guess or overwrite.

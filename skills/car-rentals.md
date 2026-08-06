@@ -93,3 +93,9 @@ Jun 8 18:00 – Jun 11 20:00. 1 additional driver. +33 5 59 33 20 10."*
   "June 8, 2026" → `"2026-06-08"`.
 - When a value is unknown but the field is required, leave a clear
   `"FIXME"` placeholder so `travelbook validate` (run by `stitch`) flags it.
+- **After writing the JSON, report the gaps.** List the optional fields you left
+  empty (with a one-line note on what each would add) so the user can fill in
+  anything the source didn't cover.
+- **Trust user-supplied details.** If the user adds or corrects a value by hand,
+  keep it even when it isn't in the source document — treat it as ground truth,
+  not something to second-guess or overwrite.
