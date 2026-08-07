@@ -474,6 +474,12 @@ class _Validator:
                 if "coordinate" in act:
                     continue
                 path = ("days", di, "activities", ai)
+                if (act.get("type") == "place" and not infer
+                        and self._has_shown_sub_coordinate(act)):
+                    self.add("info", path, "this area has no 'coordinate' of its "
+                             "own — its map pin will be placed at the average "
+                             "position of its located sub-activities.")
+                    continue
                 if not infer:
                     self.add("info", path, "maps are on but this activity has no "
                              "'coordinate' and inference is off — it won't appear "
@@ -483,6 +489,18 @@ class _Validator:
                     self.add("info", path, "maps are on but this activity has no "
                              "'coordinate' and nothing to geocode — it won't appear "
                              "on the day map.")
+
+    def _has_shown_sub_coordinate(self, act):
+        """True if any of a place's nested activities carries an explicit
+        coordinate that would be plotted. Such a place can be centered on the
+        average of those sub-points even without a coordinate of its own."""
+        for sub in act.get("activities", []) or []:
+            if not isinstance(sub, dict):
+                continue
+            coord = sub.get("coordinate")
+            if isinstance(coord, dict) and _truthy(coord.get("show_on_map", True)):
+                return True
+        return False
 
     def _walk_coordinates(self, node, path):
         """Recursively validate every coordinate object (``coordinate`` and the

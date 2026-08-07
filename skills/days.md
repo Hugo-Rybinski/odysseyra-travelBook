@@ -118,7 +118,9 @@ same city, town, or national park, don't list them flat in the day — create a
 its `activities`. Reserve the top-level list for the day's distinct legs (a
 drive, a different town), and keep everything that belongs to one area together
 under it. When maps are on this also reads better: the area gets a single pin
-plus a second map zoomed to its nested points.
+plus a second map zoomed to its nested points. You don't need to give the area
+its own `coordinate` — if you omit it, its pin is placed at the average position
+of its located sub-activities.
 
 ### Type `hike`
 

@@ -17,6 +17,10 @@ _FR = {
     "Day {index} overview": "Aperçu du jour {index}",
     "Geocoded {filled} coordinate(s), {missed} not found → {path}":
         "{filled} coordonnée(s) géocodée(s), {missed} introuvable(s) → {path}",
+    "this area has no 'coordinate' of its own — its map pin will be placed at "
+    "the average position of its located sub-activities.":
+        "cette zone n'a pas de 'coordinate' propre — son point sur la carte sera "
+        "placé à la position moyenne de ses sous-activités localisées.",
     # -- PDF: activity badges & labels --
     "ROAD": "ROUTE",
     "POINT": "POINT",

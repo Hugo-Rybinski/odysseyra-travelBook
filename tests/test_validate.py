@@ -554,6 +554,37 @@ def test_maps_coherence_silent_when_maps_off():
     assert "won't appear on the day map" not in _messages(validate_text(json.dumps(doc)))
 
 
+def test_place_without_coordinate_is_centroid_pinned():
+    # a place with no coordinate of its own, but with located sub-activities,
+    # is pinned at their average -> an info, not a "won't appear" warning.
+    doc = {"travel_description": {"title": "T"},
+           "defaults": {"include_maps_in_render": True,
+                        "infer_coordinates_from_address": False},
+           "days": [{"title": "d", "activities": [
+               {"type": "place", "name": "Old town", "activities": [
+                   {"type": "point_of_interest", "name": "A",
+                    "coordinate": {"lat": 1.0, "long": 2.0}},
+                   {"type": "point_of_interest", "name": "B",
+                    "coordinate": {"lat": 3.0, "long": 4.0}}]}]}]}
+    infos = _messages(_infos(validate_text(json.dumps(doc))))
+    assert "will be placed at the average position" in infos
+    assert "won't appear on the day map" not in infos
+
+
+def test_place_without_located_subs_wont_appear():
+    # a place with neither its own coordinate nor any located sub-activity
+    # falls back to the plain "won't appear" info.
+    doc = {"travel_description": {"title": "T"},
+           "defaults": {"include_maps_in_render": True,
+                        "infer_coordinates_from_address": False},
+           "days": [{"title": "d", "activities": [
+               {"type": "place", "name": "Old town", "activities": [
+                   {"type": "point_of_interest", "name": "A"}]}]}]}
+    infos = _messages(_infos(validate_text(json.dumps(doc))))
+    assert "won't appear on the day map" in infos
+    assert "will be placed at the average position" not in infos
+
+
 def test_broken_example_output_snapshot():
     """The committed validator output for examples/broken.json must match the
     current validator. Regenerate it with `UPDATE_SNAPSHOTS=1 pytest` whenever
