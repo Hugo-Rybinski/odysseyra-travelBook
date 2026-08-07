@@ -22,6 +22,10 @@ class DayMixin:
             self.multi_cell(self.content_width, 6, day.description)
             self.ln(3)
 
+        day_maps = self.day_maps(day)
+        if day_maps:
+            self.day_main_map(day_maps)
+
         items = self._day_items(day)
         if items:
             self._section_title(self.t("Itinerary"))
@@ -36,6 +40,8 @@ class DayMixin:
                     self._car_rental_row(item)
                 else:
                     self._activity(item)
+                    if item.kind == "place":
+                        self.day_area_map(day_maps, item.title)
 
         self._day_stay(day)
 

@@ -13,6 +13,7 @@ _FR = {
     "SLEEP": "NUIT",
     "DAY {index}": "JOUR {index}",
     "Itinerary": "Itinéraire",
+    "Zoom — {area}": "Zoom — {area}",
     # -- PDF: activity badges & labels --
     "ROAD": "ROUTE",
     "POINT": "POINT",

@@ -14,12 +14,13 @@ from .accommodation import AccommodationMixin
 from .base import _PDFBase
 from .car_rental import CarRentalMixin
 from .cover import CoverMixin
+from .day_map import DayMapMixin
 from .days import DayMixin
 from .transport import TransportMixin
 
 
-class TravelPDF(CoverMixin, DayMixin, TransportMixin, AccommodationMixin,
-                CarRentalMixin, _PDFBase):
+class TravelPDF(CoverMixin, DayMixin, DayMapMixin, TransportMixin,
+                AccommodationMixin, CarRentalMixin, _PDFBase):
     """The travel-book PDF, assembled from per-section mixins."""
 
 
