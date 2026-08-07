@@ -6,6 +6,7 @@ validators) and :mod:`.validator` (the validation pass)."""
 
 from .findings import Finding, format_findings
 from .jsonpos import load_with_lines
-from .validator import validate_text
+from .validator import FRAGMENT_KINDS, validate_fragment, validate_text
 
-__all__ = ["Finding", "format_findings", "load_with_lines", "validate_text"]
+__all__ = ["FRAGMENT_KINDS", "Finding", "format_findings", "load_with_lines",
+           "validate_fragment", "validate_text"]

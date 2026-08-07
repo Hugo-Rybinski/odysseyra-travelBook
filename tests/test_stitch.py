@@ -9,6 +9,7 @@ from travelbook.stitch import (
     StitchError,
     aggregate,
     create_skeleton,
+    fragment_files,
     safe_filename,
 )
 
@@ -137,6 +138,66 @@ def test_cli_stitch_missing_dir_returns_1(tmp_path, capsys):
     rc = main(["stitch", str(tmp_path / "nope")])
     assert rc == 1
     assert "error:" in capsys.readouterr().err
+
+
+def test_fragment_files_lists_every_piece_in_stitch_order(tmp_path):
+    root, src = _fragment_dir(tmp_path)
+    frags = fragment_files(root)
+    kinds = [kind for kind, _ in frags]
+    assert kinds == (
+        ["travel_description", "defaults"]
+        + ["day"] * len(src["days"])
+        + ["transport"] * len(src["transport"])
+        + ["accommodation"] * len(src["accommodations"])
+        + ["car_rental"] * len(src["car_rentals"])
+    )
+    # ordered by filename within each section
+    day_files = [p.name for kind, p in frags if kind == "day"]
+    assert day_files == sorted(day_files)
+
+
+def test_stitch_validates_each_fragment_with_local_line_numbers(tmp_path, capsys):
+    # a broken day fragment: the invalid `duration` sits on the fragment's own
+    # line 6, and that is the line reported in the per-fragment pass (whereas the
+    # assembled pass reports a different, merged-file line).
+    root, _ = _fragment_dir(tmp_path)
+    for p in (root / "days").glob("*.json"):
+        p.unlink()
+    (root / "days" / "01.json").write_text(
+        '{\n'
+        '  "title": "Broken day",\n'
+        '  "activities": [\n'
+        '    {\n'
+        '      "type": "place", "name": "Somewhere",\n'
+        '      "duration": "banana"\n'
+        '    }\n'
+        '  ]\n'
+        '}\n',
+        encoding="utf-8")
+
+    n = len(fragment_files(root))
+    rc = main(["stitch", str(root), "-v", "1"])
+    out = capsys.readouterr().out
+    assert rc == 1  # a fragment error fails the stitch
+    assert f"Validating {n} fragment file(s):" in out
+    assert "days/01.json" in out
+    # the per-fragment finding points at the fragment file's own line 6
+    assert "line 6: field 'duration' is invalid ('banana')" in out
+    # the assembled itinerary is still validated (and written) afterwards
+    assert "Validating the assembled itinerary:" in out
+    assert (root / "Pyrenees Road Trip.json").exists()
+
+
+def test_stitch_reports_invalid_json_fragment_before_stitching(tmp_path, capsys):
+    root, _ = _fragment_dir(tmp_path)
+    (root / "transports" / "01.json").write_text("{ not json", encoding="utf-8")
+    rc = main(["stitch", str(root)])
+    out, err = capsys.readouterr().out, capsys.readouterr().err
+    # phase 1 flags the malformed file as an error; phase 2 (aggregate) then
+    # bails out with a StitchError.
+    assert "transports/01.json" in out
+    assert "invalid JSON" in out
+    assert rc == 1
 
 
 def test_create_skeleton_lays_out_dirs_and_stub(tmp_path):

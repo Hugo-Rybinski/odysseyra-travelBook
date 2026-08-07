@@ -23,9 +23,10 @@ from .stitch import (
     StitchError,
     aggregate,
     create_skeleton,
+    fragment_files,
     safe_filename,
 )
-from .validate import format_findings, validate_text
+from .validate import format_findings, validate_fragment, validate_text
 
 
 def _run_build(input_path: Path, output: Path | None, lang: str,
@@ -92,16 +93,55 @@ def _run_validate(input_path: Path, verbose: int, lang: str) -> int:
 
 
 def _run_stitch(directory: Path, verbose: int, lang: str) -> int:
+    directory = Path(directory)
+
+    # Phase 1 — validate each fragment file on its own, so line numbers point at
+    # the file you actually edit (once stitched, they'd point at the merged
+    # output). The `defaults` fragment is parsed first and fed to the others so
+    # currency / timezone checks match their post-stitch behavior.
+    frags = fragment_files(directory)
+    defaults = None
+    for kind, path in frags:
+        if kind == "defaults":
+            try:
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                loaded = None
+            defaults = loaded if isinstance(loaded, dict) else None
+            break
+
+    frag_errors = 0
+    if frags:
+        print(tr("Validating {n} fragment file(s):", lang).format(n=len(frags)))
+    for kind, path in frags:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            print(f"  error: {exc}", file=sys.stderr)
+            frag_errors += 1
+            continue
+        findings = validate_fragment(
+            text, kind, lang, defaults=None if kind == "defaults" else defaults)
+        frag_errors += sum(1 for f in findings if f.level == "error")
+        rel = path.relative_to(directory)
+        print(f"  {rel}")
+        for line in format_findings(findings, verbose, lang).splitlines():
+            print(f"    {line}")
+
+    # Phase 2 — attempt the stitch.
     try:
         data = aggregate(directory)
     except StitchError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    # Validate the assembled JSON (as text, so line numbers point at the file we
-    # are about to write), report the findings, then save it in the directory.
+    # Phase 3 — re-validate the assembled JSON (as text, so line numbers point
+    # at the file we are about to write), report, then save it in the directory.
     text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     findings = validate_text(text, lang)
+    if frags:
+        print()
+    print(tr("Validating the assembled itinerary:", lang))
     print(format_findings(findings, verbose, lang))
 
     title = str(data.get("travel_description", {}).get("title", ""))
@@ -109,7 +149,7 @@ def _run_stitch(directory: Path, verbose: int, lang: str) -> int:
     out.write_text(text, encoding="utf-8")
     print(tr("Wrote {path}  ({days} days)", lang).format(
         path=out, days=len(data.get("days", []))))
-    return 1 if any(f.level == "error" for f in findings) else 0
+    return 1 if (frag_errors or any(f.level == "error" for f in findings)) else 0
 
 
 def _run_create_skeleton(path: Path, name: str) -> int:

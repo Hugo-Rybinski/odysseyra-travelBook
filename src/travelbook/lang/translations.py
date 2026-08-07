@@ -356,6 +356,12 @@ _FR = {
         " — {hidden} masqué(s) (augmentez --verbose)",
     "Validation errors (building anyway):":
         "Erreurs de validation (génération quand même) :",
+    "Validating {n} fragment file(s):":
+        "Validation de {n} fichier(s) fragment :",
+    "Validating the assembled itinerary:":
+        "Validation de l'itinéraire assemblé :",
+    "this fragment must be a JSON object.":
+        "ce fragment doit être un objet JSON.",
     "Wrote {path}  ({days} days)": "Écrit {path}  ({days} jours)",
     # -- validation: field descriptions --
     "the trip title shown on the cover": "le titre du voyage sur la couverture",

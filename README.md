@@ -42,7 +42,7 @@ travelbook geocode examples/pyrenees.json --country FR
 
 # Scaffold an empty fragment directory, then stitch it once it's filled in
 travelbook create-skeleton . mytrip        # creates ./mytrip/ with sub-folders
-travelbook stitch examples/pyrenees_pieces # assemble one JSON, then validate it
+travelbook stitch examples/pyrenees_pieces # validate each piece, assemble, re-validate
 
 # or without installing the entry point
 python -m travelbook.cli validate examples/pyrenees.json
@@ -152,10 +152,22 @@ Each array folder contributes one entry per JSON file, **ordered by file name**
 (so a numeric prefix like `1-arrival.json` keeps days in order); a file may also
 hold a JSON array, in which case each element becomes one entry. If
 `travel_description.json` is absent you are prompted for its fields (only
-`title` is required). The command validates the assembled JSON (respecting
-`--verbose` / `--lang`), prints the findings, and writes the result into the
-directory as `<title>.json` — e.g. `Pyrenees Road Trip.json`. It exits non-zero
-if validation found errors.
+`title` is required).
+
+Validation runs in two passes (both respecting `--verbose` / `--lang`):
+
+1. **Each fragment file is validated on its own first**, and its findings are
+   printed under that file's path — so the line numbers point at the file you
+   actually edit. (After stitching, line numbers would point at the merged
+   output instead.)
+2. The pieces are stitched, and **the assembled JSON is validated again** —
+   this second pass adds the cross-file coherence checks that no single fragment
+   can see (nowhere-to-sleep nights, overlapping stays, day ordering, a manual
+   trip range that doesn't cover the days, …).
+
+The result is written into the directory as `<title>.json` — e.g.
+`Pyrenees Road Trip.json`. The command exits non-zero if either pass found
+errors.
 
 ```bash
 travelbook stitch examples/pyrenees_pieces            # → "Pyrenees Road Trip.json"

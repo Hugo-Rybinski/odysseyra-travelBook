@@ -966,3 +966,64 @@ def validate_text(text: str, lang: str = DEFAULT_LANGUAGE) -> list[Finding]:
         return [Finding("error", None,
                         tr("invalid JSON — {error}", lang).format(error=exc))]
     return _Validator(data, lines, lang).run()
+
+
+# The "kind" of each stitch fragment file, used to pick which per-object check
+# to run when validating one file on its own.
+FRAGMENT_KINDS = ("travel_description", "defaults", "day", "transport",
+                  "accommodation", "car_rental")
+
+
+def _check_fragment(v: _Validator, obj, base, kind: str) -> None:
+    """Run the per-object validation appropriate for a single fragment ``obj``
+    at path ``base`` (so its line numbers stay relative to the fragment file)."""
+    if kind == "travel_description":
+        v.check_object(obj, base, TRAVEL_DESCRIPTION)
+    elif kind == "defaults":
+        v.check_object(obj, base, DEFAULTS)
+        v._secondary_currencies(obj, base)
+        v._inference_countries(obj, base)
+    elif kind == "day":
+        v._day(obj, base)
+    elif kind == "transport":
+        v._transport(obj, base)
+    elif kind == "accommodation":
+        v._accommodation(obj, base)
+    elif kind == "car_rental":
+        v._car_rental(obj, base)
+    else:
+        raise ValueError(f"unknown fragment kind: {kind!r}")
+
+
+def validate_fragment(text: str, kind: str, lang: str = DEFAULT_LANGUAGE,
+                      defaults: dict | None = None) -> list[Finding]:
+    """Validate a single stitch fragment file (a ``travel_description`` /
+    ``defaults`` object, or one entry of a ``day`` / ``transport`` /
+    ``accommodation`` / ``car_rental`` array) *in isolation*.
+
+    Line numbers in the returned findings are relative to ``text`` — the
+    fragment file you actually edit — which is the whole point of checking each
+    piece before it is merged. ``defaults`` is the trip's already-parsed
+    ``defaults`` dict (or None); it is fed in so the cross-cutting checks that
+    read it (price currency, timezone) behave as they will after stitching.
+
+    A single array file that holds a JSON list is validated element by element.
+    """
+    try:
+        data, lines = load_with_lines(text)
+    except JSONPositionError as exc:
+        return [Finding("error", None,
+                        tr("invalid JSON — {error}", lang).format(error=exc))]
+    seed = {"defaults": defaults} if isinstance(defaults, dict) else {}
+    v = _Validator(seed, lines, lang)
+    if kind in ("travel_description", "defaults"):
+        if not isinstance(data, dict):
+            v.add("error", (), "this fragment must be a JSON object.")
+        else:
+            _check_fragment(v, data, (), kind)
+    elif isinstance(data, list):
+        for i, item in enumerate(data):
+            _check_fragment(v, item, (i,), kind)
+    else:
+        _check_fragment(v, data, (), kind)
+    return v.findings

@@ -41,6 +41,15 @@ _ARRAY_SECTIONS = [
 # lays down and `stitch` reads back first.
 SKELETON_DIRS = [names[0] for names, _ in _ARRAY_SECTIONS]
 
+# Each array section's itinerary key → the singular fragment "kind" used to
+# validate one of its files on its own (see validate.validate_fragment).
+_SECTION_KIND = {
+    "days": "day",
+    "transport": "transport",
+    "accommodations": "accommodation",
+    "car_rentals": "car_rental",
+}
+
 
 def _load_json(path: Path):
     try:
@@ -134,6 +143,34 @@ def aggregate(directory: str | Path, ask: Callable[[str], str] = input) -> dict:
             f"no days found — add day JSON files under {directory / 'days'}/"
         )
     return data
+
+
+def fragment_files(directory: str | Path) -> list[tuple[str, Path]]:
+    """Every fragment JSON file in ``directory``, in stitch order, each paired
+    with its validation ``kind`` (``travel_description`` / ``defaults`` / ``day``
+    / ``transport`` / ``accommodation`` / ``car_rental``). Mirrors exactly what
+    :func:`aggregate` reads, so the two never diverge on which files count."""
+    directory = Path(directory)
+    out: list[tuple[str, Path]] = []
+    td = directory / "travel_description.json"
+    if td.is_file():
+        out.append(("travel_description", td))
+    default_file = next(
+        (directory / n for n in ("defaults.json", "default.json")
+         if (directory / n).is_file()),
+        None,
+    )
+    if default_file is not None:
+        out.append(("defaults", default_file))
+    for names, key in _ARRAY_SECTIONS:
+        for name in names:
+            d = directory / name
+            if d.is_dir():
+                files = sorted(d.glob("*.json"))
+                if files:
+                    out.extend((_SECTION_KIND[key], p) for p in files)
+                    break
+    return out
 
 
 def create_skeleton(path: str | Path, name: str) -> Path:
