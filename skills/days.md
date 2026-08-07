@@ -93,6 +93,14 @@ its distance (`distance_km`) or duration (`duration`), still add each missing
 field with a `"FIXME"` value so the user is prompted to fill it in — e.g.
 `"distance_km": "FIXME"`, `"duration": "FIXME"`.
 
+**Link separate places with a `road`.** Between two consecutive activities that
+happen in different places (a different town, area, or trailhead), insert a
+`road` whose `start` is the first place and `end` is the second, so the transfer
+between them is shown. Skip it only when the two stops share the same area —
+they're nested under the same `place`, or clearly in one town — since there's no
+leg to draw within a single place. Give the road a `"distance_km": "FIXME"` and
+`"duration": "FIXME"` if the source doesn't state them (per the rule above).
+
 ### Type `point_of_interest` — a specific sight
 
 | Field | Required | Format | Notes |
