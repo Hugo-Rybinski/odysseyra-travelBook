@@ -109,7 +109,8 @@ def resolve_day(day, itinerary, cache):
       place/area contributes a single pin).
     * ``routes`` — ``[[(lat, long), …]]`` drive geometries.
     * ``route_nodes`` — ``[[(lat, long), …]]`` the named stops of each route
-      (start / waypoints / end), for the full-opacity node discs on the map.
+      (the departure plus each *named* waypoint), for the full-opacity node
+      discs on the map. Unnamed route-shaping waypoints are excluded.
     * ``area_details`` — ``[(title, [_Pt])]`` for places with >= 2 nested points.
     """
     r = _Resolver(itinerary, cache)
@@ -130,7 +131,12 @@ def resolve_day(day, itinerary, cache):
             pts = ([a] if a else []) + waypoints
             if len(pts) >= 2:
                 routes.append(_route_through(pts, cache))
-                route_nodes.append(list(pts))
+                # only the departure and *named* waypoints get a node disc;
+                # unnamed (route-shaping) waypoints still bend the route but
+                # are not marked with their own circle.
+                named = [(w.coordinate.lat, w.coordinate.long)
+                         for w in act.waypoints if w.location]
+                route_nodes.append(([a] if a else []) + named)
             continue
         if act.kind == "place":
             nested = []

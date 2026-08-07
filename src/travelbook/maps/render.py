@@ -141,8 +141,9 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
     * ``labels`` — pin text per point (defaults to ``1..N``); e.g. letters for an
       area map or ``*`` for the night's stay.
     * ``route_nodes`` — ``[(lat, long), …]`` the named stops of the routes
-      (start / waypoints / end); each gets a small full-opacity accent disc
-      sitting on top of the translucent route line.
+      (the departure plus each named waypoint); each gets a small full-opacity
+      accent disc sitting on top of the translucent route line. Unnamed
+      route-shaping waypoints are not marked.
     * ``accent`` — ``(r, g, b)`` theme color (the trip's ``cover_color``).
     """
     lats = [c[0] for c in all_coords]
@@ -186,7 +187,8 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
             Image.new("RGBA", img.size, (0, 0, 0, 0)), layer, 0.6))
 
     # route nodes: small full-opacity accent discs (white-ringed) marking the
-    # start / waypoints / end, sitting on top of the translucent route line.
+    # departure and each named waypoint, sitting on top of the translucent
+    # route line.
     node_px = [project(lat, lon) for lat, lon in (route_nodes or [])]
     if node_px:
         nr = (3 if ink_saver else 4) * SCALE
