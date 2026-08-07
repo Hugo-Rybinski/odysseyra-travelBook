@@ -168,7 +168,9 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   English), `examples/pyrenees_pieces/` (the same trip split into per-file
   fragments for `stitch` — a test asserts it reassembles `pyrenees.json`
   exactly, so keep the two in sync), `examples/pyrenees_fr.json` (same trip in
-  French — build with `--lang fr`), `examples/broken.json` (exercises every
+  French — build with `--lang fr`), `examples/kyrgyzstan.json` (maps-on, explicit
+  coordinates, sparse OSM region — some sights intentionally unpinned; a test
+  asserts it validates clean), `examples/broken.json` (exercises every
   validator rule).
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it

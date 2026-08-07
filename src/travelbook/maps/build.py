@@ -105,17 +105,26 @@ def resolve_day(day, itinerary, cache):
             if a and b:
                 routes.append(route(a, b, cache))
             continue
-        coord = r.point_coord(act, city)
-        if coord:
-            main.append(_Pt(act.title, coord[0], coord[1]))
         if act.kind == "place":
             nested = []
             for sub in act.activities:
                 sc = r.point_coord(sub, city)
                 if sc:
                     nested.append(_Pt(sub.title, sc[0], sc[1]))
+            coord = r.point_coord(act, city)
+            hidden = act.coordinate is not None and not act.coordinate.show_on_map
+            if coord is None and nested and not hidden:
+                # fall back to the centroid of the area's located sub-points
+                coord = (sum(p.lat for p in nested) / len(nested),
+                         sum(p.long for p in nested) / len(nested))
+            if coord:
+                main.append(_Pt(act.title, coord[0], coord[1]))
             if len(nested) >= 2:
                 areas.append((act.title, nested))
+            continue
+        coord = r.point_coord(act, city)
+        if coord:
+            main.append(_Pt(act.title, coord[0], coord[1]))
     return main, routes, areas
 
 

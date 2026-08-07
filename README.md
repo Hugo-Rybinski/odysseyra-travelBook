@@ -516,6 +516,9 @@ Each package's `__init__.py` re-exports its public API, so imports like
   (guarded by a test).
 - `examples/pyrenees_fr.json` — the same trip authored in French (build it with
   `--lang fr` for a fully French PDF).
+- `examples/kyrgyzstan.json` — a maps-on itinerary with explicit coordinates in a
+  region with sparser OSM coverage; a few sights deliberately have no coordinate
+  and so aren't pinned. Build with maps: `travelbook build examples/kyrgyzstan.json`.
 - `examples/broken.json` — an intentionally broken itinerary that exercises the
   validator (missing/invalid fields and incoherences).
 - `examples/broken_validator_output.txt` — the expected `validate` output for

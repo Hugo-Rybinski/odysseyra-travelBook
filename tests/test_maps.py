@@ -4,10 +4,28 @@ day into points/routes/areas from explicit coordinates, and geocode write-back
 
 import math
 
+import pytest
+from PIL import Image
+
 from travelbook.maps.build import _anchor_city, _hex_to_rgb, resolve_day
-from travelbook.maps.render import lonlat_to_px, pin_angles
+from travelbook.maps.render import lonlat_to_px, pin_angles, render_map
 from travelbook.maps.writeback import fill_coordinates
-from travelbook.models import Itinerary
+from travelbook.models import Coordinate, ItineraryError, Itinerary, _parse_coordinate
+
+
+# -- model coordinate parsing ------------------------------------------------
+def test_coordinate_parsing_valid_and_defaults():
+    c = _parse_coordinate({"lat": 43.1, "long": -0.05})
+    assert c == Coordinate(43.1, -0.05, True)  # show_on_map defaults True
+    assert _parse_coordinate(None) is None
+    assert _parse_coordinate({"lat": 0, "long": 0, "show_on_map": False}).show_on_map is False
+
+
+def test_coordinate_parsing_rejects_bad_values():
+    for bad in ({"lat": 999, "long": 0}, {"lat": 0, "long": 500},
+                {"lat": 1}, {"lat": 0, "long": "west"}):
+        with pytest.raises(ItineraryError):
+            _parse_coordinate(bad)
 
 
 def _itin(days, **defaults):
@@ -85,6 +103,31 @@ def test_resolve_day_points_routes_and_areas(monkeypatch):
     assert routes[0][0] == (43.29, -0.36) and routes[0][-1] == (43.09, -0.05)
     assert len(areas) == 1 and areas[0][0] == "Old town"
     assert [p.label for p in areas[0][1]] == ["Castle", "Bridge"]
+
+
+def test_area_centroid_fallback():
+    """A place with no own coordinate but located sub-points gets a main-map pin
+    at their centroid (unless it is explicitly hidden)."""
+    day = {"title": "d", "city": "Lourdes", "activities": [
+        {"type": "place", "name": "No-coord area", "activities": [
+            {"type": "point_of_interest", "name": "A", "coordinate": {"lat": 43.0, "long": 0.0}},
+            {"type": "point_of_interest", "name": "B", "coordinate": {"lat": 43.2, "long": 0.4}},
+        ]}]}
+    it = _itin([day])
+    points, _, areas = resolve_day(it.days[0], it, cache=None)
+    assert [p.label for p in points] == ["No-coord area"]
+    assert points[0].lat == pytest.approx(43.1) and points[0].long == pytest.approx(0.2)
+    assert len(areas) == 1
+
+
+def test_render_map_offline(monkeypatch, tmp_path):
+    """render_map produces an RGB image without network (tiles stubbed)."""
+    monkeypatch.setattr(
+        "travelbook.maps.render._fetch_tile",
+        lambda url, style, z, x, y, td: Image.new("RGBA", (512, 512), (240, 240, 240, 255)))
+    pts = [(43.09, -0.05), (43.10, -0.04)]
+    img = render_map(pts, [pts], pts, (47, 107, 79), tmp_path)
+    assert img.mode == "RGB" and img.width > 0 and img.height > 0
 
 
 def test_resolve_day_no_inference_when_off():

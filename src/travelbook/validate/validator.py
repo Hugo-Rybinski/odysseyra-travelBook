@@ -196,6 +196,7 @@ class _Validator:
         self._secondary_currencies(df_obj, df_path or ())
         self._inference_countries(df_obj, df_path or ())
         self._walk_coordinates(data, ())
+        self._maps_coherence(df_obj, df_path or ())
 
         days = data.get("days")
         if not isinstance(days, list) or not days:
@@ -450,6 +451,38 @@ class _Validator:
                 self.add("error", base_path + ("inference_countries", i),
                          "inference country {value} is invalid — {error}.",
                          value=repr(code), error=err)
+
+    def _maps_coherence(self, df, df_path):
+        """Soft checks that only apply when maps are on: a located activity with
+        no coordinate won't be mapped, and inference_countries is dead weight
+        when inference is off."""
+        if not _truthy(df.get("include_maps_in_render")):
+            return
+        infer = _truthy(df.get("infer_coordinates_from_address"))
+        if df.get("inference_countries") and not infer:
+            self.add("warning", df_path + ("inference_countries",),
+                     "'inference_countries' is set but "
+                     "'infer_coordinates_from_address' is off — it is ignored.")
+        located = ("point_of_interest", "place", "hike", "meal")
+        days = self.data.get("days")
+        for di, day in enumerate(days if isinstance(days, list) else []):
+            if not isinstance(day, dict):
+                continue
+            for ai, act in enumerate(day.get("activities", []) or []):
+                if not isinstance(act, dict) or act.get("type") not in located:
+                    continue
+                if "coordinate" in act:
+                    continue
+                path = ("days", di, "activities", ai)
+                if not infer:
+                    self.add("info", path, "maps are on but this activity has no "
+                             "'coordinate' and inference is off — it won't appear "
+                             "on the day map.")
+                elif not (act.get("name") or act.get("address")
+                          or act.get("restaurant") or act.get("area")):
+                    self.add("info", path, "maps are on but this activity has no "
+                             "'coordinate' and nothing to geocode — it won't appear "
+                             "on the day map.")
 
     def _walk_coordinates(self, node, path):
         """Recursively validate every coordinate object (``coordinate`` and the
