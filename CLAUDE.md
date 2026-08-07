@@ -117,7 +117,10 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   single pin plus a second zoomed map of their nested points.
   `infer_coordinates_from_address` (default off → deterministic/offline, only
   explicit coordinates are mapped) geocodes the rest, restricted to
-  `inference_countries` (2-letter ISO codes).
+  `inference_countries` (2-letter ISO codes). Main-map pins are numbered, the
+  night's accommodation is pinned with `*`, and area detail-map pins are lettered
+  A/B/C…; each pin's label is shown as a small accent disc next to that activity's
+  title in the itinerary (no separate legend).
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).

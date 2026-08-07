@@ -9,5 +9,9 @@
   "booking_source": "Booking.com",
   "price": 256,
   "paid_online": true,
-  "breakfast_included": true
+  "breakfast_included": true,
+  "coordinate": {
+    "lat": 43.0968,
+    "long": -0.0575
+  }
 }

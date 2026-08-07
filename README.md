@@ -252,9 +252,12 @@ show the ISO code.
 
 When `defaults.include_maps_in_render` is `true`, each day page gets a small
 OpenStreetMap with a numbered pin for every located activity and the day's drives
-drawn as routes. A place (an `area`) is shown as a single pin, and — when it has
-two or more located sub-activities — a second map zoomed to those points is drawn
-right after it.
+drawn as routes. The night's accommodation, if it has a coordinate, is pinned with
+a `*`. A place (an `area`) is shown as a single pin, and — when it has two or more
+located sub-activities — a second map zoomed to those points is drawn right after
+it, with those pins lettered **A, B, C…**. Each pin's label (number, `*`, or area
+letter) also appears as a small disc next to that activity's title in the
+itinerary, so there's no separate map key.
 
 **Every locatable object may carry a `coordinate`:**
 

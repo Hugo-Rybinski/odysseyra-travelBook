@@ -33,20 +33,20 @@ class DayMapMixin:
             return None
 
     # -- drawing --------------------------------------------------------
-    def _pin_disc(self, x: float, y: float, n: int) -> float:
-        """A small accent disc with the pin number (matching the map pins),
+    def _pin_disc(self, x: float, y: float, label: str) -> float:
+        """A small accent disc with the pin label (matching the map pins),
         drawn inline before an activity title. Returns its width incl. a gap."""
         d = 4.8
         self.set_fill_color(*self.accent)
         self.ellipse(x, y, d, d, style="F")
         self.set_font(FONT, "B", 7)
         self.set_text_color(255, 255, 255)
-        self.set_xy(x, y + 0.85)
-        self.cell(d, 3, str(n), align="C")
+        self.set_xy(x, y)
+        self.cell(d, d, str(label), align="C")  # centered in the disc (h=d)
         return d + 1.8
 
-    def pin_number(self, act) -> int | None:
-        """The pin number for ``act`` on this day's maps, if it has one."""
+    def pin_label(self, act):
+        """The pin label (number, area letter or '*') for ``act``, if it has one."""
         dm = getattr(self, "_day_maps", None)
         return dm.number_for(act) if dm else None
 

@@ -140,25 +140,37 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
     accent = _hex_to_rgb(itinerary.cover_color)
     result = DayMaps()
 
-    # pin numbers: main map is one namespace, each area detail map its own
+    # main map: activities numbered 1..N
+    main_points = [(p.lat, p.long) for p in main_pts]
+    main_labels = [str(i) for i in range(1, len(main_pts) + 1)]
     for i, p in enumerate(main_pts, start=1):
         if p.act is not None:
-            result.numbers[id(p.act)] = i
-    for _title, pts in area_details:
-        for j, p in enumerate(pts, start=1):
-            if p.act is not None:
-                result.numbers[id(p.act)] = j
+            result.numbers[id(p.act)] = str(i)
 
-    all_coords = [(p.lat, p.long) for p in main_pts]
-    all_coords += [c for line in routes for c in line]
+    # the night's stay, pinned with "*"
+    stay = itinerary.stay_for(getattr(day, "date", None))
+    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+        main_points.append((stay.coordinate.lat, stay.coordinate.long))
+        main_labels.append("*")
+        result.numbers[id(stay)] = "*"
+
+    # area detail maps: pins lettered A, B, C…
+    for _title, pts in area_details:
+        for j, p in enumerate(pts):
+            if p.act is not None:
+                result.numbers[id(p.act)] = chr(ord("A") + j)
+
+    all_coords = list(main_points) + [c for line in routes for c in line]
     if all_coords:
-        img = render_map(all_coords, routes, [(p.lat, p.long) for p in main_pts],
-                         accent, cache.tiles, ink_saver=ink_saver)
+        img = render_map(all_coords, routes, main_points, accent, cache.tiles,
+                         ink_saver=ink_saver, labels=main_labels)
         result.main = RenderedMap(img, [p.label for p in main_pts])
 
     for title, pts in area_details:
         coords = [(p.lat, p.long) for p in pts]
-        img = render_map(coords, [], coords, accent, cache.tiles, ink_saver=ink_saver)
+        letters = [chr(ord("A") + j) for j in range(len(pts))]
+        img = render_map(coords, [], coords, accent, cache.tiles,
+                         ink_saver=ink_saver, labels=letters)
         result.areas.append((title, RenderedMap(img, [p.label for p in pts])))
 
     return result

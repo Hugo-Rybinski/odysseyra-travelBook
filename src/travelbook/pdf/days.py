@@ -64,7 +64,7 @@ class DayMixin:
             right = (self.t("Night {night}/{total} here").format(night=night, total=total)
                      if total and total > 1 and night else "")
             sub = "  ·  ".join(p for p in (acc.address, self._booked_text(acc)) if p)
-            self._bottom_bar(acc.name, sub, right)
+            self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc))
             return
         leg = self.itinerary.night_transport(day.date)
         if leg is not None:
@@ -72,7 +72,7 @@ class DayMixin:
             sub = "  ·  ".join(p for p in (leg.title, times) if p)
             self._bottom_bar(self._overnight_name(leg), sub, self.t("on board"))
 
-    def _bottom_bar(self, name: str, sub: str, right: str = "") -> None:
+    def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None) -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20).
         bar_h, pad = 20, 4
@@ -92,7 +92,10 @@ class DayMixin:
             self.set_text_color(*self.accent)
             self.cell(self.content_width - pad, 4, right, align="R")
 
-        self.set_xy(cx, y + pad + 3.5)
+        nx = cx
+        if pin:
+            nx = cx + self._pin_disc(cx, y + pad + 3.2, pin)
+        self.set_xy(nx, y + pad + 3.5)
         self.set_font(FONT, "B", 11)
         self.set_text_color(*INK)
         self.cell(0, 5, name)
@@ -131,7 +134,7 @@ class DayMixin:
                 self.set_text_color(*MUTED)
                 self.cell(gw, 3.5, elbl, align="C")
 
-        num = self.pin_number(act)
+        num = self.pin_label(act)
         tx, tw = x, detail_w
         if num:
             wd = self._pin_disc(x, top + 0.6, num)
@@ -183,7 +186,7 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
-        num = self.pin_number(meal)
+        num = self.pin_label(meal)
         tx = x
         if num:
             tx = x + self._pin_disc(x, top + 0.4, num)
@@ -405,7 +408,7 @@ class DayMixin:
         self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
-        num = self.pin_number(poi)
+        num = self.pin_label(poi)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
             tx += wd
@@ -433,7 +436,7 @@ class DayMixin:
         self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
-        num = self.pin_number(hike)
+        num = self.pin_label(hike)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
             tx += wd
@@ -481,7 +484,7 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
-        num = self.pin_number(meal)
+        num = self.pin_label(meal)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
             tx += wd

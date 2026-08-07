@@ -345,7 +345,11 @@
       "booking_source": "Booking.com",
       "price": 256,
       "paid_online": true,
-      "breakfast_included": true
+      "breakfast_included": true,
+      "coordinate": {
+        "lat": 43.0968,
+        "long": -0.0575
+      }
     },
     {
       "name": "Refuge de la Brèche de Roland",
@@ -358,7 +362,11 @@
       "booking_source": "Site de l'hôtel",
       "price": 52,
       "paid_online": false,
-      "breakfast_included": false
+      "breakfast_included": false,
+      "coordinate": {
+        "lat": 42.736,
+        "long": -0.01
+      }
     }
   ],
   "car_rentals": [

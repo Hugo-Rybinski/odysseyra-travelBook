@@ -125,19 +125,20 @@ def _pin(d, x, y, R, number, font, accent, angle):
     bw = R * 0.22
     _teardrop(d, hc, (x, y), R + bw, (255, 255, 255, 255))
     _teardrop(d, hc, (x, y), R, accent + (255,))
-    bb = d.textbbox((0, 0), number, font=font)
-    d.text((hc[0] - (bb[2] - bb[0]) / 2, hc[1] - (bb[3] - bb[1]) / 2 - bb[1]),
-           number, font=font, fill=(255, 255, 255, 255))
+    # anchor="mm" centers the glyph on the head centre exactly
+    d.text(hc, number, font=font, fill=(255, 255, 255, 255), anchor="mm")
 
 
 # ---------------------------------------------------------------- top level ---
 def render_map(all_coords, routes, points, accent, tiles_dir,
-               map_w=900, map_h=620, ink_saver=False) -> Image.Image:
+               map_w=900, map_h=620, ink_saver=False, labels=None) -> Image.Image:
     """Render an RGB map image fitting every ``(lat, long)`` in ``all_coords``.
 
     * ``routes`` — list of ``[(lat, long), …]`` polylines (drives), drawn as a
       translucent accent line.
-    * ``points`` — ordered ``[(lat, long), …]``; each gets a numbered pin.
+    * ``points`` — ordered ``[(lat, long), …]``; each gets a pin.
+    * ``labels`` — pin text per point (defaults to ``1..N``); e.g. letters for an
+      area map or ``*`` for the night's stay.
     * ``accent`` — ``(r, g, b)`` theme color (the trip's ``cover_color``).
     """
     lats = [c[0] for c in all_coords]
@@ -190,12 +191,12 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
 
         def paint_pins(d, ss):
             for i, ((x, y), ang) in enumerate(zip(px, angles), start=1):
+                text = labels[i - 1] if labels else str(i)
                 if ink_saver:  # outline pin, accent text — light on ink
                     _teardrop(d, (x * ss + R * ss * 2.15 * math.cos(ang),
                                   y * ss + R * ss * 2.15 * math.sin(ang)),
                               (x * ss, y * ss), R * ss, (255, 255, 255, 255))
-                _pin(d, x * ss, y * ss, R * ss, str(i), font,
-                     accent if not ink_saver else accent, ang)
+                _pin(d, x * ss, y * ss, R * ss, text, font, accent, ang)
         img.alpha_composite(_ss_layer(img.size, paint_pins))
 
     # the map's own place labels, composited last so they sit above route + pins
