@@ -11,7 +11,15 @@
       "distance_km": 45,
       "start_time": "18:45",
       "duration": "50 min",
-      "off_road": false
+      "off_road": false,
+      "start_coordinate": {
+        "lat": 43.29575,
+        "long": -0.36857
+      },
+      "end_coordinate": {
+        "lat": 43.09409,
+        "long": -0.0465
+      }
     }
   ]
 }

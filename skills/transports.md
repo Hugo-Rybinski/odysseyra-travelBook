@@ -99,6 +99,13 @@ website."*
 (The trip's default currency here is EUR, so this leg sets `currency` to `USD`
 because it was priced in dollars; a leg priced in euros would just omit it.)
 
+## Map coordinates (optional)
+
+A transport leg goes A→B, so it takes **`start_coordinate`** and
+**`end_coordinate`** (each `{ "lat": .., "long": .. }`) when you know them. Only
+set what you know; add `"show_on_map": false` on a coordinate to keep it without
+plotting it.
+
 ## Rules that apply to every file
 
 - **Only include a field if the source actually states it.** Never invent

@@ -16,6 +16,8 @@ travelbook build examples/pyrenees.json -o out.pdf
 travelbook examples/pyrenees.json -o out.pdf            # implies build
 travelbook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
 travelbook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
+travelbook build examples/pyrenees.json --maps --map-country FR -o out.pdf   # per-day maps
+travelbook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
 
 # validate (-v 1 errors, 2 +warnings [default], 3 +info; -l/--lang en|fr)
 travelbook validate examples/pyrenees.json
@@ -51,6 +53,9 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
     `_price/_currency`, formatters) and `ItineraryError` (raised on any invalid data).
   - `currency.py` — `SecondaryCurrency`, `to_default` (convert to the default
     currency), `format_money`, and the `CURRENCY_SYMBOLS` table.
+  - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
+    optional map location attached to activities, transport, accommodation and
+    car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     and `schedule_activities` (the day timeline pass).
@@ -63,13 +68,24 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   - `findings.py` — `Finding` (level/line/message), icons, `format_findings`.
   - `specs.py` — `Spec` field descriptors, value validators (`V_*`), spec tables.
   - `validator.py` — `_Validator` walks the data and emits findings; `validate_text`.
-- **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, TransportMixin, AccommodationMixin,
-  _PDFBase)`. `base.py` holds fonts/colors and shared drawing primitives; each
-  section is a mixin. `build_pdf(itinerary, output, lang, ink_saver)` is the entry
-  point. The `ink_saver` flag (CLI `--ink-saver`) is stored on `_PDFBase` and read
-  by the primitives that draw large solid accent areas — the cover banner, the
-  `_band_header` page bands, `_card_bg`, `_badge`, `_pill`, `_chip` — which then
-  render outlines + accent-colored text + thin rules instead of solid fills.
+- **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, DayMapMixin, TransportMixin,
+  AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
+  shared drawing primitives; each section is a mixin. `build_pdf(itinerary, output,
+  lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
+  `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
+  solid accent areas — the cover banner, the `_band_header` page bands, `_card_bg`,
+  `_badge`, `_pill`, `_chip` — which then render outlines + accent-colored text +
+  thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
+  map (from `maps/`) after the intro plus a numbered legend, and each area's zoom
+  map inline after it; it degrades gracefully (a map failure never breaks the build).
+- **`maps/`** — per-day map rendering, imported only when maps are on. `geocode.py`
+  (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
+  cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → translucent
+  theme-colored route → rotated numbered teardrop pins → label sandwich; pure
+  Pillow), `build.py` (`resolve_day` → points/routes/area-details, `render_day_maps`
+  → PIL images), `writeback.py` (`fill_coordinates` for the `geocode` command),
+  and `Cache` (geocode/routes/tiles on disk under `~/.cache/travelbook`, or
+  `$TRAVELBOOK_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
@@ -79,17 +95,32 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
   scaffolds the reverse — an empty fragment dir (`SKELETON_DIRS` sub-folders +
   a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
-- `cli.py` — argparse CLI (`build` / `validate` / `stitch` / `create-skeleton`,
-  `--lang`, `--verbose`).
+- `cli.py` — argparse CLI (`build` / `validate` / `stitch` / `geocode` /
+  `create-skeleton`, `--lang`, `--verbose`). `build` also takes `--maps/--no-maps`,
+  `--map-country`, `--cache-dir`; `geocode` fills coordinates and writes them back.
 
 ## Key design decisions
 
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
-  `lunch_until` 16:00, `meal_duration` 0, `currency` EUR, and
-  `secondary_currencies`) — plus content arrays `days` (required,
-  non-empty), `transport`, `accommodations`. The older flat layout still parses.
+  `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
+  `secondary_currencies`, and the maps switches `include_maps_in_render` false /
+  `infer_coordinates_from_address` false / `inference_countries` []) — plus
+  content arrays `days` (required, non-empty), `transport`, `accommodations`.
+  The older flat layout still parses.
+- **Maps & coordinates.** Every locatable object may carry an optional
+  `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
+  segments use `start_/end_coordinate` (road, transport) or
+  `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
+  per-day OSM map with a pin per located activity + drives as routes; areas get a
+  single pin plus a second zoomed map of their nested points.
+  `infer_coordinates_from_address` (default off → deterministic/offline, only
+  explicit coordinates are mapped) geocodes the rest, restricted to
+  `inference_countries` (2-letter ISO codes). Main-map pins are numbered, the
+  night's accommodation is pinned with `*`, and area detail-map pins are lettered
+  A/B/C…; each pin's label is shown as a small accent disc next to that activity's
+  title in the itinerary (no separate legend).
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).
@@ -140,7 +171,9 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   English), `examples/pyrenees_pieces/` (the same trip split into per-file
   fragments for `stitch` — a test asserts it reassembles `pyrenees.json`
   exactly, so keep the two in sync), `examples/pyrenees_fr.json` (same trip in
-  French — build with `--lang fr`), `examples/broken.json` (exercises every
+  French — build with `--lang fr`), `examples/kyrgyzstan.json` (maps-on, explicit
+  coordinates, sparse OSM region — some sights intentionally unpinned; a test
+  asserts it validates clean), `examples/broken.json` (exercises every
   validator rule).
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it

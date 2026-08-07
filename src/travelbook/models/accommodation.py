@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
     _parse_bool,
@@ -33,6 +34,7 @@ class Accommodation:
     currency: str = ""  # "" → the trip's default currency
     paid_online: bool = False  # True → "Paid online", False → "To pay"
     breakfast_included: bool = False
+    coordinate: Coordinate | None = None  # optional map location
 
     @property
     def nights(self) -> int | None:
@@ -88,4 +90,5 @@ class Accommodation:
             currency=_parse_currency(d.get("currency")),
             paid_online=_parse_bool(d.get("paid_online", False)),
             breakfast_included=_parse_bool(d.get("breakfast_included", False)),
+            coordinate=_parse_coordinate(d.get("coordinate")),
         )

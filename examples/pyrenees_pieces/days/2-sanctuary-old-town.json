@@ -10,13 +10,21 @@
       "category": "church",
       "address": "1 Av. Mgr Théas, Lourdes",
       "end_time": "12:30",
-      "description": "One of the most visited pilgrimage sites in the world, set along the Gave de Pau river. Ends at lunchtime — duration is inferred from the end time."
+      "description": "One of the most visited pilgrimage sites in the world, set along the Gave de Pau river. Ends at lunchtime — duration is inferred from the end time.",
+      "coordinate": {
+        "lat": 43.09742,
+        "long": -0.05828
+      }
     },
     {
       "type": "meal",
       "restaurant": "Le Magret",
       "address": "10 Rue de la Grotte, Lourdes",
-      "start_time": "12:30"
+      "start_time": "12:30",
+      "coordinate": {
+        "lat": 43.0807,
+        "long": -0.03239
+      }
     },
     {
       "type": "place",
@@ -31,11 +39,19 @@
           "category": "castle",
           "address": "25 Rue du Fort, Lourdes",
           "duration": "45 min",
-          "description": "Medieval fortress housing the Pyrenean museum, with sweeping valley views."
+          "description": "Medieval fortress housing the Pyrenean museum, with sweeping valley views.",
+          "coordinate": {
+            "lat": 43.09654,
+            "long": -0.0491
+          }
         },
         {
           "type": "point_of_interest",
-          "name": "Pont Vieux"
+          "name": "Pont Vieux",
+          "coordinate": {
+            "lat": 43.09521,
+            "long": -0.05293
+          }
         },
         {
           "type": "hike",
@@ -43,15 +59,27 @@
           "distance_km": 3.5,
           "elevation_m": 120,
           "route": "loop",
-          "description": "A short wooded loop climbing to a viewpoint over the château."
+          "description": "A short wooded loop climbing to a viewpoint over the château.",
+          "coordinate": {
+            "lat": 43.09835,
+            "long": -0.06852
+          }
         },
         {
           "type": "meal",
           "meal_type": "snack",
           "restaurant": "Salon de thé du Fort",
-          "address": "Rue du Bourg, Lourdes"
+          "address": "Rue du Bourg, Lourdes",
+          "coordinate": {
+            "lat": 43.0965,
+            "long": -0.0493
+          }
         }
-      ]
+      ],
+      "coordinate": {
+        "lat": 43.0956,
+        "long": -0.0464
+      }
     }
   ]
 }

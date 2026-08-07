@@ -9,5 +9,9 @@
   "booking_source": "Hotel website",
   "price": 52,
   "paid_online": false,
-  "breakfast_included": false
+  "breakfast_included": false,
+  "coordinate": {
+    "lat": 42.736,
+    "long": -0.01
+  }
 }

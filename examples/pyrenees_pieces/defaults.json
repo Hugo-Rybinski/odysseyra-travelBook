@@ -6,7 +6,18 @@
   "meal_duration": "1h",
   "currency": "EUR",
   "secondary_currencies": [
-    { "currency": "USD", "change_rate": 1.09 },
-    { "currency": "GBP", "change_rate": 0.85 }
+    {
+      "currency": "USD",
+      "change_rate": 1.09
+    },
+    {
+      "currency": "GBP",
+      "change_rate": 0.85
+    }
+  ],
+  "include_maps_in_render": true,
+  "infer_coordinates_from_address": false,
+  "inference_countries": [
+    "FR"
   ]
 }

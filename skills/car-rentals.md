@@ -85,6 +85,13 @@ Jun 8 18:00 – Jun 11 20:00. 1 additional driver. +33 5 59 33 20 10."*
 }
 ```
 
+## Map coordinates (optional)
+
+A car rental has two locations, so it takes **`pickup_coordinate`** and
+**`dropoff_coordinate`** (each `{ "lat": .., "long": .. }`) when you know them.
+Only set what you know; add `"show_on_map": false` on a coordinate to keep it
+without plotting it.
+
 ## Rules that apply to every file
 
 - **Only include a field if the source actually states it.** Never invent

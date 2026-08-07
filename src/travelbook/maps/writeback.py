@@ -1,0 +1,65 @@
+"""Fill missing ``coordinate`` objects in a raw itinerary dict by geocoding
+names/addresses, so a later build is deterministic and offline. Used by the
+``travelbook geocode`` command. The geocoder is injectable for testing."""
+
+from __future__ import annotations
+
+from .build import _anchor_city
+from .geocode import geocode as _default_geocode
+
+
+def fill_coordinates(data: dict, countries, cache, geocoder=_default_geocode):
+    """Mutate ``data`` in place, adding coordinates it can resolve. Returns
+    ``(filled, missed)`` counts. Existing coordinates are never overwritten."""
+    counts = [0, 0]
+
+    def resolve(query, target: dict, key: str):
+        if not query or key in target:
+            return
+        hit = geocoder(query, countries, cache)
+        if hit:
+            target[key] = {"lat": hit[0], "long": hit[1]}
+            counts[0] += 1
+        else:
+            counts[1] += 1
+
+    def q(text, city):
+        return f"{text}, {city}" if (text and city) else text
+
+    def do_activity(act, city):
+        if not isinstance(act, dict):
+            return
+        kind = act.get("type")
+        if kind == "road":
+            resolve(q(act.get("start"), city), act, "start_coordinate")
+            resolve(q(act.get("end"), city), act, "end_coordinate")
+        elif kind in ("point_of_interest", "place", "hike"):
+            resolve(q(act.get("name"), city), act, "coordinate")
+        elif kind == "meal":
+            resolve(q(act.get("restaurant") or act.get("area"), city), act, "coordinate")
+        for sub in act.get("activities", []) or []:
+            do_activity(sub, city)
+
+    for day in data.get("days", []) or []:
+        if not isinstance(day, dict):
+            continue
+        city = _anchor_city(str(day.get("city", "")))
+        for act in day.get("activities", []) or []:
+            do_activity(act, city)
+
+    for t in data.get("transport", data.get("transports", [])) or []:
+        if isinstance(t, dict):
+            resolve(t.get("start"), t, "start_coordinate")
+            resolve(t.get("end"), t, "end_coordinate")
+
+    for a in data.get("accommodations", []) or []:
+        if isinstance(a, dict):
+            resolve(q(a.get("name"), a.get("city", "")), a, "coordinate")
+
+    for cr in data.get("car_rentals", []) or []:
+        if isinstance(cr, dict):
+            resolve(cr.get("pickup_location"), cr, "pickup_coordinate")
+            resolve(cr.get("dropoff_location") or cr.get("pickup_location"),
+                    cr, "dropoff_coordinate")
+
+    return tuple(counts)

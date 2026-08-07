@@ -13,8 +13,19 @@
     "meal_duration": "1h",
     "currency": "EUR",
     "secondary_currencies": [
-      { "currency": "USD", "change_rate": 1.09 },
-      { "currency": "GBP", "change_rate": 0.85 }
+      {
+        "currency": "USD",
+        "change_rate": 1.09
+      },
+      {
+        "currency": "GBP",
+        "change_rate": 0.85
+      }
+    ],
+    "include_maps_in_render": true,
+    "infer_coordinates_from_address": false,
+    "inference_countries": [
+      "FR"
     ]
   },
   "days": [
@@ -31,7 +42,15 @@
           "distance_km": 45,
           "start_time": "18:45",
           "duration": "50 min",
-          "off_road": false
+          "off_road": false,
+          "start_coordinate": {
+            "lat": 43.29575,
+            "long": -0.36857
+          },
+          "end_coordinate": {
+            "lat": 43.09409,
+            "long": -0.0465
+          }
         }
       ]
     },
@@ -47,13 +66,21 @@
           "category": "church",
           "address": "1 Av. Mgr Théas, Lourdes",
           "end_time": "12:30",
-          "description": "L'un des lieux de pèlerinage les plus visités au monde, au bord du Gave de Pau. Se termine à midi — la durée est déduite de l'heure de fin."
+          "description": "L'un des lieux de pèlerinage les plus visités au monde, au bord du Gave de Pau. Se termine à midi — la durée est déduite de l'heure de fin.",
+          "coordinate": {
+            "lat": 43.09742,
+            "long": -0.05828
+          }
         },
         {
           "type": "meal",
           "restaurant": "Le Magret",
           "address": "10 Rue de la Grotte, Lourdes",
-          "start_time": "12:30"
+          "start_time": "12:30",
+          "coordinate": {
+            "lat": 43.0807,
+            "long": -0.03239
+          }
         },
         {
           "type": "place",
@@ -68,11 +95,19 @@
               "category": "castle",
               "address": "25 Rue du Fort, Lourdes",
               "duration": "45 min",
-              "description": "Forteresse médiévale abritant le musée pyrénéen, avec de vastes vues sur la vallée."
+              "description": "Forteresse médiévale abritant le musée pyrénéen, avec de vastes vues sur la vallée.",
+              "coordinate": {
+                "lat": 43.09654,
+                "long": -0.0491
+              }
             },
             {
               "type": "point_of_interest",
-              "name": "Pont Vieux"
+              "name": "Pont Vieux",
+              "coordinate": {
+                "lat": 43.09521,
+                "long": -0.05293
+              }
             },
             {
               "type": "hike",
@@ -80,15 +115,27 @@
               "distance_km": 3.5,
               "elevation_m": 120,
               "route": "loop",
-              "description": "Une courte boucle en forêt montant à un point de vue sur le château."
+              "description": "Une courte boucle en forêt montant à un point de vue sur le château.",
+              "coordinate": {
+                "lat": 43.09835,
+                "long": -0.06852
+              }
             },
             {
               "type": "meal",
               "meal_type": "snack",
               "restaurant": "Salon de thé du Fort",
-              "address": "Rue du Bourg, Lourdes"
+              "address": "Rue du Bourg, Lourdes",
+              "coordinate": {
+                "lat": 43.0965,
+                "long": -0.0493
+              }
             }
-          ]
+          ],
+          "coordinate": {
+            "lat": 43.0956,
+            "long": -0.0464
+          }
         }
       ]
     },
@@ -111,9 +158,21 @@
               "type": "meal",
               "meal_type": "breakfast",
               "restaurant": "Café de Gèdre",
-              "address": "Village de Gèdre"
+              "address": "Village de Gèdre",
+              "coordinate": {
+                "lat": 42.789,
+                "long": -0.018
+              }
             }
-          ]
+          ],
+          "start_coordinate": {
+            "lat": 43.09409,
+            "long": -0.0465
+          },
+          "end_coordinate": {
+            "lat": 42.75674,
+            "long": -0.00029
+          }
         },
         {
           "type": "hike",
@@ -130,7 +189,11 @@
               "meal_type": "snack",
               "area": "le belvédère de la Grande Cascade"
             }
-          ]
+          ],
+          "coordinate": {
+            "lat": 42.69574,
+            "long": -0.0103
+          }
         },
         {
           "type": "point_of_interest",
@@ -151,12 +214,20 @@
               "meal_type": "picnic",
               "area": "le pied de la cascade"
             }
-          ]
+          ],
+          "coordinate": {
+            "lat": 42.69332,
+            "long": -0.00445
+          }
         },
         {
           "type": "meal",
           "meal_type": "picnic",
-          "area": "Gavarnie"
+          "area": "Gavarnie",
+          "coordinate": {
+            "lat": 42.6956,
+            "long": -0.0105
+          }
         }
       ]
     },
@@ -172,7 +243,15 @@
           "end": "Saint-Bertrand-de-Comminges",
           "distance_km": 96,
           "duration": "2h05",
-          "off_road": false
+          "off_road": false,
+          "start_coordinate": {
+            "lat": 42.69574,
+            "long": -0.0103
+          },
+          "end_coordinate": {
+            "lat": 43.02693,
+            "long": 0.57091
+          }
         },
         {
           "type": "point_of_interest",
@@ -180,7 +259,11 @@
           "category": "church",
           "address": "Le Plan, Saint-Bertrand-de-Comminges",
           "duration": "1h",
-          "description": "Une cathédrale perchée dominant l'ancienne cité romaine de Lugdunum Convenarum."
+          "description": "Une cathédrale perchée dominant l'ancienne cité romaine de Lugdunum Convenarum.",
+          "coordinate": {
+            "lat": 43.02668,
+            "long": 0.57143
+          }
         },
         {
           "type": "buffer",
@@ -192,7 +275,11 @@
           "category": "ruins",
           "address": "Valcabrère",
           "duration": "45 min",
-          "description": "Vestiges du forum, du théâtre et des thermes de l'ancienne cité romaine."
+          "description": "Vestiges du forum, du théâtre et des thermes de l'ancienne cité romaine.",
+          "coordinate": {
+            "lat": 43.033,
+            "long": 0.5834
+          }
         }
       ]
     }
@@ -258,7 +345,11 @@
       "booking_source": "Booking.com",
       "price": 256,
       "paid_online": true,
-      "breakfast_included": true
+      "breakfast_included": true,
+      "coordinate": {
+        "lat": 43.0968,
+        "long": -0.0575
+      }
     },
     {
       "name": "Refuge de la Brèche de Roland",
@@ -271,7 +362,11 @@
       "booking_source": "Site de l'hôtel",
       "price": 52,
       "paid_online": false,
-      "breakfast_included": false
+      "breakfast_included": false,
+      "coordinate": {
+        "lat": 42.736,
+        "long": -0.01
+      }
     }
   ],
   "car_rentals": [

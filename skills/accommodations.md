@@ -67,6 +67,12 @@ Source: *"Hôtel Gallia & Londres, Lourdes. Check-in Jun 8, check-out Jun 10.
 }
 ```
 
+## Map coordinates (optional)
+
+An accommodation may carry a `coordinate` (`{ "lat": .., "long": .. }`) so it can
+be placed on a map. Only set it if you know it; add `"show_on_map": false` to keep
+a coordinate without plotting it.
+
 ## Rules that apply to every file
 
 - **Only include a field if the source actually states it.** Never invent

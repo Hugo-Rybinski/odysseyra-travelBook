@@ -518,6 +518,42 @@ def test_malformed_json_reports_error():
     assert "invalid JSON" in _messages(findings)
 
 
+def test_kyrgyzstan_example_has_no_errors():
+    findings = validate_text((EXAMPLES / "kyrgyzstan.json").read_text(encoding="utf-8"))
+    assert _errors(findings) == []
+
+
+def test_bad_coordinate_and_inference_country_are_errors():
+    doc = {"travel_description": {"title": "T"},
+           "defaults": {"inference_countries": ["France", "KG"]},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "M",
+                "coordinate": {"lat": 999, "long": 0}}]}]}
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "field 'coordinate' is invalid" in msgs
+    assert "inference country 'France' is invalid" in msgs
+
+
+def test_maps_coherence_info_and_warning():
+    doc = {"travel_description": {"title": "T"},
+           "defaults": {"include_maps_in_render": True,
+                        "infer_coordinates_from_address": False,
+                        "inference_countries": ["FR"]},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "No coord here"}]}]}
+    findings = validate_text(json.dumps(doc))
+    assert "won't appear on the day map" in _messages(_infos(findings))
+    # inference_countries set but inference off -> warning
+    assert "'inference_countries' is set but" in _messages(_warnings(findings))
+
+
+def test_maps_coherence_silent_when_maps_off():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "No coord"}]}]}
+    assert "won't appear on the day map" not in _messages(validate_text(json.dumps(doc)))
+
+
 def test_broken_example_output_snapshot():
     """The committed validator output for examples/broken.json must match the
     current validator. Regenerate it with `UPDATE_SNAPSHOTS=1 pytest` whenever

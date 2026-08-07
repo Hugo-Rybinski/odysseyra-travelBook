@@ -29,7 +29,8 @@ from .validate import format_findings, validate_text
 
 
 def _run_build(input_path: Path, output: Path | None, lang: str,
-               ink_saver: bool = False) -> int:
+               ink_saver: bool = False, maps: bool | None = None,
+               map_country: str | None = None, cache_dir: Path | None = None) -> int:
     output = output or input_path.with_suffix(".pdf")
 
     # Surface validation errors (errors only) before building.
@@ -43,12 +44,39 @@ def _run_build(input_path: Path, output: Path | None, lang: str,
 
     try:
         itinerary = Itinerary.from_json_file(input_path)
-        path = build_pdf(itinerary, output, lang, ink_saver)
+        if map_country:
+            itinerary.inference_countries = [c.strip().upper()
+                                             for c in map_country.split(",") if c.strip()]
+        path = build_pdf(itinerary, output, lang, ink_saver,
+                         maps=maps, cache_dir=cache_dir)
     except ItineraryError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     print(tr("Wrote {path}  ({days} days)", lang).format(
         path=path, days=len(itinerary.days)))
+    return 0
+
+
+def _run_geocode(input_path: Path, output: Path | None, country: str | None,
+                 lang: str) -> int:
+    """Fill missing coordinates by geocoding, writing them back into the JSON."""
+    from .maps import Cache
+    from .maps.writeback import fill_coordinates
+
+    try:
+        itinerary = Itinerary.from_json_file(input_path)
+    except ItineraryError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    data = json.loads(Path(input_path).read_text(encoding="utf-8"))
+    countries = ([c.strip().upper() for c in country.split(",") if c.strip()]
+                 if country else itinerary.inference_countries)
+    filled, missed = fill_coordinates(data, countries, Cache.open())
+    out = output or input_path
+    out.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                   encoding="utf-8")
+    print(tr("Geocoded {filled} coordinate(s), {missed} not found → {path}",
+             lang).format(filled=filled, missed=missed, path=out))
     return 0
 
 
@@ -119,6 +147,14 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--ink-saver", action="store_true",
                    help="draw outlines and thin rules instead of large solid "
                         "colored fills, to save printer ink")
+    b.add_argument("--maps", dest="maps", action=argparse.BooleanOptionalAction,
+                   default=None,
+                   help="draw per-day maps (--no-maps to force off), overriding "
+                        "defaults.include_maps_in_render")
+    b.add_argument("--map-country", default=None,
+                   help="ISO country code(s) to restrict geocoding to, e.g. FR")
+    b.add_argument("--cache-dir", type=Path, default=None,
+                   help="where to cache map tiles / geocode / route results")
     _add_lang(b)
 
     v = sub.add_parser("validate", help="validate a travel JSON and report problems")
@@ -138,6 +174,16 @@ def main(argv: list[str] | None = None) -> int:
                         "(1=errors, 2=+warnings [default], 3=+info)")
     _add_lang(s)
 
+    g = sub.add_parser("geocode", help="fill missing coordinates by geocoding "
+                       "names/addresses and write them back into the JSON")
+    g.add_argument("input", type=Path, help="path to the itinerary JSON")
+    g.add_argument("-o", "--output", type=Path, default=None,
+                   help="output path (default: overwrite the input in place)")
+    g.add_argument("--country", default=None,
+                   help="ISO country code(s) to restrict geocoding to (default: "
+                        "the trip's inference_countries)")
+    _add_lang(g)
+
     c = sub.add_parser("create-skeleton", help="scaffold an empty fragment "
                        "directory (sub-folders + a travel_description.json stub) "
                        "for `stitch`")
@@ -145,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="parent directory in which to create the skeleton")
     c.add_argument("name", help="name of the skeleton directory to create")
 
-    _commands = ("build", "validate", "stitch", "create-skeleton")
+    _commands = ("build", "validate", "stitch", "create-skeleton", "geocode")
     # Backward-compat: `travelbook trip.json ...` implies `build`.
     if argv and argv[0] not in _commands + ("-h", "--help"):
         argv = ["build"] + argv
@@ -157,8 +203,12 @@ def main(argv: list[str] | None = None) -> int:
         return _run_stitch(args.directory, args.verbose, args.lang)
     if args.command == "create-skeleton":
         return _run_create_skeleton(args.path, args.name)
+    if args.command == "geocode":
+        return _run_geocode(args.input, args.output, args.country, args.lang)
     if args.command == "build":
-        return _run_build(args.input, args.output, args.lang, args.ink_saver)
+        return _run_build(args.input, args.output, args.lang, args.ink_saver,
+                          maps=args.maps, map_country=args.map_country,
+                          cache_dir=args.cache_dir)
     parser.print_help()
     return 1
 

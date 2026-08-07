@@ -8,6 +8,7 @@ license = { text = "MIT" }
 authors = [{ name = "Hugo Rybinski", email = "hugo.rybinski@algolia.com" }]
 dependencies = [
     "fpdf2>=2.7",
+    "Pillow>=9",
 ]
 
 [project.optional-dependencies]
