@@ -11,6 +11,21 @@ This file is **entirely optional** — omit it and every field below takes its
 default. Only create it when the source material implies a global setting (e.g.
 "all times are local Paris time (UTC+2)" or "we start each day at 9am").
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Time** | 24-hour `HH:MM` | `09:00`, `18:45` |
+| **Duration** | `"<h>h<mm>"`, `"<h>h"`, `"<n> min"`, `"<n>m"`, `"H:MM"`, or a plain number of minutes | `"1h30"`, `"2h"`, `"45 min"`, `"90m"`, `"1:30"`, `90` |
+| **Timezone (UTC offset)** | `"+HH:MM"`, `"+HHMM"`, `"UTC±H"`, `"GMT±H"`, `"Z"` (=UTC), or a plain number of hours | `"+02:00"`, `"-04:00"`, `"UTC-3"`, `"Z"`, `2` |
+| **Currency** | a 3-letter ISO code | `"EUR"`, `"USD"`, `"GBP"` |
+| **Boolean** | `true` / `false` (also `"yes"` / `"no"`) | `true` |
+
+`inference_countries` takes **2-letter** ISO country codes (`"FR"`, `"ES"`), not
+the 3-letter currency codes above.
+
 ## Fields
 
 | Field | Required | Format | Default | Notes |
