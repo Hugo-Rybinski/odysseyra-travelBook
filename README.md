@@ -32,6 +32,14 @@ travelbook validate examples/pyrenees_fr.json --lang fr
 # thin rules (much less colored ink when printing).
 travelbook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
 
+# Per-day maps (see defaults.include_maps_in_render). Override per build with
+# --maps / --no-maps; restrict geocoding with --map-country; set the tile cache.
+travelbook build examples/pyrenees.json --maps --map-country FR -o pyrenees.pdf
+
+# Geocode missing coordinates once and write them back into the JSON, so later
+# builds are offline and deterministic (restrict with --country).
+travelbook geocode examples/pyrenees.json --country FR
+
 # Scaffold an empty fragment directory, then stitch it once it's filled in
 travelbook create-skeleton . mytrip        # creates ./mytrip/ with sub-folders
 travelbook stitch examples/pyrenees_pieces # assemble one JSON, then validate it

@@ -14,6 +14,8 @@ _FR = {
     "DAY {index}": "JOUR {index}",
     "Itinerary": "Itinéraire",
     "Zoom — {area}": "Zoom — {area}",
+    "Geocoded {filled} coordinate(s), {missed} not found → {path}":
+        "{filled} coordonnée(s) géocodée(s), {missed} introuvable(s) → {path}",
     # -- PDF: activity badges & labels --
     "ROAD": "ROUTE",
     "POINT": "POINT",

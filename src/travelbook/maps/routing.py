@@ -20,7 +20,7 @@ def route(a: tuple[float, float], b: tuple[float, float], cache) -> list[tuple[f
     """Road geometry ``a``→``b`` as ``[(lat, long), …]`` (``a`` and ``b`` are
     ``(lat, long)``). Returns a straight ``[a, b]`` if routing is unavailable."""
     key = f"{a[0]:.5f},{a[1]:.5f}->{b[0]:.5f},{b[1]:.5f}"
-    if key in cache.routes:
+    if cache is not None and key in cache.routes:
         return [tuple(p) for p in cache.routes[key]]
     coords = f"{a[1]},{a[0]};{b[1]},{b[0]}"  # OSRM wants lon,lat
     line: list[tuple[float, float]] = []
@@ -33,5 +33,6 @@ def route(a: tuple[float, float], b: tuple[float, float], cache) -> list[tuple[f
     except Exception:
         line = []
     result = line if len(line) >= 2 else [a, b]
-    cache.routes[key] = result
+    if cache is not None:
+        cache.routes[key] = result
     return result
