@@ -13,6 +13,17 @@ From the confirmation: the **name**, the **city/town**, the **check-in
 and **contact**, where it was booked, the **price**, whether it's **paid
 online**, and whether **breakfast is included**.
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Date** | `YYYY-MM-DD` | `2026-06-08` |
+| **Price** | a bare number, no currency symbol | `89`, `256.5` |
+| **Currency** | a 3-letter ISO code | `"EUR"`, `"USD"`, `"GBP"` |
+| **Boolean** | `true` / `false` (also `"yes"` / `"no"`) | `true` |
+
 ## Fields
 
 | Field | Required | Format | Default | Notes |
@@ -69,9 +80,17 @@ Source: *"Hôtel Gallia & Londres, Lourdes. Check-in Jun 8, check-out Jun 10.
 
 ## Map coordinates (optional)
 
-An accommodation may carry a `coordinate` (`{ "lat": .., "long": .. }`) so it can
-be placed on a map. Only set it if you know it; add `"show_on_map": false` to keep
-a coordinate without plotting it.
+If the trip renders maps (`defaults.include_maps_in_render` is on), an
+accommodation may carry a `coordinate` so it can be pinned:
+
+```json
+"coordinate": { "lat": 43.0974, "long": -0.0583 }
+```
+
+- `lat` / `long` are decimal degrees (latitude −90…90, longitude −180…180).
+- It is plotted by default; add `"show_on_map": false` to record it without
+  drawing its pin.
+- Only set it if you actually know it — never guess.
 
 ## Rules that apply to every file
 

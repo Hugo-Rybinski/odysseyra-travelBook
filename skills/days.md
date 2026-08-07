@@ -8,6 +8,17 @@ them along the trip with a zero-padded index: `day-01.json`, `day-02.json`, …
 Each file is one **day**: a title, optional date/city/intro, and an ordered
 list of **activities** (what you do, in sequence).
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Date** | `YYYY-MM-DD` | `2026-06-08` |
+| **Time** | 24-hour `HH:MM` | `09:00`, `18:45` |
+| **Duration** | `"<h>h<mm>"`, `"<h>h"`, `"<n> min"`, `"<n>m"`, `"H:MM"`, or a plain number of minutes | `"1h30"`, `"2h"`, `"45 min"`, `"90m"`, `"1:30"`, `90` |
+| **Timezone (UTC offset)** | `"+HH:MM"`, `"+HHMM"`, `"UTC±H"`, `"GMT±H"`, `"Z"` (=UTC), or a plain number of hours | `"+02:00"`, `"-04:00"`, `"UTC-3"`, `"Z"`, `2` |
+
 ## The day object
 
 | Field | Required | Format | Default | Notes |
@@ -48,6 +59,25 @@ that has a `description` field.
 | `duration` | duration (`"1h30"`, `"45 min"`) | How long it lasts. |
 | `start_tz` / `end_tz` | UTC offset | Only if this activity is in a different timezone than the trip default. |
 
+### Map coordinates (any located activity may include these)
+
+If the trip renders maps (`defaults.include_maps_in_render` is on), an activity
+can carry a location so it gets a pin on the day's map:
+
+| Field | Applies to | Format | Notes |
+|---|---|---|---|
+| `coordinate` | `point_of_interest`, `place`, `hike`, `meal` | `{ "lat": .., "long": .. }` | The map pin for this stop. |
+| `start_coordinate` / `end_coordinate` | `road` | a `{ "lat": .., "long": .. }` object each | A drive goes A→B; the map draws the route between the two points. |
+
+- `lat` / `long` are decimal degrees (latitude −90…90, longitude −180…180), e.g.
+  `"coordinate": { "lat": 43.0974, "long": -0.0583 }`.
+- A coordinate is plotted by default; add `"show_on_map": false` to record one
+  without drawing its pin.
+- Only set coordinates you actually know — never guess them. If the trip has
+  `infer_coordinates_from_address` on, activities without a coordinate are
+  geocoded from their `name`/`address`; otherwise only activities with an
+  explicit `coordinate` appear on the map.
+
 ### Type `road` — a drive or transfer
 
 | Field | Required | Format | Notes |
@@ -80,6 +110,15 @@ field with a `"FIXME"` value so the user is prompted to fill it in — e.g.
 | `name` | **yes** | text | The place name. |
 | `description` | no | text | |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | The things you do there. |
+
+**Group co-located stops under a `place`.** When several activities happen in the
+same city, town, or national park, don't list them flat in the day — create a
+`place` named for that shared zone (e.g. `"Lourdes old town"`,
+`"Ordesa National Park"`) and nest the individual sights, hikes and meals inside
+its `activities`. Reserve the top-level list for the day's distinct legs (a
+drive, a different town), and keep everything that belongs to one area together
+under it. When maps are on this also reads better: the area gets a single pin
+plus a second map zoomed to its nested points.
 
 ### Type `hike`
 
@@ -178,24 +217,6 @@ about 1h30, visiting the Château fort (a castle, ~45 min)."*
   ]
 }
 ```
-
-## Map coordinates (optional)
-
-If the trip renders maps, any locatable activity may carry a `coordinate` so it
-gets a pin:
-
-```json
-{ "type": "point_of_interest", "name": "...", "coordinate": { "lat": 43.0974, "long": -0.0583 } }
-```
-
-- `lat` / `long` are decimal degrees; add `"show_on_map": false` to keep a
-  coordinate without plotting it.
-- A `road` is a drive from A→B, so it takes **`start_coordinate`** and
-  **`end_coordinate`** (each a `{lat, long}` object) — the map draws the route
-  between them.
-- Only set coordinates you actually know. If the trip has
-  `infer_coordinates_from_address` on, missing ones are geocoded from the
-  name/address; otherwise only activities with a `coordinate` appear on the map.
 
 ## Rules that apply to every file
 

@@ -14,6 +14,20 @@ From the confirmation: the **booking window** (start/end date+time), the
 **booking reference**, the **car type/model**, the **price** and payment state,
 the number of **additional drivers**, and a contact.
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Date** | `YYYY-MM-DD` | `2026-06-08` |
+| **Time** | 24-hour `HH:MM` | `09:00`, `18:45` |
+| **Timezone (UTC offset)** | `"+HH:MM"`, `"+HHMM"`, `"UTC±H"`, `"GMT±H"`, `"Z"` (=UTC), or a plain number of hours | `"+02:00"`, `"-04:00"`, `"UTC-3"`, `"Z"`, `2` |
+| **Duration** | `"<h>h<mm>"`, `"<h>h"`, `"<n> min"`, `"<n>m"`, `"H:MM"`, or a plain number of minutes | `"1h30"`, `"2h"`, `"30 min"`, `90` |
+| **Price** | a bare number, no currency symbol | `89`, `256.5` |
+| **Currency** | a 3-letter ISO code | `"EUR"`, `"USD"`, `"GBP"` |
+| **Payment flag** | `"paid"` (paid) or `"to pay"` (not yet) — omit if unknown | `"paid"`, `"to pay"` |
+
 ## Fields
 
 | Field | Required | Format | Default | Notes |
@@ -87,10 +101,18 @@ Jun 8 18:00 – Jun 11 20:00. 1 additional driver. +33 5 59 33 20 10."*
 
 ## Map coordinates (optional)
 
-A car rental has two locations, so it takes **`pickup_coordinate`** and
-**`dropoff_coordinate`** (each `{ "lat": .., "long": .. }`) when you know them.
-Only set what you know; add `"show_on_map": false` on a coordinate to keep it
-without plotting it.
+If the trip renders maps (`defaults.include_maps_in_render` is on), a rental has
+two locations, so it takes **`pickup_coordinate`** and **`dropoff_coordinate`**:
+
+```json
+"pickup_coordinate": { "lat": 43.3800, "long": -0.4189 },
+"dropoff_coordinate": { "lat": 43.0850, "long": 0.5660 }
+```
+
+- `lat` / `long` are decimal degrees (latitude −90…90, longitude −180…180).
+- Each is plotted by default; add `"show_on_map": false` to one to record it
+  without drawing its pin.
+- Only set what you actually know — never guess.
 
 ## Rules that apply to every file
 

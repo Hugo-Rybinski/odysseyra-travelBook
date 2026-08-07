@@ -13,6 +13,20 @@ airports, the **departure date and time** (required), the arrival time, any
 **timezones** (crucial for flights that cross zones), the **booking reference**,
 who you booked with, the **price**, and whether it's **paid**.
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Date** | `YYYY-MM-DD` | `2026-06-08` |
+| **Time** | 24-hour `HH:MM` | `09:00`, `18:45` |
+| **Timezone (UTC offset)** | `"+HH:MM"`, `"+HHMM"`, `"UTC±H"`, `"GMT±H"`, `"Z"` (=UTC), or a plain number of hours | `"+02:00"`, `"-04:00"`, `"UTC-3"`, `"Z"`, `2` |
+| **Duration** | `"<h>h<mm>"`, `"<h>h"`, `"<n> min"`, `"<n>m"`, `"H:MM"`, or a plain number of minutes | `"4h20"`, `"2h"`, `"45 min"`, `90` |
+| **Price** | a bare number, no currency symbol | `89`, `256.5` |
+| **Currency** | a 3-letter ISO code | `"EUR"`, `"USD"`, `"GBP"` |
+| **Payment flag** | `"paid"` (paid) or `"to pay"` (not yet) — omit if unknown | `"paid"`, `"to pay"` |
+
 ## Fields
 
 | Field | Required | Format | Default | Notes |
@@ -101,10 +115,20 @@ because it was priced in dollars; a leg priced in euros would just omit it.)
 
 ## Map coordinates (optional)
 
-A transport leg goes A→B, so it takes **`start_coordinate`** and
-**`end_coordinate`** (each `{ "lat": .., "long": .. }`) when you know them. Only
-set what you know; add `"show_on_map": false` on a coordinate to keep it without
-plotting it.
+If the trip renders maps (`defaults.include_maps_in_render` is on), a leg can be
+placed on it. Because a transport leg goes A→B it takes two coordinates —
+**`start_coordinate`** and **`end_coordinate`** — and the map draws the route
+between them:
+
+```json
+"start_coordinate": { "lat": 40.6413, "long": -73.7781 },
+"end_coordinate": { "lat": 49.0097, "long": 2.5479 }
+```
+
+- `lat` / `long` are decimal degrees (latitude −90…90, longitude −180…180).
+- Each coordinate is plotted by default; add `"show_on_map": false` to one to
+  record it without drawing its pin.
+- Only set coordinates you actually know — never guess them.
 
 ## Rules that apply to every file
 

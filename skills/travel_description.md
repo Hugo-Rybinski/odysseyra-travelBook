@@ -13,6 +13,15 @@ From a trip name, a heading, an email subject, or a one-line brief: the trip's
 paragraph. A color or manual dates are rarely stated — omit them unless the
 source clearly gives them.
 
+## Value formats
+
+Write each kind of value exactly like this:
+
+| Kind | Write it as | Examples |
+|---|---|---|
+| **Date** | `YYYY-MM-DD` | `2026-06-08` |
+| **Hex color** | `"#RRGGBB"` or `"#RGB"` | `"#2f6b4f"` |
+
 ## Fields
 
 | Field | Required | Format | Default | Notes |
