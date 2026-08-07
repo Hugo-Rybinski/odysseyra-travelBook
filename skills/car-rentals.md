@@ -45,6 +45,8 @@ Write each kind of value exactly like this:
 | `booking_start_tz` / `booking_end_tz` / `pickup_tz` / `dropoff_tz` | no | UTC offset | trip default timezone | Only if different from the trip's timezone. |
 | `company` | no | text | none | e.g. "Europcar". |
 | `booking_number` | no | text | none | Reservation reference. |
+| `website` | no | a link like `https://example.com` | none | The rental company's website — shown as a clickable link. |
+| `booking_link` | no | a link like `https://example.com` | none | A direct link to this reservation — shown as a clickable link. |
 | `status` | no | `booked` / `confirmed` | none (no badge) | Reservation status. |
 | `price` | no | number | none | The amount only, e.g. `228` (no currency symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price differs from the trip default currency. |

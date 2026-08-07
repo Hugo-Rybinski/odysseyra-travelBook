@@ -123,6 +123,13 @@ def V_CURRENCY(value):
     return "must be a 3-letter currency code like 'EUR'"
 
 
+def V_URL(value):
+    s = str(value).strip()
+    if s.startswith(("http://", "https://", "www.", "mailto:")):
+        return None
+    return "must be a link like 'https://example.com'"
+
+
 V_COORDINATE = _v(_parse_coordinate)
 
 
@@ -217,6 +224,8 @@ ACTIVITY_SPECS = {
              "one of: " + ", ".join(POI_CATEGORIES), '"other"', V_CATEGORY),
         Spec("address", False, "the address", "any text", '""'),
         Spec("description", False, "a description", "any text", '""'),
+        Spec("website", False, "a link to the venue's website",
+             "a link like 'https://example.com'", "none (no link shown)", V_URL),
         Spec("activities", False, "nested points of interest, hikes and meals",
              "an array of point_of_interest, hike or meal objects, each with a 'type'",
              "[] (none nested)"),
@@ -286,6 +295,10 @@ TRANSPORT_SPECS = [
     Spec("train_number", False, "the train number (trains only)", "any text", '""'),
     Spec("booking_number", False, "the reservation reference", "any text", '""'),
     Spec("booking_source", False, "where it was booked", "any text", '""'),
+    Spec("website", False, "a link to the carrier's website",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
+    Spec("booking_link", False, "a direct link to this reservation",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
     Spec("price", False, "the ticket price", "a number", "none (no price shown)",
@@ -306,6 +319,10 @@ ACCOMMODATION_SPECS = [
     Spec("address", False, "the street address", "any text", '""'),
     Spec("contact", False, "a phone or email", "any text", '""'),
     Spec("booking_source", False, "where it was booked", "any text", '""'),
+    Spec("website", False, "a link to the property's website",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
+    Spec("booking_link", False, "a direct link to this reservation",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
     Spec("price", False, "the price", "a number", "none (no price shown)", V_NUMBER),
@@ -343,6 +360,10 @@ CAR_RENTAL_SPECS = [
          "a UTC offset like '+02:00'", "the trip's default timezone", V_TZ),
     Spec("company", False, "the rental company", "any text", '""'),
     Spec("booking_number", False, "the reservation reference", "any text", '""'),
+    Spec("website", False, "a link to the rental company's website",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
+    Spec("booking_link", False, "a direct link to this reservation",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
     Spec("price", False, "the rental price", "a number", "none (no price shown)",

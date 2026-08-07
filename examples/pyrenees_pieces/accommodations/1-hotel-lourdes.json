@@ -7,6 +7,8 @@
   "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
   "contact": "+33 5 62 94 35 44",
   "booking_source": "Booking.com",
+  "website": "https://www.hotel-gallia-londres.com",
+  "booking_link": "https://secure.booking.com/myreservations/GL-88213",
   "status": "confirmed",
   "price": 256,
   "paid": true,

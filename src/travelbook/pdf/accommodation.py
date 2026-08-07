@@ -8,6 +8,9 @@ from .base import FONT, INK, LIGHT, MUTED
 class AccommodationMixin:
     def accommodations(self) -> None:
         self.add_page()
+        link = getattr(self, "accommodation_link", None)
+        if link is not None:
+            self.set_link(link, page=self.page_no())
         self._band_header(self.t("WHERE YOU'LL STAY"), self.t("Accommodation"))
         for acc in self.itinerary.accommodations:
             self._accommodation_card(acc)
@@ -38,6 +41,9 @@ class AccommodationMixin:
         contact_lines = self._measure_lines(acc.contact, inner_w)
         booked = self._booked_text(acc)
         date_line = self._acc_date_line(acc)
+        links = [(self.t("Website"), acc.website),
+                 (self.t("Reservation"), acc.booking_link)]
+        has_links = any(url for _, url in links)
 
         h = pad * 2 + 7
         if date_line:
@@ -49,6 +55,8 @@ class AccommodationMixin:
             h += 5
         if acc.breakfast_included:
             h += 6
+        if has_links:
+            h += 5
 
         y = self.get_y()
         if y + h > self.h - self.b_margin:
@@ -97,6 +105,9 @@ class AccommodationMixin:
             self.set_font(FONT, "B", 9)
             self.set_text_color(*self.accent)
             self.cell(inner_w, 5, self.t("✓  Breakfast included"))
+            yy += 6
+        if has_links:
+            self._link_row(cx, yy, links)
 
         self.set_y(y + h + 4)
 

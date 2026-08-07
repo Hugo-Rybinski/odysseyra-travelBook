@@ -44,6 +44,10 @@ def road_display_legs(start, waypoints):
 class DayMixin:
     def day(self, index: int, day: Day) -> None:
         self.add_page()
+        # point the cover's day-by-day row for this day at the top of its page
+        link = getattr(self, "day_links", {}).get(index)
+        if link is not None:
+            self.set_link(link, page=self.page_no())
         meta_bits = [b for b in (day.city, self.d(day.date, "wd_full_md")) if b]
         kicker = self.t("DAY {index}").format(index=index)
         self._band_header(kicker, day.title, "   ".join(meta_bits))
@@ -96,18 +100,27 @@ class DayMixin:
             right = (self.t("Night {night}/{total} here").format(night=night, total=total)
                      if total and total > 1 and night else "")
             sub = "  ·  ".join(p for p in (acc.address, self._booked_text(acc)) if p)
-            self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc))
+            links = [(self.t("Website"), acc.website),
+                     (self.t("Reservation"), acc.booking_link)]
+            self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc), links=links)
             return
         leg = self.itinerary.night_transport(day.date)
         if leg is not None:
             times = self._transport_times(leg)
             sub = "  ·  ".join(p for p in (leg.title, times) if p)
-            self._bottom_bar(self._overnight_name(leg), sub, self.t("on board"))
+            links = [(self.t("Website"), leg.website),
+                     (self.t("Reservation"), leg.booking_link)]
+            self._bottom_bar(self._overnight_name(leg), sub, self.t("on board"),
+                             links=links)
 
-    def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None) -> None:
+    def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
+                    links=None) -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
-        # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20).
-        bar_h, pad = 20, 4
+        # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
+        # of clickable links, when present, sits below the sub line and grows
+        # the bar by 6 mm.
+        links = [(label, url) for label, url in (links or []) if url]
+        bar_h, pad = (26 if links else 20), 4
         # The bar must sit whole on one page: if the day's content already
         # runs to the bottom, start a fresh page so the bar's name/sub cells
         # don't auto-break away onto stray pages of their own.
@@ -143,6 +156,9 @@ class DayMixin:
         self.set_xy(cx, y + pad + 9)
         self.set_text_color(*MUTED)
         self.cell(maxw, 4, sub)
+
+        if links:
+            self._link_row(cx, y + pad + 14, links)
 
         self.set_y(y + bar_h)
 
@@ -431,6 +447,10 @@ class DayMixin:
         self._meta_line(x, w, parts)
         if act.description:
             self._para(x, w, act.description)
+        if act.website:
+            y = self.get_y()
+            self._link_row(x, y, [(self.t("Website"), act.website)])
+            self.set_y(y + 5)
         self._render_nested(x, w, act.activities)
 
     def _details_place(self, act, x: float, w: float) -> None:
@@ -525,6 +545,10 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(tw, 4.5, poi.description)
+        if poi.website:
+            y = self.get_y()
+            self._link_row(tx, y, [(self.t("Website"), poi.website)], size=8.5)
+            self.set_y(y + 4.5)
         self.ln(1)
 
     def _nested_hike(self, x: float, w: float, hike, badge_w: float) -> None:

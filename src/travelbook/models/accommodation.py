@@ -31,6 +31,8 @@ class Accommodation:
     address: str = ""
     contact: str = ""
     booking_source: str = ""  # e.g. "Booking.com", "Hotel website"
+    website: str = ""  # the property's own website
+    booking_link: str = ""  # direct link to this reservation
     status: str = ""  # "" | "booked" | "confirmed"
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
@@ -93,6 +95,8 @@ class Accommodation:
             address=str(d.get("address", "")),
             contact=str(d.get("contact", "")),
             booking_source=str(d.get("booking_source", "")),
+            website=str(d.get("website", "")),
+            booking_link=str(d.get("booking_link", "")),
             status=status,
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),

@@ -36,6 +36,8 @@ Write each kind of value exactly like this:
 | `address` | no | text | none | Street address. |
 | `contact` | no | text | none | Phone or email. |
 | `booking_source` | no | text | none | e.g. "Booking.com". |
+| `website` | no | a link like `https://example.com` | none | The property's website — shown as a clickable link. |
+| `booking_link` | no | a link like `https://example.com` | none | A direct link to this reservation — shown as a clickable link. |
 | `status` | no | `booked` / `confirmed` | none (no badge) | Reservation status. |
 | `price` | no | number | none | The amount only for the whole stay, e.g. `256` (no currency symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price differs from the trip default currency. |

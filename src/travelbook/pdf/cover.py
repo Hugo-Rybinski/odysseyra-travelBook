@@ -67,7 +67,37 @@ class CoverMixin:
             self.set_text_color(*MUTED)
             self.multi_cell(self.content_width, 6, it.summary)
 
+        self._cover_section_links()
         self._overview()
+
+    def _cover_section_links(self) -> None:
+        """A 'Jump to' line of clickable shortcuts to the transport and
+        accommodation pages. Each link is created here and its destination is
+        set when that page is rendered (see ``transports`` / ``accommodations``).
+        Only pages that will actually be produced get a link."""
+        it = self.itinerary
+        entries = []
+        if it.transports or it.car_rentals:
+            self.transport_link = self.add_link()
+            entries.append((self.t("Transport"), self.transport_link))
+        if it.accommodations:
+            self.accommodation_link = self.add_link()
+            entries.append((self.t("Accommodation"), self.accommodation_link))
+        if not entries:
+            return
+        self.ln(6)
+        self.set_x(self.l_margin)
+        self.set_font(FONT, "B", 9)
+        self.set_text_color(*MUTED)
+        self.cell(self.get_string_width(self.t("Jump to")) + 3, 6, self.t("Jump to"))
+        for i, (label, link) in enumerate(entries):
+            if i:
+                self.set_font(FONT, "", 9)
+                self.set_text_color(*MUTED)
+                self.cell(self.get_string_width("·") + 4, 6, "·", align="C")
+            self.set_font(FONT, "B", 9)
+            self.set_text_color(*self.accent)
+            self.cell(self.get_string_width(label) + 1, 6, label, link=link)
 
     def _day_highlights(self, day) -> str:
         """A short, comma-joined summary of a day's notable items (in time
@@ -134,6 +164,10 @@ class CoverMixin:
         self.line(x0, y, x0 + self.content_width, y)
         y += 2
 
+        # One internal link per day, its destination set when the day page is
+        # rendered (see ``DayMixin.day``); the whole row is a clickable hotspot.
+        self.day_links = {}
+
         for i, day in enumerate(it.days, start=1):
             acts = self._day_highlights(day)
             sleep = self._sleep_label(day)
@@ -146,6 +180,8 @@ class CoverMixin:
                 self.add_page()
                 y = self.get_y()
 
+            self.day_links[i] = self.add_link()
+            row_top = y
             self.set_xy(offsets[0], y)
             self.set_font(FONT, "B", 10)
             self.set_text_color(*self.accent)
@@ -163,6 +199,9 @@ class CoverMixin:
             self.set_xy(offsets[3], y)
             self.set_text_color(*INK)
             self.multi_cell(sleep_w, 4.6, sleep)
+
+            # a full-row clickable hotspot jumping to that day's page
+            self.link(x0, row_top, self.content_width, row_h, self.day_links[i])
 
             y += row_h
             self.set_draw_color(*LIGHT)

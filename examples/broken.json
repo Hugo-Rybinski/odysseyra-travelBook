@@ -36,7 +36,7 @@
             { "coordinate": { "lat": 1, "long": 2 }, "duration": "8h" }
           ],
           "activities": [ { "type": "point_of_interest", "name": "Not allowed on a road" } ] },
-        { "type": "point_of_interest", "category": "alien", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
+        { "type": "point_of_interest", "category": "alien", "website": "ftp://nope", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
         { "type": "spaceship", "start": "A", "end": "B" },
         { "type": "hike", "route": "zigzag", "duration": "0 min" },
         { "type": "buffer", "duration": "0 min" },
@@ -63,7 +63,7 @@
     }
   ],
   "transport": [
-    { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "status": "confirmed", "price": 120, "currency": "CHF" },
+    { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "website": "not-a-link", "status": "confirmed", "price": 120, "currency": "CHF" },
     { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later", "flight_number": "AF999", "price": "lots" }
   ],
   "accommodations": [
@@ -76,7 +76,7 @@
       "booking_end_date": "2026-06-08", "booking_end_time": "09:00",
       "pickup_date": "2026-06-09", "pickup_time": "10:00",
       "dropoff_date": "2026-06-10", "dropoff_time": "10:00",
-      "pickup_location": "Pau Airport", "status": "later" },
+      "pickup_location": "Pau Airport", "booking_link": "reservation-page", "status": "later" },
     { "booking_start_date": "2026-06-08", "booking_start_time": "09:00",
       "booking_end_date": "2026-06-11", "booking_end_time": "20:00",
       "pickup_date": "2026-06-07", "pickup_time": "10:00",

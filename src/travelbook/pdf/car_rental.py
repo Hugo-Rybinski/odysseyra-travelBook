@@ -75,6 +75,9 @@ class CarRentalMixin:
                                 cr.dropoff_duration_display)
         window = self._cr_window(cr)
         meta = self._cr_meta(cr)
+        links = [(self.t("Website"), cr.website),
+                 (self.t("Reservation"), cr.booking_link)]
+        has_links = any(url for _, url in links)
 
         pickup_n = self._measure_lines(pickup, inner_w, 9)
         dropoff_n = self._measure_lines(dropoff, inner_w, 9)
@@ -87,6 +90,8 @@ class CarRentalMixin:
         if meta:
             h += meta_n * 5
         if cr.price is not None:
+            h += 5
+        if has_links:
             h += 5
 
         y = self.get_y()
@@ -132,5 +137,8 @@ class CarRentalMixin:
             yy += meta_n * 5
         if cr.price is not None:
             self._draw_price(cx, yy, inner_w, cr.price, cr.currency)
+            yy += 5
+        if has_links:
+            self._link_row(cx, yy, links)
 
         self.set_y(y + h + 4)

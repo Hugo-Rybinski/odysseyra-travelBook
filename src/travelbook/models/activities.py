@@ -161,6 +161,7 @@ class PointOfInterest(Activity):
     address: str = ""
     description: str = ""
     category: str = "other"
+    website: str = ""  # the venue's website
     activities: list[Activity] = field(default_factory=list)
 
     @property
@@ -183,6 +184,7 @@ class PointOfInterest(Activity):
             address=str(d.get("address", "")),
             description=str(d.get("description", "")),
             category=category,
+            website=str(d.get("website", "")),
             activities=_nested(d, "point_of_interest"),
         )
 

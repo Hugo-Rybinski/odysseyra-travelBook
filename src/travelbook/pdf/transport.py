@@ -8,6 +8,9 @@ from .base import FONT, INK, LIGHT, MUTED
 class TransportMixin:
     def transports(self) -> None:
         self.add_page()
+        link = getattr(self, "transport_link", None)
+        if link is not None:
+            self.set_link(link, page=self.page_no())
         self._band_header(self.t("GETTING AROUND"), self.t("Transport"))
         for t in self.itinerary.transports:
             self._transport_card(t)
@@ -77,6 +80,9 @@ class TransportMixin:
             p for p in (self._transport_date(t), self._transport_times(t, day_marker=False)) if p
         )
         booking = self._transport_booking(t)
+        links = [(self.t("Website"), t.website),
+                 (self.t("Reservation"), t.booking_link)]
+        has_links = any(url for _, url in links)
 
         h = pad * 2 + max(route_lines * 6, 6)
         if info:
@@ -84,6 +90,8 @@ class TransportMixin:
         if booking:
             h += 5
         if t.price is not None:
+            h += 5
+        if has_links:
             h += 5
 
         y = self.get_y()
@@ -129,5 +137,8 @@ class TransportMixin:
             yy += 5
         if t.price is not None:
             self._draw_price(cx, yy, inner_w, t.price, t.currency)
+            yy += 5
+        if has_links:
+            self._link_row(cx, yy, links)
 
         self.set_y(y + h + 4)

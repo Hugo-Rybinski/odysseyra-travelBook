@@ -44,6 +44,8 @@ class Transport(Scheduled):
     train_number: str = ""  # trains only
     booking_number: str = ""
     booking_source: str = ""
+    website: str = ""  # the carrier's website
+    booking_link: str = ""  # direct link to this reservation
     status: str = ""  # "" | "booked" | "confirmed"
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
@@ -109,6 +111,8 @@ class Transport(Scheduled):
             train_number=str(d.get("train_number", "")),
             booking_number=str(d.get("booking_number", "")),
             booking_source=str(d.get("booking_source", "")),
+            website=str(d.get("website", "")),
+            booking_link=str(d.get("booking_link", "")),
             status=status,
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),

@@ -44,6 +44,8 @@ class CarRental:
     dropoff_location: str = ""  # defaults to pickup_location
     company: str = ""
     booking_number: str = ""
+    website: str = ""  # the rental company's website
+    booking_link: str = ""  # direct link to this reservation
     status: str = ""  # "" | "booked" | "confirmed"
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
@@ -133,6 +135,8 @@ class CarRental:
             dropoff_location=str(d.get("dropoff_location", "")) or pickup_location,
             company=str(d.get("company", "")),
             booking_number=str(d.get("booking_number", "")),
+            website=str(d.get("website", "")),
+            booking_link=str(d.get("booking_link", "")),
             status=status,
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),

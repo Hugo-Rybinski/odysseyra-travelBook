@@ -137,6 +137,7 @@ them (per the rule above).
 | `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `street`, `natural park`, `mountain`, `lake`, `beach`, `waterfall`, `other`. |
 | `address` | no | text | |
 | `description` | no | text | |
+| `website` | no | a link like `https://example.com` | The venue's website — shown as a clickable link. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | Nested sights/hikes/meals (see nesting). |
 
 ### Type `place` — a town/area grouping several stops

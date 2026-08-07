@@ -11,6 +11,8 @@
   "flight_number": "AF9",
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
+  "website": "https://www.airfrance.com",
+  "booking_link": "https://wwws.airfrance.com/mmb/AF1234-XY",
   "status": "confirmed",
   "price": 667,
   "currency": "USD",

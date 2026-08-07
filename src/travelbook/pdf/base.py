@@ -210,6 +210,32 @@ class _PDFBase(FPDF):
         self.set_text_color(*MUTED)
         self.multi_cell(w, 5, text)
 
+    def _link_row(self, x: float, y: float, links, size: float = 9) -> float:
+        """Draw a row of clickable hyperlinks in the accent color at ``(x, y)``,
+        separated by muted dots. ``links`` is a list of ``(label, url)`` pairs;
+        pairs with an empty url are skipped. Returns the row height (0 when
+        nothing was drawn)."""
+        links = [(label, url) for label, url in links if url]
+        if not links:
+            return 0
+        cx = x
+        for i, (label, url) in enumerate(links):
+            if i:
+                sep = "  ·  "
+                self.set_font(FONT, "", size)
+                self.set_text_color(*MUTED)
+                self.set_xy(cx, y)
+                sw = self.get_string_width(sep)
+                self.cell(sw, 5, sep)
+                cx += sw
+            self.set_font(FONT, "", size)
+            self.set_text_color(*self.accent)
+            self.set_xy(cx, y)
+            lw = self.get_string_width(label)
+            self.cell(lw, 5, label, link=url)
+            cx += lw
+        return 5
+
     # -- prices ---------------------------------------------------------
     def _money(self, amount: float, code: str, converted: bool = False) -> str:
         return format_money(amount, code, self.lang, converted)

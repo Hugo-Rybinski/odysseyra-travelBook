@@ -68,6 +68,7 @@
           "address": "1 Av. Mgr Théas, Lourdes",
           "end_time": "12:30",
           "description": "L'un des lieux de pèlerinage les plus visités au monde, au bord du Gave de Pau. Se termine à midi — la durée est déduite de l'heure de fin.",
+          "website": "https://www.lourdes-france.org",
           "coordinate": {
             "lat": 43.09742,
             "long": -0.05828
@@ -97,6 +98,7 @@
               "address": "25 Rue du Fort, Lourdes",
               "duration": "45 min",
               "description": "Forteresse médiévale abritant le musée pyrénéen, avec de vastes vues sur la vallée.",
+              "website": "https://www.chateaufort-lourdes.fr",
               "coordinate": {
                 "lat": 43.09654,
                 "long": -0.0491
@@ -315,6 +317,8 @@
       "flight_number": "AF9",
       "booking_number": "AF1234-XY",
       "booking_source": "Site Air France",
+      "website": "https://www.airfrance.fr",
+      "booking_link": "https://wwws.airfrance.fr/mmb/AF1234-XY",
       "status": "confirmed",
       "price": 667,
       "currency": "USD",
@@ -360,6 +364,8 @@
       "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
       "contact": "+33 5 62 94 35 44",
       "booking_source": "Booking.com",
+      "website": "https://www.hotel-gallia-londres.com",
+      "booking_link": "https://secure.booking.com/myreservations/GL-88213",
       "status": "confirmed",
       "price": 256,
       "paid": true,
@@ -406,6 +412,8 @@
       "dropoff_location": "Gare de Montréjeau",
       "dropoff_duration": "20 min",
       "booking_number": "EC-55231",
+      "website": "https://www.europcar.fr",
+      "booking_link": "https://www.europcar.fr/fr/bookings/EC-55231",
       "status": "confirmed",
       "price": 228,
       "paid": "paid",

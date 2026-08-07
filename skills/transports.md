@@ -45,6 +45,8 @@ Write each kind of value exactly like this:
 | `train_number` | no | text | none | **Trains only** — the train number (e.g. `"TGV 8541"`). Shown on the card. |
 | `booking_number` | no | text | none | Reservation reference / PNR. |
 | `booking_source` | no | text | none | Where booked (e.g. "SNCF Connect"). |
+| `website` | no | a link like `https://example.com` | none | The carrier's website — shown as a clickable link. |
+| `booking_link` | no | a link like `https://example.com` | none | A direct link to this reservation — shown as a clickable link. |
 | `status` | no | `booked` or `confirmed` | none | Reservation status. |
 | `price` | no | number | none | The amount only, e.g. `89` (no currency symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price is in a different currency than the trip default. |

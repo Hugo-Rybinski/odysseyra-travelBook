@@ -354,6 +354,7 @@ summed into that leg. If the waypoint `duration`s sum to more than the road's ow
 | `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `lake` \| `beach` \| `waterfall` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
+| `website` |  | Link to the venue's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
 #### `place` — a place (a town, say) grouping several nested activities
@@ -451,6 +452,8 @@ is inferred, across time zones when they differ.
 | `train_number` |  | Train number (trains only; shown on the card) | string | any text | `""` |
 | `booking_number` |  | Reservation reference / PNR | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
+| `website` |  | Link to the carrier's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `price` |  | Ticket price (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
@@ -472,6 +475,8 @@ so the checkout day shows no bar.
 | `address` |  | Street address | string | any text | `""` |
 | `contact` |  | Phone or email | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
+| `website` |  | Link to the property's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
@@ -508,6 +513,8 @@ drop-off location defaults to the pick-up location.
 | `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `defaults.timezone` |
 | `company` |  | Rental company | string | any text | `""` |
 | `booking_number` |  | Reservation reference | string | any text | `""` |
+| `website` |  | Link to the rental company's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `price` |  | Rental price (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
