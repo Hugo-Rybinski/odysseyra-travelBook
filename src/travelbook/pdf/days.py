@@ -25,7 +25,7 @@ class DayMixin:
         day_maps = self.day_maps(day)
         self._day_maps = day_maps   # read by title renderers to show pin numbers
         if day_maps:
-            self.day_main_map(day_maps)
+            self.day_main_map(day_maps, index)
 
         items = self._day_items(day)
         if items:
@@ -76,6 +76,10 @@ class DayMixin:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20).
         bar_h, pad = 20, 4
+        # The bar must sit whole on one page: if the day's content already
+        # runs to the bottom, start a fresh page so the bar's name/sub cells
+        # don't auto-break away onto stray pages of their own.
+        self._ensure_room(bar_h + 6)
         # Pin to the lower part of the page, but never over the day's content.
         y = max(self.get_y() + 6, self.h - 24 - bar_h)
         cx = self.l_margin + pad + 2
@@ -112,8 +116,21 @@ class DayMixin:
 
     GUTTER = 28  # left column reserved for the type badge
 
+    def _ensure_room(self, min_h: float) -> None:
+        """Start a fresh page unless at least ``min_h`` mm remain on this one.
+
+        Each row lays out its badge / time / pin-disc at absolute coordinates
+        captured in ``top`` before any auto page-break. If a row starts too
+        close to the bottom, fpdf2 breaks partway through and those fixed
+        pieces scatter one-per-page — this keeps a row's header block together
+        by breaking cleanly first."""
+        if self.get_y() + min_h > self.page_break_trigger:
+            self.add_page()
+
     def _activity(self, act) -> None:
+        self._ensure_room(24)
         top = self.get_y()
+        start_page = self.page_no()
         x = self.l_margin + self.GUTTER
         detail_w = self.content_width - self.GUTTER
 
@@ -147,8 +164,12 @@ class DayMixin:
         # Type-specific details.
         getattr(self, f"_details_{act.kind}")(act, x, detail_w)
 
-        # Keep the row at least as tall as the gutter time block.
-        self.set_y(max(self.get_y(), top + 15))
+        # Keep the row at least as tall as the gutter time block — but only if
+        # the row stayed on one page; if its content overflowed, ``top`` is a
+        # coordinate on the previous page and the floor would jump the cursor
+        # far down the new page (stranding whatever follows).
+        if self.page_no() == start_page:
+            self.set_y(max(self.get_y(), top + 15))
         y = self.get_y()
         self.set_draw_color(*LIGHT)
         self.set_line_width(0.2)
@@ -156,6 +177,7 @@ class DayMixin:
         self.ln(2)
 
     def _buffer(self, buf) -> None:
+        self._ensure_room(10)
         x = self.l_margin + self.GUTTER
         self.set_x(x)
         self.set_font(FONT, "I", 8.5)
@@ -169,6 +191,7 @@ class DayMixin:
         accented: the accent color, a bold '<meal type> at <restaurant>' head,
         the start time in the gutter, and a muted duration/address line. The
         meal type is explicit or inferred from the start time."""
+        self._ensure_room(16)
         top = self.get_y()
         x = self.l_margin + self.GUTTER
         gw = self.GUTTER - 5
@@ -205,7 +228,9 @@ class DayMixin:
 
     def _transport_row(self, t) -> None:
         """A transport leg shown inline in a day's itinerary."""
+        self._ensure_room(24)
         top = self.get_y()
+        start_page = self.page_no()
         x = self.l_margin + self.GUTTER
         detail_w = self.content_width - self.GUTTER
         gw = self.GUTTER - 5
@@ -247,7 +272,8 @@ class DayMixin:
         if t.overnight:
             self._chip(x, self.t("OVERNIGHT"))
 
-        self.set_y(max(self.get_y(), top + 15))
+        if self.page_no() == start_page:
+            self.set_y(max(self.get_y(), top + 15))
         y = self.get_y()
         self.set_draw_color(*LIGHT)
         self.set_line_width(0.2)
@@ -263,7 +289,9 @@ class DayMixin:
 
     def _car_rental_row(self, ev) -> None:
         """A car-rental pick-up or drop-off shown inline in a day's itinerary."""
+        self._ensure_room(24)
         top = self.get_y()
+        start_page = self.page_no()
         x = self.l_margin + self.GUTTER
         detail_w = self.content_width - self.GUTTER
         gw = self.GUTTER - 5
@@ -303,7 +331,8 @@ class DayMixin:
             self.set_text_color(*MUTED)
             self.multi_cell(detail_w, 5, meta)
 
-        self.set_y(max(self.get_y(), top + 15))
+        if self.page_no() == start_page:
+            self.set_y(max(self.get_y(), top + 15))
         y = self.get_y()
         self.set_draw_color(*LIGHT)
         self.set_line_width(0.2)
@@ -350,6 +379,7 @@ class DayMixin:
         list under a small header — each row led by a compact type badge."""
         if not activities:
             return
+        self._ensure_room(20)  # keep the "INCLUDES" header with its first item
         self.ln(1)
         self.set_x(x)
         self.set_font(FONT, "B", 8)
@@ -404,6 +434,7 @@ class DayMixin:
         self.cell(w, 3.4, label, align="C")
 
     def _nested_poi(self, x: float, w: float, poi, badge_w: float) -> None:
+        self._ensure_room(14)
         top = self.get_y()
         self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w)
         tx = x + badge_w + 2
@@ -432,6 +463,7 @@ class DayMixin:
         self.ln(1)
 
     def _nested_hike(self, x: float, w: float, hike, badge_w: float) -> None:
+        self._ensure_room(14)
         top = self.get_y()
         self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w)
         tx = x + badge_w + 2
@@ -472,6 +504,7 @@ class DayMixin:
         self.ln(1)
 
     def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:
+        self._ensure_room(14)
         top = self.get_y()
         self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w)
         tx = x + badge_w + 2

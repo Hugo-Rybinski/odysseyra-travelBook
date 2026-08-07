@@ -62,23 +62,26 @@ class DayMapMixin:
         if self.get_y() + h + 8 > self.h - self.b_margin:
             self.add_page()
 
+        # The map is centered when narrower than the text column; align the
+        # caption to the map's left edge (not the page margin) so they line up.
+        x = self.l_margin + (self.content_width - w) / 2
         if caption:
-            self.set_x(self.l_margin)
             self.set_font(FONT, "B", 8)
             self.set_text_color(*self.accent)
-            self.cell(0, 5, caption, new_x="LMARGIN", new_y="NEXT")
+            self.set_xy(x - self.c_margin, self.get_y())  # cancel the cell's inner pad
+            self.cell(w, 5, caption, new_x="LMARGIN", new_y="NEXT")
 
-        x = self.l_margin + (self.content_width - w) / 2
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         buf.seek(0)
         self.image(buf, x=x, w=w, h=h)
         self.ln(3)
 
-    def day_main_map(self, dm) -> None:
+    def day_main_map(self, dm, index: int) -> None:
         """Draw the main day map near the top of the day page (after the intro)."""
         if dm and dm.main:
-            self._map_card(dm.main)
+            caption = self.t("Day {index} overview").format(index=index)
+            self._map_card(dm.main, caption=caption)
 
     def day_area_map(self, dm, title: str) -> None:
         """Draw the detail map for the area ``title`` (inline after it), if any."""
