@@ -29,6 +29,7 @@ from .activities import (
     Place,
     PointOfInterest,
     Road,
+    Waypoint,
     activity_from_dict,
     schedule_activities,
 )
@@ -73,6 +74,7 @@ __all__ = [
     "POI_CATEGORIES",
     "PointOfInterest",
     "Road",
+    "Waypoint",
     "Transport",
     "TRANSPORT_TYPES",
     "activity_from_dict",

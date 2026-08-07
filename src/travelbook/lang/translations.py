@@ -29,6 +29,8 @@ _FR = {
     "MEAL": "REPAS",
     "TRANSPORT": "TRANSPORT",
     "OFF-ROAD SECTIONS": "SECTIONS HORS-ROUTE",
+    "VIA": "VIA",
+    "arrival": "arrivée",
     "OVERNIGHT": "DE NUIT",
     "INCLUDES": "COMPREND",
     "buffer": "pause",
@@ -171,6 +173,29 @@ _FR = {
     "is named.":
         "« restaurant » et « area » sont tous deux définis — « area » est ignoré "
         "lorsqu'un restaurant est nommé.",
+    "field '{name}' is invalid ({value}) — {error}.":
+        "champ « {name} » invalide ({value}) — {error}.",
+    "'waypoints' must be an array of {coordinate, location, duration, "
+    "distance_km} objects.":
+        "« waypoints » doit être un tableau d'objets {coordinate, location, "
+        "duration, distance_km}.",
+    "a road needs at least one 'waypoint' — the route's final stop is the "
+    "arrival.":
+        "une route a besoin d'au moins un « waypoint » — le dernier arrêt de "
+        "l'itinéraire est l'arrivée.",
+    "each waypoint must be an object with a 'coordinate' (a {lat, long} point "
+    "on the route).":
+        "chaque point de passage doit être un objet avec un « coordinate » (un "
+        "point {lat, long} sur l'itinéraire).",
+    "a waypoint needs a 'coordinate' (a {lat, long} object) — it sets a point "
+    "on the route.":
+        "un point de passage a besoin d'un « coordinate » (un objet {lat, long}) "
+        "— il place un point sur l'itinéraire.",
+    "the waypoint segments last {total} in total, longer than the road's "
+    "{parent} — the segment times don't fit the drive.":
+        "les segments des points de passage durent {total} au total, plus que "
+        "la durée de la route ({parent}) — les durées des segments ne tiennent "
+        "pas dans le trajet.",
     "the nested activities last {total} in total, longer than this activity's "
     "{parent} — they can't all fit inside it.":
         "les activités imbriquées durent {total} au total, plus que la durée de "
@@ -375,6 +400,10 @@ _FR = {
     "the driving distance in km": "la distance de conduite en km",
     "whether part of the drive is off-road":
         "si une partie du trajet est hors-route",
+    "intermediate stops the route passes through":
+        "les arrêts intermédiaires que traverse l'itinéraire",
+    "the ordered stops the route runs through (the last is the arrival)":
+        "les arrêts ordonnés que suit l'itinéraire (le dernier est l'arrivée)",
     "the point-of-interest name": "le nom du point d'intérêt",
     "the kind of place, shown as the badge":
         "le type de lieu, affiché comme badge",
@@ -476,6 +505,10 @@ _FR = {
         "« type »",
     "an array of meal objects, each with a 'type'":
         "un tableau d'objets meal, chacun avec un « type »",
+    "an array of {coordinate, location, duration, distance_km} objects":
+        "un tableau d'objets {coordinate, location, duration, distance_km}",
+    "a non-empty array of {coordinate, location, duration, distance_km} objects":
+        "un tableau non vide d'objets {coordinate, location, duration, distance_km}",
     "'booked' or 'confirmed'": "« booked » ou « confirmed »",
     "'paid' or 'to pay'": "« paid » ou « to pay »",
     "text or a number": "un texte ou un nombre",
@@ -508,6 +541,7 @@ _FR = {
         "la date de début du voyage + l'index du jour dans « days »",
     '""': "« »",
     "none (not shown)": "aucune (non affichée)",
+    "[] (a direct start→end route)": "[] (un itinéraire direct départ→arrivée)",
     "false": "false",
     '"other"': "« other »",
     "[] (none listed)": "[] (aucun listé)",

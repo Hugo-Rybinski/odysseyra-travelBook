@@ -131,7 +131,8 @@ def _pin(d, x, y, R, number, font, accent, angle):
 
 # ---------------------------------------------------------------- top level ---
 def render_map(all_coords, routes, points, accent, tiles_dir,
-               map_w=900, map_h=620, ink_saver=False, labels=None) -> Image.Image:
+               map_w=900, map_h=620, ink_saver=False, labels=None,
+               route_nodes=None) -> Image.Image:
     """Render an RGB map image fitting every ``(lat, long)`` in ``all_coords``.
 
     * ``routes`` — list of ``[(lat, long), …]`` polylines (drives), drawn as a
@@ -139,6 +140,9 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
     * ``points`` — ordered ``[(lat, long), …]``; each gets a pin.
     * ``labels`` — pin text per point (defaults to ``1..N``); e.g. letters for an
       area map or ``*`` for the night's stay.
+    * ``route_nodes`` — ``[(lat, long), …]`` the named stops of the routes
+      (start / waypoints / end); each gets a small full-opacity accent disc
+      sitting on top of the translucent route line.
     * ``accent`` — ``(r, g, b)`` theme color (the trip's ``cover_color``).
     """
     lats = [c[0] for c in all_coords]
@@ -180,6 +184,23 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
         layer = _ss_layer(img.size, paint)
         img.alpha_composite(Image.blend(
             Image.new("RGBA", img.size, (0, 0, 0, 0)), layer, 0.6))
+
+    # route nodes: small full-opacity accent discs (white-ringed) marking the
+    # start / waypoints / end, sitting on top of the translucent route line.
+    node_px = [project(lat, lon) for lat, lon in (route_nodes or [])]
+    if node_px:
+        nr = (3 if ink_saver else 4) * SCALE
+        ring = 1.4 * SCALE
+
+        def paint_nodes(d, ss):
+            for x, y in node_px:
+                cx, cy = x * ss, y * ss
+                r = nr * ss
+                d.ellipse([cx - r - ring * ss, cy - r - ring * ss,
+                           cx + r + ring * ss, cy + r + ring * ss],
+                          fill=(255, 255, 255, 255))
+                d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=accent + (255,))
+        img.alpha_composite(_ss_layer(img.size, paint_nodes))
 
     # pins: numbered teardrops, clustered ones fanned apart by rotation
     px = [project(lat, lon) for lat, lon in points]

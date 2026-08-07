@@ -5,8 +5,40 @@ from __future__ import annotations
 
 from datetime import time
 
-from ..models import Day
-from .base import FONT, INK, LIGHT, MUTED
+from ..models import Day, _format_duration
+from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
+
+
+def road_display_legs(start, waypoints):
+    """Collapse a road's waypoints into display legs. Unnamed (route-shaping)
+    waypoints carry no leg of their own — they merge forward into the next named
+    waypoint, their ``duration`` / ``distance_km`` summed into that leg. Returns
+    ``[(src, dest, duration_min | None, distance_km | None)]``; ``dest`` is
+    ``None`` for a trailing run of unnamed waypoints (an unnamed arrival)."""
+    legs = []
+    acc = {"prev": start, "dur": 0, "dist": 0.0,
+           "has_dur": False, "has_dist": False, "pending": False}
+
+    def flush(dest):
+        legs.append((acc["prev"], dest,
+                     acc["dur"] if acc["has_dur"] else None,
+                     acc["dist"] if acc["has_dist"] else None))
+        acc.update(prev=dest, dur=0, dist=0.0,
+                   has_dur=False, has_dist=False, pending=False)
+
+    for wp in waypoints:
+        acc["pending"] = True
+        if wp.duration_min is not None:
+            acc["dur"] += wp.duration_min
+            acc["has_dur"] = True
+        if wp.distance_km is not None:
+            acc["dist"] += wp.distance_km
+            acc["has_dist"] = True
+        if wp.location:
+            flush(wp.location)
+    if acc["pending"]:  # trailing unnamed waypoints → the arrival
+        flush(None)
+    return legs
 
 
 class DayMixin:
@@ -357,7 +389,40 @@ class DayMixin:
         self._meta_line(x, w, parts)
         if act.off_road:
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
+        self._road_waypoints(x, w, act)
         self._render_nested(x, w, act.activities)
+
+    def _road_waypoints(self, x: float, w: float, road) -> None:
+        """The drive's legs, listed under a small 'VIA' header in a lower
+        (lightened) accent — each row reads 'previous → this waypoint', with that
+        leg's duration / distance in muted text. Hidden for a road with a single
+        leg (a plain departure→arrival), since the title already shows it."""
+        legs = road_display_legs(road.start, road.waypoints)
+        if len(legs) <= 1:
+            return
+        low_accent = _tint(self.accent, 0.4)
+        self.ln(1)
+        self.set_x(x)
+        self.set_font(FONT, "B", 8)
+        self.set_text_color(*low_accent)
+        self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
+        for src, dest, dur_min, dist_km in legs:
+            self._ensure_room(6)
+            self.set_x(x + 3)
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*low_accent)
+            label = f"{src or '?'}  →  {dest or self.t('arrival')}"
+            self.cell(self.get_string_width(label) + 1, 5, label)
+            meta = []
+            if dur_min is not None:
+                meta.append(_format_duration(dur_min))
+            if dist_km is not None:
+                meta.append(f"{dist_km:g} km")
+            if meta:
+                self.set_font(FONT, "", 8.5)
+                self.set_text_color(*FAINT)
+                self.cell(0, 5, "   " + "  ·  ".join(meta))
+            self.ln(5)
 
     def _details_point_of_interest(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]

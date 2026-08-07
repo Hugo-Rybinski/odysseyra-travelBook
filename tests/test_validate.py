@@ -160,10 +160,10 @@ def test_manual_range_not_covering_days_warns():
     assert "before the last day" in msgs
 
 
-def test_road_missing_addresses_is_error():
+def test_road_missing_waypoints_is_error():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [{"type": "road", "start": "A"}]}]}
-    assert "required field 'end'" in _messages(_errors(validate_text(json.dumps(doc))))
+    assert "required field 'waypoints'" in _messages(_errors(validate_text(json.dumps(doc))))
 
 
 def test_poi_invalid_category_is_error():
@@ -187,15 +187,17 @@ def test_nested_activity_type_is_required_and_checked():
 def test_road_and_hike_nest_only_meals():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
-               {"type": "road", "start": "A", "end": "B", "activities": [
-                   {"type": "point_of_interest", "name": "X"}]}]}]}
+               {"type": "road", "start": "A",
+                "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+                "activities": [{"type": "point_of_interest", "name": "X"}]}]}]}
     msgs = _messages(_errors(validate_text(json.dumps(doc))))
     assert "a nested activity 'type' must be one of: meal" in msgs
     # a meal nested under a road is accepted
     ok = {"travel_description": {"title": "T"},
           "days": [{"title": "d", "activities": [
-              {"type": "road", "start": "A", "end": "B", "activities": [
-                  {"type": "meal", "meal_type": "lunch"}]}]}]}
+              {"type": "road", "start": "A",
+               "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+               "activities": [{"type": "meal", "meal_type": "lunch"}]}]}]}
     assert "nested activity" not in _messages(_errors(validate_text(json.dumps(ok))))
 
 
@@ -430,7 +432,8 @@ def test_day_past_midnight_is_error():
 
 def test_nonpositive_distance_and_duration_are_errors():
     findings = _one_day([
-        {"type": "road", "start": "A", "end": "B", "distance_km": 0, "duration": "1h"},
+        {"type": "road", "start": "A", "distance_km": 0, "duration": "1h",
+         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}]},
         {"type": "hike", "name": "H", "duration": "0 min"},
     ])
     msgs = _messages(_errors(findings))
@@ -516,6 +519,27 @@ def test_malformed_json_reports_error():
     findings = validate_text('{"travel_description": {"title": "T",}')
     assert _errors(findings)
     assert "invalid JSON" in _messages(findings)
+
+
+def test_road_waypoint_requires_coordinate():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "road", "start": "A",
+                "waypoints": [{"location": "no coord"}]}]}]}
+    assert "a waypoint needs a 'coordinate'" in _messages(
+        _errors(validate_text(json.dumps(doc))))
+
+
+def test_road_waypoint_durations_exceeding_road_warns():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "road", "start": "A", "duration": "1h",
+                "waypoints": [
+                    {"coordinate": {"lat": 1, "long": 2}, "duration": "40 min"},
+                    {"coordinate": {"lat": 1, "long": 2}, "duration": "40 min"},
+                ]}]}]}
+    assert "the waypoint segments last" in _messages(
+        _warnings(validate_text(json.dumps(doc))))
 
 
 def test_kyrgyzstan_example_has_no_errors():

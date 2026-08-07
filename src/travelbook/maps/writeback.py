@@ -31,8 +31,8 @@ def fill_coordinates(data: dict, countries, cache, geocoder=_default_geocode):
             return
         kind = act.get("type")
         if kind == "road":
-            resolve(q(act.get("start"), city), act, "start_coordinate")
-            resolve(q(act.get("end"), city), act, "end_coordinate")
+            # the departure point; waypoints carry their own explicit coordinates
+            resolve(q(act.get("start"), city), act, "coordinate")
         elif kind in ("point_of_interest", "place", "hike"):
             resolve(q(act.get("name"), city), act, "coordinate")
         elif kind == "meal":

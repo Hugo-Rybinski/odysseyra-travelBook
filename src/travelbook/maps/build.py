@@ -25,6 +25,20 @@ def _hex_to_rgb(value: str) -> tuple[int, int, int]:
         return (31, 78, 95)
 
 
+def _route_through(points, cache):
+    """Driving geometry through an ordered list of ``(lat, long)`` points,
+    chaining :func:`route` over each consecutive pair (start → wp1 → … → end)
+    and stitching the segments into one line."""
+    line: list[tuple[float, float]] = []
+    for a, b in zip(points, points[1:]):
+        seg = route(a, b, cache)
+        if line and seg and line[-1] == seg[0]:
+            line.extend(seg[1:])
+        else:
+            line.extend(seg)
+    return line
+
+
 def _anchor_city(city: str) -> str:
     for arrow in ("→", "->"):
         if arrow in city:
@@ -89,27 +103,34 @@ class _Resolver:
 
 
 def resolve_day(day, itinerary, cache):
-    """Return (main_points, routes, area_details) for a day.
+    """Return (main_points, routes, route_nodes, area_details) for a day.
 
     * ``main_points`` — ordered ``[_Pt]``, one per located point activity (a
       place/area contributes a single pin).
     * ``routes`` — ``[[(lat, long), …]]`` drive geometries.
+    * ``route_nodes`` — ``[[(lat, long), …]]`` the named stops of each route
+      (start / waypoints / end), for the full-opacity node discs on the map.
     * ``area_details`` — ``[(title, [_Pt])]`` for places with >= 2 nested points.
     """
     r = _Resolver(itinerary, cache)
     city = _anchor_city(day.city)
     main: list[_Pt] = []
     routes: list[list[tuple[float, float]]] = []
+    route_nodes: list[list[tuple[float, float]]] = []
     areas: list[tuple[str, list[_Pt]]] = []
 
     for act in day.activities:
         if act.kind == "buffer":
             continue
         if act.kind == "road":
-            a = r.endpoint_coord(act.start_coordinate, act.start, city)
-            b = r.endpoint_coord(act.end_coordinate, act.end, city)
-            if a and b:
-                routes.append(route(a, b, cache))
+            # the departure (start/coordinate) plus the waypoints, in order —
+            # the last waypoint is the arrival.
+            a = r.endpoint_coord(act.coordinate, act.start, city)
+            waypoints = [(w.coordinate.lat, w.coordinate.long) for w in act.waypoints]
+            pts = ([a] if a else []) + waypoints
+            if len(pts) >= 2:
+                routes.append(_route_through(pts, cache))
+                route_nodes.append(list(pts))
             continue
         if act.kind == "place":
             nested = []
@@ -131,12 +152,12 @@ def resolve_day(day, itinerary, cache):
         coord = r.point_coord(act, city)
         if coord:
             main.append(_Pt(act.title, coord[0], coord[1], act))
-    return main, routes, areas
+    return main, routes, route_nodes, areas
 
 
 def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
     """Build the main day map and any per-area detail maps (PIL images)."""
-    main_pts, routes, area_details = resolve_day(day, itinerary, cache)
+    main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
     accent = _hex_to_rgb(itinerary.cover_color)
     result = DayMaps()
 
@@ -160,10 +181,11 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
             if p.act is not None:
                 result.numbers[id(p.act)] = chr(ord("A") + j)
 
+    nodes = [c for line in route_nodes for c in line]
     all_coords = list(main_points) + [c for line in routes for c in line]
     if all_coords:
         img = render_map(all_coords, routes, main_points, accent, cache.tiles,
-                         ink_saver=ink_saver, labels=main_labels)
+                         ink_saver=ink_saver, labels=main_labels, route_nodes=nodes)
         result.main = RenderedMap(img, [p.label for p in main_pts])
 
     for title, pts in area_details:

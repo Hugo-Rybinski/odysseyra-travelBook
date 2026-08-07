@@ -181,11 +181,14 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 - **Re-render the example PDFs after every code change.** The rendered PDFs are
   the primary way changes get reviewed, so keep them current — they are
   gitignored (`*.pdf`) and untracked, so nothing else updates them. Rebuild all
-  three:
+  four (the last is maps-on — `kyrgyzstan.json` sets `include_maps_in_render`,
+  so it needs network for tiles/routes unless the cache is warm, but the build
+  degrades gracefully offline):
   ```bash
   .venv/bin/travelbook build examples/pyrenees.json -o examples/pyrenees.pdf
   .venv/bin/travelbook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
   .venv/bin/travelbook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf
+  .venv/bin/travelbook build examples/kyrgyzstan.json -o examples/kyrgyzstan.pdf
   ```
   (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
 - When adding/renaming a field or message, update: the model `from_dict`, the

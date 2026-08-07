@@ -66,8 +66,7 @@ can carry a location so it gets a pin on the day's map:
 
 | Field | Applies to | Format | Notes |
 |---|---|---|---|
-| `coordinate` | `point_of_interest`, `place`, `hike`, `meal` | `{ "lat": .., "long": .. }` | The map pin for this stop. |
-| `start_coordinate` / `end_coordinate` | `road` | a `{ "lat": .., "long": .. }` object each | A drive goes A→B; the map draws the route between the two points. |
+| `coordinate` | `point_of_interest`, `place`, `hike`, `meal`, `road` | `{ "lat": .., "long": .. }` | The map pin for this stop; on a `road` it's the **departure** point of the route. |
 
 - `lat` / `long` are decimal degrees (latitude −90…90, longitude −180…180), e.g.
   `"coordinate": { "lat": 43.0974, "long": -0.0583 }`.
@@ -80,13 +79,41 @@ can carry a location so it gets a pin on the day's map:
 
 ### Type `road` — a drive or transfer
 
+A road departs from `start` and runs through its `waypoints`, in order — the
+**last waypoint is the arrival**. There is no `end` field: the destination is
+that final waypoint.
+
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `start` | **yes** | text | Where the drive begins. |
-| `end` | **yes** | text | Where it ends. |
+| `coordinate` | no | `{ "lat": .., "long": .. }` | The departure point, for the map route. |
 | `distance_km` | no | positive number | Driving distance. |
 | `off_road` | no | boolean | `true` if part is off-road. |
+| `waypoints` | **yes** | non-empty array of **waypoint** objects | Ordered stops through to the arrival (see below). |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
+
+**Waypoints — the ordered route.** List every meaningful stop the drive runs
+through, in order, ending at the arrival (e.g. for "Gavarnie → Luz-Saint-Sauveur
+→ Arreau → Saint-Bertrand", the waypoints are Luz-Saint-Sauveur, Arreau and
+Saint-Bertrand). The map draws `start → waypoint 1 → … → last waypoint`, with a
+disc on the departure and each waypoint. Each waypoint is an object:
+
+| Field | Required | Format | Notes |
+|---|---|---|---|
+| `coordinate` | **yes** | `{ "lat": .., "long": .. }` | The point on the route. Only set coordinates you actually know. |
+| `location` | no | text | The waypoint's name. |
+| `duration` | no | duration (`"45 min"`) | Time for the leg reaching this waypoint. |
+| `distance_km` | no | positive number | Distance for the leg reaching this waypoint. |
+
+- A road needs **at least one** waypoint — the arrival. For a plain A→B drive,
+  that's a single waypoint at the destination (name it in `location`).
+- Give a waypoint a `location` when it's a real named stop shown to the reader.
+  Leave `location` off for a point that only **shapes the route** on the map (a
+  bend, a pass): it still gets a map disc, but in the PDF it merges into the next
+  named waypoint and its `duration`/`distance_km` are summed into that leg.
+- Keep the waypoint `duration`s adding up to no more than the road's own
+  `duration`; `validate` warns if the segments don't fit the drive.
+- Only add coordinates you actually know — never guess them.
 
 **Roads are an exception to "omit what you don't know".** If a `road` is missing
 its distance (`distance_km`) or duration (`duration`), still add each missing
@@ -95,11 +122,12 @@ field with a `"FIXME"` value so the user is prompted to fill it in — e.g.
 
 **Link separate places with a `road`.** Between two consecutive activities that
 happen in different places (a different town, area, or trailhead), insert a
-`road` whose `start` is the first place and `end` is the second, so the transfer
-between them is shown. Skip it only when the two stops share the same area —
-they're nested under the same `place`, or clearly in one town — since there's no
-leg to draw within a single place. Give the road a `"distance_km": "FIXME"` and
-`"duration": "FIXME"` if the source doesn't state them (per the rule above).
+`road` whose `start` is the first place and whose final waypoint is the second,
+so the transfer between them is shown. Skip it only when the two stops share the
+same area — they're nested under the same `place`, or clearly in one town —
+since there's no leg to draw within a single place. Give the road a
+`"distance_km": "FIXME"` and `"duration": "FIXME"` if the source doesn't state
+them (per the rule above).
 
 ### Type `point_of_interest` — a specific sight
 

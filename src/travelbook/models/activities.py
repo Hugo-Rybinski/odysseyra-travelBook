@@ -81,38 +81,82 @@ class Buffer(Activity):
 
 
 @dataclass
+class Waypoint:
+    """An intermediate stop a drive's route passes through. Carries a required
+    ``coordinate`` (the point plotted on the route) plus an optional location
+    name and the leg's ``duration``/``distance_km``. When a road has waypoints
+    the route runs start → waypoint 1 → … → last waypoint, and the last one is
+    the effective destination (the road's ``end_coordinate`` is not plotted)."""
+
+    coordinate: Coordinate
+    location: str = ""
+    duration_min: int | None = None
+    distance_km: float | None = None
+
+    @property
+    def duration_display(self) -> str:
+        return _format_duration(self.duration_min)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Waypoint":
+        if not isinstance(d, dict):
+            raise ItineraryError(
+                "a road 'waypoint' must be an object with a 'coordinate'"
+            )
+        coord = _parse_coordinate(d.get("coordinate"))
+        if coord is None:
+            raise ItineraryError("a road 'waypoint' needs a 'coordinate'")
+        return cls(
+            coordinate=coord,
+            location=str(d.get("location", "")),
+            duration_min=_parse_duration(d.get("duration")),
+            distance_km=_parse_float(d.get("distance_km"), "waypoint distance_km"),
+        )
+
+
+@dataclass
 class Road(Activity):
-    """A drive/transfer between two places."""
+    """A drive/transfer. Departs from ``start`` (its optional ``coordinate`` is
+    the departure point) and runs through ``waypoints`` — an ordered list whose
+    last entry is the arrival. There is no separate ``end``: the destination is
+    the final waypoint."""
 
     kind = "road"
     start: str = ""
-    end: str = ""
     distance_km: float | None = None
     off_road: bool = False
-    start_coordinate: Coordinate | None = None  # drive start, for the route line
-    end_coordinate: Coordinate | None = None  # drive end
+    waypoints: list[Waypoint] = field(default_factory=list)  # ordered stops; last = arrival
     activities: list[Activity] = field(default_factory=list)
 
     @property
+    def destination(self) -> str:
+        """The arrival's name — the last named waypoint (usually the final one)."""
+        for wp in reversed(self.waypoints):
+            if wp.location:
+                return wp.location
+        return ""
+
+    @property
     def title(self) -> str:
-        if self.start and self.end:
-            return f"{self.start} → {self.end}"
-        return self.start or self.end or "Road"
+        if self.start and self.destination:
+            return f"{self.start} → {self.destination}"
+        return self.start or self.destination or "Road"
 
     @classmethod
     def from_dict(cls, d: dict) -> "Road":
-        if "start" not in d or "end" not in d:
+        if "start" not in d:
+            raise ItineraryError("A 'road' activity needs a 'start' address")
+        waypoints = [Waypoint.from_dict(w) for w in d.get("waypoints", [])]
+        if not waypoints:
             raise ItineraryError(
-                "A 'road' activity needs a 'start' and an 'end' address"
+                "A 'road' activity needs at least one 'waypoint' (the arrival)"
             )
         return cls(
-            **_sched(d),
+            **_sched(d),  # 'coordinate' here is the departure point
             start=str(d["start"]),
-            end=str(d["end"]),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
-            start_coordinate=_parse_coordinate(d.get("start_coordinate"), "start_coordinate"),
-            end_coordinate=_parse_coordinate(d.get("end_coordinate"), "end_coordinate"),
+            waypoints=waypoints,
             activities=[_nested_activity(m, "road") for m in d.get("activities", [])],
         )
 

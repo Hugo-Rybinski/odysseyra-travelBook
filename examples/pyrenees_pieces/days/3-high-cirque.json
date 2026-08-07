@@ -7,11 +7,20 @@
     {
       "type": "road",
       "start": "Lourdes",
-      "end": "Gavarnie trailhead",
       "distance_km": 52,
       "start_time": "08:00",
       "duration": "1h20",
       "off_road": true,
+      "coordinate": {
+        "lat": 43.09409,
+        "long": -0.0465
+      },
+      "waypoints": [
+        {
+          "coordinate": { "lat": 42.75674, "long": -0.00029 },
+          "location": "Gavarnie trailhead"
+        }
+      ],
       "activities": [
         {
           "type": "meal",
@@ -23,15 +32,7 @@
             "long": -0.018
           }
         }
-      ],
-      "start_coordinate": {
-        "lat": 43.09409,
-        "long": -0.0465
-      },
-      "end_coordinate": {
-        "lat": 42.75674,
-        "long": -0.00029
-      }
+      ]
     },
     {
       "type": "hike",

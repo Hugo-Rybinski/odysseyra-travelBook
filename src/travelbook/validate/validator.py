@@ -29,6 +29,7 @@ from .specs import (
     TRAVEL_DESCRIPTION,
     V_COORDINATE,
     V_CURRENCY,
+    V_DUR,
     V_ISO_COUNTRY,
     V_NUMBER,
 )
@@ -278,6 +279,8 @@ class _Validator:
                          "suppresses the trip's default buffer here and draws no line.")
         if kind == "hike":
             self._hike_route_endpoints(act, path)
+        if kind == "road":
+            self._road_waypoints(act, path)
         if kind == "meal" and act.get("restaurant") and act.get("area"):
             self.add("warning", path, "both 'restaurant' and 'area' are set — "
                      "'area' is ignored when a restaurant is named.")
@@ -338,6 +341,64 @@ class _Validator:
             if sub.get("activities"):
                 self.add("error", spath, "a nested activity can't contain its own "
                          "nested activities — nesting is only one level deep.")
+
+    def _road_waypoints(self, act, path):
+        """Validate a road's optional ``waypoints`` — each an object with a
+        required ``coordinate`` and optional ``location`` / ``duration`` /
+        ``distance_km``. Warns when the segment durations sum past the road's
+        own duration (they can't fit the drive)."""
+        raw = act.get("waypoints")
+        if raw is None:
+            return  # required-field-missing is reported by check_object
+        if not isinstance(raw, list):
+            self.add("error", path + ("waypoints",),
+                     "'waypoints' must be an array of {coordinate, location, "
+                     "duration, distance_km} objects.")
+            return
+        if not raw:
+            self.add("error", path + ("waypoints",),
+                     "a road needs at least one 'waypoint' — the route's final "
+                     "stop is the arrival.")
+            return
+        total, known = 0, False
+        for k, wp in enumerate(raw):
+            wpath = path + ("waypoints", k)
+            if not isinstance(wp, dict):
+                self.add("error", wpath, "each waypoint must be an object with a "
+                         "'coordinate' (a {lat, long} point on the route).")
+                continue
+            if wp.get("coordinate") in (None, ""):
+                self.add("error", wpath, "a waypoint needs a 'coordinate' (a "
+                         "{lat, long} object) — it sets a point on the route.")
+            dk = wp.get("distance_km")
+            if dk is not None:
+                err = V_NUMBER(dk)
+                if err:
+                    self.add("error", wpath + ("distance_km",),
+                             "field '{name}' is invalid ({value}) — {error}.",
+                             name="distance_km", value=repr(dk), error=err)
+                elif float(dk) <= 0:
+                    self.add("error", wpath + ("distance_km",),
+                             "distance_km must be a positive number (got {value}).",
+                             value=dk)
+            dur = wp.get("duration")
+            if dur is not None:
+                err = V_DUR(dur)
+                if err:
+                    self.add("error", wpath + ("duration",),
+                             "field '{name}' is invalid ({value}) — {error}.",
+                             name="duration", value=repr(dur), error=err)
+                else:
+                    d = _dur(dur)
+                    if d is not None:
+                        total += d
+                        known = True
+        parent = _obj_minutes(act)
+        if known and parent is not None and total > parent:
+            self.add("warning", path, "the waypoint segments last {total} in "
+                     "total, longer than the road's {parent} — the segment times "
+                     "don't fit the drive.", total=_format_duration(total),
+                     parent=_format_duration(parent))
 
     def _transport(self, t, path):
         if not isinstance(t, dict):

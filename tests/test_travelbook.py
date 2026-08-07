@@ -131,7 +131,8 @@ def test_activity_types_parse():
                 {
                     "title": "d",
                     "activities": [
-                        {"type": "road", "start": "A", "end": "B", "distance_km": 10, "off_road": True},
+                        {"type": "road", "start": "A", "distance_km": 10, "off_road": True,
+                         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}]},
                         {"type": "point_of_interest", "name": "M", "category": "museum"},
                         {"type": "place", "name": "T", "activities": [
                             {"type": "point_of_interest", "name": "x", "category": "castle"},
@@ -155,8 +156,36 @@ def test_activity_types_parse():
 
 
 def test_road_title():
-    r = Road(start="Pau", end="Lourdes")
-    assert r.title == "Pau → Lourdes"
+    r = Road.from_dict({"type": "road", "start": "Pau", "waypoints": [
+        {"coordinate": {"lat": 1, "long": 2}, "location": "Lourdes"}]})
+    assert r.title == "Pau → Lourdes"       # destination is the last named waypoint
+    assert r.destination == "Lourdes"
+
+
+def test_road_display_legs():
+    from travelbook.models import Coordinate, Waypoint
+    from travelbook.pdf.days import road_display_legs
+
+    def wp(loc=None, d=None, km=None):
+        return Waypoint(coordinate=Coordinate(0.0, 0.0), location=loc or "",
+                        duration_min=d, distance_km=km)
+
+    # a single named arrival → one leg (the caller hides the VIA list for this)
+    legs = road_display_legs("A", [wp("B")])
+    assert legs == [("A", "B", None, None)]
+
+    # an unnamed shaping point merges forward into the next named waypoint,
+    # summing duration and distance into that one leg
+    legs = road_display_legs("A", [wp(None, 30, 10), wp("C", 40, 20)])
+    assert legs == [("A", "C", 70, 30.0)]
+
+    # two named waypoints → two legs
+    legs = road_display_legs("A", [wp("B", 30), wp("C", 40)])
+    assert [(s, d) for s, d, _, _ in legs] == [("A", "B"), ("B", "C")]
+
+    # a trailing unnamed run yields a final leg with dest=None (the arrival)
+    legs = road_display_legs("A", [wp("B"), wp(None, 15)])
+    assert legs[-1] == ("B", None, 15, None)
 
 
 def test_hike_route_normalization():
@@ -198,8 +227,11 @@ def test_bad_route_rejected():
         )
 
 
-def test_road_requires_start_and_end():
-    with pytest.raises(ItineraryError):
+def test_road_requires_start_and_waypoints():
+    with pytest.raises(ItineraryError):  # missing 'start'
+        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
+            {"type": "road", "waypoints": [{"coordinate": {"lat": 1, "long": 2}}]}]}]})
+    with pytest.raises(ItineraryError):  # missing 'waypoints' (the arrival)
         Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
             {"type": "road", "start": "A"}]}]})
 
@@ -240,8 +272,9 @@ def test_nested_activities_require_a_valid_type():
                 {"type": "road", "start": "A", "end": "B"}]}]}]})
     with pytest.raises(ItineraryError):  # a road accepts only nested meals
         Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
-            {"type": "road", "start": "A", "end": "B", "activities": [
-                {"type": "point_of_interest", "name": "X"}]}]}]})
+            {"type": "road", "start": "A",
+             "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+             "activities": [{"type": "point_of_interest", "name": "X"}]}]}]})
 
 
 def test_point_of_interest_nests_a_hike():
@@ -257,7 +290,9 @@ def test_point_of_interest_nests_a_hike():
 def test_meal_nests_under_road_hike_place_and_poi():
     meal = {"type": "meal", "meal_type": "picnic", "area": "somewhere"}
     for container in (
-        {"type": "road", "start": "A", "end": "B", "activities": [meal]},
+        {"type": "road", "start": "A",
+         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+         "activities": [meal]},
         {"type": "hike", "name": "H", "activities": [meal]},
         {"type": "place", "name": "P", "activities": [meal]},
         {"type": "point_of_interest", "name": "PoI", "activities": [meal]},

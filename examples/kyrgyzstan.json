@@ -42,9 +42,11 @@
       "title": "Ala Archa National Park",
       "description": "A day hike in the gorge just south of the city.",
       "activities": [
-        { "type": "road", "start": "Bishkek", "end": "Ala Archa National Park", "distance_km": 40,
-          "start_coordinate": { "lat": 42.8761, "long": 74.6037 },
-          "end_coordinate": { "lat": 42.5431, "long": 74.4792 } },
+        { "type": "road", "start": "Bishkek", "distance_km": 40,
+          "coordinate": { "lat": 42.8761, "long": 74.6037 },
+          "waypoints": [
+            { "coordinate": { "lat": 42.5431, "long": 74.4792 }, "location": "Ala Archa National Park" }
+          ] },
         { "type": "hike", "name": "Ak-Sai Waterfall trail", "distance_km": 12, "elevation_m": 800, "route": "back_and_forth" }
       ]
     },
@@ -53,9 +55,13 @@
       "title": "North shore of Issyk-Kul",
       "description": "Drive east along the lake to Cholpon-Ata and its Bronze-Age petroglyphs.",
       "activities": [
-        { "type": "road", "start": "Bishkek", "end": "Cholpon-Ata", "distance_km": 250,
-          "start_coordinate": { "lat": 42.8761, "long": 74.6037 },
-          "end_coordinate": { "lat": 42.7316, "long": 77.8635 } },
+        { "type": "road", "start": "Bishkek", "distance_km": 250,
+          "coordinate": { "lat": 42.8761, "long": 74.6037 },
+          "waypoints": [
+            { "coordinate": { "lat": 42.8355, "long": 75.2878 }, "location": "Tokmok", "duration": "1h", "distance_km": 60 },
+            { "coordinate": { "lat": 42.4603, "long": 76.1866 }, "location": "Balykchy", "duration": "2h", "distance_km": 120 },
+            { "coordinate": { "lat": 42.7316, "long": 77.8635 }, "location": "Cholpon-Ata", "duration": "1h30", "distance_km": 70 }
+          ] },
         { "type": "point_of_interest", "name": "Cholpon-Ata Petroglyphs", "category": "ruins",
           "coordinate": { "lat": 42.6606, "long": 77.0567 } },
         { "type": "point_of_interest", "name": "Ruh Ordo Cultural Complex", "category": "temple" },
@@ -67,9 +73,11 @@
       "title": "Karakol town",
       "description": "Continue to Karakol at the lake's east end — a mix of Russian and Dungan heritage.",
       "activities": [
-        { "type": "road", "start": "Cholpon-Ata", "end": "Karakol", "distance_km": 150,
-          "start_coordinate": { "lat": 42.7316, "long": 77.8635 },
-          "end_coordinate": { "lat": 42.4817, "long": 78.4003 } },
+        { "type": "road", "start": "Cholpon-Ata", "distance_km": 150,
+          "coordinate": { "lat": 42.7316, "long": 77.8635 },
+          "waypoints": [
+            { "coordinate": { "lat": 42.4817, "long": 78.4003 }, "location": "Karakol" }
+          ] },
         { "type": "point_of_interest", "name": "Holy Trinity Cathedral", "category": "church",
           "coordinate": { "lat": 42.4891, "long": 78.3949 } },
         { "type": "point_of_interest", "name": "Dungan Mosque", "category": "temple",
@@ -83,9 +91,11 @@
       "title": "Red rocks & fairy canyon",
       "description": "The Seven Bulls formation and the Skazka canyon on the south shore.",
       "activities": [
-        { "type": "road", "start": "Karakol", "end": "Jeti-Oguz", "distance_km": 30,
-          "start_coordinate": { "lat": 42.4817, "long": 78.4003 },
-          "end_coordinate": { "lat": 42.3520, "long": 78.2340 } },
+        { "type": "road", "start": "Karakol", "distance_km": 30,
+          "coordinate": { "lat": 42.4817, "long": 78.4003 },
+          "waypoints": [
+            { "coordinate": { "lat": 42.3520, "long": 78.2340 }, "location": "Jeti-Oguz" }
+          ] },
         { "type": "point_of_interest", "name": "Jeti-Oguz Seven Bulls", "category": "viewpoint",
           "coordinate": { "lat": 42.3368, "long": 78.2387 } },
         { "type": "point_of_interest", "name": "Skazka Fairy Tale Canyon", "category": "viewpoint" },
@@ -98,9 +108,12 @@
       "title": "Burana Tower & back",
       "description": "The long drive back west, stopping at the Burana minaret near Tokmok.",
       "activities": [
-        { "type": "road", "start": "Karakol", "end": "Bishkek", "distance_km": 400,
-          "start_coordinate": { "lat": 42.4817, "long": 78.4003 },
-          "end_coordinate": { "lat": 42.8761, "long": 74.6037 } },
+        { "type": "road", "start": "Karakol", "distance_km": 400,
+          "coordinate": { "lat": 42.4817, "long": 78.4003 },
+          "waypoints": [
+            { "coordinate": { "lat": 42.4603, "long": 76.1866 }, "duration": "3h", "distance_km": 210 },
+            { "coordinate": { "lat": 42.8761, "long": 74.6037 }, "location": "Bishkek", "duration": "3h", "distance_km": 190 }
+          ] },
         { "type": "point_of_interest", "name": "Burana Tower", "category": "ruins",
           "coordinate": { "lat": 42.7464, "long": 75.2501 } }
       ]

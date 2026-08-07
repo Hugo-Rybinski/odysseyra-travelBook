@@ -271,10 +271,11 @@ itinerary, so there's no separate map key.
 "coordinate": { "lat": 43.0974, "long": -0.0583 }
 ```
 
-Segment objects that go from A→B carry endpoint coordinates instead of (or in
-addition to) a single `coordinate`: `road` and `transport` accept
-`start_coordinate` / `end_coordinate`, and `car_rentals` accept
-`pickup_coordinate` / `dropoff_coordinate`. Routes are drawn between the endpoints.
+Segment objects that go from A→B carry endpoint coordinates: `transport`
+accepts `start_coordinate` / `end_coordinate`, and `car_rentals` accept
+`pickup_coordinate` / `dropoff_coordinate`; the route is drawn between the
+endpoints. A `road` instead uses its own `coordinate` as the departure point and
+its `waypoints` as the ordered stops through to the arrival (see below).
 
 With `infer_coordinates_from_address` off (the default) only objects with an
 explicit `coordinate` appear on the map, so builds stay deterministic and offline.
@@ -316,10 +317,31 @@ A tz label is only shown in the PDF when it differs from `defaults.timezone`.
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `start` | ✅ | Departure address | string | any text | — |
-| `end` | ✅ | Arrival address | string | any text | — |
+| `coordinate` |  | The departure point (for the map route) | object | `{ "lat": .., "long": .. }` | none |
 | `distance_km` |  | Driving distance | number | positive number | none |
 | `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
+| `waypoints` | ✅ | Ordered stops the route runs through (last = arrival) | array | non-empty array of `waypoint` objects (see below) | — |
 | `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
+
+A road departs from `start` (its `coordinate` is the departure point) and runs
+through its `waypoints`, in order — the **last waypoint is the arrival**. There
+is no separate `end`. The map draws `coordinate → waypoint 1 → … → last
+waypoint`, with a full-opacity accent disc on the departure and every waypoint.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `coordinate` | ✅ | The point on the route | object | `{ "lat": .., "long": .. }` | — |
+| `location` |  | The waypoint's name | string | any text | `""` |
+| `duration` |  | Time for the leg reaching it | string | duration (`1h30`, `45 min`) | none |
+| `distance_km` |  | Distance for the leg reaching it | number | positive number | none |
+
+The waypoints are listed under the road in the PDF (in a lower accent), one row
+per leg (`previous → this waypoint`) — but the list is omitted for a road with a
+single leg (a plain departure→arrival), since the title already shows it. An
+**unnamed** waypoint (no `location`) still gets a map disc but has no row of its
+own — it merges forward into the next named waypoint, its `duration`/`distance_km`
+summed into that leg. If the waypoint `duration`s sum to more than the road's own
+`duration`, validation warns (the segment times can't fit the drive).
 
 #### `point_of_interest` — a specific place
 

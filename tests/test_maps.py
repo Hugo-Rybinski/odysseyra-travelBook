@@ -9,6 +9,7 @@ from PIL import Image
 
 from travelbook.maps.build import _anchor_city, _hex_to_rgb, resolve_day
 from travelbook.maps.render import lonlat_to_px, pin_angles, render_map
+from travelbook.maps.routing import route
 from travelbook.maps.writeback import fill_coordinates
 from travelbook.models import Coordinate, ItineraryError, Itinerary, _parse_coordinate
 
@@ -70,9 +71,9 @@ def test_pin_angles_fans_coincident_pins():
 DAY = {
     "title": "d", "city": "Lourdes",
     "activities": [
-        {"type": "road", "start": "Pau", "end": "Lourdes",
-         "start_coordinate": {"lat": 43.29, "long": -0.36},
-         "end_coordinate": {"lat": 43.09, "long": -0.05}},
+        {"type": "road", "start": "Pau",
+         "coordinate": {"lat": 43.29, "long": -0.36},
+         "waypoints": [{"coordinate": {"lat": 43.09, "long": -0.05}, "location": "Lourdes"}]},
         {"type": "point_of_interest", "name": "Sanctuary",
          "coordinate": {"lat": 43.097, "long": -0.058}},
         {"type": "point_of_interest", "name": "Hidden",
@@ -93,7 +94,7 @@ def test_resolve_day_points_routes_and_areas(monkeypatch):
     # stub routing so the road's route needs no network
     monkeypatch.setattr("travelbook.maps.build.route", lambda a, b, cache: [a, b])
     it = _itin([DAY])
-    points, routes, areas = resolve_day(it.days[0], it, cache=None)
+    points, routes, _nodes, areas = resolve_day(it.days[0], it, cache=None)
     labels = [p.label for p in points]
     assert "Sanctuary" in labels
     assert "Old town" in labels          # the area contributes one pin
@@ -114,10 +115,79 @@ def test_area_centroid_fallback():
             {"type": "point_of_interest", "name": "B", "coordinate": {"lat": 43.2, "long": 0.4}},
         ]}]}
     it = _itin([day])
-    points, _, areas = resolve_day(it.days[0], it, cache=None)
+    points, _, _nodes, areas = resolve_day(it.days[0], it, cache=None)
     assert [p.label for p in points] == ["No-coord area"]
     assert points[0].lat == pytest.approx(43.1) and points[0].long == pytest.approx(0.2)
     assert len(areas) == 1
+
+
+def test_resolve_day_road_routes_through_waypoints(monkeypatch):
+    """A road draws departure (coordinate) → wp1 → … → last waypoint; the last
+    waypoint is the arrival."""
+    monkeypatch.setattr("travelbook.maps.build.route", lambda a, b, cache: [a, b])
+    day = {"title": "d", "city": "Lourdes", "activities": [
+        {"type": "road", "start": "A",
+         "coordinate": {"lat": 0.0, "long": 0.0},
+         "waypoints": [
+             {"coordinate": {"lat": 1.0, "long": 1.0}, "location": "One"},
+             {"coordinate": {"lat": 2.0, "long": 2.0}, "location": "Two"},
+         ]}]}
+    it = _itin([day])
+    _points, routes, nodes, _areas = resolve_day(it.days[0], it, cache=None)
+    assert len(routes) == 1
+    assert routes[0] == [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]
+    # the route's nodes (departure + waypoints) are exposed for the map discs
+    assert nodes == [[(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]]
+
+
+def test_route_failure_falls_back_but_does_not_cache(monkeypatch):
+    """A failed OSRM lookup returns a straight [a, b] line but must NOT be
+    cached — otherwise a transient failure poisons the cache into a permanent
+    straight line."""
+    from travelbook.maps import routing
+    monkeypatch.setattr(routing.time, "sleep", lambda s: None)  # no real backoff
+    monkeypatch.setattr("travelbook.maps.routing.urllib.request.urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("no network")))
+    cache = type("C", (), {"routes": {}})()
+    a, b = (42.9, 0.36), (43.0, 0.57)
+    assert route(a, b, cache) == [a, b]  # straight fallback
+    assert cache.routes == {}            # nothing cached, so it retries later
+
+
+def test_route_retries_transient_failure_then_caches(monkeypatch):
+    """A transient failure is retried; once it succeeds the geometry is cached."""
+    from travelbook.maps import routing
+    monkeypatch.setattr(routing.time, "sleep", lambda s: None)
+    good = [(1.0, 2.0), (1.1, 2.1), (1.2, 2.2)]
+    calls = {"n": 0}
+
+    def fake(coords):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise routing._Transient("HTTP 503")
+        return good
+    monkeypatch.setattr(routing, "_request_route", fake)
+    cache = type("C", (), {"routes": {}})()
+    assert route((1.0, 2.0), (1.2, 2.2), cache) == good
+    assert calls["n"] == 2          # retried once, then succeeded
+    assert list(cache.routes.values()) == [good]  # real geometry cached
+
+
+def test_route_no_route_is_not_retried(monkeypatch):
+    """A definitive 'no route' answer is not retried — it falls straight back."""
+    from travelbook.maps import routing
+    monkeypatch.setattr(routing.time, "sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def fake(coords):
+        calls["n"] += 1
+        return None  # definitive no-route
+    monkeypatch.setattr(routing, "_request_route", fake)
+    cache = type("C", (), {"routes": {}})()
+    a, b = (1.0, 2.0), (1.2, 2.2)
+    assert route(a, b, cache) == [a, b]
+    assert calls["n"] == 1          # NOT retried
+    assert cache.routes == {}
 
 
 def test_render_map_offline(monkeypatch, tmp_path):
@@ -134,8 +204,8 @@ def test_resolve_day_no_inference_when_off():
     day = {"title": "d", "city": "Lourdes", "activities": [
         {"type": "point_of_interest", "name": "Somewhere with no coordinate"}]}
     it = _itin([day])  # infer defaults off
-    points, routes, areas = resolve_day(it.days[0], it, cache=None)
-    assert points == [] and routes == [] and areas == []
+    points, routes, nodes, areas = resolve_day(it.days[0], it, cache=None)
+    assert points == [] and routes == [] and nodes == [] and areas == []
 
 
 # -- geocode write-back (stub geocoder) --------------------------------------
@@ -152,13 +222,14 @@ def test_fill_coordinates_adds_and_preserves():
     data = {"days": [{"title": "d", "city": "Lourdes", "activities": [
         {"type": "point_of_interest", "name": "Sanctuary"},
         {"type": "point_of_interest", "name": "Unknown place"},
-        {"type": "road", "start": "Pau", "end": "Lourdes",
-         "end_coordinate": {"lat": 1.0, "long": 2.0}},  # already set, keep it
+        {"type": "road", "start": "Pau",
+         "waypoints": [{"coordinate": {"lat": 1.0, "long": 2.0}, "location": "Lourdes"}]},
     ]}]}
     filled, missed = fill_coordinates(data, ["FR"], cache=None, geocoder=_stub)
     acts = data["days"][0]["activities"]
     assert acts[0]["coordinate"] == {"lat": 43.097, "long": -0.058}
     assert "coordinate" not in acts[1]                 # geocoder returned None
-    assert acts[2]["start_coordinate"] == {"lat": 43.29, "long": -0.36}
-    assert acts[2]["end_coordinate"] == {"lat": 1.0, "long": 2.0}  # preserved
+    # a road's 'start' geocodes into its 'coordinate' (the departure point)
+    assert acts[2]["coordinate"] == {"lat": 43.29, "long": -0.36}
+    assert acts[2]["waypoints"][0]["coordinate"] == {"lat": 1.0, "long": 2.0}  # untouched
     assert filled == 2 and missed == 1

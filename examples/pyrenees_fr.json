@@ -38,19 +38,20 @@
         {
           "type": "road",
           "start": "Pau",
-          "end": "Lourdes",
           "distance_km": 45,
           "start_time": "18:45",
           "duration": "50 min",
           "off_road": false,
-          "start_coordinate": {
+          "coordinate": {
             "lat": 43.29575,
             "long": -0.36857
           },
-          "end_coordinate": {
-            "lat": 43.09409,
-            "long": -0.0465
-          }
+          "waypoints": [
+            {
+              "coordinate": { "lat": 43.09409, "long": -0.0465 },
+              "location": "Lourdes"
+            }
+          ]
         }
       ]
     },
@@ -148,11 +149,20 @@
         {
           "type": "road",
           "start": "Lourdes",
-          "end": "Départ de Gavarnie",
           "distance_km": 52,
           "start_time": "08:00",
           "duration": "1h20",
           "off_road": true,
+          "coordinate": {
+            "lat": 43.09409,
+            "long": -0.0465
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 42.75674, "long": -0.00029 },
+              "location": "Départ de Gavarnie"
+            }
+          ],
           "activities": [
             {
               "type": "meal",
@@ -164,15 +174,7 @@
                 "long": -0.018
               }
             }
-          ],
-          "start_coordinate": {
-            "lat": 43.09409,
-            "long": -0.0465
-          },
-          "end_coordinate": {
-            "lat": 42.75674,
-            "long": -0.00029
-          }
+          ]
         },
         {
           "type": "hike",
@@ -240,18 +242,33 @@
         {
           "type": "road",
           "start": "Gavarnie",
-          "end": "Saint-Bertrand-de-Comminges",
           "distance_km": 96,
           "duration": "2h05",
           "off_road": false,
-          "start_coordinate": {
+          "coordinate": {
             "lat": 42.69574,
             "long": -0.0103
           },
-          "end_coordinate": {
-            "lat": 43.02693,
-            "long": 0.57091
-          }
+          "waypoints": [
+            {
+              "coordinate": { "lat": 42.8722, "long": -0.0033 },
+              "location": "Luz-Saint-Sauveur",
+              "duration": "35 min",
+              "distance_km": 20
+            },
+            {
+              "coordinate": { "lat": 42.9089, "long": 0.3617 },
+              "location": "Arreau",
+              "duration": "45 min",
+              "distance_km": 40
+            },
+            {
+              "coordinate": { "lat": 43.02693, "long": 0.57091 },
+              "location": "Saint-Bertrand-de-Comminges",
+              "duration": "40 min",
+              "distance_km": 36
+            }
+          ]
         },
         {
           "type": "point_of_interest",
