@@ -42,6 +42,11 @@ class RenderedMap:
 class DayMaps:
     main: RenderedMap | None = None
     areas: list[tuple[str, RenderedMap]] = field(default_factory=list)  # (area title, map)
+    numbers: dict = field(default_factory=dict)  # id(activity) -> its pin number
+
+    def number_for(self, act) -> int | None:
+        """The pin number for ``act`` on whichever map it appears (or None)."""
+        return self.numbers.get(id(act))
 
 
 @dataclass
@@ -49,6 +54,7 @@ class _Pt:
     label: str
     lat: float
     long: float
+    act: object = None      # the source activity, to map it back to its pin number
 
 
 class _Resolver:
@@ -110,7 +116,7 @@ def resolve_day(day, itinerary, cache):
             for sub in act.activities:
                 sc = r.point_coord(sub, city)
                 if sc:
-                    nested.append(_Pt(sub.title, sc[0], sc[1]))
+                    nested.append(_Pt(sub.title, sc[0], sc[1], sub))
             coord = r.point_coord(act, city)
             hidden = act.coordinate is not None and not act.coordinate.show_on_map
             if coord is None and nested and not hidden:
@@ -118,13 +124,13 @@ def resolve_day(day, itinerary, cache):
                 coord = (sum(p.lat for p in nested) / len(nested),
                          sum(p.long for p in nested) / len(nested))
             if coord:
-                main.append(_Pt(act.title, coord[0], coord[1]))
+                main.append(_Pt(act.title, coord[0], coord[1], act))
             if len(nested) >= 2:
                 areas.append((act.title, nested))
             continue
         coord = r.point_coord(act, city)
         if coord:
-            main.append(_Pt(act.title, coord[0], coord[1]))
+            main.append(_Pt(act.title, coord[0], coord[1], act))
     return main, routes, areas
 
 
@@ -133,6 +139,15 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
     main_pts, routes, area_details = resolve_day(day, itinerary, cache)
     accent = _hex_to_rgb(itinerary.cover_color)
     result = DayMaps()
+
+    # pin numbers: main map is one namespace, each area detail map its own
+    for i, p in enumerate(main_pts, start=1):
+        if p.act is not None:
+            result.numbers[id(p.act)] = i
+    for _title, pts in area_details:
+        for j, p in enumerate(pts, start=1):
+            if p.act is not None:
+                result.numbers[id(p.act)] = j
 
     all_coords = [(p.lat, p.long) for p in main_pts]
     all_coords += [c for line in routes for c in line]

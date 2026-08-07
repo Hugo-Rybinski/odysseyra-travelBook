@@ -23,6 +23,7 @@ class DayMixin:
             self.ln(3)
 
         day_maps = self.day_maps(day)
+        self._day_maps = day_maps   # read by title renderers to show pin numbers
         if day_maps:
             self.day_main_map(day_maps)
 
@@ -130,10 +131,15 @@ class DayMixin:
                 self.set_text_color(*MUTED)
                 self.cell(gw, 3.5, elbl, align="C")
 
-        self.set_xy(x, top)
+        num = self.pin_number(act)
+        tx, tw = x, detail_w
+        if num:
+            wd = self._pin_disc(x, top + 0.6, num)
+            tx, tw = x + wd, detail_w - wd
+        self.set_xy(tx, top)
         self.set_font(FONT, "B", 11)
         self.set_text_color(*INK)
-        self.multi_cell(detail_w, 6, act.title)
+        self.multi_cell(tw, 6, act.title)
 
         # Type-specific details.
         getattr(self, f"_details_{act.kind}")(act, x, detail_w)
@@ -177,7 +183,11 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
-        self.set_xy(x, top)
+        num = self.pin_number(meal)
+        tx = x
+        if num:
+            tx = x + self._pin_disc(x, top + 0.4, num)
+        self.set_xy(tx, top)
         self.set_font(FONT, "B", 9.5)
         self.set_text_color(*self.accent)
         self.cell(0, 5, head, new_x="LMARGIN", new_y="NEXT")
@@ -395,6 +405,11 @@ class DayMixin:
         self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        num = self.pin_number(poi)
+        if num:
+            wd = self._pin_disc(tx, top + 0.2, num)
+            tx += wd
+            tw -= wd
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 10)
         self.set_text_color(*INK)
@@ -418,6 +433,11 @@ class DayMixin:
         self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        num = self.pin_number(hike)
+        if num:
+            wd = self._pin_disc(tx, top + 0.2, num)
+            tx += wd
+            tw -= wd
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 10)
         self.set_text_color(*INK)
@@ -461,6 +481,11 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
+        num = self.pin_number(meal)
+        if num:
+            wd = self._pin_disc(tx, top + 0.2, num)
+            tx += wd
+            tw -= wd
         # Accent-colored, bold head — echoing the non-nested meal row (see
         # ``_meal``) rather than the INK title used for nested POIs / hikes.
         self.set_xy(tx, top)

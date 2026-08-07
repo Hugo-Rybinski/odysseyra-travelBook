@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import io
 
-from .base import FONT, INK
+from .base import FONT
 
 
 class DayMapMixin:
@@ -33,16 +33,33 @@ class DayMapMixin:
             return None
 
     # -- drawing --------------------------------------------------------
+    def _pin_disc(self, x: float, y: float, n: int) -> float:
+        """A small accent disc with the pin number (matching the map pins),
+        drawn inline before an activity title. Returns its width incl. a gap."""
+        d = 4.8
+        self.set_fill_color(*self.accent)
+        self.ellipse(x, y, d, d, style="F")
+        self.set_font(FONT, "B", 7)
+        self.set_text_color(255, 255, 255)
+        self.set_xy(x, y + 0.85)
+        self.cell(d, 3, str(n), align="C")
+        return d + 1.8
+
+    def pin_number(self, act) -> int | None:
+        """The pin number for ``act`` on this day's maps, if it has one."""
+        dm = getattr(self, "_day_maps", None)
+        return dm.number_for(act) if dm else None
+
     def _map_card(self, rendered, caption: str = "") -> None:
-        """Embed one rendered map (full width, height-capped) + its legend."""
+        """Embed one rendered map (full width, height-capped). The legend now
+        lives in the itinerary text (pin numbers next to activity titles)."""
         img = rendered.image
         w = self.content_width
         h = w * img.height / img.width
         if h > 92:  # keep a map to ~1/3 of the page
             h = 92
             w = h * img.width / img.height
-        legend_h = 5 + 5.5 * len(rendered.legend)
-        if self.get_y() + h + legend_h + 6 > self.h - self.b_margin:
+        if self.get_y() + h + 8 > self.h - self.b_margin:
             self.add_page()
 
         if caption:
@@ -56,21 +73,7 @@ class DayMapMixin:
         img.save(buf, format="PNG")
         buf.seek(0)
         self.image(buf, x=x, w=w, h=h)
-        self.ln(1)
-
-        for n, name in enumerate(rendered.legend, start=1):
-            y = self.get_y()
-            self.set_fill_color(*self.accent)
-            self.ellipse(self.l_margin, y + 0.4, 4.6, 4.6, style="F")
-            self.set_font(FONT, "B", 7)
-            self.set_text_color(255, 255, 255)
-            self.set_xy(self.l_margin, y + 1.1)
-            self.cell(4.6, 3, str(n), align="C")
-            self.set_font(FONT, "", 10)
-            self.set_text_color(*INK)
-            self.set_xy(self.l_margin + 7, y)
-            self.cell(0, 5, name, new_x="LMARGIN", new_y="NEXT")
-        self.ln(2)
+        self.ln(3)
 
     def day_main_map(self, dm) -> None:
         """Draw the main day map near the top of the day page (after the intro)."""
