@@ -19,30 +19,15 @@ from .parsers import (
     _parse_time,
     _parse_tz,
 )
+from .scheduling import Scheduled
 
 
 @dataclass
-class Activity:
-    """Common scheduling fields shared by every activity type."""
+class Activity(Scheduled):
+    """An item on a day's timeline: the shared :class:`Scheduled` fields plus an
+    optional map location."""
 
-    start_time: time | None = None
-    end_time: time | None = None
-    duration_min: int | None = None
-    start_tz: int | None = None  # UTC offset; None means "use the trip default"
-    end_tz: int | None = None
     coordinate: Coordinate | None = None  # optional map location
-
-    @property
-    def time_range(self) -> str:
-        if self.start_time and self.end_time:
-            return f"{self.start_time:%H:%M} – {self.end_time:%H:%M}"
-        if self.start_time:
-            return f"{self.start_time:%H:%M}"
-        return ""
-
-    @property
-    def duration_display(self) -> str:
-        return _format_duration(self.duration_min)
 
 
 def _sched(d: dict) -> dict:
@@ -51,8 +36,8 @@ def _sched(d: dict) -> dict:
         "start_time": _parse_time(d.get("start_time")),
         "end_time": _parse_time(d.get("end_time")),
         "duration_min": _parse_duration(d.get("duration")),
-        "start_tz": _parse_tz(d.get("start_tz", d.get("start_timezone"))),
-        "end_tz": _parse_tz(d.get("end_tz", d.get("end_timezone"))),
+        "start_tz": _parse_tz(d.get("start_tz")),
+        "end_tz": _parse_tz(d.get("end_tz")),
         "coordinate": _parse_coordinate(d.get("coordinate")),
     }
 
@@ -157,7 +142,7 @@ class Road(Activity):
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
             waypoints=waypoints,
-            activities=[_nested_activity(m, "road") for m in d.get("activities", [])],
+            activities=_nested(d, "road"),
         )
 
 
@@ -198,8 +183,7 @@ class PointOfInterest(Activity):
             address=str(d.get("address", "")),
             description=str(d.get("description", "")),
             category=category,
-            activities=[_nested_activity(m, "point_of_interest")
-                        for m in d.get("activities", [])],
+            activities=_nested(d, "point_of_interest"),
         )
 
 
@@ -224,7 +208,7 @@ class Place(Activity):
             **_sched(d),
             name=str(d["name"]),
             description=str(d.get("description", "")),
-            activities=[_nested_activity(m, "place") for m in d.get("activities", [])],
+            activities=_nested(d, "place"),
         )
 
 
@@ -244,6 +228,11 @@ def _or_list(values) -> str:
     if len(quoted) == 1:
         return quoted[0]
     return ", ".join(quoted[:-1]) + " or " + quoted[-1]
+
+
+def _nested(d: dict, container_kind: str) -> list[Activity]:
+    """Build the ``activities`` nested under a container from its dict."""
+    return [_nested_activity(m, container_kind) for m in d.get("activities", [])]
 
 
 def _nested_activity(entry, container_kind: str) -> Activity:
@@ -306,7 +295,7 @@ class Hike(Activity):
             start=str(d.get("start", "")),
             end=str(d.get("end", "")),
             route=_parse_route(d.get("route"), default="back_and_forth"),
-            activities=[_nested_activity(m, "hike") for m in d.get("activities", [])],
+            activities=_nested(d, "hike"),
         )
 
 
@@ -322,15 +311,35 @@ DEFAULT_BREAKFAST_UNTIL = time(10, 0)
 DEFAULT_LUNCH_UNTIL = time(16, 0)
 
 
+def infer_meal_category(
+    meal_type: str,
+    start_time: time | None,
+    breakfast_until: time = DEFAULT_BREAKFAST_UNTIL,
+    lunch_until: time = DEFAULT_LUNCH_UNTIL,
+) -> str:
+    """The resolved meal category: the explicit ``meal_type`` if given, else
+    inferred from the start time using the ``breakfast_until`` / ``lunch_until``
+    thresholds (falling back to lunch when there is no time)."""
+    if meal_type:
+        return meal_type
+    if start_time is None:
+        return "lunch"
+    if start_time < breakfast_until:
+        return "breakfast"
+    if start_time <= lunch_until:
+        return "lunch"
+    return "dinner"
+
+
 @dataclass
 class Meal(Activity):
     """A meal — breakfast, lunch or dinner — optionally at a named restaurant.
 
     Scheduled like any other activity (give any two of start_time / end_time /
     duration); the restaurant name and address are both optional. ``meal_type``
-    may be given explicitly, otherwise it is inferred from the start time using
-    the ``breakfast_until`` / ``lunch_until`` thresholds (defaulting to 10:00
-    and 16:00, but set per trip from the ``default`` object).
+    may be given explicitly; otherwise the ``category`` is inferred from the
+    start time and the trip's ``breakfast_until`` / ``lunch_until`` thresholds,
+    resolved once the timeline is laid out (see ``Itinerary.from_dict``).
     """
 
     kind = "meal"
@@ -338,27 +347,11 @@ class Meal(Activity):
     address: str = ""
     area: str = ""  # town/region to eat in; used when no restaurant is named
     meal_type: str = ""  # explicit override; "" → infer from the start time
-    breakfast_until: time = DEFAULT_BREAKFAST_UNTIL
-    lunch_until: time = DEFAULT_LUNCH_UNTIL
-
-    @property
-    def type(self) -> str:
-        """The meal type — the explicit ``meal_type`` if set, else inferred from
-        the (possibly inferred) start time; falls back to lunch with no time."""
-        if self.meal_type:
-            return self.meal_type
-        t = self.start_time
-        if t is None:
-            return "lunch"
-        if t < self.breakfast_until:
-            return "breakfast"
-        if t <= self.lunch_until:
-            return "lunch"
-        return "dinner"
+    category: str = ""  # resolved meal category (breakfast/lunch/dinner/…)
 
     @property
     def title(self) -> str:
-        label = self.type.capitalize()
+        label = (self.category or "meal").capitalize()
         if self.restaurant:
             return f"{label} at {self.restaurant}"
         if self.area:
@@ -379,6 +372,9 @@ class Meal(Activity):
             address=str(d.get("address", "")),
             area=str(d.get("area", "")),
             meal_type=meal_type,
+            # an explicit type resolves immediately; an inferred one is filled
+            # in after scheduling (once the start time is known).
+            category=meal_type,
         )
 
 
@@ -486,3 +482,19 @@ def schedule_activities(
             continue
         merged.append(item)
     return merged
+
+
+def resolve_meal_categories(
+    activities: list[Activity], breakfast_until: time, lunch_until: time
+) -> None:
+    """Fill each meal's ``category`` in place (recursing into nested activities),
+    from the trip thresholds and the now-scheduled start time. Meals given an
+    explicit ``meal_type`` already have a category and are left untouched."""
+    for act in activities:
+        if act.kind == "meal" and not act.category:
+            act.category = infer_meal_category(
+                act.meal_type, act.start_time, breakfast_until, lunch_until
+            )
+        resolve_meal_categories(
+            getattr(act, "activities", []) or [], breakfast_until, lunch_until
+        )

@@ -45,6 +45,7 @@ Write each kind of value exactly like this:
 | `booking_start_tz` / `booking_end_tz` / `pickup_tz` / `dropoff_tz` | no | UTC offset | trip default timezone | Only if different from the trip's timezone. |
 | `company` | no | text | none | e.g. "Europcar". |
 | `booking_number` | no | text | none | Reservation reference. |
+| `status` | no | `booked` / `confirmed` | none (no badge) | Reservation status. |
 | `price` | no | number | none | The amount only, e.g. `228` (no currency symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | e.g. `"USD"`. Set only if this price differs from the trip default currency. |
 | `paid` | no | `paid` / `to pay` | none | Payment state. |
@@ -63,7 +64,8 @@ Write each kind of value exactly like this:
   those for the booking window.
 - `pickup_duration` / `dropoff_duration` place the events on the day timeline;
   set them only if the source implies a slot (otherwise leave them out).
-- If `paid` is set, include `price` when known (`validate` warns otherwise).
+- If `status` or `paid` is set, include `booking_number` / `price` when known
+  (`validate` warns otherwise).
 - **`price` is a bare number** (no symbol): write `228`, not `"€228"`. It's in
   the trip's default currency unless you add `currency` (a 3-letter ISO code
   that must be the default or a declared secondary currency).
@@ -92,6 +94,7 @@ Jun 8 18:00 – Jun 11 20:00. 1 additional driver. +33 5 59 33 20 10."*
   "dropoff_location": "Montréjeau station",
   "dropoff_duration": "20 min",
   "booking_number": "EC-55231",
+  "status": "confirmed",
   "price": 228,
   "paid": "paid",
   "additional_drivers": 1,

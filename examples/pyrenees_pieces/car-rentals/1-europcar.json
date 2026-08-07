@@ -15,6 +15,7 @@
   "dropoff_location": "Montréjeau station",
   "dropoff_duration": "20 min",
   "booking_number": "EC-55231",
+  "status": "confirmed",
   "price": 228,
   "paid": "paid",
   "additional_drivers": 1,

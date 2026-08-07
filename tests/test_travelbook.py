@@ -43,11 +43,11 @@ def test_grouped_default_and_travel_description():
 
 
 def test_flat_layout_still_supported():
-    # legacy top-level keys keep working
+    # canonical descriptive/config keys still work at the top level (not only
+    # under travel_description / defaults)
     it = Itinerary.from_dict(
         {
             "title": "Flat Trip",
-            "default_start_time": "08:00",
             "timezone": "+02:00",
             "days": [{"title": "d", "activities": []}],
         }
@@ -77,9 +77,9 @@ def test_accommodation_fields_and_nights():
     assert hotel.date_range == "Jun 08 → Jun 10"
     assert hotel.booking_source == "Booking.com"
     assert hotel.city == "Lourdes"
-    assert hotel.paid_online is True
+    assert hotel.paid is True
     assert hotel.breakfast_included is True
-    assert it.accommodations[1].paid_online is False
+    assert it.accommodations[1].paid is False
     assert it.accommodations[1].city == "Gavarnie"
 
 
@@ -301,7 +301,7 @@ def test_meal_nests_under_road_hike_place_and_poi():
             {"title": "t", "days": [{"title": "d", "activities": [container]}]})
         nested = it.days[0].activities[0].activities
         assert isinstance(nested[0], Meal)
-        assert nested[0].type == "picnic"
+        assert nested[0].category == "picnic"
 
 
 def test_missing_title_rejected():
@@ -315,9 +315,14 @@ def test_empty_days_rejected():
 
 
 def _one_day(activities, **trip):
-    return Itinerary.from_dict(
-        {"title": "t", "days": [{"title": "d", "activities": activities}], **trip}
-    ).days[0].activities
+    # convenience: default_* kwargs are routed into the "defaults" group
+    # (e.g. default_start_time -> defaults.start_time)
+    defaults = {k[len("default_"):]: trip.pop(k)
+                for k in list(trip) if k.startswith("default_")}
+    doc = {"title": "t", "days": [{"title": "d", "activities": activities}], **trip}
+    if defaults:
+        doc["defaults"] = defaults
+    return Itinerary.from_dict(doc).days[0].activities
 
 
 def test_first_activity_uses_default_start_time():
@@ -572,29 +577,14 @@ def test_transport_slots_into_day_and_night_lookup():
     assert night.end_day_offset == 1
 
 
-def test_transport_date_alias_accepted():
-    # legacy "date" key still maps to start_date
-    it = Itinerary.from_dict(
-        {
-            "title": "t",
-            "days": [{"title": "d", "activities": []}],
-            "transport": [{"type": "bus", "start": "A", "end": "B",
-                           "date": "2026-06-08", "start_time": "09:00",
-                           "duration": "1h"}],
-        }
-    )
-    from datetime import date
-
-    assert it.transports[0].start_date == date(2026, 6, 8)
-
-
 def test_transport_end_date_same_day_when_not_overnight():
     it = Itinerary.from_dict(
         {
             "title": "t",
             "days": [{"title": "d", "activities": []}],
             "transport": [
-                {"type": "bus", "start": "A", "end": "B", "date": "2026-06-08",
+                {"type": "bus", "start": "A", "end": "B",
+                 "start_date": "2026-06-08",
                  "start_time": "09:00", "duration": "2h"}
             ],
         }
@@ -612,7 +602,8 @@ def test_transport_overnight_crosses_midnight():
             "title": "t",
             "days": [{"title": "d", "activities": []}],
             "transport": [
-                {"type": "train", "start": "A", "end": "B", "date": "2026-06-11",
+                {"type": "train", "start": "A", "end": "B",
+                 "start_date": "2026-06-11",
                  "start_time": "22:10", "end_time": "06:45"}
             ],
         }
@@ -700,7 +691,7 @@ def test_car_rental_example_section():
     assert cr.additional_drivers == 1
     assert cr.pickup_duration_display == "30 min"
     # all four offsets inherit the trip's +02:00 default
-    assert cr.pickup_tz == 120 and cr.dropoff_tz == 120
+    assert cr.pickup.tz == 120 and cr.dropoff.tz == 120
 
 
 def test_car_rental_requires_core_fields():

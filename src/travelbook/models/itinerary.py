@@ -8,7 +8,12 @@ from datetime import date, time, timedelta
 from pathlib import Path
 
 from .accommodation import Accommodation
-from .activities import Activity, activity_from_dict, schedule_activities
+from .activities import (
+    Activity,
+    activity_from_dict,
+    resolve_meal_categories,
+    schedule_activities,
+)
 from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
 from .currency import SecondaryCurrency, to_default
 from .parsers import (
@@ -77,7 +82,7 @@ class Itinerary:
         # under "defaults" (legacy alias: "default"); both fall back to
         # top-level keys for compatibility.
         desc = {**data, **(data.get("travel_description") or {})}
-        defaults = data.get("defaults", data.get("default")) or {}
+        defaults = data.get("defaults") or {}
 
         if "title" not in desc:
             raise ItineraryError("Itinerary needs a 'title'")
@@ -85,13 +90,9 @@ class Itinerary:
         if not isinstance(days_data, list) or not days_data:
             raise ItineraryError("Itinerary needs a non-empty 'days' array")
 
-        default_start = _parse_time(
-            defaults.get("start_time", data.get("default_start_time"))
-        ) or time(8, 0)
-        default_end = _parse_time(defaults.get("end_time", data.get("default_end_time")))
-        default_buffer = _parse_duration(
-            defaults.get("buffer", data.get("default_buffer"))
-        ) or 0
+        default_start = _parse_time(defaults.get("start_time")) or time(8, 0)
+        default_end = _parse_time(defaults.get("end_time"))
+        default_buffer = _parse_duration(defaults.get("buffer")) or 0
         default_tz = _parse_tz(defaults.get("timezone", data.get("timezone")))
         if default_tz is None:
             default_tz = 0  # GMT / UTC+0
@@ -107,7 +108,7 @@ class Itinerary:
         inference_countries = cls._parse_inference_countries(
             defaults.get("inference_countries")
         )
-        transport_data = data.get("transport", data.get("transports", []))
+        transport_data = data.get("transport", [])
         itinerary = cls(
             title=str(desc["title"]),
             subtitle=str(desc.get("subtitle", "")),
@@ -143,14 +144,15 @@ class Itinerary:
         itinerary._infer_dates()
         for day in itinerary.days:
             for act in day.activities:
-                if act.kind == "meal":
-                    act.breakfast_until = breakfast_until
-                    act.lunch_until = lunch_until
-                    if act.duration_min is None and act.end_time is None:
-                        act.duration_min = meal_duration
+                if (act.kind == "meal" and act.duration_min is None
+                        and act.end_time is None):
+                    act.duration_min = meal_duration
             day.activities = schedule_activities(
                 day.activities, default_start, default_buffer
             )
+            # Resolve each meal's category now the timeline (and so each meal's
+            # start time) is settled, using the trip's meal thresholds.
+            resolve_meal_categories(day.activities, breakfast_until, lunch_until)
         return itinerary
 
     @staticmethod
@@ -219,7 +221,7 @@ class Itinerary:
             else:
                 seeds = [t.start_date for t in self.transports if t.start_date]
                 seeds += [a.arrival for a in self.accommodations if a.arrival]
-                seeds += [c.pickup_date for c in self.car_rentals if c.pickup_date]
+                seeds += [c.pickup.date for c in self.car_rentals if c.pickup.date]
                 day0 = min(seeds) if seeds else None
         if day0 is not None:
             for i, day in enumerate(self.days):
@@ -232,8 +234,8 @@ class Itinerary:
         for a in self.accommodations:
             dates += [d for d in (a.arrival, a.departure) if d]
         for c in self.car_rentals:
-            dates += [d for d in (c.booking_start_date, c.booking_end_date,
-                                  c.pickup_date, c.dropoff_date) if d]
+            dates += [d for d in (c.booking_start.date, c.booking_end.date,
+                                  c.pickup.date, c.dropoff.date) if d]
         if self.start_date is None:
             self.start_date = min(dates) if dates else None
         if self.end_date is None:
@@ -277,9 +279,9 @@ class Itinerary:
             return []
         events = []
         for cr in self.car_rentals:
-            if cr.pickup_date == day:
+            if cr.pickup.date == day:
                 events.append(cr.pickup_event())
-            if cr.dropoff_date == day:
+            if cr.dropoff.date == day:
                 events.append(cr.dropoff_event())
         return events
 

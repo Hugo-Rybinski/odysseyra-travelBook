@@ -59,11 +59,11 @@ class AccommodationMixin:
 
         cx = self.l_margin + pad
         yy = y + pad
-        self._pay_badge(acc, yy)  # right-aligned, on the name row
+        self._acc_badges(acc, yy)  # right-aligned, on the name row
         self.set_xy(cx, yy)
         self.set_font(FONT, "B", 13)
         self.set_text_color(*INK)
-        self.cell(inner_w - 32, 7, acc.name)
+        self.cell(inner_w - 46, 7, acc.name)
         yy += 7
 
         if date_line:
@@ -100,8 +100,16 @@ class AccommodationMixin:
 
         self.set_y(y + h + 4)
 
-    def _pay_badge(self, acc, y: float) -> None:
-        label = self.t("PAID ONLINE") if acc.paid_online else self.t("TO PAY")
-        x = self.w - self.r_margin - 5 - self._pill_w(label)
-        self._pill(label, x, y, filled=acc.paid_online)
+    def _acc_badges(self, acc, y: float) -> None:
+        """Right-aligned payment + reservation-status pills on the name row."""
+        rx = self.w - self.r_margin - 5
+        if acc.paid is not None:
+            label = self.t("PAID") if acc.paid else self.t("TO PAY")
+            rx -= self._pill_w(label)
+            self._pill(label, rx, y, filled=acc.paid)
+            rx -= 3
+        if acc.status:
+            label = self.t(acc.status.upper())
+            rx -= self._pill_w(label)
+            self._pill(label, rx, y, filled=(acc.status == "confirmed"))
 

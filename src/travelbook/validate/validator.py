@@ -189,9 +189,8 @@ class _Validator:
         td_obj = td if isinstance(td, dict) else data
         self.check_object(td_obj, td_path, TRAVEL_DESCRIPTION)
 
-        df_key = "defaults" if "defaults" in data else "default"
-        df = data.get(df_key)
-        df_path = (df_key,) if isinstance(df, dict) else ()
+        df = data.get("defaults")
+        df_path = ("defaults",) if isinstance(df, dict) else ()
         df_obj = df if isinstance(df, dict) else {}
         self.check_object(df_obj, df_path or (), DEFAULTS)
         self._secondary_currencies(df_obj, df_path or ())
@@ -208,7 +207,7 @@ class _Validator:
             for i, day in enumerate(days):
                 self._day(day, ("days", i))
 
-        transport = data.get("transport", data.get("transports"))
+        transport = data.get("transport")
         if transport is None:
             self.add("info", (), "optional field 'transport' is missing — the "
                      "transport legs. Expected an array of transport objects. "
@@ -435,14 +434,17 @@ class _Validator:
         if arr and dep and dep <= arr:
             self.add("error", path, "accommodation departure ({dep}) must be "
                      "after arrival ({arr}).", dep=dep, arr=arr)
-        if _truthy(a.get("paid_online")) and not self._has_price(a):
-            self.add("warning", path, "'paid_online' is true but 'price' is "
-                     "missing — marked paid without an amount.")
+        if a.get("status") and not a.get("booking_source"):
+            self.add("warning", path, "'status' is set but 'booking_source' is "
+                     "missing — a confirmed/booked stay usually has a reference.")
+        if a.get("paid") is not None and not self._has_price(a):
+            self.add("warning", path, "'paid' is set but 'price' is missing — the "
+                     "payment state is given without an amount.")
         self._check_price_currency(a, path)
 
     def _defaults(self):
-        """The trip-wide defaults object ("defaults", legacy alias "default")."""
-        df = self.data.get("defaults", self.data.get("default"))
+        """The trip-wide defaults object."""
+        df = self.data.get("defaults")
         return df if isinstance(df, dict) else {}
 
     def _default_currency(self):
@@ -645,6 +647,9 @@ class _Validator:
         if pu and do and do[0] < pu[0]:
             self.add("error", path, "car rental drop-off ({do}) is before the "
                      "pick-up ({pu}).", do=do[1], pu=pu[1])
+        if cr.get("status") and not cr.get("booking_number"):
+            self.add("warning", path, "'status' is set but 'booking_number' is "
+                     "missing — a confirmed/booked leg usually has a reference.")
         if cr.get("paid") is not None and not self._has_price(cr):
             self.add("warning", path, "'paid' is set but 'price' is missing — the "
                      "payment state is given without an amount.")
@@ -720,7 +725,7 @@ class _Validator:
 
     def _default_start_min(self):
         df = self._defaults()
-        raw = df.get("start_time", self.data.get("default_start_time"))
+        raw = df.get("start_time")
         try:
             t = _parse_time(raw)
         except ItineraryError:
@@ -919,7 +924,7 @@ class _Validator:
 
         # activities ending after the day's default end_time
         df = self._defaults()
-        end_raw = df.get("end_time", self.data.get("default_end_time"))
+        end_raw = df.get("end_time")
         if end_raw is not None:
             try:
                 day_end = _parse_time(end_raw)

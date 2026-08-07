@@ -34,7 +34,7 @@ _FR = {
     "OVERNIGHT": "DE NUIT",
     "INCLUDES": "COMPREND",
     "buffer": "pause",
-    # meal types (from Meal.type) and the meal row head
+    # meal types (from Meal.category) and the meal row head
     "breakfast": "petit-déjeuner",
     "lunch": "déjeuner",
     "dinner": "dîner",
@@ -77,7 +77,6 @@ _FR = {
     # -- PDF: accommodation --
     "WHERE YOU'LL STAY": "OÙ VOUS DORMEZ",
     "Accommodation": "Hébergement",
-    "PAID ONLINE": "PAYÉ EN LIGNE",
     "✓  Breakfast included": "✓  Petit-déjeuner inclus",
     "TONIGHT'S STAY": "CETTE NUIT",
     "Night {night}/{total} here": "Nuit {night}/{total} ici",
@@ -223,10 +222,10 @@ _FR = {
         "chaque hébergement doit être un objet",
     "accommodation departure ({dep}) must be after arrival ({arr}).":
         "le départ de l'hébergement ({dep}) doit être après l'arrivée ({arr}).",
-    "'paid_online' is true but 'price' is missing — marked paid without an "
-    "amount.":
-        "« paid_online » est vrai mais « price » manque — marqué payé sans "
-        "montant.",
+    "'status' is set but 'booking_source' is missing — a confirmed/booked stay "
+    "usually has a reference.":
+        "« status » est défini mais « booking_source » manque — un séjour "
+        "réservé/confirmé a en général une référence.",
     "'secondary_currencies' must be an array of {currency, change_rate} "
     "objects.":
         "« secondary_currencies » doit être un tableau d'objets "

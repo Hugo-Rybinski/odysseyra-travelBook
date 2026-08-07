@@ -8,7 +8,6 @@ from datetime import date, time, timedelta
 from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
-    _format_duration,
     _min_to_time,
     _parse_currency,
     _parse_date,
@@ -19,13 +18,14 @@ from .parsers import (
     _parse_tz,
     _tmin,
 )
+from .scheduling import Scheduled
 
 
 TRANSPORT_TYPES = ("plane", "train", "bus", "taxi", "ferry", "other")
 
 
 @dataclass
-class Transport:
+class Transport(Scheduled):
     """A travel leg (plane, train, bus, …) — a top-level trip section.
 
     Times are clock times, each with an optional UTC offset (``start_tz`` /
@@ -40,11 +40,6 @@ class Transport:
     end: str = ""
     start_date: date | None = None  # departure date; slots the leg into that day
     end_date: date | None = None  # arrival date (inferred for overnight legs)
-    start_time: time | None = None
-    end_time: time | None = None
-    start_tz: int | None = None
-    end_tz: int | None = None
-    duration_min: int | None = None
     flight_number: str = ""  # planes only
     train_number: str = ""  # trains only
     booking_number: str = ""
@@ -62,10 +57,6 @@ class Transport:
         if self.start and self.end:
             return f"{self.start} → {self.end}"
         return self.start or self.end or (self.type.title() if self.type else "Transport")
-
-    @property
-    def duration_display(self) -> str:
-        return _format_duration(self.duration_min)
 
     @property
     def overnight(self) -> bool:
@@ -90,7 +81,7 @@ class Transport:
         for key in ("start", "end", "start_time"):
             if key not in d:
                 raise ItineraryError(f"A 'transport' needs a '{key}'")
-        if "start_date" not in d and "date" not in d:
+        if "start_date" not in d:
             raise ItineraryError("A 'transport' needs a 'start_date'")
         ttype = str(d.get("type", "other")).strip().lower()
         if ttype not in TRANSPORT_TYPES:
@@ -107,12 +98,12 @@ class Transport:
             type=ttype,
             start=str(d.get("start", "")),
             end=str(d.get("end", "")),
-            start_date=_parse_date(d.get("start_date", d.get("date"))),
+            start_date=_parse_date(d.get("start_date")),
             end_date=_parse_date(d.get("end_date")),
             start_time=_parse_time(d.get("start_time")),
             end_time=_parse_time(d.get("end_time")),
-            start_tz=_parse_tz(d.get("start_tz", d.get("start_timezone"))),
-            end_tz=_parse_tz(d.get("end_tz", d.get("end_timezone"))),
+            start_tz=_parse_tz(d.get("start_tz")),
+            end_tz=_parse_tz(d.get("end_tz")),
             duration_min=_parse_duration(d.get("duration")),
             flight_number=str(d.get("flight_number", "")),
             train_number=str(d.get("train_number", "")),

@@ -47,7 +47,7 @@ def fill_coordinates(data: dict, countries, cache, geocoder=_default_geocode):
         for act in day.get("activities", []) or []:
             do_activity(act, city)
 
-    for t in data.get("transport", data.get("transports", [])) or []:
+    for t in data.get("transport", []) or []:
         if isinstance(t, dict):
             resolve(t.get("start"), t, "start_coordinate")
             resolve(t.get("end"), t, "end_coordinate")

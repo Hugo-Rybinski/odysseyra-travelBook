@@ -204,8 +204,11 @@ The top-level object has two config groups and three content arrays:
 
 Throughout, dates use `YYYY-MM-DD`, times use `HH:MM`, durations look like
 `"1h30"` / `"45 min"` / `"1:30"`, and UTC offsets like `+02:00` / `UTC-3` /
-`Z`. The older flat layout (all keys at the top level, with `default_start_time`
-/ `default_buffer`) is still accepted.
+`Z`. The descriptive and config keys may live either in their groups
+(`travel_description` / `defaults`) or at the top level, but the old renamed
+aliases (`default_start_time` / `default_end_time` / `default_buffer`,
+`start_timezone` / `end_timezone`, transport `date`, `transports`, `default`)
+are no longer accepted — use the canonical names.
 
 ### `travel_description`
 
@@ -469,9 +472,10 @@ so the checkout day shows no bar.
 | `address` |  | Street address | string | any text | `""` |
 | `contact` |  | Phone or email | string | any text | `""` |
 | `booking_source` |  | Where it was booked | string | any text | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
-| `paid_online` |  | Already paid? (badge **Paid online** / **To pay**) | boolean | `true` / `false` | `false` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
 | `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |
 
 ### `car_rentals[]`
@@ -504,6 +508,7 @@ drop-off location defaults to the pick-up location.
 | `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `defaults.timezone` |
 | `company` |  | Rental company | string | any text | `""` |
 | `booking_number` |  | Reservation reference | string | any text | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `price` |  | Rental price (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |

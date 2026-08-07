@@ -34,6 +34,7 @@ from .activities import (
     schedule_activities,
 )
 from .itinerary import Day, Itinerary
+from .scheduling import Scheduled, Stamp
 from .parsers import (
     ItineraryError,
     _format_duration,
@@ -74,6 +75,8 @@ __all__ = [
     "POI_CATEGORIES",
     "PointOfInterest",
     "Road",
+    "Scheduled",
+    "Stamp",
     "Waypoint",
     "Transport",
     "TRANSPORT_TYPES",

@@ -53,12 +53,17 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
     `_price/_currency`, formatters) and `ItineraryError` (raised on any invalid data).
   - `currency.py` — `SecondaryCurrency`, `to_default` (convert to the default
     currency), `format_money`, and the `CURRENCY_SYMBOLS` table.
+  - `scheduling.py` — `Scheduled`, the shared base carrying the timeline fields
+    (`start_/end_time`, `duration_min`, `start_/end_tz`, `duration_display`)
+    inherited by `Activity`, `Transport` and `CarRentalEvent`; plus `Stamp`
+    (a `date`+`time`+`tz` triple used for the car rental's four datetimes).
   - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
     optional map location attached to activities, transport, accommodation and
     car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
-    and `schedule_activities` (the day timeline pass).
+    `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
+    (fills each `Meal.category` from the trip thresholds after scheduling).
   - `transport.py` — `Transport` + `resolve_transport` (tz-aware time inference).
   - `accommodation.py` — `Accommodation`.
   - `itinerary.py` — `Day` and `Itinerary` (top-level `from_dict`, date inference).
@@ -108,7 +113,10 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   `secondary_currencies`, and the maps switches `include_maps_in_render` false /
   `infer_coordinates_from_address` false / `inference_countries` []) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
-  The older flat layout still parses.
+  Canonical keys may sit in their group or at the top level, but the old
+  renamed aliases are gone (`default_start_time`/`default_end_time`/
+  `default_buffer`, `start_timezone`/`end_timezone`, transport `date`,
+  `transports`, `default`) — use the canonical names.
 - **Maps & coordinates.** Every locatable object may carry an optional
   `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
   segments use `start_/end_coordinate` (road, transport) or
@@ -135,10 +143,12 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   (museum/church/building/viewpoint/ruins/castle/temple/street/other, default
   `other`); hike `route` (loop/back_and_forth/one_way, default back_and_forth);
   transport `type` (plane/train/bus/taxi/ferry/other, default other); accommodation
-  `type` (hotel/camping/b&b/other, default hotel); `status` (booked/confirmed);
-  `paid`/`paid_online`. Meal `meal_type` (breakfast/lunch/dinner/brunch/snack/
-  picnic/meal) is optional; when omitted it is inferred from the start time, but
-  only ever as breakfast/lunch/dinner (the other four are explicit-only). The
+  `type` (hotel/camping/b&b/other, default hotel). Transport, accommodation and
+  car rental all share a tri-state `paid` (paid/to-pay/unset) and an optional
+  `status` (booked/confirmed). Meal `meal_type` (breakfast/lunch/dinner/brunch/
+  snack/picnic/meal) is optional; when omitted the resolved `category` is
+  inferred from the start time, but only ever as breakfast/lunch/dinner (the
+  other four are explicit-only). The
   inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
 - **Prices & currency.** A `price` is a bare `float` (no symbol); its `currency`

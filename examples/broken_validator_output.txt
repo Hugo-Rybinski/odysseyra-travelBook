@@ -128,13 +128,15 @@
 ℹ️  line 67: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
 ℹ️  line 67: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
 ℹ️  line 67: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+❌  line 70: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
+⚠️  line 70: 'status' is set but 'booking_source' is missing — a confirmed/booked stay usually has a reference.
+⚠️  line 70: 'paid' is set but 'price' is missing — the payment state is given without an amount.
 ℹ️  line 70: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
 ℹ️  line 70: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
 ℹ️  line 70: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
 ℹ️  line 70: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
 ℹ️  line 70: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 70: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 70: optional field 'paid_online' is missing — whether it is already paid. Expected true or false. Defaulting to false (shows a 'To pay' badge).
 ℹ️  line 70: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
 ❌  line 71: required field 'city' is missing — the town, for the cover overview. Expected any text.
 ❌  line 71: accommodations 'Hotel A' and 'Hotel B' overlap on the same night(s) — you can only sleep in one place.
@@ -142,9 +144,10 @@
 ℹ️  line 71: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
 ℹ️  line 71: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
 ℹ️  line 71: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 71: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
 ℹ️  line 71: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 71: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 71: optional field 'paid_online' is missing — whether it is already paid. Expected true or false. Defaulting to false (shows a 'To pay' badge).
+ℹ️  line 71: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
 ℹ️  line 71: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
 ❌  line 72: required field 'name' is missing — the accommodation name. Expected any text.
 ❌  line 72: field 'arrival' is invalid ('not-a-date') — the check-in date. Expected a date YYYY-MM-DD (Invalid date 'not-a-date', expected YYYY-MM-DD).
@@ -154,11 +157,13 @@
 ℹ️  line 72: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
 ℹ️  line 72: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
 ℹ️  line 72: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 72: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
 ℹ️  line 72: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 72: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 72: optional field 'paid_online' is missing — whether it is already paid. Expected true or false. Defaulting to false (shows a 'To pay' badge).
+ℹ️  line 72: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
 ℹ️  line 72: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
 ❌  line 75: car rental booking end (2026-06-08 09:00) must be after booking start (2026-06-11 20:00).
+⚠️  line 75: 'status' is set but 'booking_number' is missing — a confirmed/booked leg usually has a reference.
 ⚠️  line 75: the car rental drop-off (10:00) overlaps an activity or transport on 2026-06-10.
 ℹ️  line 75: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
 ℹ️  line 75: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
@@ -176,6 +181,7 @@
 ℹ️  line 75: optional field 'additional_drivers' is missing — the number of additional drivers. Expected a whole number. Defaulting to 0.
 ℹ️  line 75: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
 ℹ️  line 75: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+❌  line 79: field 'status' is invalid ('later') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
 ❌  line 80: car rental pick-up (2026-06-07 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
 ❌  line 80: car rental drop-off (2026-06-06 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
 ❌  line 80: car rental drop-off (2026-06-06 10:00) is before the pick-up (2026-06-07 10:00).
@@ -187,6 +193,7 @@
 ℹ️  line 80: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ℹ️  line 80: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
 ℹ️  line 80: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 80: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
 ℹ️  line 80: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 80: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 80: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
@@ -197,4 +204,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-59 error(s), 11 warning(s), 128 info.
+61 error(s), 14 warning(s), 130 info.

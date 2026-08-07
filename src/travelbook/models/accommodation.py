@@ -11,6 +11,7 @@ from .parsers import (
     _parse_bool,
     _parse_currency,
     _parse_date,
+    _parse_paid,
     _parse_price,
 )
 
@@ -30,9 +31,10 @@ class Accommodation:
     address: str = ""
     contact: str = ""
     booking_source: str = ""  # e.g. "Booking.com", "Hotel website"
+    status: str = ""  # "" | "booked" | "confirmed"
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
-    paid_online: bool = False  # True → "Paid online", False → "To pay"
+    paid: bool | None = None  # None = no badge
     breakfast_included: bool = False
     coordinate: Coordinate | None = None  # optional map location
 
@@ -77,6 +79,11 @@ class Accommodation:
                 "accommodation type must be one of: "
                 f"{', '.join(ACCOMMODATION_TYPES)} (got {d.get('type')!r})"
             )
+        status = str(d.get("status", "")).strip().lower()
+        if status and status not in ("booked", "confirmed"):
+            raise ItineraryError(
+                f"accommodation status must be 'booked' or 'confirmed', got {status!r}"
+            )
         return cls(
             name=str(d["name"]),
             arrival=_parse_date(d.get("arrival")),
@@ -86,9 +93,10 @@ class Accommodation:
             address=str(d.get("address", "")),
             contact=str(d.get("contact", "")),
             booking_source=str(d.get("booking_source", "")),
+            status=status,
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),
-            paid_online=_parse_bool(d.get("paid_online", False)),
+            paid=_parse_paid(d.get("paid")),
             breakfast_included=_parse_bool(d.get("breakfast_included", False)),
             coordinate=_parse_coordinate(d.get("coordinate")),
         )

@@ -25,9 +25,9 @@ class CarRentalMixin:
         return f"{self.t(label)}: {body}" if body else ""
 
     def _cr_window(self, cr) -> str:
-        start = self._cr_when(cr.booking_start_date, cr.booking_start_time,
-                              cr.booking_start_tz)
-        end = self._cr_when(cr.booking_end_date, cr.booking_end_time, cr.booking_end_tz)
+        start = self._cr_when(cr.booking_start.date, cr.booking_start.time,
+                              cr.booking_start.tz)
+        end = self._cr_when(cr.booking_end.date, cr.booking_end.time, cr.booking_end.tz)
         if start and end:
             return self.t("Booked {start} → {end}").format(start=start, end=end)
         if start:
@@ -48,12 +48,18 @@ class CarRentalMixin:
             bits.append(cr.contact)
         return "  ·  ".join(bits)
 
-    def _cr_pay_badge(self, cr, y: float) -> None:
-        if cr.paid is None:
-            return
-        label = self.t("PAID") if cr.paid else self.t("TO PAY")
-        x = self.w - self.r_margin - 5 - self._pill_w(label)
-        self._pill(label, x, y, filled=cr.paid)
+    def _cr_badges(self, cr, y: float) -> None:
+        """Right-aligned payment + reservation-status pills on the title row."""
+        rx = self.w - self.r_margin - 5
+        if cr.paid is not None:
+            label = self.t("PAID") if cr.paid else self.t("TO PAY")
+            rx -= self._pill_w(label)
+            self._pill(label, rx, y, filled=cr.paid)
+            rx -= 3
+        if cr.status:
+            label = self.t(cr.status.upper())
+            rx -= self._pill_w(label)
+            self._pill(label, rx, y, filled=(cr.status == "confirmed"))
 
     def _car_rental_card(self, cr) -> None:
         pad = 5
@@ -61,11 +67,11 @@ class CarRentalMixin:
         title = self.t(cr.title) if cr.title == "Car rental" else cr.title
         type_label = self.t(cr.car_type_label)
         type_w = self._pill_w(type_label)
-        pickup = self._cr_line("Pick-up", cr.pickup_date, cr.pickup_time,
-                               cr.pickup_tz, cr.pickup_location,
+        pickup = self._cr_line("Pick-up", cr.pickup.date, cr.pickup.time,
+                               cr.pickup.tz, cr.pickup_location,
                                cr.pickup_duration_display)
-        dropoff = self._cr_line("Drop-off", cr.dropoff_date, cr.dropoff_time,
-                                cr.dropoff_tz, cr.dropoff_location,
+        dropoff = self._cr_line("Drop-off", cr.dropoff.date, cr.dropoff.time,
+                                cr.dropoff.tz, cr.dropoff_location,
                                 cr.dropoff_duration_display)
         window = self._cr_window(cr)
         meta = self._cr_meta(cr)
@@ -93,7 +99,7 @@ class CarRentalMixin:
         cx = self.l_margin + pad
         yy = y + pad
         self._pill(type_label, cx, yy, filled=True)
-        self._cr_pay_badge(cr, yy)
+        self._cr_badges(cr, yy)
         self.set_xy(cx + type_w + 4, yy - 0.4)
         self.set_font(FONT, "B", 13)
         self.set_text_color(*INK)

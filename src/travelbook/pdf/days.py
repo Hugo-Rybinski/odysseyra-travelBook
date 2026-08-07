@@ -233,7 +233,7 @@ class DayMixin:
             self.set_text_color(*self.accent)
             self.cell(gw, 5, f"{meal.start_time:%H:%M}", align="C")
 
-        label = self.t(meal.type).capitalize()
+        label = self.t(meal.category).capitalize()
         if meal.restaurant:
             head = self.t("{meal} at {restaurant}").format(
                 meal=label, restaurant=meal.restaurant)
@@ -574,7 +574,7 @@ class DayMixin:
         self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
-        label = self.t(meal.type).capitalize()
+        label = self.t(meal.category).capitalize()
         if meal.restaurant:
             head = self.t("{meal} at {restaurant}").format(
                 meal=label, restaurant=meal.restaurant)
