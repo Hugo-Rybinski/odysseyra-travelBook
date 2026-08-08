@@ -170,22 +170,23 @@ def test_road_display_legs():
         return Waypoint(coordinate=Coordinate(0.0, 0.0), location=loc or "",
                         duration_min=d, distance_km=km)
 
-    # a single named arrival → one leg (the caller hides the VIA list for this)
+    # a single named arrival → one leg (the caller hides the VIA list for this);
+    # each leg carries its destination's coordinate as the trailing element
     legs = road_display_legs("A", [wp("B")])
-    assert legs == [("A", "B", None, None)]
+    assert legs == [("A", "B", None, None, Coordinate(0.0, 0.0))]
 
     # an unnamed shaping point merges forward into the next named waypoint,
     # summing duration and distance into that one leg
     legs = road_display_legs("A", [wp(None, 30, 10), wp("C", 40, 20)])
-    assert legs == [("A", "C", 70, 30.0)]
+    assert legs == [("A", "C", 70, 30.0, Coordinate(0.0, 0.0))]
 
     # two named waypoints → two legs
     legs = road_display_legs("A", [wp("B", 30), wp("C", 40)])
-    assert [(s, d) for s, d, _, _ in legs] == [("A", "B"), ("B", "C")]
+    assert [(s, d) for s, d, _, _, _ in legs] == [("A", "B"), ("B", "C")]
 
     # a trailing unnamed run yields a final leg with dest=None (the arrival)
     legs = road_display_legs("A", [wp("B"), wp(None, 15)])
-    assert legs[-1] == ("B", None, 15, None)
+    assert legs[-1] == ("B", None, 15, None, Coordinate(0.0, 0.0))
 
 
 def test_hike_route_normalization():
@@ -773,12 +774,29 @@ def test_timezone_parsing_variants():
     assert _parse_tz(None) is None
 
 
+def test_maps_url_prefers_coordinate_then_address():
+    from travelbook.models import Coordinate, maps_url
+
+    # a coordinate wins, exact and un-rounded
+    assert maps_url(Coordinate(43.0974, -0.0583)) == (
+        "https://www.google.com/maps/search/?api=1&query=43.0974,-0.0583")
+    # no coordinate → the first non-empty text part, URL-encoded (commas kept)
+    assert maps_url(None, "", "  ", "1 Av. Mgr Théas, Lourdes") == (
+        "https://www.google.com/maps/search/?api=1&query="
+        "1%20Av.%20Mgr%20Th%C3%A9as,%20Lourdes")
+    # nothing locatable → empty (so the link is dropped)
+    assert maps_url(None) == ""
+    assert maps_url(None, "", "   ") == ""
+
+
 def test_build_pdf(tmp_path):
     it = Itinerary.from_json_file(EXAMPLE)
     out = build_pdf(it, tmp_path / "trip.pdf")
     assert out.exists()
     assert out.read_bytes().startswith(b"%PDF")
     assert out.stat().st_size > 1000
+    # every locatable object gets a clickable "Navigate" maps link
+    assert b"google.com/maps/search" in out.read_bytes()
 
 
 def test_build_pdf_ink_saver(tmp_path):

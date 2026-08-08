@@ -79,12 +79,18 @@ class CarRentalMixin:
                  (self.t("Reservation"), cr.booking_link)]
         has_links = any(url for _, url in links)
 
-        pickup_n = self._measure_lines(pickup, inner_w, 9)
-        dropoff_n = self._measure_lines(dropoff, inner_w, 9)
+        # The pick-up / drop-off lines each carry an inline Navigate link to
+        # their location; ``_nav_block_h`` covers the possible extra wrap line.
+        pickup_coord = cr.pickup_coordinate or cr.coordinate
+        dropoff_coord = cr.dropoff_coordinate or cr.coordinate
+        pickup_h = self._nav_block_h(pickup, pickup_coord, cr.pickup_location,
+                                     w=inner_w, size=9, h=5, style="B")
+        dropoff_h = self._nav_block_h(dropoff, dropoff_coord, cr.dropoff_location,
+                                      w=inner_w, size=9, h=5, style="B")
         meta_n = self._measure_lines(meta, inner_w, 10)
 
         h = pad * 2 + 7
-        h += pickup_n * 5 + dropoff_n * 5
+        h += pickup_h + dropoff_h
         if window:
             h += 5.5
         if meta:
@@ -111,17 +117,18 @@ class CarRentalMixin:
         self.cell(inner_w - type_w - 4 - 32, 7, title)
         yy += 7
 
-        self.set_text_color(*self.accent)
         if pickup:
             self.set_xy(cx, yy)
-            self.set_font(FONT, "B", 9)
-            self.multi_cell(inner_w, 5, pickup)
-            yy += pickup_n * 5
+            self._line_with_nav(cx, inner_w, pickup, pickup_coord,
+                                cr.pickup_location, size=9, h=5, style="B",
+                                color=self.accent)
+            yy += pickup_h
         if dropoff:
             self.set_xy(cx, yy)
-            self.set_font(FONT, "B", 9)
-            self.multi_cell(inner_w, 5, dropoff)
-            yy += dropoff_n * 5
+            self._line_with_nav(cx, inner_w, dropoff, dropoff_coord,
+                                cr.dropoff_location, size=9, h=5, style="B",
+                                color=self.accent)
+            yy += dropoff_h
 
         if window:
             self.set_xy(cx, yy)

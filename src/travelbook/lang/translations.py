@@ -73,6 +73,7 @@ _FR = {
     "Booked via {source}": "Réservé via {source}",
     "Website": "Site web",
     "Reservation": "Réservation",
+    "(Navigate)": "(S'y rendre)",
     "BOOKED": "RÉSERVÉ",
     "CONFIRMED": "CONFIRMÉ",
     "PAID": "PAYÉ",

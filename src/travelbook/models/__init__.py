@@ -11,7 +11,7 @@ The model is split across submodules:
 
 from .accommodation import ACCOMMODATION_TYPES, Accommodation
 from .car_rental import CAR_TYPES, CarRental, CarRentalEvent, resolve_car_rental
-from .geo import Coordinate, _parse_coordinate
+from .geo import Coordinate, maps_url, _parse_coordinate
 from .currency import (
     CURRENCY_SYMBOLS,
     SecondaryCurrency,
@@ -67,6 +67,7 @@ __all__ = [
     "to_default",
     "Hike",
     "Itinerary",
+    "maps_url",
     "ItineraryError",
     "Meal",
     "MEAL_TYPES",

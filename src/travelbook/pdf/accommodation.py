@@ -37,7 +37,11 @@ class AccommodationMixin:
     def _accommodation_card(self, acc) -> None:
         pad = 5
         inner_w = self.content_width - 2 * pad
-        addr_lines = self._measure_lines(acc.address, inner_w)
+        # The Navigate link rides inline on the address line (its own line when
+        # there's no address); ``addr_h`` covers both.
+        where = ", ".join(p for p in (acc.name, acc.city) if p)
+        addr_h = self._nav_block_h(acc.address, acc.coordinate, acc.address, where,
+                                   w=inner_w, size=10, h=5)
         contact_lines = self._measure_lines(acc.contact, inner_w)
         booked = self._booked_text(acc)
         date_line = self._acc_date_line(acc)
@@ -48,7 +52,7 @@ class AccommodationMixin:
         h = pad * 2 + 7
         if date_line:
             h += 5.5
-        h += addr_lines * 5 + contact_lines * 5
+        h += addr_h + contact_lines * 5
         if booked:
             h += 5
         if acc.price is not None:
@@ -82,11 +86,10 @@ class AccommodationMixin:
             yy += 5.5
 
         self.set_text_color(*MUTED)
-        if acc.address:
-            self.set_xy(cx, yy)
-            self.set_font(FONT, "", 10)
-            self.multi_cell(inner_w, 5, acc.address)
-            yy += addr_lines * 5
+        self.set_xy(cx, yy)
+        self._line_with_nav(cx, inner_w, acc.address, acc.coordinate,
+                            acc.address, where, size=10, h=5, color=MUTED)
+        yy += addr_h
         if acc.contact:
             self.set_xy(cx, yy)
             self.set_font(FONT, "", 10)

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import time
 
-from ..models import Day, _format_duration
+from ..models import Day, _format_duration, maps_url
 from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 
 
@@ -13,21 +13,25 @@ def road_display_legs(start, waypoints):
     """Collapse a road's waypoints into display legs. Unnamed (route-shaping)
     waypoints carry no leg of their own — they merge forward into the next named
     waypoint, their ``duration`` / ``distance_km`` summed into that leg. Returns
-    ``[(src, dest, duration_min | None, distance_km | None)]``; ``dest`` is
-    ``None`` for a trailing run of unnamed waypoints (an unnamed arrival)."""
+    ``[(src, dest, duration_min | None, distance_km | None, dest_coord)]``;
+    ``dest`` is ``None`` for a trailing run of unnamed waypoints (an unnamed
+    arrival), and ``dest_coord`` is that leg's destination coordinate (the named
+    waypoint's, or the last shaping point's for an unnamed arrival)."""
     legs = []
     acc = {"prev": start, "dur": 0, "dist": 0.0,
-           "has_dur": False, "has_dist": False, "pending": False}
+           "has_dur": False, "has_dist": False, "pending": False, "coord": None}
 
     def flush(dest):
         legs.append((acc["prev"], dest,
                      acc["dur"] if acc["has_dur"] else None,
-                     acc["dist"] if acc["has_dist"] else None))
+                     acc["dist"] if acc["has_dist"] else None,
+                     acc["coord"]))
         acc.update(prev=dest, dur=0, dist=0.0,
-                   has_dur=False, has_dist=False, pending=False)
+                   has_dur=False, has_dist=False, pending=False, coord=None)
 
     for wp in waypoints:
         acc["pending"] = True
+        acc["coord"] = wp.coordinate  # the destination of the leg being built
         if wp.duration_min is not None:
             acc["dur"] += wp.duration_min
             acc["has_dur"] = True
@@ -100,9 +104,12 @@ class DayMixin:
             right = (self.t("Night {night}/{total} here").format(night=night, total=total)
                      if total and total > 1 and night else "")
             sub = "  ·  ".join(p for p in (acc.address, self._booked_text(acc)) if p)
+            where = ", ".join(p for p in (acc.name, acc.city) if p)
             links = [(self.t("Website"), acc.website),
                      (self.t("Reservation"), acc.booking_link)]
-            self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc), links=links)
+            self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
+                             links=links,
+                             nav=maps_url(acc.coordinate, acc.address, where))
             return
         leg = self.itinerary.night_transport(day.date)
         if leg is not None:
@@ -114,7 +121,7 @@ class DayMixin:
                              links=links)
 
     def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
-                    links=None) -> None:
+                    links=None, nav: str = "") -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
@@ -149,13 +156,21 @@ class DayMixin:
         self.set_text_color(*INK)
         self.cell(0, 5, name)
 
-        maxw = self.content_width - 2 * pad - 2
+        # The Navigate link sits inline right after the sub (address) line; it
+        # reserves its own width so the sub is truncated to leave room for it.
+        nav_label = "  " + self.t("(Navigate)") if nav else ""
         self.set_font(FONT, "", 8.5)
-        while sub and "  ·  " in sub and self.get_string_width(sub) > maxw:
+        nav_w = self.get_string_width(nav_label)
+        maxw = self.content_width - 2 * pad - 2
+        while sub and "  ·  " in sub and self.get_string_width(sub) + nav_w > maxw:
             sub = sub.rsplit("  ·  ", 1)[0]
         self.set_xy(cx, y + pad + 9)
         self.set_text_color(*MUTED)
-        self.cell(maxw, 4, sub)
+        sub_w = self.get_string_width(sub)
+        self.cell(sub_w, 4, sub)
+        if nav:
+            self.set_text_color(*self.accent)
+            self.cell(nav_w, 4, nav_label, link=nav)
 
         if links:
             self._link_row(cx, y + pad + 14, links)
@@ -267,11 +282,10 @@ class DayMixin:
         self.cell(0, 5, head, new_x="LMARGIN", new_y="NEXT")
 
         meta = "  ·  ".join(p for p in (meal.duration_display, meal.address) if p)
-        if meta:
-            self.set_x(x)
-            self.set_font(FONT, "", 8.5)
-            self.set_text_color(*MUTED)
-            self.cell(0, 4.5, meta, new_x="LMARGIN", new_y="NEXT")
+        w = self.content_width - self.GUTTER
+        self.set_xy(x, self.get_y())
+        self._line_with_nav(x, w, meta, meal.coordinate, meal.address,
+                            meal.restaurant, meal.area, size=8.5, h=4.5)
         self.ln(1.5)
 
     def _transport_row(self, t) -> None:
@@ -304,10 +318,9 @@ class DayMixin:
                 self.set_text_color(*MUTED)
                 self.cell(gw, 3.5, elbl, align="C")
 
-        self.set_xy(x, top)
-        self.set_font(FONT, "B", 11)
-        self.set_text_color(*INK)
-        self.multi_cell(detail_w, 6, t.title)
+        self.set_y(top)
+        self._line_with_nav(x, detail_w, t.title, t.start_coordinate or t.coordinate,
+                            t.start, size=11, h=6, style="B", color=INK)
 
         meta = "  ·  ".join(
             p for p in (t.duration_display, self._transport_booking(t)) if p
@@ -373,11 +386,11 @@ class DayMixin:
             self._car_descriptor(cr),
             self.t("Ref {ref}").format(ref=cr.booking_number) if cr.booking_number else "",
         ) if p)
-        if meta:
-            self.set_x(x)
-            self.set_font(FONT, "", 9)
-            self.set_text_color(*MUTED)
-            self.multi_cell(detail_w, 5, meta)
+        coord = (cr.pickup_coordinate if ev.kind == "car_pickup"
+                 else cr.dropoff_coordinate) or cr.coordinate
+        if meta or maps_url(coord, ev.location):
+            self.set_xy(x, self.get_y())
+            self._line_with_nav(x, detail_w, meta, coord, ev.location)
 
         if self.page_no() == start_page:
             self.set_y(max(self.get_y(), top + 15))
@@ -402,7 +415,14 @@ class DayMixin:
         parts = [act.duration_display]
         if act.distance_km is not None:
             parts.append(f"{act.distance_km:g} km")
-        self._meta_line(x, w, parts)
+        meta = "  ·  ".join(p for p in parts if p)
+        multi = len(road_display_legs(act.start, act.waypoints)) > 1
+        if multi:
+            # multi-leg drives get a Navigate link per leg (in the VIA list).
+            self._meta_line(x, w, parts)
+        else:
+            dest_coord = act.waypoints[-1].coordinate if act.waypoints else None
+            self._line_with_nav(x, w, meta, dest_coord, act.destination)
         if act.off_road:
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
         self._road_waypoints(x, w, act)
@@ -411,8 +431,9 @@ class DayMixin:
     def _road_waypoints(self, x: float, w: float, road) -> None:
         """The drive's legs, listed under a small 'VIA' header in a lower
         (lightened) accent — each row reads 'previous → this waypoint', with that
-        leg's duration / distance in muted text. Hidden for a road with a single
-        leg (a plain departure→arrival), since the title already shows it."""
+        leg's duration / distance in muted text and a Navigate link to the leg's
+        destination. Hidden for a road with a single leg (a plain
+        departure→arrival), since the title already shows it."""
         legs = road_display_legs(road.start, road.waypoints)
         if len(legs) <= 1:
             return
@@ -422,7 +443,7 @@ class DayMixin:
         self.set_font(FONT, "B", 8)
         self.set_text_color(*low_accent)
         self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
-        for src, dest, dur_min, dist_km in legs:
+        for src, dest, dur_min, dist_km, dest_coord in legs:
             self._ensure_room(6)
             self.set_x(x + 3)
             self.set_font(FONT, "", 9)
@@ -437,14 +458,23 @@ class DayMixin:
             if meta:
                 self.set_font(FONT, "", 8.5)
                 self.set_text_color(*FAINT)
-                self.cell(0, 5, "   " + "  ·  ".join(meta))
+                mtext = "   " + "  ·  ".join(meta)
+                self.cell(self.get_string_width(mtext) + 1, 5, mtext)
+            url = maps_url(dest_coord, dest or "")
+            if url:
+                label2 = self.t("(Navigate)")
+                self.set_font(FONT, "", 8.5)
+                self.set_text_color(*self.accent)
+                self.cell(self.get_string_width("  " + label2), 5,
+                          "  " + label2, link=url)
             self.ln(5)
 
     def _details_point_of_interest(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.address:
             parts.append(act.address)
-        self._meta_line(x, w, parts)
+        meta = "  ·  ".join(p for p in parts if p)
+        self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name)
         if act.description:
             self._para(x, w, act.description)
         if act.website:
@@ -454,7 +484,7 @@ class DayMixin:
         self._render_nested(x, w, act.activities)
 
     def _details_place(self, act, x: float, w: float) -> None:
-        self._meta_line(x, w, [act.duration_display])
+        self._line_with_nav(x, w, act.duration_display, act.coordinate, act.name)
         if act.description:
             self._para(x, w, act.description)
         self._render_nested(x, w, act.activities)
@@ -487,7 +517,8 @@ class DayMixin:
         if act.elevation_m is not None:
             parts.append(f"+{act.elevation_m:g} m")
         parts.append(self.t(act.route_label))
-        self._meta_line(x, w, parts)
+        meta = "  ·  ".join(p for p in parts if p)
+        self._line_with_nav(x, w, meta, act.coordinate, act.start, act.name)
         if act.name and act.start and act.end:
             self._para(x, w, f"{act.start} → {act.end}")
         if act.description:
@@ -534,12 +565,10 @@ class DayMixin:
         self.set_text_color(*INK)
         self.multi_cell(tw, 5, poi.title)
 
-        parts = [p for p in (poi.duration_display, poi.address) if p]
-        if parts:
-            self.set_x(tx)
-            self.set_font(FONT, "", 8.5)
-            self.set_text_color(*MUTED)
-            self.multi_cell(tw, 4.5, "  ·  ".join(parts))
+        meta = "  ·  ".join(p for p in (poi.duration_display, poi.address) if p)
+        if meta or maps_url(poi.coordinate, poi.address, poi.name):
+            self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
+                                poi.name, size=8.5, h=4.5)
         if poi.description:
             self.set_x(tx)
             self.set_font(FONT, "", 9)
@@ -576,10 +605,9 @@ class DayMixin:
         parts.append(self.t(hike.route_label))
         if hike.duration_display:
             parts.append(hike.duration_display)
-        self.set_x(tx)
-        self.set_font(FONT, "", 8.5)
-        self.set_text_color(*MUTED)
-        self.multi_cell(tw, 4.5, "  ·  ".join(p for p in parts if p))
+        meta = "  ·  ".join(p for p in parts if p)
+        self._line_with_nav(tx, tw, meta, hike.coordinate, hike.start, hike.name,
+                            size=8.5, h=4.5)
         if hike.name and hike.start and hike.end:
             self.set_x(tx)
             self.set_font(FONT, "", 9)
@@ -619,11 +647,10 @@ class DayMixin:
         self.multi_cell(tw, 5, head)
 
         parts = [p for p in (meal.duration_display, meal.address) if p]
-        if parts:
-            self.set_x(tx)
-            self.set_font(FONT, "", 8.5)
-            self.set_text_color(*MUTED)
-            self.multi_cell(tw, 4.5, "  ·  ".join(parts))
+        meta = "  ·  ".join(parts)
+        if meta or maps_url(meal.coordinate, meal.address, meal.restaurant, meal.area):
+            self._line_with_nav(tx, tw, meta, meal.coordinate, meal.address,
+                                meal.restaurant, meal.area, size=8.5, h=4.5)
         self.ln(1)
 
 

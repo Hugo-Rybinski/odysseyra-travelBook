@@ -72,10 +72,10 @@ class TransportMixin:
         type_label = self.t(t.type).upper() if t.type else self.t("TRANSPORT")
         type_w = self._pill_w(type_label)
         route_w = inner_w - type_w - 4 - 44  # leave room for right-side badges
-        self.set_font(FONT, "B", 12)
-        route_lines = len(
-            self.multi_cell(route_w, 6, t.title, dry_run=True, output="LINES")
-        )
+        # The route title carries an inline Navigate link to the departure.
+        nav_coord = t.start_coordinate or t.coordinate
+        title_h = max(self._nav_block_h(t.title, nav_coord, t.start, w=route_w,
+                                        size=12, h=6, style="B"), 6)
         info = "  ·  ".join(
             p for p in (self._transport_date(t), self._transport_times(t, day_marker=False)) if p
         )
@@ -84,7 +84,7 @@ class TransportMixin:
                  (self.t("Reservation"), t.booking_link)]
         has_links = any(url for _, url in links)
 
-        h = pad * 2 + max(route_lines * 6, 6)
+        h = pad * 2 + title_h
         if info:
             h += 5.5
         if booking:
@@ -117,11 +117,10 @@ class TransportMixin:
             rx -= self._pill_w(label)
             self._pill(label, rx, yy, filled=(t.status == "confirmed"))
 
-        self.set_xy(cx + type_w + 4, yy - 0.4)
-        self.set_font(FONT, "B", 12)
-        self.set_text_color(*INK)
-        self.multi_cell(route_w, 6, t.title)
-        yy += max(route_lines * 6, 6) + 1
+        self.set_y(yy - 0.4)
+        self._line_with_nav(cx + type_w + 4, route_w, t.title, nav_coord, t.start,
+                            size=12, h=6, style="B", color=INK)
+        yy += title_h + 1
 
         if info:
             self.set_xy(cx, yy)

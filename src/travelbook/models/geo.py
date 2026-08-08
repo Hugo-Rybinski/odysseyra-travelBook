@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import quote
 
 from .parsers import ItineraryError, _parse_bool, _parse_float
 
@@ -40,3 +41,21 @@ def _parse_coordinate(value, name: str = "coordinate") -> Coordinate | None:
     if value in (None, ""):
         return None
     return Coordinate.from_dict(value, name)
+
+
+def maps_url(coordinate: "Coordinate | None", *query_parts: str) -> str:
+    """A Google Maps URL pointing at the first available location: the exact
+    ``coordinate`` when set, otherwise the first non-empty text part (an address
+    or place name). Returns ``""`` when there is nothing locatable.
+
+    Opening the link on a phone launches the maps / navigation app with the
+    destination pre-filled (a tap away from turn-by-turn directions); in a
+    desktop browser it opens Google Maps. Cross-platform by design — the same
+    URL works on iOS, Android and the web."""
+    if coordinate is not None:
+        query = f"{coordinate.lat},{coordinate.long}"
+    else:
+        query = next((p.strip() for p in query_parts if p and p.strip()), "")
+        if not query:
+            return ""
+    return "https://www.google.com/maps/search/?api=1&query=" + quote(query, safe=",")

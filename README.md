@@ -297,6 +297,16 @@ explicit `coordinate` appear on the map, so builds stay deterministic and offlin
 Turn it on to geocode the rest from their `name`/`address` at build time
 (restricted to `inference_countries` when set).
 
+**Navigation links.** Every locatable object gets a clickable **(Navigate)**
+link (labelled *(S'y rendre)* in French) right next to its address / location
+line — activities, transport, accommodation and car rentals alike. Opening it on
+a phone launches the maps / navigation app with the destination pre-filled; in a
+browser it opens Google Maps. The link points at the object's `coordinate` when
+it has one, otherwise it falls back to its `address` / place name, so it appears
+even when maps are off and independently of `show_on_map`. A multi-leg `road`
+gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's
+destination (its named waypoint).
+
 ### `days[]` — a day
 
 Every day needs a `title` and a non-empty `activities` array.

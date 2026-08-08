@@ -8,7 +8,7 @@ from pathlib import Path
 from fpdf import FPDF
 
 from ..lang import DEFAULT_LANGUAGE, fmt_date, tr
-from ..models import Itinerary, _format_tz, format_money
+from ..models import Itinerary, _format_tz, format_money, maps_url
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 FONT = "DejaVu"  # bundled Unicode font: handles accents, CJK-latin, arrows, …
@@ -132,10 +132,11 @@ class _PDFBase(FPDF):
         self.set_fill_color(*self.accent)
         self.rect(self.l_margin, y, 2, h, style="F")
 
-    def _measure_lines(self, text: str, w: float, size: float = 10) -> int:
+    def _measure_lines(self, text: str, w: float, size: float = 10,
+                       style: str = "") -> int:
         if not text:
             return 0
-        self.set_font(FONT, "", size)
+        self.set_font(FONT, style, size)
         return len(self.multi_cell(w, 5, text, dry_run=True, output="LINES"))
 
     def _pill_w(self, label: str) -> float:
@@ -209,6 +210,73 @@ class _PDFBase(FPDF):
         self.set_font(FONT, "", 10)
         self.set_text_color(*MUTED)
         self.multi_cell(w, 5, text)
+
+    def _nav_geom(self, text: str, w: float, size: float, style: str) -> tuple:
+        """Shared geometry for the ``text`` + inline "(Navigate)" block: the
+        wrapped text lines, the width of the last one (in the text font), the
+        "(Navigate)" label and its width, and whether the label fits after the
+        last line. Leaves the font set to the text face."""
+        label = self.t("(Navigate)")
+        self.set_font(FONT, style, size)
+        lines = self.multi_cell(w, 5, text, dry_run=True, output="LINES") or [text]
+        last_w = self.get_string_width(lines[-1])
+        self.set_font(FONT, "", size)
+        label_w = self.get_string_width(label)
+        gap = self.get_string_width("  ")
+        self.set_font(FONT, style, size)
+        return lines, last_w, label, label_w, last_w + gap + label_w <= w
+
+    def _nav_block_h(self, text: str, coordinate, *query_parts, w: float,
+                     size: float = 9, h: float = 5, style: str = "") -> float:
+        """The height :meth:`_line_with_nav` will consume for these arguments
+        (so cards can reserve exactly the right space)."""
+        url = maps_url(coordinate, *query_parts)
+        if not text:
+            return h if url else 0
+        lines, _, _, _, fits = self._nav_geom(text, w, size, style)
+        if not url:
+            return len(lines) * h
+        return len(lines) * h if fits else (len(lines) + 1) * h
+
+    def _line_with_nav(self, x: float, w: float, text: str, coordinate,
+                       *query_parts, size: float = 9, h: float = 5,
+                       style: str = "", color=MUTED) -> None:
+        """Draw ``text`` (wrapped to ``w``, font ``style``/``size``, colour
+        ``color``) with a clickable accent "(Navigate)" link right after its
+        last line — the link points at ``coordinate``, else the first non-empty
+        ``query_parts`` address / place name. The link drops to its own line
+        only when it would not fit. With no text, just the link is drawn; with
+        no locatable target, just the text. Advances the cursor below."""
+        url = maps_url(coordinate, *query_parts)
+        y = self.get_y()
+        if not text and not url:
+            return
+        if not text:
+            self.set_xy(x, y)
+            self.set_font(FONT, "", size)
+            self.set_text_color(*self.accent)
+            self.cell(self.get_string_width(self.t("(Navigate)")), h,
+                      self.t("(Navigate)"), link=url)
+            self.set_y(y + h)
+            return
+        lines, last_w, label, label_w, fits = self._nav_geom(text, w, size, style)
+        n = len(lines)
+        self.set_xy(x, y)
+        self.set_text_color(*color)
+        self.multi_cell(w, h, text)
+        if not url:
+            return
+        self.set_font(FONT, "", size)
+        self.set_text_color(*self.accent)
+        gap = self.get_string_width("  ")
+        if fits:
+            self.set_xy(x + last_w + gap, y + (n - 1) * h)
+            self.cell(label_w, h, label, link=url)
+            self.set_y(y + n * h)
+        else:
+            self.set_xy(x, y + n * h)
+            self.cell(label_w, h, label, link=url)
+            self.set_y(y + (n + 1) * h)
 
     def _link_row(self, x: float, y: float, links, size: float = 9) -> float:
         """Draw a row of clickable hyperlinks in the accent color at ``(x, y)``,
