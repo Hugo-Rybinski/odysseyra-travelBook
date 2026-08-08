@@ -111,6 +111,13 @@ accommodation may carry a `coordinate` so it can be pinned:
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
+- **Once you're done, report the inconsistencies.** List every conflict you found
+  between the source documents (a place, date, time, price, coordinate… stated
+  differently in two places) and how you arbitrated each — which source you
+  trusted and why.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
+- **A KML/KMZ file is the principal source of truth for coordinates.** When one
+  is provided, take every `coordinate` from it. If another document states
+  different coordinates for the same place, trust the KML/KMZ.

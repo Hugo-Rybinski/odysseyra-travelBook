@@ -87,6 +87,10 @@ show them in US dollars (1 € ≈ $1.09) and pounds (1 € ≈ £0.85)."*
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
+- **Once you're done, report the inconsistencies.** List every conflict you found
+  between the source documents (a place, date, time, price, coordinate… stated
+  differently in two places) and how you arbitrated each — which source you
+  trusted and why.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.

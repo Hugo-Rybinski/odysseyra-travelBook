@@ -24,6 +24,16 @@ website, a hand-written plan — into the small JSON files that
    travelbook stitch <ROOT>          # → "<title>.json", validated
    ```
 
+## Building the whole file at once
+
+The skills below each cover **one fragment** written into `<ROOT>/`, for the
+`travelbook stitch` workflow. If instead you want to assemble the **entire
+itinerary into a single JSON file** in one pass — no fragment folders, no
+`stitch` — use [build-full-json.md](build-full-json.md); it is fully
+self-contained (it duplicates every field table and rule from the fragment
+skills, so it needs no other file, no source code, and no tool) and produces a
+single `<title>.json` for the user to build/validate afterwards.
+
 ## Which skill to use
 
 | Source material | Skill | File(s) to write |
@@ -71,6 +81,13 @@ Every skill uses these; they are shared across all objects.
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
+- **Once you're done, report the inconsistencies.** List every conflict you found
+  between the source documents (a place, date, time, price, coordinate… stated
+  differently in two places) and how you arbitrated each — which source you
+  trusted and why.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
+- **A KML/KMZ file is the principal source of truth for coordinates.** When one
+  is provided, take every `coordinate` from it. If another document states
+  different coordinates for the same place, trust the KML/KMZ.

@@ -115,19 +115,21 @@ disc on the departure and each waypoint. Each waypoint is an object:
   `duration`; `validate` warns if the segments don't fit the drive.
 - Only add coordinates you actually know — never guess them.
 
-**Roads are an exception to "omit what you don't know".** If a `road` is missing
-its distance (`distance_km`) or duration (`duration`), still add each missing
-field with a `"FIXME"` value so the user is prompted to fill it in — e.g.
-`"distance_km": "FIXME"`, `"duration": "FIXME"`.
+**Build the waypoints from a KML/KMZ directions track when one is provided.** If
+a KML/KMZ holds a *directions* geometry matching this drive, use it to generate
+the `waypoints` array instead of listing stops by hand. Keep every **named**
+point of the directions that falls on the drive's relevant segment as a named
+waypoint (its `location` = that name). Then, between each consecutive pair of
+named waypoints, insert **25 intermediate unnamed waypoints** (`location`
+omitted) by taking evenly spaced points along the directions geometry for that
+segment — so the map route follows the real road rather than a straight line.
 
 **Link separate places with a `road`.** Between two consecutive activities that
 happen in different places (a different town, area, or trailhead), insert a
 `road` whose `start` is the first place and whose final waypoint is the second,
 so the transfer between them is shown. Skip it only when the two stops share the
 same area — they're nested under the same `place`, or clearly in one town —
-since there's no leg to draw within a single place. Give the road a
-`"distance_km": "FIXME"` and `"duration": "FIXME"` if the source doesn't state
-them (per the rule above).
+since there's no leg to draw within a single place.
 
 ### Type `point_of_interest` — a specific sight
 
@@ -170,12 +172,6 @@ of its located sub-activities.
 | `end` | no | text | End point. |
 | `route` | no | enum (default `back_and_forth`) | One of `loop`, `back_and_forth`, `one_way`. For `loop`/`back_and_forth`, `end` should match `start` (or be omitted); for `one_way`, `end` should differ. |
 | `activities` | no | array of **meal** objects | Meal stops along the hike. |
-
-**Hikes are the exception to "omit what you don't know".** If a hike is missing
-its distance (`distance_km`), route type (`route`), duration (`duration`), or
-elevation (`elevation_m`), still add each missing field with a `"FIXME"` value
-so the user is prompted to fill it in — e.g. `"distance_km": "FIXME"`,
-`"route": "FIXME"`, `"duration": "FIXME"`, `"elevation_m": "FIXME"`.
 
 ### Type `meal` — a stop to eat
 
@@ -272,6 +268,13 @@ about 1h30, visiting the Château fort (a castle, ~45 min)."*
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
+- **Once you're done, report the inconsistencies.** List every conflict you found
+  between the source documents (a place, date, time, price, coordinate… stated
+  differently in two places) and how you arbitrated each — which source you
+  trusted and why.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
+- **A KML/KMZ file is the principal source of truth for coordinates.** When one
+  is provided, take every `coordinate` from it. If another document states
+  different coordinates for the same place, trust the KML/KMZ.
