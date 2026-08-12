@@ -17,9 +17,9 @@
 ❌  line 16: field 'include_maps_in_render' is invalid ('maybe') — whether to draw a per-day OpenStreetMap with a pin for each activity. Expected true or false (must be true or false).
 ❌  line 17: inference country 'France' is invalid — must be a 2-letter ISO country code like 'FR'.
 ❌  line 20: a day's 'activities' must not be empty — every day needs at least one activity.
-❌  line 20: the night of 2026-06-09 has both an accommodation and an overnight transport — you can't sleep in two places.
 ⚠️  line 20: the day's city ('Lyon') doesn't match the accommodation city ('Paris').
 ℹ️  line 20: optional field 'description' is missing — an intro paragraph for the day. Expected any text. Defaulting to "".
+ℹ️  line 20: the night of 2026-06-09 has both an accommodation and an overnight transport — using the accommodation.
 ❌  line 26: the day's activities run past midnight — the schedule doesn't fit in a single day.
 ⚠️  line 26: the night of 2026-06-10 has no accommodation and no overnight transport — you have nowhere to sleep.
 ℹ️  line 26: optional field 'city' is missing — the city/region label. Expected any text. Defaulting to "" .
@@ -220,4 +220,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-64 error(s), 14 warning(s), 143 info.
+63 error(s), 14 warning(s), 144 info.

@@ -164,6 +164,13 @@ reference verbatim in that activity's `description` (append it if a description
 already exists). It carries over to any `point_of_interest`, `place`, or `hike`
 that has a `description` field.
 
+**Lift a shared page reference up to the area.** When several stops nested under
+one container (a `place`, or a `point_of_interest` with sub-activities) all cite
+the *same* guidebook pages, drop that reference from each nested `description`
+and put it once in the container's `description` instead. Keep a page reference
+on a nested stop only when it is *specific to that stop* and differs from the
+area's.
+
 **Scheduling fields (any non-`buffer` activity may include these):**
 
 | Field | Format | Notes |
@@ -386,7 +393,10 @@ One place you sleep: hotel, campsite, B&B, or other.
 - **Nights = `departure` − `arrival`.** You do **not** sleep there on the
   departure night — arrive Jun 08, depart Jun 10 = two nights (Jun 08 and 09).
 - One stay per entry. Two consecutive stays in different towns are two entries.
-- Don't add an accommodation for a night spent aboard an overnight transport leg.
+- A night spent aboard an overnight transport leg is already covered — you don't
+  need a separate accommodation for it. If both are recorded for the same night,
+  the tool uses the **accommodation** and just notes the overlap (info, not an
+  error).
 - If `status` or `paid` is set, include `booking_source` / `price` when known.
 
 ---

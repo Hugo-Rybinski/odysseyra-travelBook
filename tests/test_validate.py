@@ -389,7 +389,7 @@ def test_night_without_stay_warns():
     assert "night of 2026-06-08 has no accommodation" in msgs  # d1, not the last day
 
 
-def test_double_booked_night_is_error():
+def test_double_booked_night_is_info_and_prefers_accommodation():
     doc = {
         "travel_description": {"title": "T"},
         "days": [{"title": "d", "date": "2026-06-08", "activities": []},
@@ -398,7 +398,10 @@ def test_double_booked_night_is_error():
         "transport": [{"type": "night train", "start_date": "2026-06-08",
                        "start_time": "22:00", "end_time": "06:00"}],
     }
-    assert "sleep in two places" in _messages(_errors(validate_text(json.dumps(doc))))
+    findings = validate_text(json.dumps(doc))
+    # the accommodation is kept; the clash is reported at info level, not error
+    assert "using the accommodation" in _messages(_infos(findings))
+    assert not any("accommodation and an overnight" in m for m in _messages(_errors(findings)))
 
 
 def test_duplicate_and_out_of_order_day_dates_are_errors():

@@ -327,9 +327,9 @@ _FR = {
         "les hébergements {n1} et {n2} se chevauchent sur la ou les mêmes "
         "nuits — vous ne pouvez dormir qu'à un seul endroit.",
     "the night of {d} has both an accommodation and an overnight transport — "
-    "you can't sleep in two places.":
+    "using the accommodation.":
         "la nuit du {d} a à la fois un hébergement et un transport de nuit — "
-        "vous ne pouvez pas dormir à deux endroits.",
+        "l'hébergement est retenu.",
     "the night of {d} has no accommodation and no overnight transport — you "
     "have nowhere to sleep.":
         "la nuit du {d} n'a ni hébergement ni transport de nuit — vous n'avez "

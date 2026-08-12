@@ -94,7 +94,6 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   date, time, duration, timezone, color, enum…), or the data is incoherent:
   - reversed date ranges (trip / transport / accommodation),
   - two accommodations booked for the same night,
-  - a night with both a hotel and an overnight transport,
   - overlapping items on a day's timeline (activities and transport),
   - a day whose schedule runs past midnight,
   - duplicate or out-of-order day dates,
@@ -117,7 +116,8 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
   - a car-rental pick-up/drop-off that overlaps an activity or transport on the
     same day.
 - ℹ️ **info** — a low-priority note (hidden unless `-v 3`): an optional field is
-  missing (with the default that will be used), or a zero-minute buffer.
+  missing (with the default that will be used), a zero-minute buffer, or a night
+  with both a hotel and an overnight transport (the accommodation is used).
 
 Each finding names the field, its description, and the expected value. The
 command exits non-zero if there are any errors (warnings alone exit zero).

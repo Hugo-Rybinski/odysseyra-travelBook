@@ -854,9 +854,9 @@ class _Validator:
                          if isinstance(a, dict) and _acc_covers(a, d)), None)
             has_leg = d in overnight
             if stay is not None and has_leg:
-                self.add("error", ("days", i),
+                self.add("info", ("days", i),
                          "the night of {d} has both an accommodation and an "
-                         "overnight transport — you can't sleep in two places.", d=d)
+                         "overnight transport — using the accommodation.", d=d)
             elif stay is None and not has_leg and not is_last:
                 self.add("warning", ("days", i),
                          "the night of {d} has no accommodation and no overnight "
