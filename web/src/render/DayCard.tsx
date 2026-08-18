@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Activity,
   CarEvent,
@@ -71,6 +71,9 @@ function MapView({
     setGlFailed(false);
     setMapKey((k) => k + 1);
   }, [geo]);
+  // Stable so DayMapGL (which remounts when its props' identity changes) isn't
+  // torn down on every re-render.
+  const onFail = useCallback(() => setGlFailed(true), []);
 
   const staticFigure = staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
   const canInteractive =
@@ -78,9 +81,9 @@ function MapView({
 
   if (canInteractive && geo) {
     return (
-      <MapErrorBoundary key={mapKey} onError={() => setGlFailed(true)} fallback={staticFigure}>
+      <MapErrorBoundary key={mapKey} onError={onFail} fallback={staticFigure}>
         <Suspense fallback={<MapLoading lang={lang} />}>
-          <DayMapGL geo={geo} caption={caption} onFail={() => setGlFailed(true)} />
+          <DayMapGL geo={geo} caption={caption} onFail={onFail} />
         </Suspense>
       </MapErrorBoundary>
     );

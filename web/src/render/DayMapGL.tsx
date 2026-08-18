@@ -1,5 +1,14 @@
 import { useEffect, useRef } from "react";
-import { Map as MapLibreMap, Marker, Popup, setWorkerUrl } from "maplibre-gl";
+import {
+  FullscreenControl,
+  GeolocateControl,
+  Map as MapLibreMap,
+  Marker,
+  NavigationControl,
+  Popup,
+  ScaleControl,
+  setWorkerUrl,
+} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre v6 loads its worker from a *computed* URL Vite can't statically see,
 // so it never emits the worker file (→ a 404 that the SPA fallback answers with
@@ -47,12 +56,25 @@ export function DayMapGL({
       }
       if (cancelled || !holder.current) return;
       try {
-        map = new MapLibreMap({ container: holder.current, style });
+        map = new MapLibreMap({
+          container: holder.current,
+          style,
+          // Require ⌘/ctrl (or two fingers) to zoom, so the map doesn't hijack
+          // page scroll while it's embedded in the long book page.
+          cooperativeGestures: true,
+        });
       } catch {
         onFail?.();
         return;
       }
       const m = map;
+
+      // Built-in controls: zoom/compass (+ pitch indicator), fullscreen (expand
+      // a small embedded map), a distance scale, and "you are here".
+      m.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
+      m.addControl(new FullscreenControl(), "top-right");
+      m.addControl(new GeolocateControl({ trackUserLocation: true }), "top-right");
+      m.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
 
       // Backstop: if the style never loads (e.g. tiles blocked despite being
       // online), fall back to the static PNG rather than showing a blank box.

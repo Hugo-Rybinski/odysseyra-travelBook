@@ -170,7 +170,9 @@ The full v1 flow works in the browser, offline after first load:
   instead of redrawing; a **Redraw maps** button discards this file's cached
   images and rebuilds them. An **Interactive** toggle swaps the static images
   (both the day overview and each zoomed area map) for pan/zoom MapLibre maps
-  (Carto's keyless vector Positron style, drawn from the same points/routes);
+  (Carto's keyless vector Positron style, drawn from the same points/routes) with
+  zoom/compass, fullscreen, a distance scale and geolocate controls, and
+  cooperative gestures (⌘/two-finger to zoom, so the page still scrolls);
   each day's tiles are prefetched over its area so
   it also pans/zooms **offline** after one online view, and it falls back to the
   static PNG automatically if it can't load. MapLibre is code-split into its own

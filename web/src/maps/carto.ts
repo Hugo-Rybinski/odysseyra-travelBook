@@ -85,19 +85,18 @@ function fitZoom(
   return clamp(Math.floor(Math.min(zx, zy)), 1, MAX_ZOOM);
 }
 
-/** Warm the SW cache with the vector tiles over `bounds` at fit-1…fit+1 (capped),
- * so this day pans/zooms offline. Best-effort and fire-and-forget; failures are
- * ignored. Overzoom past 14 reuses z14 tiles, so capping at 14 covers deeper
- * zooms too. */
-export async function prefetchTiles(
+// Tile URLs covering `bounds` at fit-1…fit+1 (each zoom clamped to `maxZoom`),
+// substituting into `template`, capped at `cap`.
+function tileJobs(
+  template: string,
   bounds: [[number, number], [number, number]],
-  cap = 160,
-): Promise<void> {
-  const zFit = fitZoom(bounds);
+  maxZoom: number,
+  cap: number,
+): string[] {
+  const zFit = Math.min(fitZoom(bounds), maxZoom);
   const zMin = Math.max(0, zFit - 1);
-  const zMax = Math.min(MAX_ZOOM, zFit + 1);
+  const zMax = Math.min(maxZoom, zFit + 1);
   const [[minLat, minLng], [maxLat, maxLng]] = bounds;
-
   const jobs: string[] = [];
   for (let z = zMin; z <= zMax && jobs.length < cap; z++) {
     const nw = lngLatToTileXY(minLng, maxLat, z);
@@ -105,13 +104,23 @@ export async function prefetchTiles(
     for (let x = nw.x; x <= se.x && jobs.length < cap; x++) {
       for (let y = nw.y; y <= se.y && jobs.length < cap; y++) {
         jobs.push(
-          VECTOR_TILE_URL.replace("{z}", String(z))
-            .replace("{x}", String(x))
-            .replace("{y}", String(y)),
+          template.replace("{z}", String(z)).replace("{x}", String(x)).replace("{y}", String(y)),
         );
       }
     }
   }
+  return jobs;
+}
+
+/** Warm the SW cache with the vector tiles over `bounds` at fit-1…fit+1 (capped),
+ * so this day pans/zooms offline. Best-effort and fire-and-forget; failures are
+ * ignored. Overzoom past the source's max zoom reuses its deepest tiles, so
+ * capping covers deeper zooms too. */
+export async function prefetchTiles(
+  bounds: [[number, number], [number, number]],
+  cap = 160,
+): Promise<void> {
+  const jobs = tileJobs(VECTOR_TILE_URL, bounds, MAX_ZOOM, cap);
 
   let i = 0;
   const worker = async () => {
