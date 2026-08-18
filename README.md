@@ -611,3 +611,32 @@ type-specific details, including any car pick-up/drop-off), and a bottom bar for
 that night's stay. Finally a transport page (transport legs plus rental-car
 bookings) and an accommodation summary page. The accent color is derived from
 `cover_color`.
+
+## Future iterations
+
+Features intentionally deferred so the first iteration of the **PWA travel-book
+viewer** (see `docs/pwa-migration-plan.md`) can ship focused. Each is scoped and
+ready to pick up later; nothing here is a blocker for v1.
+
+- **Maps in the PDF export.** The in-app book view renders maps interactively in
+  the browser, but the *exported* PDF ships without the Python-rendered map
+  image. Pyodide (Python compiled to WebAssembly) has no OS network sockets, so
+  the `maps/` package — whose geocoding (Nominatim), routing (OSRM) and tile
+  fetches (Carto) all go through `urllib` — can't reach the network in-browser.
+  Adding it means either shipping a pre-warmed tile/route cache, or running
+  Pyodide in a Web Worker with a synchronous `fetch` shim (`SharedArrayBuffer` +
+  `Atomics`, plus COOP/COEP cross-origin isolation). Deferred to a later spike;
+  favor itineraries with **explicit coordinates** to avoid the Nominatim
+  `User-Agent` restriction browsers impose.
+- **Editing the itinerary in the UI.** V1 is read-only: open a local JSON file,
+  render it, show findings, export a PDF. A form/JSON editor with write-back to
+  the local file (and re-validate-on-change) is the planned step two.
+- **Pixel-faithful in-app rendering.** The in-app view is a web-native
+  presentation of the same content, not a pixel-for-pixel replica of the PDF
+  page layout. The one-click PDF export remains the print-exact artifact.
+- **Live geocoding from the app.** The `geocode` command (address → coordinates,
+  written back into the JSON) stays CLI-only for now, for the same in-browser
+  networking reasons as PDF maps.
+- **Cloud/shared storage.** By design the app is local-only — data lives solely
+  in the user's local JSON file, nothing leaves the device. Any sync/sharing is
+  out of scope.

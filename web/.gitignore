@@ -1,0 +1,10 @@
+node_modules
+dist
+dev-dist
+*.local
+*.tsbuildinfo
+.DS_Store
+
+# Built Python wheel + its manifest (regenerate with `npm run wheel`)
+public/py/*.whl
+public/py/wheel.json

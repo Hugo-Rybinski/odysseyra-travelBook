@@ -18,6 +18,7 @@ from .models import (
     resolve_car_rental,
     resolve_transport,
     schedule_activities,
+    to_dict,
 )
 from .pdf import build_pdf
 from .validate import Finding, format_findings, validate_text
@@ -43,6 +44,7 @@ __all__ = [
     "resolve_car_rental",
     "resolve_transport",
     "schedule_activities",
+    "to_dict",
     "build_pdf",
     "validate_text",
     "format_findings",

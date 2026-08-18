@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Travelbook">
+  <rect width="512" height="512" rx="96" fill="#1f4e5f"/>
+  <path d="M136 120h96c22 0 40 18 40 40v232c0-18-18-32-40-32h-96z" fill="#ffffff" opacity="0.92"/>
+  <path d="M376 120h-96c-22 0-40 18-40 40v232c0-18 18-32 40-32h96z" fill="#ffffff" opacity="0.75"/>
+  <circle cx="256" cy="250" r="34" fill="none" stroke="#1f4e5f" stroke-width="16"/>
+  <circle cx="256" cy="250" r="8" fill="#1f4e5f"/>
+</svg>

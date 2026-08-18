@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, pwa-viewer]
+  pull_request:
+
+jobs:
+  python:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  web:
+    name: PWA build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      # Build the travelbook wheel (fonts bundled) into public/py; PIP=pip uses
+      # the CI's Python instead of the local ../.venv.
+      - run: PIP=pip npm run wheel
+      - run: npm run typecheck
+      - run: npm run build
+
+# A Lighthouse PWA/perf budget check is deferred (needs a served build + the
+# Pyodide/PyPI network fetches); see docs/pwa-migration-plan.md, Phase 5.

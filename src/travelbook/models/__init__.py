@@ -34,6 +34,7 @@ from .activities import (
     schedule_activities,
 )
 from .itinerary import Day, Itinerary
+from .serialize import to_dict
 from .scheduling import Scheduled, Stamp
 from .parsers import (
     ItineraryError,
@@ -78,6 +79,7 @@ __all__ = [
     "Road",
     "Scheduled",
     "Stamp",
+    "to_dict",
     "Waypoint",
     "Transport",
     "TRANSPORT_TYPES",
