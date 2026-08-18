@@ -14,9 +14,8 @@ import logging
 import os
 import time
 import urllib.error
-import urllib.request
 
-from . import USER_AGENT
+from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 logger = logging.getLogger("travelbook.maps")
 
@@ -39,11 +38,8 @@ def _request_route(coords: str) -> list[tuple[float, float]] | None:
     """One OSRM attempt. Returns the ``[(lat, long), …]`` geometry, or ``None``
     for a definitive "no route" answer (empty result, or an HTTP 4xx). Raises
     :class:`_Transient` on a retryable failure."""
-    req = urllib.request.Request(OSRM.format(coords=coords),
-                                 headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            data = json.load(r)
+        data = json.loads(_maps.http_get(OSRM.format(coords=coords)).decode("utf-8"))
     except urllib.error.HTTPError as exc:
         if exc.code == 429 or exc.code >= 500:
             raise _Transient(f"HTTP {exc.code}") from exc

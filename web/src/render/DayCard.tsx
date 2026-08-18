@@ -1,7 +1,42 @@
-import type { Activity, CarEvent, Day, Transport } from "../types/resolved";
+import type {
+  Activity,
+  CarEvent,
+  Day,
+  RenderedMap,
+  Transport,
+} from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { Links, NavLink } from "./Links";
 import { activityNav, fmtDurationMin, navUrl, roadLegs, transportTimes } from "./nav";
+
+// A rendered day/area map (a base64 PNG from the Python renderer, pixel-identical
+// to the PDF) with an accent caption aligned to the PDF's map cards.
+function MapFigure({ rendered, caption }: { rendered: RenderedMap; caption: string }) {
+  return (
+    <figure className="day-map">
+      <figcaption>{caption}</figcaption>
+      <img src={rendered.image} alt={caption} loading="lazy" />
+    </figure>
+  );
+}
+
+// The small accent disc carrying an activity's map-pin label (number / area
+// letter / "*"), shown inline before its title — mirroring the PDF's pin discs.
+function PinDisc({ label }: { label: string | null | undefined }) {
+  if (!label) return null;
+  return <span className="pin-disc" aria-hidden>{label}</span>;
+}
+
+// Placeholder shown in the map's slot while that day's map is still being built
+// (the images are fetched per day, after the book text is already on screen).
+function MapLoading({ lang }: { lang: Lang }) {
+  return (
+    <div className="day-map-loading" role="status" aria-live="polite">
+      <span className="spin" aria-hidden />
+      {tr(lang, "buildingMap")}
+    </div>
+  );
+}
 
 // Uppercase type label shown in the gutter badge, mirroring the PDF's
 // _badge_label (POIs use their category when it isn't the generic "other").
@@ -33,11 +68,13 @@ export function DayCard({
   lang,
   collapsed,
   onToggle,
+  mapExpected = false,
 }: {
   day: Day;
   lang: Lang;
   collapsed: boolean;
   onToggle: (dayNumber: number) => void;
+  mapExpected?: boolean; // the itinerary opts into maps; show a loader until day.map arrives
 }) {
   const timeline = mergeTimeline(day);
   const toggle = () => onToggle(day.day_number);
@@ -76,6 +113,15 @@ export function DayCard({
         <>
           {day.description && <p className="day-intro">{day.description}</p>}
 
+          {day.map?.main ? (
+            <MapFigure
+              rendered={day.map.main}
+              caption={fill(tr(lang, "dayMapCaption"), { index: day.day_number })}
+            />
+          ) : mapExpected && day.map === undefined ? (
+            <MapLoading lang={lang} />
+          ) : null}
+
           <ol className="timeline">
             {timeline.map((item, i) =>
               item.kind === "car" ? (
@@ -83,7 +129,7 @@ export function DayCard({
               ) : item.kind === "transport" ? (
                 <TransportRow key={i} t={item.t} lang={lang} />
               ) : (
-                <ActivityRow key={i} act={item.act} lang={lang} />
+                <ActivityRow key={i} act={item.act} lang={lang} areas={day.map?.areas} />
               ),
             )}
           </ol>
@@ -155,7 +201,15 @@ function Gutter({
 
 // --- rows -------------------------------------------------------------------
 
-function ActivityRow({ act, lang }: { act: Activity; lang: Lang }) {
+function ActivityRow({
+  act,
+  lang,
+  areas,
+}: {
+  act: Activity;
+  lang: Lang;
+  areas?: (RenderedMap & { title: string })[];
+}) {
   if (act.type === "buffer") {
     return (
       <li className="act buffer">
@@ -171,6 +225,8 @@ function ActivityRow({ act, lang }: { act: Activity; lang: Lang }) {
   // A multi-leg drive carries its Navigate links per VIA leg (not on the head).
   const multiLeg = act.type === "road" && roadLegs(act.start ?? "", act.waypoints ?? []).length > 1;
   const nav = multiLeg ? "" : activityNav(act);
+  // A place's zoomed detail map (matched by title) is drawn inline after it.
+  const areaMap = act.type === "place" ? areas?.find((a) => a.title === act.title) : undefined;
   return (
     <li className={`act ${act.type}`}>
       <Gutter
@@ -182,6 +238,7 @@ function ActivityRow({ act, lang }: { act: Activity; lang: Lang }) {
       />
       <div className="act-body">
         <div className="act-title">
+          <PinDisc label={act.map_pin} />
           {act.title}
           {act.type === "road" && act.off_road && (
             <span className="chip outline">{tr(lang, "offRoad")}</span>
@@ -199,6 +256,12 @@ function ActivityRow({ act, lang }: { act: Activity; lang: Lang }) {
               <ActivityRow key={i} act={sub} lang={lang} />
             ))}
           </ol>
+        )}
+        {areaMap && (
+          <MapFigure
+            rendered={areaMap}
+            caption={fill(tr(lang, "areaMapCaption"), { area: act.title })}
+          />
         )}
       </div>
     </li>
@@ -379,7 +442,8 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
       <footer className="stay-bar">
         <div className="stay-line">
           <span>
-            🛏 {tr(lang, "tonight")}: <strong>{s.name}</strong>
+            🛏 {tr(lang, "tonight")}: <PinDisc label={s.map_pin} />
+            <strong>{s.name}</strong>
             {s.city ? ` (${s.city})` : ""}
           </span>
           {progress && <span className="stay-progress">{progress}</span>}

@@ -6,7 +6,8 @@
 // the first load. The `travelbook` wheel itself is served locally and precached.
 import type { PyodideInterface } from "pyodide"; // type-only (erased at build)
 import bridgeSource from "./bridge.py?raw";
-import type { Finding, Itinerary } from "../types/resolved";
+import { httpGetSync } from "./netbridge";
+import type { Day, Finding, Itinerary } from "../types/resolved";
 
 const PYODIDE_VERSION = "0.26.4";
 const PYODIDE_INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -89,6 +90,11 @@ export function boot(onProgress: ProgressFn = () => {}): Promise<PyodideInterfac
     const py = await loadPyodide({ indexURL: PYODIDE_INDEX_URL });
     log("[boot] Pyodide runtime ready");
 
+    // Expose the synchronous fetch the maps package uses (bridge.py points
+    // `travelbook.maps.http_get` at it). Registered before the bridge is
+    // imported so its module-load override picks it up.
+    py.registerJsModule("tb_js", { httpGetSync });
+
     emit({ stage: "installing-packages", detail: "Pillow, fonttools, micropip" });
     // Pillow + fonttools ship with Pyodide (loaded from its CDN, then SW-cached);
     // fpdf2 + defusedxml come from local wheels below. Nothing hits PyPI, so the
@@ -132,7 +138,9 @@ export async function validate(text: string, lang = "en"): Promise<Finding[]> {
   return parsed.findings ?? [];
 }
 
-/** Resolve raw itinerary JSON into the render-ready model (throws on error). */
+/** Resolve raw itinerary JSON into the render-ready model (throws on error).
+ * Maps are NOT included here — the book renders immediately; each day's map is
+ * fetched separately via `renderDayMap` (see App). */
 export async function resolve(text: string): Promise<Itinerary> {
   const raw = bridge().resolve(text) as string;
   const parsed = JSON.parse(raw) as { itinerary?: Itinerary; error?: string };
@@ -141,12 +149,30 @@ export async function resolve(text: string): Promise<Itinerary> {
   return parsed.itinerary;
 }
 
-/** Build the PDF (maps off in v1). Returns the bytes for download. */
+/** Render one day's maps and return that day with `day.map` (+ pin labels)
+ * merged in, for the UI to swap in place. Fetches tiles synchronously, so it
+ * blocks the main thread while running; call it per day between paints. */
+export async function renderDayMap(text: string, index: number): Promise<Day> {
+  const raw = bridge().render_day(text, index) as string;
+  const parsed = JSON.parse(raw) as { day?: Day; error?: string };
+  if (parsed.error) throw new Error(parsed.error);
+  if (!parsed.day) throw new Error("render_day() returned no day");
+  return parsed.day;
+}
+
+/** Build the PDF. `maps` overrides the file's `include_maps_in_render` for this
+ * export (undefined leaves the file's own setting in force). Returns the bytes
+ * for download. */
 export async function buildPdf(
   text: string,
-  opts: { lang?: string; inkSaver?: boolean } = {},
+  opts: { lang?: string; inkSaver?: boolean; maps?: boolean } = {},
 ): Promise<Uint8Array> {
-  const result = bridge().build(text, opts.lang ?? "en", opts.inkSaver ?? false);
+  const result = bridge().build(
+    text,
+    opts.lang ?? "en",
+    opts.inkSaver ?? false,
+    opts.maps ?? null,
+  );
   // Python `bytes` usually comes back as a PyProxy (needs .toJs()); guard in case
   // a future Pyodide auto-converts it to a Uint8Array.
   if (result instanceof Uint8Array) return new Uint8Array(result);

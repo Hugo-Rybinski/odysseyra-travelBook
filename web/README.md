@@ -7,9 +7,9 @@ via [Pyodide](https://pyodide.org). No server, no cloud: your data stays in the
 local JSON file.
 
 See [`../docs/pwa-migration-plan.md`](../docs/pwa-migration-plan.md) for the full
-plan and [`../README.md`](../README.md) → *Future iterations* for what v1 cuts
-(notably: **maps are not embedded in the exported PDF**, and JSON editing is a
-later step).
+plan and [`../README.md`](../README.md) → *Future iterations* for what's still
+deferred (notably: in-UI JSON editing, and moving the maps fetch off the main
+thread). Per-day maps now render both in the book view and in the exported PDF.
 
 ## How it works
 
@@ -19,11 +19,16 @@ React + TS  ──►  Pyodide (CPython → WASM)  ──►  travelbook package
                  cached by the service worker     via src/pyodide/bridge.py
 ```
 
-- The `travelbook` wheel (fonts bundled) is built locally into `public/py/` and
-  precached by the service worker.
-- Pyodide's runtime + `Pillow` come from a version-pinned jsDelivr CDN; `fpdf2`
-  (pure Python) is pulled from PyPI by `micropip` on first load. All three are
-  cached by the service worker, so the app works offline after the first run.
+- The `travelbook` wheel (fonts bundled) plus its pure-Python deps (`fpdf2`,
+  `defusedxml`) are built locally into `public/py/` and precached by the service
+  worker — nothing is pulled from PyPI at run time.
+- Pyodide's runtime + `Pillow` + `fonttools` come from a version-pinned jsDelivr
+  CDN, cached by the service worker, so the app works offline after the first run.
+- **Maps** run in-browser too: the `travelbook.maps` package fetches tiles
+  (Carto), routes (OSRM) and geocoding (Nominatim) through an overridable seam
+  (`travelbook.maps.http_get`) that the app points at a synchronous `fetch`. All
+  three endpoints send `Access-Control-Allow-Origin: *`, so there's no proxy and
+  data stays on-device; the service worker caches the responses for offline use.
 
 ## Prerequisites
 
@@ -121,6 +126,12 @@ resolution off, so **nothing contacts PyPI at run time** and the boot completes
 offline. The Pyodide runtime + Pillow/fonttools are fetched from the CDN on first
 load and cached (CacheFirst) for later offline launches.
 
+Map tiles (Carto), routes (OSRM) and geocoding (Nominatim) are fetched live the
+first time a map is built and cached CacheFirst by the service worker (see the
+`map-tiles` / `map-data` runtime caches in `vite.config.ts`), so a day whose map
+has been rendered once online renders offline afterwards. A map that has never
+been fetched simply doesn't appear offline — the build degrades gracefully.
+
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load:
@@ -130,17 +141,21 @@ The full v1 flow works in the browser, offline after first load:
 - **Render** the whole travel book: cover + day-by-day overview, one card per day
   with the time-ordered timeline (PDF-style type badges, nested activities, car
   events, tonight's-stay bar), plus transport and accommodation sections. Prices
-  show the default currency with faded secondary conversions.
+  show the default currency with faded secondary conversions. When the itinerary
+  opts into maps (`include_maps_in_render`), the text renders first and each day's
+  Python-rendered overview map (pixel-identical to the PDF) then fills in — a
+  per-day loader shows while it builds — with numbered pin discs next to activity
+  titles, plus zoomed area maps.
 - **Findings** panel lists every validation ❌/⚠️/ℹ️ with line numbers and a level
   filter; **EN/FR** toggles messages, dates and labels.
-- **Export PDF** runs `build_pdf` in-browser and downloads it (with an ink-saver
-  toggle). Maps are not embedded in the PDF in v1 — see the top-level README's
-  *Future iterations*.
+- **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
+  maps toggles; the maps toggle defaults to the file's own `include_maps_in_render`).
 - PWA polish: update-available / offline-ready / install toasts and an offline
   banner (`src/pwa/PwaStatus.tsx`). Note the service worker only registers in a
   production build, so use `npm run build && npm run preview` to exercise those.
 
-Next up (post-v1): editing the itinerary in the UI, and maps in the PDF export.
+Next up (post-v1): editing the itinerary in the UI, and moving Pyodide into a
+Web Worker so the first map render doesn't block the main thread.
 
 ## Layout
 
@@ -154,7 +169,8 @@ src/
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/buildPdf
-    bridge.py              JSON-in/out glue over the travelbook package
+    bridge.py              JSON-in/out glue over the travelbook package (+ maps)
+    netbridge.ts           synchronous fetch exposed to Python for the maps seam
   types/resolved.ts        TS mirror of the resolved-model dict (to_dict)
 scripts/build-wheel.sh     wheel builder used by `npm run wheel`
 vite.config.ts             React + vite-plugin-pwa + static-copy of examples

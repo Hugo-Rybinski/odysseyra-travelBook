@@ -56,6 +56,7 @@ export interface Activity extends Scheduled {
   type: ActivityType;
   title: string;
   coordinate: Coordinate | null;
+  map_pin: string | null; // pin label on the day map (number / area letter), when maps ran
   activities?: Activity[]; // one level of nesting
 
   // buffer
@@ -124,6 +125,20 @@ export interface Accommodation {
   price: Money | null;
   breakfast_included: boolean;
   coordinate: Coordinate | null;
+  map_pin?: string | null; // "*" on the day map when this is the night's stay
+}
+
+// A rendered day map (a base64 PNG data URI) plus its pin-ordered legend.
+export interface RenderedMap {
+  image: string; // data:image/png;base64,…
+  legend: string[]; // activity titles in pin order
+}
+
+// Per-day maps inlined by the bridge when the itinerary opts into maps: the main
+// overview map and, per area with nested points, a zoomed detail map.
+export interface DayMap {
+  main: RenderedMap | null;
+  areas: (RenderedMap & { title: string })[];
 }
 
 export interface Stamp {
@@ -184,6 +199,7 @@ export interface Day {
   stay_night: number | null; // 1-based night index within the stay
   night_transport: Transport | null;
   sleep_city: string;
+  map?: DayMap; // inlined when the itinerary opts into maps
 }
 
 export interface Itinerary {

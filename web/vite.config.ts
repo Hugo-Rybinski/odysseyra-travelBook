@@ -63,6 +63,27 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Carto basemap tiles for the per-day maps — cache heavily so a map
+            // built once renders offline afterwards.
+            urlPattern: /^https:\/\/[a-z]*\.?basemaps\.cartocdn\.com\/.*/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "map-tiles",
+              expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // OSRM driving routes and Nominatim geocoding for the maps.
+            urlPattern: /^https:\/\/(router\.project-osrm\.org|nominatim\.openstreetmap\.org)\/.*/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "map-data",
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
       devOptions: { enabled: false },

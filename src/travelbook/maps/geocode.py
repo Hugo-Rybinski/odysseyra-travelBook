@@ -11,9 +11,8 @@ from __future__ import annotations
 import json
 import time
 import urllib.parse
-import urllib.request
 
-from . import USER_AGENT
+from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 _MIN_INTERVAL = 1.1  # Nominatim usage policy: <= 1 request/second
@@ -38,9 +37,7 @@ def geocode(query: str, countries: list[str], cache) -> tuple[float, float] | No
         time.sleep(wait)
     result = None
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            hits = json.load(r)
+        hits = json.loads(_maps.http_get(url).decode("utf-8"))
         if hits:
             result = (float(hits[0]["lat"]), float(hits[0]["lon"]))
     except Exception:

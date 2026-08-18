@@ -9,10 +9,25 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
 USER_AGENT = "travelbook/0.1 (per-day maps; https://github.com/Hugo-Rybinski/travelBook)"
+
+
+def http_get(url: str, timeout: int = 20) -> bytes:
+    """Fetch the bytes at ``url``, raising ``urllib.error.HTTPError`` on a non-2xx
+    status (exactly like ``urlopen``, so callers can branch on ``.code``).
+
+    This is the **single network seam** for the maps package — geocoding, routing
+    and tiles all go through it. Native builds use ``urllib``; the browser
+    (Pyodide has no sockets) overrides ``travelbook.maps.http_get`` with a
+    ``fetch``-based implementation. Keep the contract identical in both.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
 
 
 def default_cache_dir() -> Path:
@@ -55,4 +70,5 @@ class Cache:
 
 from .build import DayMaps, render_day_maps  # noqa: E402
 
-__all__ = ["Cache", "DayMaps", "render_day_maps", "default_cache_dir", "USER_AGENT"]
+__all__ = ["Cache", "DayMaps", "render_day_maps", "default_cache_dir",
+           "USER_AGENT", "http_get"]

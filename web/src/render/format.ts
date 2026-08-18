@@ -78,6 +78,9 @@ const LABELS = {
     road: "Road",
     overnightTravel: "Overnight travel",
     overnightType: "Overnight {type}",
+    dayMapCaption: "Day {index} overview",
+    areaMapCaption: "Zoom — {area}",
+    buildingMap: "Building map…",
   },
   fr: {
     day: "Jour",
@@ -126,6 +129,9 @@ const LABELS = {
     road: "Route",
     overnightTravel: "Trajet de nuit",
     overnightType: "{type} de nuit",
+    dayMapCaption: "Aperçu du jour {index}",
+    areaMapCaption: "Zoom — {area}",
+    buildingMap: "Génération de la carte…",
   },
 } as const;
 

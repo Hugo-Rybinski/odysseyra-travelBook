@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import { boot, buildPdf, resolve, validate, type BootProgress } from "./pyodide/runtime";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  boot,
+  buildPdf,
+  renderDayMap,
+  resolve,
+  validate,
+  type BootProgress,
+} from "./pyodide/runtime";
 import {
   loadLastHandle,
   openFile,
@@ -40,9 +47,36 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [canReopen, setCanReopen] = useState(false);
   const [inkSaver, setInkSaver] = useState(false);
+  const [mapsExport, setMapsExport] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const engineReady = progress.stage === "ready";
+  // Bumped on every new analysis so a superseded per-day map loop bails out.
+  const mapRunRef = useRef(0);
+
+  // Render the per-day maps progressively, after the book is already on screen:
+  // yield to let the browser paint (the book + the pending days' loaders), then
+  // fetch one day's map (a blocking tile fetch) and swap it in. A newer file
+  // opening bumps the token, so a stale loop stops merging into the new view.
+  const buildDayMaps = useCallback(async (text: string, dayCount: number) => {
+    const token = ++mapRunRef.current;
+    for (let i = 0; i < dayCount; i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      if (mapRunRef.current !== token) return;
+      try {
+        const day = await renderDayMap(text, i);
+        if (mapRunRef.current !== token) return;
+        setItinerary((prev) => {
+          if (!prev) return prev;
+          const days = prev.days.slice();
+          days[i] = day;
+          return { ...prev, days };
+        });
+      } catch {
+        // leave that day mapless and carry on with the rest
+      }
+    }
+  }, []);
 
   // Warm the engine on mount, and see whether a previous file can be reopened.
   useEffect(() => {
@@ -54,6 +88,11 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Default the PDF's map toggle to whatever the opened file asks for.
+  useEffect(() => {
+    if (itinerary) setMapsExport(itinerary.maps.include_in_render);
+  }, [itinerary]);
 
   // Resolve + validate a freshly opened source.
   const analyze = useCallback(
@@ -69,6 +108,9 @@ export function App() {
         setSource(src);
         setItinerary(model);
         setFindings(found);
+        // Text is on screen now; fetch the per-day maps in the background.
+        if (model.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
+        else mapRunRef.current++; // cancel any in-flight loop from a prior file
         await rememberHandle(src.handle);
         setCanReopen(!!src.handle || canReopen);
       } catch (e) {
@@ -77,7 +119,7 @@ export function App() {
         setBusy(false);
       }
     },
-    [lang, canReopen],
+    [lang, canReopen, buildDayMaps],
   );
 
   const onOpen = useCallback(async () => {
@@ -109,13 +151,14 @@ export function App() {
     }
   }, [analyze]);
 
-  // Export the PDF (maps off in v1) and download it, without losing the view.
+  // Export the PDF and download it, without losing the view. Maps are embedded
+  // when the toggle is on (fetching tiles/routes in-browser; slower).
   const onExport = useCallback(async () => {
     if (!source) return;
     setExporting(true);
     setError(null);
     try {
-      const bytes = await buildPdf(source.text, { lang, inkSaver });
+      const bytes = await buildPdf(source.text, { lang, inkSaver, maps: mapsExport });
       const base = itinerary?.title || source.name || "travelbook";
       downloadBytes(bytes, `${slugify(base)}.pdf`);
     } catch (e) {
@@ -123,7 +166,7 @@ export function App() {
     } finally {
       setExporting(false);
     }
-  }, [source, lang, inkSaver, itinerary]);
+  }, [source, lang, inkSaver, mapsExport, itinerary]);
 
   // Re-validate (in the chosen language) when the language changes.
   const onToggleLang = useCallback(
@@ -181,11 +224,22 @@ export function App() {
                 />
                 Ink-saver
               </label>
+              <label
+                className="ink"
+                title="Embed the per-day maps in the exported PDF (fetches map tiles; slower)"
+              >
+                <input
+                  type="checkbox"
+                  checked={mapsExport}
+                  onChange={(e) => setMapsExport(e.target.checked)}
+                />
+                Maps
+              </label>
               <button
                 className="btn"
                 onClick={onExport}
                 disabled={exporting || !engineReady}
-                title="Maps are not embedded in the PDF (v1)"
+                title={mapsExport ? "Maps are embedded in the PDF" : "Maps are omitted from the PDF"}
               >
                 {exporting ? "Exporting…" : "Export PDF"}
               </button>
@@ -219,7 +273,6 @@ export function App() {
         <section className="report">
           <p className="report-caption">
             {source?.name && <span className="filename">{source.name}</span>}
-            <span className="maps-note">Maps aren’t embedded in the PDF export (v1).</span>
           </p>
           <Book itinerary={itinerary} lang={lang} />
           <FindingsPanel findings={findings} />

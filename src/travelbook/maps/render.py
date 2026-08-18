@@ -5,13 +5,12 @@ route and numbered pins, and keep the basemap's own labels on top. Pure Pillow.
 from __future__ import annotations
 
 import math
-import urllib.request
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from pathlib import Path
 
-from . import USER_AGENT
+from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 
@@ -49,10 +48,7 @@ def _pick_zoom(bbox, map_w, map_h) -> int:
 def _fetch_tile(url, style, z, x, y, tiles_dir: Path) -> Image.Image:
     f = tiles_dir / f"{style}_{z}_{x}_{y}.png"
     if not f.exists():
-        req = urllib.request.Request(url.format(z=z, x=x, y=y),
-                                     headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            f.write_bytes(r.read())
+        f.write_bytes(_maps.http_get(url.format(z=z, x=x, y=y)))
     return Image.open(f).convert("RGBA")
 
 

@@ -233,3 +233,39 @@ def test_fill_coordinates_adds_and_preserves():
     assert acts[2]["coordinate"] == {"lat": 43.29, "long": -0.36}
     assert acts[2]["waypoints"][0]["coordinate"] == {"lat": 1.0, "long": 2.0}  # untouched
     assert filled == 2 and missed == 1
+
+
+# -- the network seam (travelbook.maps.http_get) -----------------------------
+def test_fetch_tile_uses_http_get_seam(monkeypatch, tmp_path):
+    """Tiles are fetched through the overridable travelbook.maps.http_get seam,
+    so the browser (Pyodide, no sockets) can swap in a fetch-based transport."""
+    import io
+
+    import travelbook.maps as maps
+    from travelbook.maps import render
+
+    buf = io.BytesIO()
+    Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(buf, "PNG")
+    seen = []
+
+    def fake_http_get(url, timeout=20):
+        seen.append(url)
+        return buf.getvalue()
+
+    monkeypatch.setattr(maps, "http_get", fake_http_get)
+    img = render._fetch_tile(render.BASE_URL, "nolabels", 5, 1, 1, tmp_path)
+    assert seen and "cartocdn.com" in seen[0]
+    assert img.mode == "RGBA"
+
+
+def test_geocode_uses_http_get_seam(monkeypatch):
+    """Geocoding goes through the same seam and parses Nominatim's JSON body."""
+    import travelbook.maps as maps
+    from travelbook.maps import geocode
+
+    monkeypatch.setattr(geocode.time, "sleep", lambda s: None)  # no rate-limit wait
+    monkeypatch.setattr(
+        maps, "http_get",
+        lambda url, timeout=20: b'[{"lat": "43.1", "lon": "-0.05"}]')
+    cache = type("C", (), {"geocode": {}})()
+    assert geocode.geocode("Somewhere", ["FR"], cache) == (43.1, -0.05)

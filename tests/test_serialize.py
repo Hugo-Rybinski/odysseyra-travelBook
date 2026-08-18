@@ -144,3 +144,22 @@ def test_road_waypoints_and_legs_are_serialized():
     assert road["start"]
     assert road["waypoints"], "a road serializes its ordered waypoints"
     assert road["destination"], "destination resolves from the last named waypoint"
+
+
+def test_map_pin_defaults_to_none_and_reflects_stamp():
+    # Every activity/accommodation carries a `map_pin` key; it is None unless a
+    # caller (the PWA bridge, from the rendered day maps) stamps `_map_pin` on
+    # the model object.
+    it = Itinerary.from_json_file(KYRGYZSTAN)
+    plain = to_dict(it)
+    for day in plain["days"]:
+        for act in _all_activities(day):
+            assert act["map_pin"] is None
+        if day["stay"]:
+            assert day["stay"].get("map_pin") is None
+
+    # Stamping the model object surfaces the label in the serialized dict.
+    first_act = it.days[0].activities[0]
+    first_act._map_pin = "1"
+    stamped = to_dict(it)
+    assert stamped["days"][0]["activities"][0]["map_pin"] == "1"

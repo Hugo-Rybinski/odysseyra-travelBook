@@ -50,6 +50,7 @@ export function Book({ itinerary, lang }: { itinerary: Itinerary; lang: Lang }) 
             lang={lang}
             collapsed={collapsed.has(day.day_number)}
             onToggle={toggle}
+            mapExpected={itinerary.maps.include_in_render}
           />
         ))}
       </div>
