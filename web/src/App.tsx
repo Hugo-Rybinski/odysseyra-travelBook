@@ -56,9 +56,18 @@ export function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  // The editable input-JSON draft (Edit tab). Seeded from the opened file; there
-  // is no Apply/Save wiring yet (P3/P4), so edits don't feed the viewer or export.
+  // The editable input-JSON draft (Edit tab). Seeded from the opened file, then
+  // pushed into the viewer/findings/export on demand via the Apply button (P3);
+  // there is no Save-to-file yet (P4).
   const [draft, setDraft] = useState<SrcItinerary | null>(null);
+  // Draft has edits not yet applied to the rendered viewer/export.
+  const [dirty, setDirty] = useState(false);
+  const [applying, setApplying] = useState(false);
+  // After a plain Apply we carry the previously-rendered day maps over rather
+  // than refetching (editing changes the doc hash → every day misses the cache);
+  // this suppresses the per-day map loaders for days without one, so "Apply"
+  // shows a text-only preview and maps only rebuild via "Apply & redraw maps".
+  const [mapsStale, setMapsStale] = useState(false);
   // Live validation of the draft (P2): findings anchored to fields by path, plus
   // a "rail" of the rest. Recomputed, debounced, whenever the draft changes.
   const [editIndex, setEditIndex] = useState<Map<string, Finding[]>>(new Map());
@@ -192,6 +201,8 @@ export function App() {
         } catch {
           setDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
         }
+        setDirty(false);
+        setMapsStale(false);
         setView("viewer"); // switch to the book once it's on screen
         // Text is on screen now; fetch the per-day maps in the background.
         if (model.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
@@ -262,6 +273,7 @@ export function App() {
     try {
       const hash = await docHash(source.text);
       await invalidateDoc(hash);
+      setMapsStale(false);
       setItinerary((prev) =>
         prev ? { ...prev, days: prev.days.map((d) => ({ ...d, map: undefined })) } : prev,
       );
@@ -272,6 +284,50 @@ export function App() {
       setRedrawing(false);
     }
   }, [source, itinerary, buildDayMaps]);
+
+  // Wrap draft edits so any change marks the draft dirty (drives the Apply
+  // button and the ✏️ tab's unapplied-edits dot).
+  const onEditDraft = useCallback((next: SrcItinerary) => {
+    setDraft(next);
+    setDirty(true);
+  }, []);
+
+  // Apply the draft to the rendered viewer + findings + export source (P3). The
+  // preview refreshes only here, never live-on-keystroke. `redrawMaps` also
+  // rebuilds the per-day maps for the edited document; a plain apply carries the
+  // previously-rendered maps over untouched (see `mapsStale`).
+  const onApply = useCallback(
+    async (redrawMaps: boolean) => {
+      if (!draft) return;
+      setApplying(true);
+      setError(null);
+      try {
+        const { text } = serializeWithPaths(draft);
+        const [model, found] = await Promise.all([resolve(text), validate(text, lang)]);
+        const carried = itinerary
+          ? { ...model, days: model.days.map((d, i) => ({ ...d, map: itinerary.days[i]?.map })) }
+          : model;
+        setItinerary(redrawMaps ? model : carried);
+        setFindings(found);
+        setSource((prev) => (prev ? { ...prev, text } : { name: "edited.json", text, handle: null }));
+        setDirty(false);
+        if (model.maps.include_in_render && redrawMaps) {
+          setMapsStale(false);
+          await buildDayMaps(text, model.days.length, true);
+        } else {
+          // Plain apply (or maps off): don't refetch. Carried maps stay on
+          // screen; suppress loaders for any day without one.
+          setMapsStale(model.maps.include_in_render);
+          mapRunRef.current++; // cancel any in-flight map loop from a prior state
+        }
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setApplying(false);
+      }
+    },
+    [draft, lang, itinerary, buildDayMaps],
+  );
 
   // Re-validate (in the chosen language) when the language changes.
   const onToggleLang = useCallback(
@@ -328,6 +384,12 @@ export function App() {
             data-tip={draft ? undefined : "Open an itinerary first"}
           >
             ✏️ Edit
+            {dirty && (
+              <span className="dirty-dot" aria-label="unapplied edits" title="Unapplied edits">
+                {" "}
+                ●
+              </span>
+            )}
           </button>
         </div>
       </header>
@@ -372,18 +434,29 @@ export function App() {
       ) : view === "edit" && draft ? (
         <EditPanel
           draft={draft}
-          onChange={setDraft}
+          onChange={onEditDraft}
           findingIndex={editIndex}
           rail={editRail}
           validating={editValidating}
           validationError={editError}
+          dirty={dirty}
+          applying={applying}
+          engineReady={engineReady}
+          mapsInRender={!!draft.defaults?.include_maps_in_render}
+          onApply={() => onApply(false)}
+          onApplyRedraw={() => onApply(true)}
         />
       ) : itinerary ? (
         <section className="report">
           <p className="report-caption">
             {source?.name && <span className="filename">{source.name}</span>}
           </p>
-          <Book itinerary={itinerary} lang={lang} interactiveMaps={interactiveMaps} />
+          <Book
+            itinerary={itinerary}
+            lang={lang}
+            interactiveMaps={interactiveMaps}
+            showMapLoaders={!mapsStale}
+          />
         </section>
       ) : (
         !error && (

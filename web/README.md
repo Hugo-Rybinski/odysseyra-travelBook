@@ -210,20 +210,25 @@ README schema tables). It is being built in phases — see
 - **P1:** the form surface — every object/field, grouped in collapsible sections,
   with add/remove/reorder for days, activities (incl. one level of nesting),
   transport, accommodations, car rentals, waypoints and secondary currencies.
-- **P2 (current):** live validation. The draft is serialized (with a line→path
-  map) and re-validated as you type (debounced); each finding is anchored
-  **inline on its field** (the input is flagged, with the message beneath) by
-  translating the validator's line number → field path. Findings that don't map
-  to a field — cross-object coherence warnings, missing-required, "optional
-  missing" info — collect in a filterable rail at the top so nothing is dropped.
+- **P2:** live validation. The draft is serialized (with a line→path map) and
+  re-validated as you type (debounced); each finding is anchored **inline on its
+  field** (the input is flagged, with the message beneath) by translating the
+  validator's line number → field path. Findings that don't map to a field —
+  cross-object coherence warnings, missing-required, "optional missing" info —
+  collect in a filterable rail at the top so nothing is dropped.
+- **P3 (current):** an **Apply changes** button pushes the draft into the viewer
+  (`Book`), the Findings tab and the PDF export — the preview refreshes only on
+  Apply, never on keystroke. The button is disabled until there are unapplied
+  edits (a dot on the ✏️ tab marks them). Maps aren't refetched on a plain Apply
+  (the previously-rendered ones are carried over); a separate **Apply & redraw
+  maps** rebuilds them.
 
-Edits still update an in-memory draft only: the **Apply**-button preview (P3) and
-save/export (P4) land in later phases, so edits don't yet feed the viewer or the
-export.
+Edits update an in-memory draft that you Apply to preview; **saving back to the
+file (P4)** is still to come.
 
-Next up: P3 the Apply-button preview; then save/export, editing helpers and undo.
-Separately, moving Pyodide into a Web Worker so the first map render doesn't block
-the main thread.
+Next up: P4 save/export to the file; then editing helpers and undo. Separately,
+moving Pyodide into a Web Worker so the first map render doesn't block the main
+thread.
 
 ## Layout
 

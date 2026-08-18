@@ -110,7 +110,17 @@ structural/coherence/missing findings fall to the rail.
 - Hard-block only on unparseable serialization (shouldn't happen from a form, but
   guard anyway).
 
-### P3 — Preview (§3)
+### P3 — Preview (§3) ✅ done
+
+Implemented: the Edit tab has an **Apply changes** button (disabled unless the
+draft is dirty) that serializes the draft, `resolve()`s + `validate()`s it, and
+pushes the result into the viewer (`Book`), the Findings tab, and the export
+source — the preview refreshes only here, never on keystroke. A dirty dot marks
+the ✏️ tab. Maps: a plain Apply carries the previously-rendered day maps over
+untouched (a `mapsStale` flag suppresses per-day loaders for days without one),
+and a separate **Apply & redraw maps** rebuilds them via `buildDayMaps(force)`.
+Round-trip verified: serialize→resolve of `pyrenees.json` validates and builds
+identically to the original.
 
 - **Explicit "Apply" button** (decided — not live-on-keystroke). Clicking Apply
   serializes the draft, runs `resolve(serialize(draft))` and feeds the existing

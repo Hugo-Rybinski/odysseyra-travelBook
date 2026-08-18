@@ -1360,3 +1360,28 @@ textarea.edit-input {
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+/* P3: the Apply action bar at the top of the Edit tab */
+.edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.edit-dirty {
+  font-size: 0.78rem;
+  color: #8a5d00;
+}
+/* the unapplied-edits dot on the ✏️ Edit tab */
+.dirty-dot {
+  font-size: 0.7em;
+  vertical-align: middle;
+  color: #ffd479;
+}
+.btn.ghost.active .dirty-dot {
+  color: #b26a00;
+}

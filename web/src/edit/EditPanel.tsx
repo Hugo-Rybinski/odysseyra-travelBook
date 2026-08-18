@@ -33,6 +33,13 @@ export interface EditPanelProps {
   rail: Finding[];
   validating: boolean;
   validationError: string | null;
+  // Apply (P3): push the draft into the viewer/findings/export.
+  dirty: boolean;
+  applying: boolean;
+  engineReady: boolean;
+  mapsInRender: boolean;
+  onApply: () => void;
+  onApplyRedraw: () => void;
 }
 
 export function EditPanel({
@@ -42,6 +49,12 @@ export function EditPanel({
   rail,
   validating,
   validationError,
+  dirty,
+  applying,
+  engineReady,
+  mapsInRender,
+  onApply,
+  onApplyRedraw,
 }: EditPanelProps) {
   const days = draft.days ?? [];
   const transport = draft.transport ?? [];
@@ -51,6 +64,31 @@ export function EditPanel({
   return (
     <EditFindingsContext.Provider value={findingIndex}>
       <div className="edit-panel" role="region" aria-label="Edit itinerary">
+        <div className="edit-actions">
+          <button
+            className="btn"
+            onClick={onApply}
+            disabled={!dirty || applying || !engineReady}
+          >
+            {applying ? "Applying…" : dirty ? "Apply changes" : "Applied ✓"}
+          </button>
+          {mapsInRender && (
+            <button
+              className="btn subtle"
+              onClick={onApplyRedraw}
+              disabled={applying || !engineReady}
+              data-tip="Apply the draft and rebuild this itinerary's maps"
+            >
+              Apply &amp; redraw maps
+            </button>
+          )}
+          {dirty && (
+            <span className="edit-dirty">
+              Unapplied edits — the viewer and export still show the last applied version.
+            </span>
+          )}
+        </div>
+
         <EditStatus rail={rail} validating={validating} validationError={validationError} />
 
         <details className="edit-section" open>
