@@ -40,13 +40,139 @@ body {
   flex: 1;
 }
 
-.tag {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 3px 8px;
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn.ghost {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.lang {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.lang-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.lang-btn.active {
+  background: #fff;
+  color: var(--accent);
+}
+
+.engine {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.engine.ok {
+  color: #1c7c4a;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 72px 16px;
+}
+.empty-state .book-mark {
+  font-size: 2.6rem;
+}
+.empty-state h2 {
+  margin: 12px 0 6px;
+  color: var(--fg);
+}
+.empty-state p {
+  max-width: 42ch;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+.empty-state small {
+  display: block;
+  margin-top: 16px;
+}
+
+.filename {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0 0 6px;
+  font-variant-numeric: tabular-nums;
+}
+.note {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.findings-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.findings-head h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 0.95rem;
+}
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--fg);
+  cursor: pointer;
+}
+.chip.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.findings li.empty {
+  display: block;
+  color: var(--muted);
+  background: transparent;
+  padding: 12px 2px;
 }
 
 .banner {

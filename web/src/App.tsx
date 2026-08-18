@@ -1,86 +1,174 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { boot, resolve, validate, type BootProgress } from "./pyodide/runtime";
-import type { Finding, FindingLevel, Itinerary } from "./types/resolved";
+import {
+  loadLastHandle,
+  openFile,
+  rememberHandle,
+  reopenHandle,
+  type OpenedFile,
+} from "./file/openFile";
+import { FindingsPanel } from "./findings/FindingsPanel";
+import type { Finding, Itinerary } from "./types/resolved";
 
-// Phase 1 smoke: boot Pyodide, then validate + resolve a bundled sample and show
-// that the whole toolchain works end-to-end (title, day count, date range, and
-// the findings the validator reports). The real file-open flow and findings
-// panel arrive in Phase 2; full rendering in Phase 3.
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
 
 const STAGE_LABEL: Record<BootProgress["stage"], string> = {
   idle: "Starting…",
-  "loading-runtime": "Loading Python runtime (Pyodide)…",
+  "loading-runtime": "Loading Python runtime…",
   "installing-packages": "Installing packages…",
   "installing-travelbook": "Installing travelbook…",
   ready: "Ready",
-  error: "Failed to start",
+  error: "Engine failed to start",
 };
 
-const LEVEL_ICON: Record<FindingLevel, string> = {
-  error: "❌",
-  warning: "⚠️",
-  info: "ℹ️",
-};
+type Lang = "en" | "fr";
+
+// A loaded source: its name, raw text, and (if opened via the FS Access API) a
+// handle we can re-read later. `handle` shape is opaque here.
+type Source = OpenedFile;
 
 export function App() {
   const [progress, setProgress] = useState<BootProgress>({ stage: "idle" });
+  const [lang, setLang] = useState<Lang>("en");
+  const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canReopen, setCanReopen] = useState(false);
 
+  const engineReady = progress.stage === "ready";
+
+  // Warm the engine on mount, and see whether a previous file can be reopened.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await boot((p) => !cancelled && setProgress(p));
-        console.info("[app] boot done; fetching sample + resolving/validating…");
-        const text = await (await fetch(SAMPLE)).text();
-        const [model, found] = await Promise.all([resolve(text), validate(text)]);
-        console.info("[app] resolved:", model.title, "| findings:", found.length);
-        if (cancelled) return;
-        setItinerary(model);
-        setFindings(found);
-      } catch (e) {
-        console.error("[app] boot/resolve failed:", e);
-        if (!cancelled) setError(String(e));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    boot(setProgress).catch((e) => setError(String(e)));
+    loadLastHandle().then((h) => setCanReopen(!!h));
   }, []);
 
-  const counts = useMemo(() => {
-    const c: Record<FindingLevel, number> = { error: 0, warning: 0, info: 0 };
-    for (const f of findings) c[f.level]++;
-    return c;
-  }, [findings]);
+  // Resolve + validate a freshly opened source.
+  const analyze = useCallback(
+    async (src: Source) => {
+      setBusy(true);
+      setError(null);
+      try {
+        await boot(setProgress);
+        const [model, found] = await Promise.all([
+          resolve(src.text),
+          validate(src.text, lang),
+        ]);
+        setSource(src);
+        setItinerary(model);
+        setFindings(found);
+        await rememberHandle(src.handle);
+        setCanReopen(!!src.handle || canReopen);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [lang, canReopen],
+  );
 
-  // Render the report as soon as the model is resolved; `progress` only drives
-  // the loading label (its stage may lag under StrictMode's double-invoked boot).
-  const ready = itinerary !== null;
+  const onOpen = useCallback(async () => {
+    try {
+      const opened = await openFile();
+      if (opened) await analyze(opened);
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [analyze]);
+
+  const onOpenSample = useCallback(async () => {
+    try {
+      const text = await (await fetch(SAMPLE)).text();
+      await analyze({ name: "pyrenees.json", text, handle: null });
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [analyze]);
+
+  const onReopen = useCallback(async () => {
+    try {
+      const h = await loadLastHandle();
+      if (!h) return setCanReopen(false);
+      const opened = await reopenHandle(h);
+      if (opened) await analyze(opened);
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [analyze]);
+
+  // Re-validate (in the chosen language) when the language changes.
+  const onToggleLang = useCallback(
+    async (next: Lang) => {
+      setLang(next);
+      if (!source) return;
+      try {
+        setFindings(await validate(source.text, next));
+      } catch (e) {
+        setError(String(e));
+      }
+    },
+    [source],
+  );
 
   return (
     <main className="shell">
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
         <h1>Travelbook Viewer</h1>
-        <span className="tag">Phase 1 · smoke</span>
+        <div className="actions">
+          <button className="btn" onClick={onOpen} disabled={busy}>
+            Open JSON…
+          </button>
+          {canReopen && (
+            <button className="btn ghost" onClick={onReopen} disabled={busy}>
+              Reopen last
+            </button>
+          )}
+          <button className="btn ghost" onClick={onOpenSample} disabled={busy}>
+            Sample
+          </button>
+          <div className="lang" role="group" aria-label="Language">
+            {(["en", "fr"] as Lang[]).map((l) => (
+              <button
+                key={l}
+                className={`lang-btn ${lang === l ? "active" : ""}`}
+                onClick={() => onToggleLang(l)}
+                aria-pressed={lang === l}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
       </header>
+
+      <p className={`engine ${engineReady ? "ok" : ""}`}>
+        {engineReady ? "● Engine ready" : `◌ ${STAGE_LABEL[progress.stage]}`}
+        {busy && " · working…"}
+      </p>
 
       {error && <p className="banner error">⚠️ {error}</p>}
 
-      {!ready && !error && (
-        <section className="boot">
-          <div className="spinner" aria-hidden />
-          <p>{STAGE_LABEL[progress.stage]}</p>
-          {progress.detail && <small>{progress.detail}</small>}
+      {!itinerary && !error && (
+        <section className="empty-state">
+          <div className="book-mark" aria-hidden>
+            📖
+          </div>
+          <h2>Open an itinerary</h2>
+          <p>
+            Choose a travelbook JSON file to render the travel book and see its
+            validation findings. Everything stays on your device.
+          </p>
+          {!engineReady && <small>The engine is still warming up…</small>}
         </section>
       )}
 
-      {ready && itinerary && (
+      {itinerary && (
         <section className="report">
           <div className="cover-preview">
+            <p className="filename">{source?.name}</p>
             <h2>{itinerary.title}</h2>
             {itinerary.subtitle && <p className="subtitle">{itinerary.subtitle}</p>}
             <p className="meta">
@@ -88,24 +176,13 @@ export function App() {
               {itinerary.default_currency}
             </p>
             {itinerary.summary && <p className="summary">{itinerary.summary}</p>}
+            <p className="note">
+              Full day-by-day rendering arrives in Phase 3. For now this confirms
+              the file resolves and lists every finding below.
+            </p>
           </div>
 
-          <div className="findings">
-            <h3>
-              Findings — {LEVEL_ICON.error} {counts.error} · {LEVEL_ICON.warning}{" "}
-              {counts.warning} · {LEVEL_ICON.info} {counts.info}
-            </h3>
-            <ul>
-              {findings.map((f, i) => (
-                <li key={i} className={f.level}>
-                  <span className="icon">{LEVEL_ICON[f.level]}</span>
-                  <span className="line">line {f.line ?? "?"}</span>
-                  <span className="msg">{f.message}</span>
-                </li>
-              ))}
-              {findings.length === 0 && <li className="info">No findings 🎉</li>}
-            </ul>
-          </div>
+          <FindingsPanel findings={findings} />
         </section>
       )}
     </main>
