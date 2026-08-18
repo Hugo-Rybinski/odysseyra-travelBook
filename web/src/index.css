@@ -1306,3 +1306,57 @@ textarea.edit-input {
   color: var(--accent);
   border-color: transparent;
 }
+
+/* ---------------------------------------------- P2: inline findings + rail */
+/* a field wraps its control + any findings anchored to that field's path */
+.edit-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.edit-field-wrap.has-error .edit-input,
+.edit-field-wrap.has-error .edit-color input[type="color"] {
+  border-color: #c0392b;
+}
+.edit-field-wrap.has-warning .edit-input,
+.edit-field-wrap.has-warning .edit-color input[type="color"] {
+  border-color: #d08b00;
+}
+.edit-field-wrap.has-error .edit-field-label,
+.edit-field-wrap.has-warning .edit-field-label {
+  color: var(--fg);
+}
+
+.field-findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.field-findings .ff {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.field-findings .ff.error {
+  color: #b23225;
+}
+.field-findings .ff.warning {
+  color: #8a5d00;
+}
+.field-findings .ff.info {
+  color: var(--muted);
+}
+
+/* header strip: validating note, error banner, and the non-anchored rail
+   (the rail itself reuses .findings styling via <FindingsPanel>) */
+.edit-status {
+  display: grid;
+  gap: 8px;
+}
+.edit-validating {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

@@ -7,17 +7,22 @@ type Rec = Record<string, unknown>;
 
 export interface AccommodationFormProps {
   value: SrcAccommodation;
+  path: string;
   onChange: (next: SrcAccommodation) => void;
 }
 
-export function AccommodationForm({ value, onChange }: AccommodationFormProps) {
+export function AccommodationForm({ value, path, onChange }: AccommodationFormProps) {
   const rec = value as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcAccommodation);
 
   return (
     <div className="accommodation-form">
-      <FieldList specs={ACCOMMODATION_FIELDS} value={rec} onChange={set} />
-      <CoordinateField value={value.coordinate} onChange={(c) => set({ ...rec, coordinate: c })} />
+      <FieldList specs={ACCOMMODATION_FIELDS} value={rec} path={path} onChange={set} />
+      <CoordinateField
+        path={`${path}.coordinate`}
+        value={value.coordinate}
+        onChange={(c) => set({ ...rec, coordinate: c })}
+      />
     </div>
   );
 }

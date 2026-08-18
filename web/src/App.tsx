@@ -26,7 +26,8 @@ import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import { Options } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
-import { jsonToDraft } from "./edit/serialize";
+import { jsonToDraft, serializeWithPaths } from "./edit/serialize";
+import { buildFindingIndex, collectFieldPaths } from "./edit/findings";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
 import type { Day, Finding, Itinerary } from "./types/resolved";
@@ -55,9 +56,15 @@ export function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  // The editable input-JSON draft (Edit tab). Seeded from the opened file; P1
-  // has no Apply/Save wiring yet, so edits don't feed the viewer or export.
+  // The editable input-JSON draft (Edit tab). Seeded from the opened file; there
+  // is no Apply/Save wiring yet (P3/P4), so edits don't feed the viewer or export.
   const [draft, setDraft] = useState<SrcItinerary | null>(null);
+  // Live validation of the draft (P2): findings anchored to fields by path, plus
+  // a "rail" of the rest. Recomputed, debounced, whenever the draft changes.
+  const [editIndex, setEditIndex] = useState<Map<string, Finding[]>>(new Map());
+  const [editRail, setEditRail] = useState<Finding[]>([]);
+  const [editValidating, setEditValidating] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +143,35 @@ export function App() {
   useEffect(() => {
     if (itinerary) setMapsExport(itinerary.maps.include_in_render);
   }, [itinerary]);
+
+  // Live-validate the draft (debounced): serialize with a line→path map, run the
+  // validator over that exact text, then split findings into field-anchored
+  // (by path) and rail. Skips until the engine is ready; a validate failure
+  // surfaces as an error banner in the Edit tab rather than breaking it.
+  useEffect(() => {
+    if (!draft || !engineReady) return;
+    let cancelled = false;
+    setEditValidating(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { text, pathByLine } = serializeWithPaths(draft);
+        const found = await validate(text, lang);
+        if (cancelled) return;
+        const { byPath, rail } = buildFindingIndex(found, pathByLine, collectFieldPaths(draft));
+        setEditIndex(byPath);
+        setEditRail(rail);
+        setEditError(null);
+      } catch (e) {
+        if (!cancelled) setEditError(String(e));
+      } finally {
+        if (!cancelled) setEditValidating(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [draft, lang, engineReady]);
 
   // Resolve + validate a freshly opened source.
   const analyze = useCallback(
@@ -334,7 +370,14 @@ export function App() {
       ) : view === "findings" && itinerary ? (
         <FindingsPanel findings={findings} />
       ) : view === "edit" && draft ? (
-        <EditPanel draft={draft} onChange={setDraft} />
+        <EditPanel
+          draft={draft}
+          onChange={setDraft}
+          findingIndex={editIndex}
+          rail={editRail}
+          validating={editValidating}
+          validationError={editError}
+        />
       ) : itinerary ? (
         <section className="report">
           <p className="report-caption">

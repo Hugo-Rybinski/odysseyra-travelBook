@@ -11,7 +11,13 @@ const LEVEL_ORDER: FindingLevel[] = ["error", "warning", "info"];
 
 type Filter = "all" | FindingLevel;
 
-export function FindingsPanel({ findings }: { findings: Finding[] }) {
+export function FindingsPanel({
+  findings,
+  title = "Validation",
+}: {
+  findings: Finding[];
+  title?: string;
+}) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const counts = useMemo(() => {
@@ -39,7 +45,7 @@ export function FindingsPanel({ findings }: { findings: Finding[] }) {
   return (
     <section className="findings" aria-label="Validation findings">
       <div className="findings-head">
-        <h3>Validation</h3>
+        <h3>{title}</h3>
         <div className="chips" role="tablist">
           {chips.map((c) => (
             <button

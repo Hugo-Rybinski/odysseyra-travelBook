@@ -81,7 +81,16 @@ text) is the seam; nothing in Python changes.
   enum pickers.
 - No preview yet — just bind to draft.
 
-### P2 — Live validation (§2)
+### P2 — Live validation (§2) ✅ done
+
+Implemented: `serialize.ts` `serializeWithPaths` emits the text + a 1-based
+line→dot-path map; App re-validates the draft debounced (400 ms) once the engine
+is ready; `edit/findings.ts` builds a `path → Finding[]` index (via
+`collectFieldPaths`, which mirrors the form tree) and a rail of the rest;
+`FieldRow`/`CoordinateField` read the index from context and render marks inline;
+the rail reuses `FindingsPanel` (level filter). Verified end-to-end against
+`examples/broken.json`: invalid-value errors anchor to their exact fields;
+structural/coherence/missing findings fall to the rail.
 
 - Debounced `validate(serialize(draft), lang)` → live finding count on the
   Edit/Findings tab.

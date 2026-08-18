@@ -55,6 +55,7 @@ function changeType(prev: SrcActivity, type: SrcActivityType): SrcActivity {
 
 export interface ActivityFormProps {
   activity: SrcActivity;
+  path: string;
   onChange: (next: SrcActivity) => void;
   // Which types this slot may hold (top level: all six; nested varies).
   allowedTypes: readonly SrcActivityType[];
@@ -62,7 +63,7 @@ export interface ActivityFormProps {
   allowNesting: boolean;
 }
 
-export function ActivityForm({ activity, onChange, allowedTypes, allowNesting }: ActivityFormProps) {
+export function ActivityForm({ activity, path, onChange, allowedTypes, allowNesting }: ActivityFormProps) {
   const type = activity.type;
   const rec = activity as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcActivity);
@@ -94,10 +95,11 @@ export function ActivityForm({ activity, onChange, allowedTypes, allowNesting }:
         </select>
       </label>
 
-      <FieldList specs={specs} value={rec} onChange={set} />
+      <FieldList specs={specs} value={rec} path={path} onChange={set} />
 
       {type !== "buffer" && (
         <CoordinateField
+          path={`${path}.coordinate`}
           value={activity.coordinate}
           onChange={(c) => set({ ...rec, coordinate: c })}
         />
@@ -109,17 +111,20 @@ export function ActivityForm({ activity, onChange, allowedTypes, allowNesting }:
           <ArrayEditor<SrcWaypoint>
             items={activity.waypoints ?? []}
             onChange={(wp) => set({ ...rec, waypoints: wp })}
+            basePath={`${path}.waypoints`}
             itemTitle={(w, i) => w.location || `Waypoint ${i + 1}`}
             add={[{ label: "waypoint", make: newWaypoint }]}
             emptyLabel="No waypoints — a road needs at least one (the arrival)."
-            renderItem={(w, _i, onItemChange) => (
+            renderItem={(w, _i, onItemChange, itemPath) => (
               <>
                 <FieldList
                   specs={WAYPOINT_FIELDS}
                   value={w as unknown as Rec}
+                  path={itemPath}
                   onChange={(next) => onItemChange(next as unknown as SrcWaypoint)}
                 />
                 <CoordinateField
+                  path={`${itemPath}.coordinate`}
                   value={w.coordinate}
                   onChange={(c: SrcCoordinate | undefined) => onItemChange({ ...w, coordinate: c })}
                 />
@@ -135,15 +140,17 @@ export function ActivityForm({ activity, onChange, allowedTypes, allowNesting }:
           <ArrayEditor<SrcActivity>
             items={(rec.activities as SrcActivity[] | undefined) ?? []}
             onChange={(acts) => set({ ...rec, activities: acts })}
+            basePath={`${path}.activities`}
             itemTitle={activityTitle}
             add={nestedTypes.map((t) => ({
               label: ACTIVITY_TYPE_LABELS[t].toLowerCase(),
               make: () => newActivity(t),
             }))}
             emptyLabel="No nested activities."
-            renderItem={(a, _i, onItemChange) => (
+            renderItem={(a, _i, onItemChange, itemPath) => (
               <ActivityForm
                 activity={a}
+                path={itemPath}
                 onChange={onItemChange}
                 allowedTypes={nestedTypes}
                 allowNesting={false}

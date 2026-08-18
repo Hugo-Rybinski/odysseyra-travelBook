@@ -12,15 +12,18 @@ type Rec = Record<string, unknown>;
 
 export function TravelDescriptionForm({
   value,
+  path,
   onChange,
 }: {
   value: SrcTravelDescription;
+  path: string;
   onChange: (next: SrcTravelDescription) => void;
 }) {
   return (
     <FieldList
       specs={TRAVEL_DESCRIPTION_FIELDS}
       value={value as unknown as Rec}
+      path={path}
       onChange={(next) => onChange(next as unknown as SrcTravelDescription)}
     />
   );
@@ -28,9 +31,11 @@ export function TravelDescriptionForm({
 
 export function DefaultsForm({
   value,
+  path,
   onChange,
 }: {
   value: SrcDefaults;
+  path: string;
   onChange: (next: SrcDefaults) => void;
 }) {
   const rec = value as unknown as Rec;
@@ -38,20 +43,22 @@ export function DefaultsForm({
 
   return (
     <div className="defaults-form">
-      <FieldList specs={DEFAULTS_FIELDS} value={rec} onChange={set} />
+      <FieldList specs={DEFAULTS_FIELDS} value={rec} path={path} onChange={set} />
 
       <section className="sub-array">
         <h4>Secondary currencies</h4>
         <ArrayEditor<SrcSecondaryCurrency>
           items={value.secondary_currencies ?? []}
           onChange={(list) => set({ ...rec, secondary_currencies: list })}
+          basePath={`${path}.secondary_currencies`}
           itemTitle={(c, i) => c.currency || `Currency ${i + 1}`}
           add={[{ label: "currency", make: newSecondaryCurrency }]}
           emptyLabel="No secondary currencies."
-          renderItem={(c, _i, onItemChange) => (
+          renderItem={(c, _i, onItemChange, itemPath) => (
             <FieldList
               specs={SECONDARY_CURRENCY_FIELDS}
               value={c as unknown as Rec}
+              path={itemPath}
               onChange={(next) => onItemChange(next as unknown as SrcSecondaryCurrency)}
             />
           )}

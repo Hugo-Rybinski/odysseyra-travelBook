@@ -12,8 +12,11 @@ export interface AddOption<T> {
 export interface ArrayEditorProps<T> {
   items: T[];
   onChange: (next: T[]) => void;
+  // Dot-path of the array itself; each item's path is `${basePath}.${index}`,
+  // passed to renderItem so nested fields can anchor validation findings.
+  basePath: string;
   itemTitle: (item: T, index: number) => string;
-  renderItem: (item: T, index: number, onItemChange: (next: T) => void) => ReactNode;
+  renderItem: (item: T, index: number, onItemChange: (next: T) => void, path: string) => ReactNode;
   add: AddOption<T>[];
   emptyLabel?: string;
   className?: string;
@@ -22,6 +25,7 @@ export interface ArrayEditorProps<T> {
 export function ArrayEditor<T>({
   items,
   onChange,
+  basePath,
   itemTitle,
   renderItem,
   add,
@@ -101,7 +105,9 @@ export function ArrayEditor<T>({
               </button>
             </span>
           </summary>
-          <div className="array-item-body">{renderItem(item, i, (next) => replaceAt(i, next))}</div>
+          <div className="array-item-body">
+            {renderItem(item, i, (next) => replaceAt(i, next), `${basePath}.${i}`)}
+          </div>
         </details>
       ))}
 

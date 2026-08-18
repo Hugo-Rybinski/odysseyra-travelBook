@@ -1,5 +1,7 @@
 import { useId } from "react";
 import type { FieldSpec } from "../schema";
+import { useFieldFindings, worstLevel } from "../findings";
+import { FieldFindings } from "./FieldFindings";
 
 // Renders one registry field as a labelled control. The value is whatever the
 // draft holds for that key (string | number | boolean | string[] | undefined);
@@ -12,11 +14,14 @@ import type { FieldSpec } from "../schema";
 export interface FieldRowProps {
   spec: FieldSpec;
   value: unknown;
+  path: string; // this field's dot-path, for anchoring validation findings
   onChange: (v: string | number | boolean | string[] | undefined) => void;
 }
 
-export function FieldRow({ spec, value, onChange }: FieldRowProps) {
+export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   const id = useId();
+  const findings = useFieldFindings(path);
+  const level = worstLevel(findings);
   const label = (
     <span className="edit-field-label">
       {spec.label}
@@ -29,26 +34,34 @@ export function FieldRow({ spec, value, onChange }: FieldRowProps) {
     </span>
   );
 
+  const levelClass = level ? `has-${level}` : "";
+
   // Checkboxes read best with the label to the right of the box.
   if (spec.kind === "bool") {
     return (
-      <label className="edit-field edit-field-bool" htmlFor={id}>
-        <input
-          id={id}
-          type="checkbox"
-          checked={value === true}
-          onChange={(e) => onChange(e.target.checked ? true : undefined)}
-        />
-        {label}
-      </label>
+      <div className={`edit-field-wrap ${levelClass}`}>
+        <label className="edit-field edit-field-bool" htmlFor={id}>
+          <input
+            id={id}
+            type="checkbox"
+            checked={value === true}
+            onChange={(e) => onChange(e.target.checked ? true : undefined)}
+          />
+          {label}
+        </label>
+        <FieldFindings path={path} />
+      </div>
     );
   }
 
   return (
-    <label className="edit-field" htmlFor={id}>
-      {label}
-      {renderControl(id, spec, value, onChange)}
-    </label>
+    <div className={`edit-field-wrap ${levelClass}`}>
+      <label className="edit-field" htmlFor={id}>
+        {label}
+        {renderControl(id, spec, value, onChange)}
+      </label>
+      <FieldFindings path={path} />
+    </div>
   );
 }
 

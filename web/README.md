@@ -205,17 +205,25 @@ the itinerary opts out of maps, the browser hasn't offered an install prompt…)
 The **✏️ Edit** tab is a structured/form editor over the *input* JSON
 (`src/edit/`, driven by a field registry in `src/edit/schema.ts` that mirrors the
 README schema tables). It is being built in phases — see
-[`../docs/edit-tab-plan.md`](../docs/edit-tab-plan.md). **P1 (current):** the form
-surface — every object/field, grouped in collapsible sections, with add/remove/
-reorder for days, activities (incl. one level of nesting), transport,
-accommodations, car rentals, waypoints and secondary currencies. Edits update an
-in-memory draft; live validation, an **Apply**-button preview, and save/export
-land in later phases, so P1 edits don't yet feed the viewer or the export.
+[`../docs/edit-tab-plan.md`](../docs/edit-tab-plan.md).
 
-Next up: P2 live validation (findings anchored inline on fields) and P3 the
-Apply-button preview; then save/export, editing helpers and undo. Separately,
-moving Pyodide into a Web Worker so the first map render doesn't block the main
-thread.
+- **P1:** the form surface — every object/field, grouped in collapsible sections,
+  with add/remove/reorder for days, activities (incl. one level of nesting),
+  transport, accommodations, car rentals, waypoints and secondary currencies.
+- **P2 (current):** live validation. The draft is serialized (with a line→path
+  map) and re-validated as you type (debounced); each finding is anchored
+  **inline on its field** (the input is flagged, with the message beneath) by
+  translating the validator's line number → field path. Findings that don't map
+  to a field — cross-object coherence warnings, missing-required, "optional
+  missing" info — collect in a filterable rail at the top so nothing is dropped.
+
+Edits still update an in-memory draft only: the **Apply**-button preview (P3) and
+save/export (P4) land in later phases, so edits don't yet feed the viewer or the
+export.
+
+Next up: P3 the Apply-button preview; then save/export, editing helpers and undo.
+Separately, moving Pyodide into a Web Worker so the first map render doesn't block
+the main thread.
 
 ## Layout
 
@@ -230,8 +238,9 @@ src/
   edit/                    the ✏️ Edit tab: form editor over the input JSON
     schema.ts              field registry (mirrors the README schema tables)
     EditPanel.tsx          stacked collapsible sections (config + content arrays)
-    serialize.ts           jsonToDraft / draftToJson (draft <-> text)
-    fields/                FieldRow/FieldList, ArrayEditor, CoordinateField
+    serialize.ts           jsonToDraft / serializeWithPaths (text + line→path map)
+    findings.ts            finding index (line→path), context, collectFieldPaths
+    fields/                FieldRow/FieldList/FieldFindings, ArrayEditor, CoordinateField
     forms/                 per-object forms (day, activity, transport, …)
   types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)
   index.css
