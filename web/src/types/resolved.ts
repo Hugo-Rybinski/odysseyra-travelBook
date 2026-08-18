@@ -181,6 +181,7 @@ export interface Day {
   transports: Transport[];
   car_events: CarEvent[];
   stay: Accommodation | null;
+  stay_night: number | null; // 1-based night index within the stay
   night_transport: Transport | null;
   sleep_city: string;
 }

@@ -19,5 +19,7 @@ export function Price({ price, lang }: { price: Money | null; lang: Lang }) {
 
 export function Status({ status, lang }: { status: string; lang: Lang }) {
   if (status !== "booked" && status !== "confirmed") return null;
-  return <span className={`chip status ${status}`}>{tr(lang, status)}</span>;
+  // Confirmed is emphasized (filled); booked is de-emphasized (outline).
+  const emphasis = status === "confirmed" ? "filled" : "outline";
+  return <span className={`chip status ${emphasis}`}>{tr(lang, status)}</span>;
 }

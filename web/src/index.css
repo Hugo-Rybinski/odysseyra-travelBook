@@ -450,6 +450,16 @@ body {
 .overview td.sleep {
   white-space: nowrap;
 }
+.overview tr.row-link {
+  cursor: pointer;
+}
+.overview tr.row-link:hover td {
+  background: var(--accent-soft);
+}
+.overview tr.row-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
 
 /* days */
 .days {
@@ -464,12 +474,27 @@ body {
 }
 .day-band {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
   background: var(--accent);
   color: var(--on-accent);
   padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+}
+.day-band:hover {
+  filter: brightness(1.06);
+}
+.day-band:focus-visible {
+  outline: 2px solid var(--on-accent);
+  outline-offset: -3px;
+}
+.day-caret {
+  font-size: 1.5rem;
+  line-height: 1;
+  opacity: 0.9;
+  align-self: center;
 }
 .day-num {
   font-weight: 700;
@@ -573,6 +598,68 @@ body {
   margin: 0;
   color: var(--muted);
 }
+.chips-line {
+  margin: 3px 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.chips-line.accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+.act-details .trail {
+  margin: 3px 0 0;
+  color: var(--muted);
+}
+
+/* inline external-link rows (Navigate / Website / Reservation) */
+.link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 5px 0 0;
+}
+.link-row .link,
+.link {
+  color: var(--accent);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+.link-row .link:hover,
+.link:hover {
+  text-decoration: underline;
+}
+.nav-inline {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* road VIA breakdown */
+.via {
+  margin: 7px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-soft);
+}
+.via-head {
+  margin: 0 0 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.via-leg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0 0 2px;
+  font-size: 0.82rem;
+}
+.via-route {
+  color: var(--fg);
+}
+.via-meta {
+  color: var(--muted);
+}
 .act-details .desc {
   margin: 4px 0 0;
   line-height: 1.45;
@@ -611,6 +698,33 @@ body {
 .stay-bar.none {
   color: var(--muted);
 }
+.stay-line {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.stay-progress {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.stay-sub {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.stay-bar .link-row {
+  margin-top: 6px;
+}
+.stay-bar .link {
+  color: var(--accent-dark);
+}
+.act-title .chip {
+  margin-left: 8px;
+  vertical-align: middle;
+}
 
 /* transport + accommodation sections */
 .section {
@@ -647,6 +761,12 @@ body {
   font-weight: 600;
   flex: 1;
 }
+.card-info {
+  margin: 8px 0 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--accent);
+}
 .card-meta {
   display: flex;
   flex-direction: column;
@@ -654,6 +774,9 @@ body {
   margin: 8px 0 0;
   font-size: 0.84rem;
   color: var(--muted);
+}
+.card .link-row {
+  margin-top: 8px;
 }
 .card-addr {
   margin: 6px 0 0;
@@ -684,12 +807,15 @@ body {
 }
 .chip.paid,
 .chip.topay,
-.chip.status {
+.chip.status,
+.chip.filled,
+.chip.outline {
   font-size: 0.7rem;
   padding: 2px 8px;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  border: 1px solid transparent;
 }
 .chip.paid {
   background: #e6f5ec;
@@ -699,9 +825,17 @@ body {
   background: #fdeaea;
   color: #a3352b;
 }
-.chip.status {
+/* PDF-style emphasis: filled (solid accent) for confirmed / paid / overnight /
+   off-road; outline (bordered) for booked. */
+.chip.filled {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.chip.outline {
   background: var(--accent-soft);
   color: var(--accent-dark);
+  border-color: var(--accent);
 }
 
 @media (max-width: 480px) {

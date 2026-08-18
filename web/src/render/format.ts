@@ -43,7 +43,7 @@ const LABELS = {
     night: "night",
     tonight: "Tonight",
     aboard: "aboard",
-    freeTime: "Free time",
+    freeTime: "Buffer",
     transport: "Transport",
     accommodation: "Accommodation",
     carRentals: "Car rentals",
@@ -58,6 +58,26 @@ const LABELS = {
     elevation: "elevation",
     distance: "distance",
     offRoad: "off-road",
+    navigate: "Navigate",
+    website: "Website",
+    reservation: "Reservation",
+    via: "Via",
+    includes: "Includes",
+    overnight: "Overnight",
+    onBoard: "on board",
+    bookedVia: "Booked via {source}",
+    ref: "Ref {ref}",
+    driver: "{n} additional driver",
+    drivers: "{n} additional drivers",
+    nightIndex: "Night {n}/{total}",
+    bookedWindow: "Booked {start} → {end}",
+    bookedFrom: "Booked from {start}",
+    contact: "Contact",
+    flight: "Flight {number}",
+    train: "Train {number}",
+    road: "Road",
+    overnightTravel: "Overnight travel",
+    overnightType: "Overnight {type}",
   },
   fr: {
     day: "Jour",
@@ -71,7 +91,7 @@ const LABELS = {
     night: "nuit",
     tonight: "Cette nuit",
     aboard: "à bord",
-    freeTime: "Temps libre",
+    freeTime: "Pause",
     transport: "Transport",
     accommodation: "Hébergement",
     carRentals: "Locations de voiture",
@@ -86,6 +106,26 @@ const LABELS = {
     elevation: "dénivelé",
     distance: "distance",
     offRoad: "hors-piste",
+    navigate: "Y aller",
+    website: "Site web",
+    reservation: "Réservation",
+    via: "Via",
+    includes: "Comprend",
+    overnight: "De nuit",
+    onBoard: "à bord",
+    bookedVia: "Réservé via {source}",
+    ref: "Réf {ref}",
+    driver: "{n} conducteur supplémentaire",
+    drivers: "{n} conducteurs supplémentaires",
+    nightIndex: "Nuit {n}/{total}",
+    bookedWindow: "Réservé {start} → {end}",
+    bookedFrom: "Réservé à partir de {start}",
+    contact: "Contact",
+    flight: "Vol {number}",
+    train: "Train {number}",
+    road: "Route",
+    overnightTravel: "Trajet de nuit",
+    overnightType: "{type} de nuit",
   },
 } as const;
 
@@ -93,4 +133,12 @@ export type LabelKey = keyof (typeof LABELS)["en"];
 
 export function tr(lang: Lang, key: LabelKey): string {
   return LABELS[lang][key];
+}
+
+/** Fill {placeholders} in a label template. */
+export function fill(
+  template: string,
+  vars: Record<string, string | number>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
 }

@@ -47,10 +47,18 @@ def _coord(c) -> dict | None:
     return {"lat": c.lat, "long": c.long, "show_on_map": c.show_on_map}
 
 
-def _tz(offset: int | None) -> dict:
-    """A UTC offset as both integer minutes and a display label (used for the
-    car-rental stamps, whose keys don't collide with anything)."""
-    return {"tz": offset, "tz_label": _format_tz(offset)}
+def _tz_label(offset: int | None, default_tz: int | None) -> str:
+    """A UTC-offset display label, blank when the offset is unset or matches the
+    trip's default timezone (so only meaningful, differing offsets are shown)."""
+    if offset is None or offset == default_tz:
+        return ""
+    return _format_tz(offset)
+
+
+def _tz(offset: int | None, default_tz: int | None) -> dict:
+    """A UTC offset as both integer minutes and a display label (blank when it
+    equals the default). Used for the car-rental stamps."""
+    return {"tz": offset, "tz_label": _tz_label(offset, default_tz)}
 
 
 def _price(itin: Itinerary, amount: float | None, currency: str,
@@ -81,11 +89,12 @@ def _price(itin: Itinerary, amount: float | None, currency: str,
     }
 
 
-def _sched(obj) -> dict:
+def _sched(obj, default_tz: int | None) -> dict:
     """The shared timeline fields carried by every scheduled object. The UTC
     offsets are emitted as ``start_tz``/``end_tz`` (integer minutes) with a
     ``*_tz_label`` display string — deliberately *not* ``start``/``end``, which
-    are the semantic place names on roads, transports and hikes."""
+    are the semantic place names on roads, transports and hikes. A label is blank
+    when the offset matches the trip default (so only differing offsets show)."""
     return {
         "start_time": _time(obj.start_time),
         "end_time": _time(obj.end_time),
@@ -93,9 +102,9 @@ def _sched(obj) -> dict:
         "duration_display": obj.duration_display,
         "time_range": obj.time_range,
         "start_tz": obj.start_tz,
-        "start_tz_label": _format_tz(obj.start_tz),
+        "start_tz_label": _tz_label(obj.start_tz, default_tz),
         "end_tz": obj.end_tz,
-        "end_tz_label": _format_tz(obj.end_tz),
+        "end_tz_label": _tz_label(obj.end_tz, default_tz),
     }
 
 
@@ -118,7 +127,7 @@ def _activity(itin: Itinerary, act) -> dict:
         "type": act.kind,
         "title": act.title,
         "coordinate": _coord(getattr(act, "coordinate", None)),
-        **_sched(act),
+        **_sched(act, itin.default_timezone),
     }
 
     if act.kind == "buffer":
@@ -195,7 +204,7 @@ def _transport(itin: Itinerary, t) -> dict:
         "coordinate": _coord(t.coordinate),
         "start_coordinate": _coord(t.start_coordinate),
         "end_coordinate": _coord(t.end_coordinate),
-        **_sched(t),
+        **_sched(t, itin.default_timezone),
     }
 
 
@@ -220,18 +229,19 @@ def _accommodation(itin: Itinerary, a) -> dict:
     }
 
 
-def _stamp(s) -> dict:
-    return {"date": _date(s.date), "time": _time(s.time), **_tz(s.tz)}
+def _stamp(s, default_tz: int | None) -> dict:
+    return {"date": _date(s.date), "time": _time(s.time), **_tz(s.tz, default_tz)}
 
 
 def _car_rental(itin: Itinerary, c) -> dict:
+    dtz = itin.default_timezone
     return {
         "title": c.title,
         "company": c.company,
-        "booking_start": _stamp(c.booking_start),
-        "booking_end": _stamp(c.booking_end),
-        "pickup": _stamp(c.pickup),
-        "dropoff": _stamp(c.dropoff),
+        "booking_start": _stamp(c.booking_start, dtz),
+        "booking_end": _stamp(c.booking_end, dtz),
+        "pickup": _stamp(c.pickup, dtz),
+        "dropoff": _stamp(c.dropoff, dtz),
         "pickup_location": c.pickup_location,
         "dropoff_location": c.dropoff_location,
         "booking_number": c.booking_number,
@@ -254,7 +264,7 @@ def _car_rental(itin: Itinerary, c) -> dict:
     }
 
 
-def _car_event(ev) -> dict:
+def _car_event(itin: Itinerary, ev) -> dict:
     """A car pick-up / drop-off woven into a day's timeline. Carries the timeline
     fields plus the identifying bits of its owning rental."""
     rental = ev.rental
@@ -266,7 +276,7 @@ def _car_event(ev) -> dict:
         "company": rental.company if rental else "",
         "car_model": rental.car_model if rental else "",
         "car_type_label": rental.car_type_label if rental else "",
-        **_sched(ev),
+        **_sched(ev, itin.default_timezone),
     }
 
 
@@ -285,8 +295,10 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "description": day.description,
         "activities": [_activity(itin, a) for a in day.activities],
         "transports": [_transport(itin, t) for t in itin.transports_on(day.date)],
-        "car_events": [_car_event(e) for e in itin.car_events_on(day.date)],
+        "car_events": [_car_event(itin, e) for e in itin.car_events_on(day.date)],
         "stay": _accommodation(itin, stay) if stay else None,
+        # 1-based index of this night within the stay (for "Night x/total").
+        "stay_night": stay.night_of(day.date) if stay else None,
         "night_transport": _transport(itin, night) if night else None,
         "sleep_city": (stay.city if stay else "") or day.city,
     }

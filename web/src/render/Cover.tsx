@@ -1,10 +1,18 @@
-import type { Itinerary } from "../types/resolved";
-import { fmtDate, fmtDateRange, tr, type Lang } from "./format";
+import type { Day, Itinerary, Transport } from "../types/resolved";
+import { fill, fmtDate, fmtDateRange, tr, type Lang } from "./format";
 
 // The cover: title / subtitle / inferred date range / day count / summary, plus
 // a day-by-day overview table (day number, date, the day's highlights, and the
 // town you sleep in) — the same overview the PDF cover carries.
-export function Cover({ itinerary, lang }: { itinerary: Itinerary; lang: Lang }) {
+export function Cover({
+  itinerary,
+  lang,
+  onJump,
+}: {
+  itinerary: Itinerary;
+  lang: Lang;
+  onJump: (dayNumber: number) => void;
+}) {
   const range = fmtDateRange(itinerary.start_date, itinerary.end_date, lang);
 
   return (
@@ -35,11 +43,23 @@ export function Cover({ itinerary, lang }: { itinerary: Itinerary; lang: Lang })
           </thead>
           <tbody>
             {itinerary.days.map((d) => (
-              <tr key={d.day_number}>
+              <tr
+                key={d.day_number}
+                className="row-link"
+                tabIndex={0}
+                aria-label={`${tr(lang, "day")} ${d.day_number}`}
+                onClick={() => onJump(d.day_number)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onJump(d.day_number);
+                  }
+                }}
+              >
                 <td className="num">{d.day_number}</td>
                 <td className="date">{fmtDate(d.date, lang)}</td>
-                <td>{highlightsOf(d)}</td>
-                <td className="sleep">{d.sleep_city || "—"}</td>
+                <td>{highlightsOf(d, lang)}</td>
+                <td className="sleep">{sleepLabel(d, lang)}</td>
               </tr>
             ))}
           </tbody>
@@ -49,13 +69,46 @@ export function Cover({ itinerary, lang }: { itinerary: Itinerary; lang: Lang })
   );
 }
 
-// A short "highlights" string for the overview row: the day's title, or the
-// titles of its non-buffer activities when the title is generic/empty.
-function highlightsOf(day: Itinerary["days"][number]): string {
-  if (day.title) return day.title;
-  const names = day.activities
-    .filter((a) => a.type !== "buffer")
-    .map((a) => a.title)
-    .filter(Boolean);
-  return names.slice(0, 3).join(" · ") || "—";
+// Time-ordered highlights, mirroring the PDF cover: POIs / places / hikes,
+// long drives (>60 min), and transport legs — falling back to the drives, then
+// the day title.
+function highlightsOf(day: Day, lang: Lang): string {
+  const items = [
+    ...day.activities.map((a) => ({ t: a.start_time ?? "", act: a })),
+    ...day.transports.map((tp) => ({ t: tp.start_time ?? "", transport: tp })),
+  ].sort((a, b) => a.t.localeCompare(b.t));
+
+  const titles: string[] = [];
+  for (const item of items) {
+    if ("act" in item) {
+      const a = item.act;
+      if (a.type === "point_of_interest" || a.type === "place" || a.type === "hike") {
+        titles.push(a.title);
+      } else if (a.type === "road" && (a.duration_min ?? 0) > 60) {
+        titles.push(`${tr(lang, "road")} ${a.title}`.trim());
+      }
+    } else {
+      titles.push(item.transport.title);
+    }
+  }
+  if (titles.length) return titles.join(", ");
+
+  const drives = day.activities
+    .filter((a) => a.type === "road")
+    .map((a) => `${tr(lang, "road")} ${a.title}`.trim());
+  return drives.join(", ") || day.title || "—";
+}
+
+function overnightName(leg: Transport, lang: Lang): string {
+  const type = (leg.type || "").trim();
+  if (!type) return tr(lang, "overnightTravel");
+  if (/night|overnight|nuit/i.test(type)) return type[0].toUpperCase() + type.slice(1);
+  return fill(tr(lang, "overnightType"), { type });
+}
+
+// Where you sleep that night: the stay's town, an overnight leg, or the day city.
+function sleepLabel(day: Day, lang: Lang): string {
+  if (day.stay) return day.stay.city || day.stay.name;
+  if (day.night_transport) return overnightName(day.night_transport, lang);
+  return day.city || "—";
 }

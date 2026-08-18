@@ -1,6 +1,8 @@
 import type { CarRental, Itinerary, Stamp, Transport } from "../types/resolved";
-import { fmtDate, tr, type Lang } from "./format";
+import { fill, fmtDate, tr, type Lang } from "./format";
 import { Price, Status } from "./Parts";
+import { Links, NavLink } from "./Links";
+import { navUrl, transportTimes } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
   plane: "✈️",
@@ -46,41 +48,92 @@ export function TransportList({
   );
 }
 
+function transportBooking(t: Transport, lang: Lang): string {
+  const bits: string[] = [];
+  if (t.type === "plane" && t.flight_number)
+    bits.push(fill(tr(lang, "flight"), { number: t.flight_number }));
+  else if (t.type === "train" && t.train_number)
+    bits.push(fill(tr(lang, "train"), { number: t.train_number }));
+  if (t.booking_number) bits.push(fill(tr(lang, "ref"), { ref: t.booking_number }));
+  if (t.booking_source) bits.push(fill(tr(lang, "bookedVia"), { source: t.booking_source }));
+  return bits.join("  ·  ");
+}
+
 function TransportCard({ t, lang }: { t: Transport; lang: Lang }) {
-  const number = t.flight_number || t.train_number;
   const dateStr = t.start_date
     ? fmtDate(t.start_date, lang) +
       (t.end_date && t.end_date !== t.start_date ? ` → ${fmtDate(t.end_date, lang)}` : "")
     : "";
+  const info = [dateStr, transportTimes(t)].filter(Boolean).join("  ·  ");
+  const booking = transportBooking(t, lang);
   return (
     <div className="card">
       <div className="card-head">
         <span className="badge" aria-hidden>
           {TYPE_ICON[t.type] ?? TYPE_ICON.other}
         </span>
-        <span className="card-title">{t.title}</span>
+        <span className="card-title">
+          {t.title} <NavLink lang={lang} href={navUrl(t.start_coordinate ?? t.coordinate, t.start)} />
+        </span>
+        {t.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
         <Status status={t.status} lang={lang} />
       </div>
-      <p className="card-meta">
-        {dateStr && <span>{dateStr}</span>}
-        {t.time_range && <span>{t.time_range}</span>}
-        {t.duration_display && <span>{t.duration_display}</span>}
-        {number && <span className="mono">{number}</span>}
-      </p>
+      {info && <p className="card-info">{info}</p>}
+      {booking && <p className="card-meta">{booking}</p>}
       {t.price && (
         <p className="card-price">
           <Price price={t.price} lang={lang} />
         </p>
       )}
+      <Links lang={lang} website={t.website} reservation={t.booking_link} />
     </div>
   );
 }
 
 function stampLine(s: Stamp, lang: Lang): string {
-  return [fmtDate(s.date, lang), s.time].filter(Boolean).join(" · ");
+  const time = [s.time, s.tz_label].filter(Boolean).join(" ");
+  return [fmtDate(s.date, lang), time].filter(Boolean).join(" · ");
+}
+
+function carMeta(c: CarRental, lang: Lang): string {
+  const bits: string[] = [];
+  if (c.car_model && c.company) bits.push(c.car_model);
+  if (c.booking_number) bits.push(fill(tr(lang, "ref"), { ref: c.booking_number }));
+  if (c.additional_drivers)
+    bits.push(
+      fill(tr(lang, c.additional_drivers === 1 ? "driver" : "drivers"), {
+        n: c.additional_drivers,
+      }),
+    );
+  if (c.contact) bits.push(c.contact);
+  return bits.join("  ·  ");
+}
+
+function carWindow(c: CarRental, lang: Lang): string {
+  const start = stampLine(c.booking_start, lang);
+  const end = stampLine(c.booking_end, lang);
+  if (start && end) return fill(tr(lang, "bookedWindow"), { start, end });
+  if (start) return fill(tr(lang, "bookedFrom"), { start });
+  return "";
 }
 
 function CarRentalCard({ c, lang }: { c: CarRental; lang: Lang }) {
+  const pickup = [
+    `${tr(lang, "pickUp")}: ${c.pickup_location}`,
+    stampLine(c.pickup, lang),
+    c.pickup_duration_display,
+  ]
+    .filter(Boolean)
+    .join(" — ");
+  const dropoff = [
+    `${tr(lang, "dropOff")}: ${c.dropoff_location}`,
+    stampLine(c.dropoff, lang),
+    c.dropoff_duration_display,
+  ]
+    .filter(Boolean)
+    .join(" — ");
+  const window = carWindow(c, lang);
+  const meta = carMeta(c, lang);
   return (
     <div className="card">
       <div className="card-head">
@@ -95,17 +148,22 @@ function CarRentalCard({ c, lang }: { c: CarRental; lang: Lang }) {
       </div>
       <p className="card-meta">
         <span>
-          {tr(lang, "pickUp")}: {c.pickup_location} — {stampLine(c.pickup, lang)}
+          {pickup}{"  "}
+          <NavLink lang={lang} href={navUrl(c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
         </span>
         <span>
-          {tr(lang, "dropOff")}: {c.dropoff_location} — {stampLine(c.dropoff, lang)}
+          {dropoff}{"  "}
+          <NavLink lang={lang} href={navUrl(c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
         </span>
+        {window && <span>{window}</span>}
+        {meta && <span>{meta}</span>}
       </p>
       {c.price && (
         <p className="card-price">
           <Price price={c.price} lang={lang} />
         </p>
       )}
+      <Links lang={lang} website={c.website} reservation={c.booking_link} />
     </div>
   );
 }

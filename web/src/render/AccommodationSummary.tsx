@@ -1,6 +1,8 @@
 import type { Accommodation, Itinerary } from "../types/resolved";
-import { fmtDate, tr, type Lang } from "./format";
+import { fill, fmtDate, tr, type Lang } from "./format";
 import { Price, Status } from "./Parts";
+import { Links, NavLink } from "./Links";
+import { navUrl } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
   hotel: "🏨",
@@ -44,6 +46,10 @@ function StayCard({ a, lang }: { a: Accommodation; lang: Lang }) {
       ? `${a.nights} ${a.nights === 1 ? tr(lang, "night") : tr(lang, "nights")}`
       : "";
 
+  const bookedVia = a.booking_source
+    ? fill(tr(lang, "bookedVia"), { source: a.booking_source })
+    : "";
+  const where = [a.name, a.city].filter(Boolean).join(", ");
   return (
     <div className="card">
       <div className="card-head">
@@ -58,13 +64,22 @@ function StayCard({ a, lang }: { a: Accommodation; lang: Lang }) {
         {range && <span>{range}</span>}
         {nights && <span>{nights}</span>}
         {a.breakfast_included && <span>🥐 {tr(lang, "breakfastIncluded")}</span>}
+        {bookedVia && <span>{bookedVia}</span>}
       </p>
-      {a.address && <p className="card-addr">{a.address}</p>}
+      {(a.address || a.coordinate) && (
+        <p className="card-addr">
+          {a.address}
+          {a.address ? "  " : ""}
+          <NavLink lang={lang} href={navUrl(a.coordinate, a.address, where)} />
+        </p>
+      )}
+      {a.contact && <p className="card-addr">{a.contact}</p>}
       {a.price && (
         <p className="card-price">
           <Price price={a.price} lang={lang} />
         </p>
       )}
+      <Links lang={lang} website={a.website} reservation={a.booking_link} />
     </div>
   );
 }

@@ -99,6 +99,11 @@ def test_per_day_associations_are_precomputed():
     for day in stays:
         assert day["stay"]["name"]
         assert day["sleep_city"]
+        # the night index within the stay is 1-based and within the total.
+        assert day["stay_night"] is not None
+        total = day["stay"]["nights"]
+        if total:
+            assert 1 <= day["stay_night"] <= total
     # day_number is 1-based and matches order.
     assert [day["day_number"] for day in d["days"]] == list(
         range(1, len(d["days"]) + 1)
