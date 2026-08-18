@@ -10,6 +10,7 @@ import {
 import { downloadBytes, slugify } from "./file/saveExport";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
+import { PwaStatus } from "./pwa/PwaStatus";
 import type { Finding, Itinerary } from "./types/resolved";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
@@ -48,6 +49,11 @@ export function App() {
     boot(setProgress).catch((e) => setError(String(e)));
     loadLastHandle().then((h) => setCanReopen(!!h));
   }, []);
+
+  // Reflect the chosen language on <html lang> for assistive tech.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   // Resolve + validate a freshly opened source.
   const analyze = useCallback(
@@ -135,6 +141,7 @@ export function App() {
 
   return (
     <main className="shell">
+      <PwaStatus />
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
         <h1>Travelbook Viewer</h1>
         <div className="actions">

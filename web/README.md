@@ -55,13 +55,26 @@ npm run preview    # serve the production build (verify PWA install + offline)
 npm run typecheck
 ```
 
-## Current status — Phase 1 (smoke)
+## Current status — v1 complete
 
-`src/App.tsx` boots Pyodide, then validates **and** resolves a bundled sample
-(`examples/pyrenees.json`, copied in as `samples/`) and renders the cover title,
-day count, date range and the findings list — proving the whole toolchain works
-end-to-end in the browser. The real file-open flow + findings panel come in
-Phase 2, full book rendering in Phase 3, PDF export in Phase 4.
+The full v1 flow works in the browser, offline after first load:
+
+- **Open** a local itinerary JSON (File System Access API, or an `<input>`
+  fallback; "Reopen last" remembers the file) — or load the bundled **Sample**.
+- **Render** the whole travel book: cover + day-by-day overview, one card per day
+  with the time-ordered timeline (PDF-style type badges, nested activities, car
+  events, tonight's-stay bar), plus transport and accommodation sections. Prices
+  show the default currency with faded secondary conversions.
+- **Findings** panel lists every validation ❌/⚠️/ℹ️ with line numbers and a level
+  filter; **EN/FR** toggles messages, dates and labels.
+- **Export PDF** runs `build_pdf` in-browser and downloads it (with an ink-saver
+  toggle). Maps are not embedded in the PDF in v1 — see the top-level README's
+  *Future iterations*.
+- PWA polish: update-available / offline-ready / install toasts and an offline
+  banner (`src/pwa/PwaStatus.tsx`). Note the service worker only registers in a
+  production build, so use `npm run build && npm run preview` to exercise those.
+
+Next up (post-v1): editing the itinerary in the UI, and maps in the PDF export.
 
 ## Layout
 

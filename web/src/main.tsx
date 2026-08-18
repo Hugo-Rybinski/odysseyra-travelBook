@@ -1,12 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { registerSW } from "virtual:pwa-register";
 import { App } from "./App";
 import "./index.css";
 
-// Auto-update the service worker in the background (a real update-available
-// toast lands in Phase 5).
-registerSW({ immediate: true });
+// The service worker is registered by useRegisterSW() inside <PwaStatus/>, which
+// also surfaces the update-available / offline-ready toasts.
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

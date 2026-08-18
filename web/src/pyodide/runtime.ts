@@ -13,14 +13,19 @@ const PYODIDE_INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/
 
 type LoadPyodide = (opts: { indexURL: string }) => Promise<PyodideInterface>;
 
+// Dev-only boot tracing (silent in production builds).
+const log = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.info(...args);
+};
+
 // Load Pyodide's loader straight from the CDN at runtime rather than importing
 // the npm package: bundling `pyodide` through Vite breaks its asset-URL
 // resolution (the boot hangs). @vite-ignore keeps this a native dynamic import.
 async function importLoadPyodide(): Promise<LoadPyodide> {
   const url = `${PYODIDE_INDEX_URL}pyodide.mjs`;
-  console.info("[boot] importing pyodide.mjs:", url);
+  log("[boot] importing pyodide.mjs:", url);
   const mod = await import(/* @vite-ignore */ url);
-  console.info("[boot] pyodide.mjs imported; loadPyodide =", typeof mod.loadPyodide);
+  log("[boot] pyodide.mjs imported; loadPyodide =", typeof mod.loadPyodide);
   return mod.loadPyodide as LoadPyodide;
 }
 
@@ -78,13 +83,13 @@ export function boot(onProgress: ProgressFn = () => {}): Promise<PyodideInterfac
   bootPromise = (async () => {
     emit({ stage: "loading-runtime" });
     const loadPyodide = await importLoadPyodide();
-    console.info("[boot] loadPyodide() starting…");
+    log("[boot] loadPyodide() starting…");
     const py = await loadPyodide({ indexURL: PYODIDE_INDEX_URL });
-    console.info("[boot] Pyodide runtime ready");
+    log("[boot] Pyodide runtime ready");
 
     emit({ stage: "installing-packages", detail: "Pillow, micropip" });
     await py.loadPackage(["micropip", "Pillow"]);
-    console.info("[boot] Pillow + micropip loaded");
+    log("[boot] Pillow + micropip loaded");
 
     emit({ stage: "installing-travelbook" });
     const micropip = py.pyimport("micropip");
@@ -92,9 +97,9 @@ export function boot(onProgress: ProgressFn = () => {}): Promise<PyodideInterfac
     // import ssl-based urllib handlers that don't exist under Pyodide). Pulled
     // from PyPI with its pure-Python deps, then the local travelbook wheel.
     await micropip.install("fpdf2==2.8.7");
-    console.info("[boot] fpdf2 installed");
+    log("[boot] fpdf2 installed");
     await micropip.install(await wheelUrl());
-    console.info("[boot] travelbook wheel installed");
+    log("[boot] travelbook wheel installed");
 
     // Load the bridge into a module so its functions are reachable via pyimport.
     py.FS.mkdirTree("/bridge");
