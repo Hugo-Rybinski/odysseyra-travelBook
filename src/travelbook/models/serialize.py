@@ -48,7 +48,8 @@ def _coord(c) -> dict | None:
 
 
 def _tz(offset: int | None) -> dict:
-    """A UTC offset as both integer minutes and a display label."""
+    """A UTC offset as both integer minutes and a display label (used for the
+    car-rental stamps, whose keys don't collide with anything)."""
     return {"tz": offset, "tz_label": _format_tz(offset)}
 
 
@@ -81,15 +82,20 @@ def _price(itin: Itinerary, amount: float | None, currency: str,
 
 
 def _sched(obj) -> dict:
-    """The shared timeline fields carried by every scheduled object."""
+    """The shared timeline fields carried by every scheduled object. The UTC
+    offsets are emitted as ``start_tz``/``end_tz`` (integer minutes) with a
+    ``*_tz_label`` display string — deliberately *not* ``start``/``end``, which
+    are the semantic place names on roads, transports and hikes."""
     return {
         "start_time": _time(obj.start_time),
         "end_time": _time(obj.end_time),
         "duration_min": obj.duration_min,
         "duration_display": obj.duration_display,
         "time_range": obj.time_range,
-        "start": _tz(obj.start_tz),  # start_tz + label
-        "end": _tz(obj.end_tz),      # end_tz + label
+        "start_tz": obj.start_tz,
+        "start_tz_label": _format_tz(obj.start_tz),
+        "end_tz": obj.end_tz,
+        "end_tz_label": _format_tz(obj.end_tz),
     }
 
 

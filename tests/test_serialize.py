@@ -117,6 +117,19 @@ def test_coordinates_are_carried_through():
     assert isinstance(c["long"], (int, float))
 
 
+def test_scheduled_tz_keys_do_not_clobber_place_names():
+    # Regression: the timeline UTC offsets serialize as start_tz/end_tz, never
+    # as start/end — so a transport keeps its departure/arrival place names.
+    d = _load(PYRENEES)
+    assert d["transports"], "the example has transports"
+    for t in d["transports"]:
+        assert isinstance(t["start"], str) and t["start"], "start is a place name"
+        assert isinstance(t["end"], str), "end is a place name"
+        # tz travels under its own keys (int minutes or None) + a label string.
+        assert "start_tz" in t and "end_tz" in t
+        assert isinstance(t["start_tz_label"], str)
+
+
 def test_road_waypoints_and_legs_are_serialized():
     d = _load(PYRENEES)
     roads = [a for day in d["days"] for a in _all_activities(day)
