@@ -143,6 +143,34 @@ export interface CarEvent extends Scheduled {
   car_type_label: string;
 }
 
+export interface CarRental {
+  title: string;
+  company: string;
+  booking_start: Stamp;
+  booking_end: Stamp;
+  pickup: Stamp;
+  dropoff: Stamp;
+  pickup_location: string;
+  dropoff_location: string;
+  booking_number: string;
+  website: string;
+  booking_link: string;
+  status: string;
+  price: Money | null;
+  car_type: string;
+  car_type_label: string;
+  car_model: string;
+  contact: string;
+  additional_drivers: number;
+  pickup_duration_min: number | null;
+  pickup_duration_display: string;
+  dropoff_duration_min: number | null;
+  dropoff_duration_display: string;
+  coordinate: Coordinate | null;
+  pickup_coordinate: Coordinate | null;
+  dropoff_coordinate: Coordinate | null;
+}
+
 export interface Day {
   day_number: number;
   title: string;
@@ -178,7 +206,7 @@ export interface Itinerary {
   days: Day[];
   transports: Transport[];
   accommodations: Accommodation[];
-  car_rentals: unknown[];
+  car_rentals: CarRental[];
 }
 
 export type FindingLevel = "error" | "warning" | "info";

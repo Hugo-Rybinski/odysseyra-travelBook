@@ -8,6 +8,7 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { FindingsPanel } from "./findings/FindingsPanel";
+import { Book } from "./render/Book";
 import type { Finding, Itinerary } from "./types/resolved";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
@@ -167,21 +168,8 @@ export function App() {
 
       {itinerary && (
         <section className="report">
-          <div className="cover-preview">
-            <p className="filename">{source?.name}</p>
-            <h2>{itinerary.title}</h2>
-            {itinerary.subtitle && <p className="subtitle">{itinerary.subtitle}</p>}
-            <p className="meta">
-              {itinerary.date_range || "no dates"} · {itinerary.day_count} days ·{" "}
-              {itinerary.default_currency}
-            </p>
-            {itinerary.summary && <p className="summary">{itinerary.summary}</p>}
-            <p className="note">
-              Full day-by-day rendering arrives in Phase 3. For now this confirms
-              the file resolves and lists every finding below.
-            </p>
-          </div>
-
+          {source?.name && <p className="filename">{source.name}</p>}
+          <Book itinerary={itinerary} lang={lang} />
           <FindingsPanel findings={findings} />
         </section>
       )}
