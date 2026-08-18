@@ -8,6 +8,9 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 // so the app works offline after first load). The local wheel and the bundled
 // example itineraries are copied into the build and precached.
 export default defineConfig({
+  // Allow the production preview to be reached over a Tailscale HTTPS hostname
+  // (needed so a phone can install the PWA + test offline over a secure origin).
+  preview: { host: true, allowedHosts: [".ts.net"] },
   plugins: [
     react(),
     // Copy the example itineraries in as bundled samples to open.

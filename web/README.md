@@ -55,6 +55,72 @@ npm run preview    # serve the production build (verify PWA install + offline)
 npm run typecheck
 ```
 
+## Distributing & installing on a phone
+
+The app is a PWA: once loaded it can be **installed to a phone's home screen** and
+then **runs fully offline** (Pyodide, the Python wheels and the app shell are all
+cached by the service worker; your itinerary stays in the local `.json` you open).
+
+**One hard requirement: a secure origin.** Install + offline (the service worker)
+only work over **HTTPS** — a plain `http://<LAN-ip>` URL will *not* register the
+service worker. The dev server also doesn't ship one; you must serve the
+**production build** (`npm run build`) over HTTPS. Pick one of the routes below.
+
+The flow is the same either way:
+
+1. Serve the built `dist/` over HTTPS (see routes).
+2. On the phone, open the HTTPS URL **while online** and let it finish booting
+   (past "installing travelbook" to the "Open an itinerary" screen) — this caches
+   everything. First load pulls the Pyodide runtime + packages from a CDN (a few
+   MB, one time).
+3. Install it: **iOS Safari** → Share → *Add to Home Screen*; **Android Chrome**
+   → ⋮ menu → *Install app*.
+4. Test offline: enable Airplane Mode, relaunch the installed app, open a `.json`
+   — it should render and export PDFs with no network.
+
+### Route A — Tailscale (quick, private; no deploy)
+
+Serve locally and expose it over HTTPS on your tailnet. Good for putting it on
+*your* phone without publishing anything. Requires the Tailscale app on both
+machines and **HTTPS certificates enabled** for the tailnet (admin console →
+DNS → *Enable HTTPS*).
+
+```bash
+npm run build
+npm run preview -- --port 4173        # serve dist/ on :4173 (keep running)
+tailscale serve --bg 4173             # → https://<machine>.<tailnet>.ts.net
+```
+
+Open that `https://…ts.net/` URL on the phone (also on the tailnet) and install.
+The URL is reachable only while your machine keeps `preview` + `tailscale serve`
+running and the phone is on the tailnet — but once installed and cached, offline
+use needs neither. Stop sharing with `tailscale serve reset`.
+
+> `vite preview` rejects unknown hosts; `vite.config.ts` already allows
+> `.ts.net` via `preview.allowedHosts`.
+
+### Route B — static host (permanent, public URL)
+
+`dist/` is a fully static bundle — deploy it to any HTTPS static host for a
+durable link installable from any device:
+
+- **GitHub Pages / Netlify / Vercel / Cloudflare Pages** — point the build at
+  `web/` (`npm ci && npm run wheel && npm run build`, publish `web/dist`). Set the
+  Vite `base` if it isn't served from the domain root.
+- Anything that serves the folder over HTTPS works; there's no backend.
+
+Everything is client-side, so the only "distribution" is hosting the static
+files — recipients just open the URL and install.
+
+### Offline internals
+
+`npm run wheel` vendors the Python wheels the app needs into `public/py/` —
+`travelbook` plus `fpdf2` and `defusedxml` (Pillow and fonttools ship with
+Pyodide) — and the service worker precaches them. Installs run with dependency
+resolution off, so **nothing contacts PyPI at run time** and the boot completes
+offline. The Pyodide runtime + Pillow/fonttools are fetched from the CDN on first
+load and cached (CacheFirst) for later offline launches.
+
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load:
