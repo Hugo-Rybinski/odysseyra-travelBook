@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   boot,
   buildPdf,
@@ -31,8 +31,15 @@ import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import { Options } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
-import { jsonToDraft, serializeWithPaths } from "./edit/serialize";
+import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
 import { buildFindingIndex, collectFieldPaths } from "./edit/findings";
+import { useDraftHistory } from "./edit/useDraftHistory";
+import {
+  clearAutosave,
+  loadAutosave,
+  saveAutosave,
+  type AutosaveRecord,
+} from "./edit/autosave";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
 import type { Day, Finding, Itinerary } from "./types/resolved";
@@ -61,17 +68,18 @@ export function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
-  // The editable input-JSON draft (Edit tab). Seeded from the opened file, then
-  // pushed into the viewer/findings/export on demand via the Apply button (P3);
-  // there is no Save-to-file yet (P4).
-  const [draft, setDraft] = useState<SrcItinerary | null>(null);
-  // Draft has edits not yet applied to the rendered viewer/export.
-  const [dirty, setDirty] = useState(false);
+  // The editable input-JSON draft (Edit tab), with an undo/redo stack (P6).
+  // Seeded from the opened file, pushed into the viewer/findings/export via the
+  // Apply button (P3), and written to a file via Save (P4).
+  const { draft, set: setDraftHist, reset: resetDraft, undo, redo, canUndo, canRedo } =
+    useDraftHistory<SrcItinerary>(null);
   const [applying, setApplying] = useState(false);
-  // Draft has edits not yet written to a file (P4). Independent of `dirty`:
-  // Apply updates the preview, Save writes the draft to disk.
-  const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
+  // The serialized text backing the current preview (set on Apply/load) and the
+  // last-saved/loaded text (set on Save/load). `dirty` (unapplied) and `unsaved`
+  // are derived from these by comparison, so undo/redo/revert stay correct.
+  const [appliedText, setAppliedText] = useState<string | null>(null);
+  const [savedText, setSavedText] = useState<string | null>(null);
   // Online/offline, for gating geocoding (Nominatim needs the network).
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -99,6 +107,15 @@ export function App() {
   // Which top-level view is showing. Starts on "options" (so a first-run user
   // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
   const [view, setView] = useState<View>("options");
+  // A restorable autosaved draft found at startup (P6), offered on the empty
+  // state until the user restores or discards it.
+  const [restorable, setRestorable] = useState<AutosaveRecord | null>(null);
+
+  // Serialize the draft once per change; both the live validation and the
+  // dirty/unsaved comparisons read it.
+  const draftSer = useMemo(() => (draft ? serializeWithPaths(draft) : null), [draft]);
+  const dirty = !!draftSer && draftSer.text !== appliedText; // edits not yet applied to the preview
+  const unsaved = !!draftSer && draftSer.text !== savedText; // edits not yet written to a file
 
   const engineReady = progress.stage === "ready";
   const { checkForUpdate, checking, updating, canInstall, install } = usePwa();
@@ -153,6 +170,7 @@ export function App() {
   useEffect(() => {
     boot(setProgress).catch((e) => setError(String(e)));
     loadLastHandle().then((h) => setCanReopen(!!h));
+    loadAutosave().then(setRestorable); // offer to restore unsaved edits (P6)
     void purgeExpired(); // drop map images older than 30 days
   }, []);
 
@@ -183,15 +201,14 @@ export function App() {
   // (by path) and rail. Skips until the engine is ready; a validate failure
   // surfaces as an error banner in the Edit tab rather than breaking it.
   useEffect(() => {
-    if (!draft || !engineReady) return;
+    if (!draft || !draftSer || !engineReady) return;
     let cancelled = false;
     setEditValidating(true);
     const timer = setTimeout(async () => {
       try {
-        const { text, pathByLine } = serializeWithPaths(draft);
-        const found = await validate(text, lang);
+        const found = await validate(draftSer.text, lang);
         if (cancelled) return;
-        const { byPath, rail } = buildFindingIndex(found, pathByLine, collectFieldPaths(draft));
+        const { byPath, rail } = buildFindingIndex(found, draftSer.pathByLine, collectFieldPaths(draft));
         setEditIndex(byPath);
         setEditRail(rail);
         setEditError(null);
@@ -205,7 +222,22 @@ export function App() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [draft, lang, engineReady]);
+  }, [draft, draftSer, lang, engineReady]);
+
+  // Autosave the draft to IndexedDB while it has unsaved edits (P6); clear it
+  // once saved. Guarded on a draft existing so it never wipes a stashed record
+  // before the startup restore prompt reads it.
+  useEffect(() => {
+    if (!draft || !draftSer) return;
+    const timer = setTimeout(() => {
+      if (unsaved) {
+        void saveAutosave({ name: source?.name ?? "untitled.json", text: draftSer.text, at: Date.now() });
+      } else {
+        void clearAutosave();
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [draft, draftSer, unsaved, source]);
 
   // Resolve + validate a freshly opened source.
   const analyze = useCallback(
@@ -222,12 +254,16 @@ export function App() {
         setItinerary(model);
         setFindings(found);
         try {
-          setDraft(jsonToDraft(src.text)); // seed the Edit tab with the raw input JSON
+          const seed = jsonToDraft(src.text); // seed the Edit tab with the raw input JSON
+          resetDraft(seed);
+          const seedText = serializeWithPaths(seed).text;
+          setAppliedText(seedText); // the viewer shows this content (dirty = false)
+          setSavedText(seedText); // it matches the file on disk (unsaved = false)
         } catch {
-          setDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
+          resetDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
+          setAppliedText(null);
+          setSavedText(null);
         }
-        setDirty(false);
-        setSaved(true);
         setMapsStale(false);
         setView("viewer"); // switch to the book once it's on screen
         // Text is on screen now; fetch the per-day maps in the background.
@@ -241,7 +277,7 @@ export function App() {
         setBusy(false);
       }
     },
-    [lang, canReopen, buildDayMaps],
+    [lang, canReopen, buildDayMaps, resetDraft],
   );
 
   const onOpen = useCallback(async () => {
@@ -311,32 +347,25 @@ export function App() {
     }
   }, [source, itinerary, buildDayMaps]);
 
-  // Wrap draft edits so any change marks the draft dirty (unapplied, drives the
-  // Apply button + ✏️ tab dot) and unsaved (drives Save).
-  const onEditDraft = useCallback((next: SrcItinerary) => {
-    setDraft(next);
-    setDirty(true);
-    setSaved(false);
-  }, []);
-
   // A sensible filename for saving/downloading the draft.
   const draftFilename = useCallback(
     () => `${slugify(draft?.travel_description?.title || source?.name || "travelbook")}.json`,
     [draft, source],
   );
 
-  // Save the draft (P4): overwrite the opened file in place when we hold a
-  // writable handle, otherwise fall back to a download.
+  // Save the draft (P4/P6): normalize (prune empties + safe defaults) and either
+  // overwrite the opened file in place when we hold a writable handle, or fall
+  // back to a download. `savedText` tracks the *unpruned* serialization so the
+  // unsaved indicator compares like-for-like against the live draft.
   const onSave = useCallback(async () => {
     if (!draft) return;
     setSaving(true);
     setError(null);
     try {
-      const { text } = serializeWithPaths(draft);
       const handle = source?.handle ?? null;
-      if (canWriteHandle(handle)) await writeHandle(handle, text);
-      else downloadText(text, draftFilename());
-      setSaved(true);
+      if (canWriteHandle(handle)) await writeHandle(handle, serializeForSave(draft));
+      else downloadText(serializeForSave(draft), draftFilename());
+      setSavedText(serializeWithPaths(draft).text);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -351,13 +380,12 @@ export function App() {
     setSaving(true);
     setError(null);
     try {
-      const { text } = serializeWithPaths(draft);
-      const opened = await saveAsJson(draftFilename(), text);
+      const opened = await saveAsJson(draftFilename(), serializeForSave(draft));
       if (opened) {
         setSource(opened);
         await rememberHandle(opened.handle);
         setCanReopen((prev) => !!opened.handle || prev);
-        setSaved(true);
+        setSavedText(serializeWithPaths(draft).text);
       }
     } catch (e) {
       setError(String(e));
@@ -371,9 +399,35 @@ export function App() {
   const onDownloadJson = useCallback(() => {
     if (!draft) return;
     setError(null);
-    downloadText(serializeWithPaths(draft).text, draftFilename());
-    setSaved(true);
+    downloadText(serializeForSave(draft), draftFilename());
+    setSavedText(serializeWithPaths(draft).text);
   }, [draft, draftFilename]);
+
+  // Revert the draft to the last saved/loaded baseline (P6). Recorded on the
+  // undo stack, so a revert can itself be undone.
+  const onRevert = useCallback(() => {
+    if (savedText === null) return;
+    try {
+      setDraftHist(jsonToDraft(savedText));
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [savedText, setDraftHist]);
+
+  // Restore the autosaved draft from a previous session (P6): load it as if
+  // opening a handle-less file, then jump to the Edit tab.
+  const onRestore = useCallback(async () => {
+    if (!restorable) return;
+    const rec = restorable;
+    setRestorable(null);
+    await analyze({ name: rec.name, text: rec.text, handle: null });
+    setView("edit");
+  }, [restorable, analyze]);
+
+  const onDiscardRestore = useCallback(() => {
+    setRestorable(null);
+    void clearAutosave();
+  }, []);
 
   // Geocode a coordinate field's address (P5), narrowed to the trip's
   // inference_countries. Reuses the maps geocode seam through the bridge.
@@ -400,7 +454,7 @@ export function App() {
         setItinerary(redrawMaps ? model : carried);
         setFindings(found);
         setSource((prev) => (prev ? { ...prev, text } : { name: "edited.json", text, handle: null }));
-        setDirty(false);
+        setAppliedText(text); // preview now reflects the draft (dirty = false)
         if (model.maps.include_in_render && redrawMaps) {
           setMapsStale(false);
           await buildDayMaps(text, model.days.length, true);
@@ -524,7 +578,7 @@ export function App() {
       ) : view === "edit" && draft ? (
         <EditPanel
           draft={draft}
-          onChange={onEditDraft}
+          onChange={setDraftHist}
           findingIndex={editIndex}
           rail={editRail}
           validating={editValidating}
@@ -535,13 +589,18 @@ export function App() {
           mapsInRender={!!draft.defaults?.include_maps_in_render}
           onApply={() => onApply(false)}
           onApplyRedraw={() => onApply(true)}
-          saved={saved}
+          unsaved={unsaved}
           saving={saving}
           canSaveInPlace={canWriteHandle(source?.handle)}
           hasSavePicker={hasSavePicker()}
           onSave={onSave}
           onSaveAs={onSaveAs}
           onDownloadJson={onDownloadJson}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
+          onRevert={onRevert}
           geocode={{ geocode: onGeocode, ready: engineReady && online }}
         />
       ) : itinerary ? (
@@ -567,6 +626,22 @@ export function App() {
               Choose a travelbook JSON file in <strong>⚙️ Options</strong> to render the
               travel book and see its validation findings. Everything stays on your device.
             </p>
+            {restorable && (
+              <div className="restore-banner" role="status">
+                <span>
+                  Unsaved edits from a previous session
+                  {restorable.name ? ` (${restorable.name})` : ""} were found.
+                </span>
+                <span className="restore-actions">
+                  <button className="btn" onClick={onRestore}>
+                    Restore
+                  </button>
+                  <button className="btn subtle" onClick={onDiscardRestore}>
+                    Discard
+                  </button>
+                </span>
+              </div>
+            )}
             {!engineReady && <small>The engine is still warming up…</small>}
           </section>
         )

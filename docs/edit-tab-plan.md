@@ -170,7 +170,21 @@ Nominatim response.
   an optional "geocode from address" action (reuse the maps geocode seam, gated
   on network).
 
-### P6 — Safety & recovery (§6)
+### P6 — Safety & recovery (§6) ✅ done
+
+Implemented: **undo/redo** via a capped past/future stack (`useDraftHistory`);
+**Revert** to the last saved/loaded baseline (itself undoable); **autosave** to
+IndexedDB (`edit/autosave.ts`) debounced while there are unsaved edits, offered
+for **restore** on the empty state at next launch and cleared on save/discard;
+and **normalize-on-save** (`serializeForSave`) that prunes empties + safe
+defaults (`show_on_map` true, `off_road`/`breakfast_included` false,
+`additional_drivers` 0) so round-tripped files stay diff-clean. `dirty`
+(unapplied) and `unsaved` are now derived by comparing the draft's serialization
+to the applied/saved text, so undo/redo/revert keep them correct. Verified: a
+pruned `pyrenees.json` still validates with the same 0 errors / 5 warnings.
+
+Enum defaults (`type`, `category`, `route`, …) are intentionally NOT pruned —
+their default is context-dependent, so key-name pruning would be unsafe.
 
 - Undo/redo (draft history stack).
 - Revert to opened file.

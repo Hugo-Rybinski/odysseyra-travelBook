@@ -18,6 +18,48 @@ export function draftToJson(draft: SrcItinerary): string {
   return serializeWithPaths(draft).text;
 }
 
+// Keys whose value, when equal to the schema default, is identical to omitting
+// the key — safe to drop on save regardless of the containing object. Only
+// unambiguous ones (same default everywhere); enum defaults like `type` are
+// context-dependent and deliberately left in place.
+const SAFE_DEFAULTS: Record<string, unknown> = {
+  show_on_map: true,
+  off_road: false,
+  breakfast_included: false,
+  additional_drivers: 0,
+};
+
+// Recursively drop redundant content: empty strings, null, empty arrays/objects,
+// and safe-default values. Returns `undefined` when the whole value collapses.
+function pruneValue(value: unknown, key?: string): unknown {
+  if (key !== undefined && key in SAFE_DEFAULTS && value === SAFE_DEFAULTS[key]) return undefined;
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "string") return value === "" ? undefined : value;
+  if (Array.isArray(value)) {
+    const arr = value.map((v) => pruneValue(v)).filter((v) => v !== undefined);
+    return arr.length ? arr : undefined;
+  }
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(obj)) {
+      const pv = pruneValue(obj[k], k);
+      if (pv !== undefined) out[k] = pv;
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+  return value; // numbers, non-default booleans
+}
+
+// Serialize the draft for writing to a file (P6): prune empties + safe defaults
+// so a round-tripped file stays diff-clean, then pretty-print. Kept separate
+// from `serializeWithPaths` (used for validation/apply), which must reflect the
+// draft exactly as edited so findings anchor to the visible fields.
+export function serializeForSave(draft: SrcItinerary): string {
+  const pruned = (pruneValue(draft) as SrcItinerary | undefined) ?? {};
+  return serializeWithPaths(pruned).text;
+}
+
 // A path into the draft (object keys + array indices), formatted as a stable
 // dot-joined string used as a map key throughout the Edit tab (e.g.
 // "days.0.activities.1.duration").

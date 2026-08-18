@@ -228,16 +228,19 @@ README schema tables). It is being built in phases — see
   only route where the FS Access API is absent, e.g. iOS Safari). An
   unsaved-changes indicator is tracked separately from unapplied edits (Apply =
   preview, Save = disk).
-- **P5 (current):** coordinate helpers. Every add/remove/reorder, insert
-  scaffold and enum picker already exists from P1; P5 adds **paste "lat, long"**
-  (fills both fields at once) and **Geocode from address** on each coordinate —
-  a Nominatim lookup (through the maps seam, narrowed to
-  `defaults.inference_countries`) that's gated on the engine being ready and the
-  device online.
+- **P5:** coordinate helpers. Every add/remove/reorder, insert scaffold and enum
+  picker already exists from P1; P5 adds **paste "lat, long"** (fills both fields
+  at once) and **Geocode from address** on each coordinate — a Nominatim lookup
+  (through the maps seam, narrowed to `defaults.inference_countries`) gated on
+  the engine being ready and the device online.
+- **P6 (current):** safety & recovery. **Undo/redo** (a capped history stack),
+  **Revert** to the last saved/loaded baseline, an **IndexedDB autosave** that
+  survives a reload / service-worker update and is offered for restore on next
+  launch, and **normalize-on-save** (prune empty values + safe defaults so a
+  round-tripped file stays diff-clean).
 
-Next up: undo/redo, revert and an IndexedDB autosave draft; a default-key prune
-+ stable key order on save. Separately, moving Pyodide into a Web Worker so the
-first map render doesn't block the main thread.
+The Edit tab is feature-complete for now. Separately, moving Pyodide into a Web
+Worker so the first map render doesn't block the main thread remains deferred.
 
 ## Layout
 
@@ -252,9 +255,11 @@ src/
   edit/                    the ✏️ Edit tab: form editor over the input JSON
     schema.ts              field registry (mirrors the README schema tables)
     EditPanel.tsx          stacked collapsible sections (config + content arrays)
-    serialize.ts           jsonToDraft / serializeWithPaths (text + line→path map)
+    serialize.ts           jsonToDraft / serializeWithPaths / serializeForSave
     findings.ts            finding index (line→path), context, collectFieldPaths
     geocodeContext.ts      geocode-from-address seam for coordinate fields (P5)
+    useDraftHistory.ts     undo/redo stack for the draft (P6)
+    autosave.ts            IndexedDB autosave/restore of the draft (P6)
     fields/                FieldRow/FieldList/FieldFindings, ArrayEditor, CoordinateField
     forms/                 per-object forms (day, activity, transport, …)
   types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)

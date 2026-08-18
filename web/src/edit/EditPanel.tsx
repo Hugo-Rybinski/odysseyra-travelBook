@@ -42,13 +42,19 @@ export interface EditPanelProps {
   onApply: () => void;
   onApplyRedraw: () => void;
   // Save (P4): write the draft to a file.
-  saved: boolean;
+  unsaved: boolean;
   saving: boolean;
   canSaveInPlace: boolean;
   hasSavePicker: boolean;
   onSave: () => void;
   onSaveAs: () => void;
   onDownloadJson: () => void;
+  // Undo/redo/revert (P6).
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  onRevert: () => void;
   // Geocode (P5): fill a coordinate from an address; null when unavailable.
   geocode: GeocodeApi | null;
 }
@@ -66,13 +72,18 @@ export function EditPanel({
   mapsInRender,
   onApply,
   onApplyRedraw,
-  saved,
+  unsaved,
   saving,
   canSaveInPlace,
   hasSavePicker,
   onSave,
   onSaveAs,
   onDownloadJson,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  onRevert,
   geocode,
 }: EditPanelProps) {
   const days = draft.days ?? [];
@@ -105,14 +116,44 @@ export function EditPanel({
 
           <span className="edit-actions-sep" aria-hidden />
 
+          <button
+            type="button"
+            className="btn subtle"
+            onClick={onUndo}
+            disabled={!canUndo}
+            data-tip="Undo the last edit"
+          >
+            ↶ Undo
+          </button>
+          <button
+            type="button"
+            className="btn subtle"
+            onClick={onRedo}
+            disabled={!canRedo}
+            data-tip="Redo"
+          >
+            ↷ Redo
+          </button>
+          <button
+            type="button"
+            className="btn subtle"
+            onClick={onRevert}
+            disabled={!unsaved}
+            data-tip="Discard changes since the last save/open"
+          >
+            Revert
+          </button>
+
+          <span className="edit-actions-sep" aria-hidden />
+
           {canSaveInPlace && (
             <button
               className="btn subtle"
               onClick={onSave}
-              disabled={saved || saving}
+              disabled={!unsaved || saving}
               data-tip="Overwrite the opened file"
             >
-              {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
+              {saving ? "Saving…" : unsaved ? "Save" : "Saved ✓"}
             </button>
           )}
           {hasSavePicker && (
@@ -134,7 +175,7 @@ export function EditPanel({
               Unapplied edits — the viewer and export still show the last applied version.
             </span>
           )}
-          {!saved && !dirty && <span className="edit-dirty">Unsaved changes.</span>}
+          {unsaved && !dirty && <span className="edit-dirty">Unsaved changes.</span>}
         </div>
 
         <EditStatus rail={rail} validating={validating} validationError={validationError} />
