@@ -25,9 +25,12 @@ import {
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import { Options } from "./Options";
+import { EditPanel } from "./edit/EditPanel";
+import { jsonToDraft } from "./edit/serialize";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
 import type { Day, Finding, Itinerary } from "./types/resolved";
+import type { SrcItinerary } from "./types/source";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
 
@@ -41,7 +44,7 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
 };
 
 type Lang = "en" | "fr";
-type View = "options" | "viewer" | "findings";
+type View = "options" | "viewer" | "findings" | "edit";
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -52,6 +55,9 @@ export function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  // The editable input-JSON draft (Edit tab). Seeded from the opened file; P1
+  // has no Apply/Save wiring yet, so edits don't feed the viewer or export.
+  const [draft, setDraft] = useState<SrcItinerary | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +151,11 @@ export function App() {
         setSource(src);
         setItinerary(model);
         setFindings(found);
+        try {
+          setDraft(jsonToDraft(src.text)); // seed the Edit tab with the raw input JSON
+        } catch {
+          setDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
+        }
         setView("viewer"); // switch to the book once it's on screen
         // Text is on screen now; fetch the per-day maps in the background.
         if (model.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
@@ -272,6 +283,16 @@ export function App() {
           >
             🔎 Findings
           </button>
+          <button
+            className={`btn ghost ${view === "edit" ? "active" : ""}`}
+            onClick={() => draft && setView("edit")}
+            role="tab"
+            aria-selected={view === "edit"}
+            aria-disabled={!draft}
+            data-tip={draft ? undefined : "Open an itinerary first"}
+          >
+            ✏️ Edit
+          </button>
         </div>
       </header>
 
@@ -312,6 +333,8 @@ export function App() {
         />
       ) : view === "findings" && itinerary ? (
         <FindingsPanel findings={findings} />
+      ) : view === "edit" && draft ? (
+        <EditPanel draft={draft} onChange={setDraft} />
       ) : itinerary ? (
         <section className="report">
           <p className="report-caption">

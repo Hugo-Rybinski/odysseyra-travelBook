@@ -155,8 +155,9 @@ can't load, an error boundary + timeout fall back to the static PNG.
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load. The header
-switches between views — **⚙️ Options**, **📖 Travel viewer**, and **🔎 Findings**
-(the validation findings) — showing one at a time. Every control lives in the
+switches between views — **⚙️ Options**, **📖 Travel viewer**, **🔎 Findings**
+(the validation findings), and **✏️ Edit** (a structured form editor over the
+input JSON) — showing one at a time. Every control lives in the
 **Options** view (`src/Options.tsx`), grouped by theme — *File* (open / reopen /
 sample), *Language*, *Maps* (interactive toggle + redraw), *PDF export* (ink-saver
 / include-maps / export) and *App* (install as an app / check for updates).
@@ -201,8 +202,20 @@ the itinerary opts out of maps, the browser hasn't offered an install prompt…)
   registers in a production build, so use `npm run build && npm run preview` to
   exercise these.
 
-Next up (post-v1): editing the itinerary in the UI, and moving Pyodide into a
-Web Worker so the first map render doesn't block the main thread.
+The **✏️ Edit** tab is a structured/form editor over the *input* JSON
+(`src/edit/`, driven by a field registry in `src/edit/schema.ts` that mirrors the
+README schema tables). It is being built in phases — see
+[`../docs/edit-tab-plan.md`](../docs/edit-tab-plan.md). **P1 (current):** the form
+surface — every object/field, grouped in collapsible sections, with add/remove/
+reorder for days, activities (incl. one level of nesting), transport,
+accommodations, car rentals, waypoints and secondary currencies. Edits update an
+in-memory draft; live validation, an **Apply**-button preview, and save/export
+land in later phases, so P1 edits don't yet feed the viewer or the export.
+
+Next up: P2 live validation (findings anchored inline on fields) and P3 the
+Apply-button preview; then save/export, editing helpers and undo. Separately,
+moving Pyodide into a Web Worker so the first map render doesn't block the main
+thread.
 
 ## Layout
 
@@ -214,6 +227,13 @@ src/
   main.tsx                 entry; registers the service worker
   App.tsx                  top-level state + layout (header, book, findings)
   Options.tsx              the themed Options panel (all controls live here)
+  edit/                    the ✏️ Edit tab: form editor over the input JSON
+    schema.ts              field registry (mirrors the README schema tables)
+    EditPanel.tsx          stacked collapsible sections (config + content arrays)
+    serialize.ts           jsonToDraft / draftToJson (draft <-> text)
+    fields/                FieldRow/FieldList, ArrayEditor, CoordinateField
+    forms/                 per-object forms (day, activity, transport, …)
+  types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf

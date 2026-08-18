@@ -1062,3 +1062,247 @@ body {
     padding-right: 16px;
   }
 }
+
+/* ============================================================ Edit tab (P1) */
+.edit-panel {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+/* top-level collapsible section (Trip / Defaults / Days / …) */
+.edit-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.edit-section > summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  list-style: none;
+}
+.edit-section > summary::-webkit-details-marker {
+  display: none;
+}
+.edit-section > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+}
+.edit-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.edit-section-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* a grid of labelled fields */
+.edit-fields {
+  display: grid;
+  gap: 12px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  align-items: end;
+  margin: 12px 0;
+}
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+.edit-field-bool {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.edit-field-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+.edit-field-label .req {
+  color: #c0392b;
+  font-style: normal;
+}
+.edit-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 0.65rem;
+  cursor: help;
+  position: relative;
+}
+
+.edit-input {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  width: 100%;
+}
+.edit-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+textarea.edit-input {
+  resize: vertical;
+  min-height: 56px;
+}
+.edit-field-bool input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* color field: swatch + hex text */
+.edit-color {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.edit-color input[type="color"] {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+  flex: none;
+}
+
+/* coordinate group */
+.edit-coord {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 6px 12px 12px;
+  margin: 4px 0;
+}
+.edit-coord > legend {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding: 0 4px;
+}
+.edit-coord-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: end;
+}
+.edit-coord-row .edit-field {
+  min-width: 120px;
+}
+
+/* nested array (activities, waypoints, secondary currencies) */
+.sub-array {
+  margin: 12px 0 4px;
+}
+.sub-array > h4 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.array-editor {
+  display: grid;
+  gap: 8px;
+}
+.array-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+.array-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(31, 78, 95, 0.03);
+  overflow: hidden;
+}
+.array-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.array-item-head::-webkit-details-marker {
+  display: none;
+}
+.array-item-title {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.array-item-controls {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
+}
+.array-item-body {
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.icon-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--fg);
+  cursor: pointer;
+  position: relative;
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--bg);
+}
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.icon-btn.danger:hover:not(:disabled) {
+  background: #fdecea;
+  color: #c0392b;
+  border-color: #f5c6c0;
+}
+.array-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+/* reuse the light-panel button styling inside the edit tab */
+.edit-panel .btn.subtle {
+  background: rgba(31, 78, 95, 0.09);
+  color: var(--accent);
+  border-color: transparent;
+}
