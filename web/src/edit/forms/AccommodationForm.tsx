@@ -21,6 +21,9 @@ export function AccommodationForm({ value, path, onChange }: AccommodationFormPr
       <CoordinateField
         path={`${path}.coordinate`}
         value={value.coordinate}
+        geocodeQuery={
+          [value.address || value.name, value.city].filter(Boolean).join(", ") || undefined
+        }
         onChange={(c) => set({ ...rec, coordinate: c })}
       />
     </div>

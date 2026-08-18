@@ -1211,6 +1211,22 @@ textarea.edit-input {
 .edit-coord-row .edit-field {
   min-width: 120px;
 }
+/* P5: paste-a-pair + geocode helpers above the lat/long row */
+.edit-coord-helpers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+.edit-coord-paste {
+  max-width: 220px;
+}
+.edit-coord-note {
+  margin: 0 0 8px;
+  font-size: 0.76rem;
+  color: #8a5d00;
+}
 
 /* nested array (activities, waypoints, secondary currencies) */
 .sub-array {

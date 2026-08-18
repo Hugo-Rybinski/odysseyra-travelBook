@@ -101,6 +101,17 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
         <CoordinateField
           path={`${path}.coordinate`}
           value={activity.coordinate}
+          geocodeQuery={
+            type === "road"
+              ? activity.start
+              : type === "hike"
+                ? activity.start || activity.name
+                : type === "point_of_interest"
+                  ? activity.address || activity.name
+                  : type === "place"
+                    ? activity.name
+                    : activity.address || activity.restaurant || activity.area
+          }
           onChange={(c) => set({ ...rec, coordinate: c })}
         />
       )}
@@ -126,6 +137,7 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
                 <CoordinateField
                   path={`${itemPath}.coordinate`}
                   value={w.coordinate}
+                  geocodeQuery={w.location}
                   onChange={(c: SrcCoordinate | undefined) => onItemChange({ ...w, coordinate: c })}
                 />
               </>

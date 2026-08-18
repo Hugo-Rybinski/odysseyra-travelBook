@@ -9,6 +9,7 @@ import type {
 import { FindingsPanel } from "../findings/FindingsPanel";
 import { newAccommodation, newCarRental, newDay, newTransport } from "./schema";
 import { EditFindingsContext } from "./findings";
+import { EditGeocodeContext, type GeocodeApi } from "./geocodeContext";
 import { ArrayEditor } from "./fields/ArrayEditor";
 import { AccommodationForm } from "./forms/AccommodationForm";
 import { CarRentalForm } from "./forms/CarRentalForm";
@@ -48,6 +49,8 @@ export interface EditPanelProps {
   onSave: () => void;
   onSaveAs: () => void;
   onDownloadJson: () => void;
+  // Geocode (P5): fill a coordinate from an address; null when unavailable.
+  geocode: GeocodeApi | null;
 }
 
 export function EditPanel({
@@ -70,6 +73,7 @@ export function EditPanel({
   onSave,
   onSaveAs,
   onDownloadJson,
+  geocode,
 }: EditPanelProps) {
   const days = draft.days ?? [];
   const transport = draft.transport ?? [];
@@ -78,6 +82,7 @@ export function EditPanel({
 
   return (
     <EditFindingsContext.Provider value={findingIndex}>
+      <EditGeocodeContext.Provider value={geocode}>
       <div className="edit-panel" role="region" aria-label="Edit itinerary">
         <div className="edit-actions">
           <button
@@ -226,6 +231,7 @@ export function EditPanel({
           </div>
         </details>
       </div>
+      </EditGeocodeContext.Provider>
     </EditFindingsContext.Provider>
   );
 }

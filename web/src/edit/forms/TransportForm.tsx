@@ -22,12 +22,14 @@ export function TransportForm({ value, path, onChange }: TransportFormProps) {
         label="Start coordinate"
         path={`${path}.start_coordinate`}
         value={value.start_coordinate}
+        geocodeQuery={value.start}
         onChange={(c) => set({ ...rec, start_coordinate: c })}
       />
       <CoordinateField
         label="End coordinate"
         path={`${path}.end_coordinate`}
         value={value.end_coordinate}
+        geocodeQuery={value.end}
         onChange={(c) => set({ ...rec, end_coordinate: c })}
       />
     </div>

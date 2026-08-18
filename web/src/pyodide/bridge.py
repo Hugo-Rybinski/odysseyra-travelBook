@@ -225,6 +225,29 @@ def render_day(text, index):
     return json.dumps({"day": day_out})
 
 
+def geocode(text_query, countrycodes=""):
+    """Geocode a single free-text address/name via Nominatim (through the browser
+    HTTP seam), for the Edit tab's "geocode from address" action. Returns
+    ``{"coordinate": {"lat", "long"}}``, ``{"coordinate": null}`` (no match), or
+    ``{"error": ...}``. Needs the network. ``countrycodes`` is a comma-joined
+    list of 2-letter ISO codes (from ``defaults.inference_countries``)."""
+    try:
+        from travelbook.maps import Cache
+        from travelbook.maps.geocode import geocode as _geocode
+        countries = [c.strip() for c in countrycodes.split(",") if c.strip()]
+        cache = Cache.open()
+        result = _geocode(text_query, countries, cache)
+        try:
+            cache.save()
+        except Exception:
+            pass
+        if result is None:
+            return json.dumps({"coordinate": None})
+        return json.dumps({"coordinate": {"lat": result[0], "long": result[1]}})
+    except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
+        return json.dumps({"error": str(exc)})
+
+
 def build(text, lang="en", ink_saver=False, maps=None):
     itinerary = Itinerary.from_dict(json.loads(text))
     out = "/tmp/travelbook-out.pdf"

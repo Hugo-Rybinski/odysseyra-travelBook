@@ -149,7 +149,18 @@ files clean.
 - Dirty indicator; Save As / rename; Export PDF already uses the draft after App
   wiring.
 
-### P5 — Schema-scoped helpers (§5)
+### P5 — Schema-scoped helpers (§5) ✅ done
+
+Add/remove/reorder, insert scaffolds (`new*` stubs) and enum pickers all shipped
+in P1. P5 added the coordinate helpers: **paste "lat, long"** (fills both at
+once) and **Geocode from address** — a new `geocode` bridge/runtime seam
+(`bridge.geocode` → `runtime.geocode`, reusing `travelbook.maps.geocode`,
+narrowed to `defaults.inference_countries`), surfaced through `EditGeocodeContext`
+and gated on engine-ready + online. Each `CoordinateField` derives its query from
+the owning object (road `start`, POI address/name, accommodation address+city,
+transport start/end, car-rental pick-up/drop-off, waypoint location). Verified
+the bridge contract (hit/miss/error shapes + country filter) with a mocked
+Nominatim response.
 
 - `ArrayEditor` add/remove/**reorder** (order is meaningful for days/activities).
 - Insert scaffolds ("Add day", "Add activity → road/POI/place/hike/meal/buffer",

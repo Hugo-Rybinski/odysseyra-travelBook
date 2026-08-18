@@ -222,16 +222,22 @@ README schema tables). It is being built in phases — see
   the ✏️ tab marks them). Maps aren't refetched on a plain Apply (the
   previously-rendered ones are carried over); a separate **Apply & redraw maps**
   rebuilds them.
-- **P4 (current):** save the draft. **Save** overwrites the opened file in place
-  (File System Access handle, prompting for write access); **Save as…** writes a
-  new file (which becomes the backing source); **Download JSON** always works
-  (the only route where the FS Access API is absent, e.g. iOS Safari). An
+- **P4:** save the draft. **Save** overwrites the opened file in place (File
+  System Access handle, prompting for write access); **Save as…** writes a new
+  file (which becomes the backing source); **Download JSON** always works (the
+  only route where the FS Access API is absent, e.g. iOS Safari). An
   unsaved-changes indicator is tracked separately from unapplied edits (Apply =
   preview, Save = disk).
+- **P5 (current):** coordinate helpers. Every add/remove/reorder, insert
+  scaffold and enum picker already exists from P1; P5 adds **paste "lat, long"**
+  (fills both fields at once) and **Geocode from address** on each coordinate —
+  a Nominatim lookup (through the maps seam, narrowed to
+  `defaults.inference_countries`) that's gated on the engine being ready and the
+  device online.
 
-Next up: editing helpers (geocode-from-address, richer coordinate input) and
-undo/redo; a default-key prune + stable key order on save. Separately, moving
-Pyodide into a Web Worker so the first map render doesn't block the main thread.
+Next up: undo/redo, revert and an IndexedDB autosave draft; a default-key prune
++ stable key order on save. Separately, moving Pyodide into a Web Worker so the
+first map render doesn't block the main thread.
 
 ## Layout
 
@@ -248,6 +254,7 @@ src/
     EditPanel.tsx          stacked collapsible sections (config + content arrays)
     serialize.ts           jsonToDraft / serializeWithPaths (text + line→path map)
     findings.ts            finding index (line→path), context, collectFieldPaths
+    geocodeContext.ts      geocode-from-address seam for coordinate fields (P5)
     fields/                FieldRow/FieldList/FieldFindings, ArrayEditor, CoordinateField
     forms/                 per-object forms (day, activity, transport, …)
   types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)

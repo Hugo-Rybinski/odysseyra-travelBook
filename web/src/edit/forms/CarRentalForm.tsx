@@ -22,12 +22,14 @@ export function CarRentalForm({ value, path, onChange }: CarRentalFormProps) {
         label="Pick-up coordinate"
         path={`${path}.pickup_coordinate`}
         value={value.pickup_coordinate}
+        geocodeQuery={value.pickup_location}
         onChange={(c) => set({ ...rec, pickup_coordinate: c })}
       />
       <CoordinateField
         label="Drop-off coordinate"
         path={`${path}.dropoff_coordinate`}
         value={value.dropoff_coordinate}
+        geocodeQuery={value.dropoff_location || value.pickup_location}
         onChange={(c) => set({ ...rec, dropoff_coordinate: c })}
       />
     </div>

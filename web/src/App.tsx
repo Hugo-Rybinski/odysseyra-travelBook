@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   boot,
   buildPdf,
+  geocode,
   renderDayMap,
   resolve,
   validate,
@@ -71,6 +72,10 @@ export function App() {
   // Apply updates the preview, Save writes the draft to disk.
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Online/offline, for gating geocoding (Nominatim needs the network).
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
   // After a plain Apply we carry the previously-rendered day maps over rather
   // than refetching (editing changes the doc hash → every day misses the cache);
   // this suppresses the per-day map loaders for days without one, so "Apply"
@@ -155,6 +160,18 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Track connectivity (gates the Edit tab's geocode-from-address action).
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
 
   // Default the PDF's map toggle to whatever the opened file asks for.
   useEffect(() => {
@@ -358,6 +375,13 @@ export function App() {
     setSaved(true);
   }, [draft, draftFilename]);
 
+  // Geocode a coordinate field's address (P5), narrowed to the trip's
+  // inference_countries. Reuses the maps geocode seam through the bridge.
+  const onGeocode = useCallback(
+    (query: string) => geocode(query, draft?.defaults?.inference_countries ?? []),
+    [draft],
+  );
+
   // Apply the draft to the rendered viewer + findings + export source (P3). The
   // preview refreshes only here, never live-on-keystroke. `redrawMaps` also
   // rebuilds the per-day maps for the edited document; a plain apply carries the
@@ -518,6 +542,7 @@ export function App() {
           onSave={onSave}
           onSaveAs={onSaveAs}
           onDownloadJson={onDownloadJson}
+          geocode={{ geocode: onGeocode, ready: engineReady && online }}
         />
       ) : itinerary ? (
         <section className="report">
