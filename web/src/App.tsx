@@ -15,10 +15,17 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { downloadBytes, slugify } from "./file/saveExport";
+import {
+  docHash,
+  getCachedDay,
+  invalidateDoc,
+  purgeExpired,
+  putCachedDay,
+} from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import { PwaStatus } from "./pwa/PwaStatus";
-import type { Finding, Itinerary } from "./types/resolved";
+import type { Day, Finding, Itinerary } from "./types/resolved";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
 
@@ -49,39 +56,61 @@ export function App() {
   const [inkSaver, setInkSaver] = useState(false);
   const [mapsExport, setMapsExport] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [redrawing, setRedrawing] = useState(false);
 
   const engineReady = progress.stage === "ready";
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
 
-  // Render the per-day maps progressively, after the book is already on screen:
-  // yield to let the browser paint (the book + the pending days' loaders), then
-  // fetch one day's map (a blocking tile fetch) and swap it in. A newer file
-  // opening bumps the token, so a stale loop stops merging into the new view.
-  const buildDayMaps = useCallback(async (text: string, dayCount: number) => {
-    const token = ++mapRunRef.current;
-    for (let i = 0; i < dayCount; i++) {
-      await new Promise((r) => setTimeout(r, 0));
+  // Render the per-day maps progressively, after the book is already on screen.
+  // Each day is hydrated instantly from the 30-day IndexedDB cache when present;
+  // otherwise we yield (so the browser paints the book + pending loaders), fetch
+  // that day's map (a blocking tile fetch), swap it in and cache it. `force`
+  // skips the cache read (used by "Redraw maps"). A newer file/redraw bumps the
+  // token, so a stale loop stops merging into the current view.
+  const buildDayMaps = useCallback(
+    async (text: string, dayCount: number, force = false) => {
+      const token = ++mapRunRef.current;
+      const hash = await docHash(text);
       if (mapRunRef.current !== token) return;
-      try {
-        const day = await renderDayMap(text, i);
-        if (mapRunRef.current !== token) return;
+
+      const swapIn = (i: number, day: Day) =>
         setItinerary((prev) => {
           if (!prev) return prev;
           const days = prev.days.slice();
           days[i] = day;
           return { ...prev, days };
         });
-      } catch {
-        // leave that day mapless and carry on with the rest
+
+      for (let i = 0; i < dayCount; i++) {
+        if (!force) {
+          const cached = await getCachedDay(hash, i);
+          if (mapRunRef.current !== token) return;
+          if (cached) {
+            swapIn(i, cached);
+            continue;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 0));
+        if (mapRunRef.current !== token) return;
+        try {
+          const day = await renderDayMap(text, i);
+          if (mapRunRef.current !== token) return;
+          swapIn(i, day);
+          await putCachedDay(hash, i, day);
+        } catch {
+          // leave that day mapless and carry on with the rest
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Warm the engine on mount, and see whether a previous file can be reopened.
   useEffect(() => {
     boot(setProgress).catch((e) => setError(String(e)));
     loadLastHandle().then((h) => setCanReopen(!!h));
+    void purgeExpired(); // drop map images older than 30 days
   }, []);
 
   // Reflect the chosen language on <html lang> for assistive tech.
@@ -168,6 +197,26 @@ export function App() {
     }
   }, [source, lang, inkSaver, mapsExport, itinerary]);
 
+  // Redraw this file's maps: drop its cached images, clear them on screen (so
+  // the per-day loaders reappear) and re-render every day, bypassing the cache.
+  const onRedraw = useCallback(async () => {
+    if (!source || !itinerary?.maps.include_in_render) return;
+    setRedrawing(true);
+    setError(null);
+    try {
+      const hash = await docHash(source.text);
+      await invalidateDoc(hash);
+      setItinerary((prev) =>
+        prev ? { ...prev, days: prev.days.map((d) => ({ ...d, map: undefined })) } : prev,
+      );
+      await buildDayMaps(source.text, itinerary.days.length, true);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setRedrawing(false);
+    }
+  }, [source, itinerary, buildDayMaps]);
+
   // Re-validate (in the chosen language) when the language changes.
   const onToggleLang = useCallback(
     async (next: Lang) => {
@@ -235,6 +284,16 @@ export function App() {
                 />
                 Maps
               </label>
+              {itinerary.maps.include_in_render && (
+                <button
+                  className="btn ghost"
+                  onClick={onRedraw}
+                  disabled={redrawing || !engineReady}
+                  title="Discard this file's cached map images and rebuild them"
+                >
+                  {redrawing ? "Redrawing…" : "Redraw maps"}
+                </button>
+              )}
               <button
                 className="btn"
                 onClick={onExport}

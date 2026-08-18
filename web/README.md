@@ -132,6 +132,13 @@ first time a map is built and cached CacheFirst by the service worker (see the
 has been rendered once online renders offline afterwards. A map that has never
 been fetched simply doesn't appear offline — the build degrades gracefully.
 
+On top of that HTTP cache, the *finished* map images are persisted in IndexedDB
+(`src/maps/mapCache.ts`, database `travelbook-maps`, 30-day TTL) keyed by a hash
+of the itinerary JSON + the day index. So a relaunched (or killed) app rehydrates
+the exact rendered PNGs without recompositing them; expired entries are purged at
+startup, and the **Redraw maps** button clears just the current file's entries
+and re-renders. Editing the JSON changes its hash, so stale images miss naturally.
+
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load:
@@ -145,7 +152,10 @@ The full v1 flow works in the browser, offline after first load:
   opts into maps (`include_maps_in_render`), the text renders first and each day's
   Python-rendered overview map (pixel-identical to the PDF) then fills in — a
   per-day loader shows while it builds — with numbered pin discs next to activity
-  titles, plus zoomed area maps.
+  titles, plus zoomed area maps. Rendered maps are cached in IndexedDB for 30
+  days (keyed by a hash of the JSON), so a relaunched app hydrates them instantly
+  instead of redrawing; a **Redraw maps** button discards this file's cached
+  images and rebuilds them.
 - **Findings** panel lists every validation ❌/⚠️/ℹ️ with line numbers and a level
   filter; **EN/FR** toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
@@ -168,9 +178,10 @@ src/
   App.tsx                  Phase 1 smoke UI
   index.css
   pyodide/
-    runtime.ts             boot Pyodide, install wheel, typed validate/resolve/buildPdf
+    runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
     bridge.py              JSON-in/out glue over the travelbook package (+ maps)
     netbridge.ts           synchronous fetch exposed to Python for the maps seam
+  maps/mapCache.ts         IndexedDB cache of rendered day maps (30-day TTL)
   types/resolved.ts        TS mirror of the resolved-model dict (to_dict)
 scripts/build-wheel.sh     wheel builder used by `npm run wheel`
 vite.config.ts             React + vite-plugin-pwa + static-copy of examples
