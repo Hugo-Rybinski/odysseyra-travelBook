@@ -154,7 +154,16 @@ can't load, an error boundary + timeout fall back to the static PNG.
 
 ## Current status — v1 complete
 
-The full v1 flow works in the browser, offline after first load:
+The full v1 flow works in the browser, offline after first load. The header
+switches between views — **⚙️ Options**, **📖 Travel viewer**, and **🔎 Findings**
+(the validation findings) — showing one at a time. Every control lives in the
+**Options** view (`src/Options.tsx`), grouped by theme — *File* (open / reopen /
+sample), *Language*, *Maps* (interactive toggle + redraw), *PDF export* (ink-saver
+/ include-maps / export) and *App* (install as an app / check for updates).
+Options is shown on first run so a file can be opened, then switches to the viewer
+once the book is on screen. Controls (and the Findings tab) are never hidden when
+unavailable — they're greyed with a hover tooltip explaining why (no file open,
+the itinerary opts out of maps, the browser hasn't offered an install prompt…).
 
 - **Open** a local itinerary JSON (File System Access API, or an `<input>`
   fallback; "Reopen last" remembers the file) — or load the bundled **Sample**.
@@ -178,16 +187,19 @@ The full v1 flow works in the browser, offline after first load:
   static PNG automatically if it can't load. MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
-- **Findings** panel lists every validation ❌/⚠️/ℹ️ with line numbers and a level
-  filter; **EN/FR** toggles messages, dates and labels.
+- **Warnings** tab lists every validation ❌/⚠️/ℹ️ finding with line numbers and a
+  level filter; **EN/FR** (in Options) toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
   maps toggles; the maps toggle defaults to the file's own `include_maps_in_render`).
-- PWA polish: an offline banner, offline-ready / updating / install toasts
+- PWA polish: an offline banner and offline-ready / updating toasts
   (`src/pwa/PwaStatus.tsx`), and **automatic updates** — `src/pwa/PwaProvider.tsx`
   owns the single service-worker registration and, when a new deploy is detected,
-  activates it and reloads once (no DevTools needed); the header's **Update**
-  button forces an immediate check. Note the SW only registers in a production
-  build, so use `npm run build && npm run preview` to exercise these.
+  activates it and reloads once (no DevTools needed). `PwaProvider` also owns the
+  deferred install prompt (`beforeinstallprompt`), which the Options panel's **App**
+  group surfaces as **Install as an app** (shown only when the browser offers it);
+  its **Check for updates** button forces an immediate check. Note the SW only
+  registers in a production build, so use `npm run build && npm run preview` to
+  exercise these.
 
 Next up (post-v1): editing the itinerary in the UI, and moving Pyodide into a
 Web Worker so the first map render doesn't block the main thread.
@@ -200,7 +212,8 @@ public/
   py/                      built wheel + wheel.json (gitignored; `npm run wheel`)
 src/
   main.tsx                 entry; registers the service worker
-  App.tsx                  Phase 1 smoke UI
+  App.tsx                  top-level state + layout (header, book, findings)
+  Options.tsx              the themed Options panel (all controls live here)
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf

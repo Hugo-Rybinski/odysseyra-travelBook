@@ -24,6 +24,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
+import { Options } from "./Options";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
 import type { Day, Finding, Itinerary } from "./types/resolved";
@@ -40,6 +41,7 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
 };
 
 type Lang = "en" | "fr";
+type View = "options" | "viewer" | "findings";
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -59,9 +61,12 @@ export function App() {
   const [exporting, setExporting] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
+  // Which top-level view is showing. Starts on "options" (so a first-run user
+  // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
+  const [view, setView] = useState<View>("options");
 
   const engineReady = progress.stage === "ready";
-  const { checkForUpdate, checking, updating } = usePwa();
+  const { checkForUpdate, checking, updating, canInstall, install } = usePwa();
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
 
@@ -140,6 +145,7 @@ export function App() {
         setSource(src);
         setItinerary(model);
         setFindings(found);
+        setView("viewer"); // switch to the book once it's on screen
         // Text is on screen now; fetch the per-day maps in the background.
         if (model.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
         else mapRunRef.current++; // cancel any in-flight loop from a prior file
@@ -239,95 +245,33 @@ export function App() {
       <PwaStatus />
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
         <h1>Travelbook Viewer</h1>
-        <div className="actions">
-          <button className="btn" onClick={onOpen} disabled={busy}>
-            Open JSON…
-          </button>
-          {canReopen && (
-            <button className="btn ghost" onClick={onReopen} disabled={busy}>
-              Reopen last
-            </button>
-          )}
-          <button className="btn ghost" onClick={onOpenSample} disabled={busy}>
-            Sample
+        <div className="actions" role="tablist" aria-label="View">
+          <button
+            className={`btn ghost ${view === "options" ? "active" : ""}`}
+            onClick={() => setView("options")}
+            role="tab"
+            aria-selected={view === "options"}
+          >
+            ⚙️ Options
           </button>
           <button
-            className="btn ghost"
-            onClick={checkForUpdate}
-            disabled={checking || updating}
-            title="Check for a new version and update to it"
+            className={`btn ghost ${view === "viewer" ? "active" : ""}`}
+            onClick={() => setView("viewer")}
+            role="tab"
+            aria-selected={view === "viewer"}
           >
-            {updating ? "Updating…" : checking ? "Checking…" : "Update"}
+            📖 Travel viewer
           </button>
-          <div className="lang" role="group" aria-label="Language">
-            {(["en", "fr"] as Lang[]).map((l) => (
-              <button
-                key={l}
-                className={`lang-btn ${lang === l ? "active" : ""}`}
-                onClick={() => onToggleLang(l)}
-                aria-pressed={lang === l}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          {itinerary && (
-            <>
-              <label
-                className="ink"
-                title="Outlines instead of solid accent fills — less colored ink when printing"
-              >
-                <input
-                  type="checkbox"
-                  checked={inkSaver}
-                  onChange={(e) => setInkSaver(e.target.checked)}
-                />
-                Ink-saver
-              </label>
-              <label
-                className="ink"
-                title="Embed the per-day maps in the exported PDF (fetches map tiles; slower)"
-              >
-                <input
-                  type="checkbox"
-                  checked={mapsExport}
-                  onChange={(e) => setMapsExport(e.target.checked)}
-                />
-                Maps
-              </label>
-              {itinerary.maps.include_in_render && (
-                <>
-                  <label
-                    className="ink"
-                    title="Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={interactiveMaps}
-                      onChange={(e) => setInteractiveMaps(e.target.checked)}
-                    />
-                    Interactive
-                  </label>
-                  <button
-                    className="btn ghost"
-                    onClick={onRedraw}
-                    disabled={redrawing || !engineReady}
-                    title="Discard this file's cached map images and rebuild them"
-                  >
-                    {redrawing ? "Redrawing…" : "Redraw maps"}
-                  </button>
-                </>
-              )}
-              <button
-                className="btn"
-                onClick={onExport}
-                disabled={exporting || !engineReady}
-                title={mapsExport ? "Maps are embedded in the PDF" : "Maps are omitted from the PDF"}
-              >
-                {exporting ? "Exporting…" : "Export PDF"}
-              </button>
-            </>
-          )}
+          <button
+            className={`btn ghost ${view === "findings" ? "active" : ""}`}
+            onClick={() => itinerary && setView("findings")}
+            role="tab"
+            aria-selected={view === "findings"}
+            aria-disabled={!itinerary}
+            data-tip={itinerary ? undefined : "Open an itinerary first"}
+          >
+            🔎 Findings
+          </button>
         </div>
       </header>
 
@@ -338,28 +282,57 @@ export function App() {
 
       {error && <p className="banner error">⚠️ {error}</p>}
 
-      {!itinerary && !error && (
-        <section className="empty-state">
-          <div className="book-mark" aria-hidden>
-            📖
-          </div>
-          <h2>Open an itinerary</h2>
-          <p>
-            Choose a travelbook JSON file to render the travel book and see its
-            validation findings. Everything stays on your device.
-          </p>
-          {!engineReady && <small>The engine is still warming up…</small>}
-        </section>
-      )}
-
-      {itinerary && (
+      {view === "options" ? (
+        <Options
+          onOpen={onOpen}
+          onReopen={onReopen}
+          onOpenSample={onOpenSample}
+          canReopen={canReopen}
+          busy={busy}
+          lang={lang}
+          onToggleLang={onToggleLang}
+          hasItinerary={!!itinerary}
+          mapsInRender={!!itinerary?.maps.include_in_render}
+          engineReady={engineReady}
+          interactiveMaps={interactiveMaps}
+          setInteractiveMaps={setInteractiveMaps}
+          onRedraw={onRedraw}
+          redrawing={redrawing}
+          inkSaver={inkSaver}
+          setInkSaver={setInkSaver}
+          mapsExport={mapsExport}
+          setMapsExport={setMapsExport}
+          onExport={onExport}
+          exporting={exporting}
+          checkForUpdate={checkForUpdate}
+          checking={checking}
+          updating={updating}
+          canInstall={canInstall}
+          install={install}
+        />
+      ) : view === "findings" && itinerary ? (
+        <FindingsPanel findings={findings} />
+      ) : itinerary ? (
         <section className="report">
           <p className="report-caption">
             {source?.name && <span className="filename">{source.name}</span>}
           </p>
           <Book itinerary={itinerary} lang={lang} interactiveMaps={interactiveMaps} />
-          <FindingsPanel findings={findings} />
         </section>
+      ) : (
+        !error && (
+          <section className="empty-state">
+            <div className="book-mark" aria-hidden>
+              📖
+            </div>
+            <h2>Open an itinerary</h2>
+            <p>
+              Choose a travelbook JSON file in <strong>⚙️ Options</strong> to render the
+              travel book and see its validation findings. Everything stays on your device.
+            </p>
+            {!engineReady && <small>The engine is still warming up…</small>}
+          </section>
+        )
       )}
     </main>
   );
