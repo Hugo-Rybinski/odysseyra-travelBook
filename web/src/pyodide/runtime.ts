@@ -140,7 +140,10 @@ export async function buildPdf(
   opts: { lang?: string; inkSaver?: boolean } = {},
 ): Promise<Uint8Array> {
   const result = bridge().build(text, opts.lang ?? "en", opts.inkSaver ?? false);
-  const bytes = result.toJs() as Uint8Array;
+  // Python `bytes` usually comes back as a PyProxy (needs .toJs()); guard in case
+  // a future Pyodide auto-converts it to a Uint8Array.
+  if (result instanceof Uint8Array) return new Uint8Array(result);
+  const bytes = new Uint8Array(result.toJs() as Uint8Array); // copy out of wasm heap
   result.destroy?.();
   return bytes;
 }

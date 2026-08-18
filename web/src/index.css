@@ -283,9 +283,36 @@ body {
   }
 }
 
+.ink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ink input {
+  accent-color: #fff;
+  cursor: pointer;
+}
+
 /* ---------------------------------------------------------------- the book */
-.report .filename {
+.report-caption {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
   margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.report-caption .filename {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.report-caption .maps-note {
+  font-style: italic;
 }
 
 .book {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { boot, resolve, validate, type BootProgress } from "./pyodide/runtime";
+import { boot, buildPdf, resolve, validate, type BootProgress } from "./pyodide/runtime";
 import {
   loadLastHandle,
   openFile,
@@ -7,6 +7,7 @@ import {
   reopenHandle,
   type OpenedFile,
 } from "./file/openFile";
+import { downloadBytes, slugify } from "./file/saveExport";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import type { Finding, Itinerary } from "./types/resolved";
@@ -37,6 +38,8 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canReopen, setCanReopen] = useState(false);
+  const [inkSaver, setInkSaver] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const engineReady = progress.stage === "ready";
 
@@ -100,6 +103,22 @@ export function App() {
     }
   }, [analyze]);
 
+  // Export the PDF (maps off in v1) and download it, without losing the view.
+  const onExport = useCallback(async () => {
+    if (!source) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const bytes = await buildPdf(source.text, { lang, inkSaver });
+      const base = itinerary?.title || source.name || "travelbook";
+      downloadBytes(bytes, `${slugify(base)}.pdf`);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setExporting(false);
+    }
+  }, [source, lang, inkSaver, itinerary]);
+
   // Re-validate (in the chosen language) when the language changes.
   const onToggleLang = useCallback(
     async (next: Lang) => {
@@ -142,6 +161,29 @@ export function App() {
               </button>
             ))}
           </div>
+          {itinerary && (
+            <>
+              <label
+                className="ink"
+                title="Outlines instead of solid accent fills — less colored ink when printing"
+              >
+                <input
+                  type="checkbox"
+                  checked={inkSaver}
+                  onChange={(e) => setInkSaver(e.target.checked)}
+                />
+                Ink-saver
+              </label>
+              <button
+                className="btn"
+                onClick={onExport}
+                disabled={exporting || !engineReady}
+                title="Maps are not embedded in the PDF (v1)"
+              >
+                {exporting ? "Exporting…" : "Export PDF"}
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -168,7 +210,10 @@ export function App() {
 
       {itinerary && (
         <section className="report">
-          {source?.name && <p className="filename">{source.name}</p>}
+          <p className="report-caption">
+            {source?.name && <span className="filename">{source.name}</span>}
+            <span className="maps-note">Maps aren’t embedded in the PDF export (v1).</span>
+          </p>
           <Book itinerary={itinerary} lang={lang} />
           <FindingsPanel findings={findings} />
         </section>
