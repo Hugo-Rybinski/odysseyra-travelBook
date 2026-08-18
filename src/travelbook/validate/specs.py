@@ -241,7 +241,7 @@ ACTIVITY_SPECS = {
         Spec("name", True, "the hike name", "any text"),
         Spec("description", False, "a description of the hike", "any text", '""'),
         Spec("distance_km", False, "the hike distance in km", "a number",
-             "none", V_NUMBER, warn_if_missing=True),
+             "none", V_NUMBER),
         Spec("elevation_m", False, "the elevation gain in m", "a number",
              "none", V_NUMBER),
         Spec("start", False, "the trailhead address", "any text", '""'),

@@ -206,11 +206,16 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   JSONs, the README tables, the French `translations.py`, **`skills/build-full-json.md`**
   (the field tables/examples an LLM uses to extract JSON),
   regenerate the snapshot, and re-render the example PDFs.
-- **`skills/`** holds a single LLM-facing doc, `build-full-json.md`: a
-  self-contained guide (it duplicates every field table, value format and rule)
-  that turns raw text/screenshots into the **entire** itinerary as one
-  `<title>.json`, needing no other file, no source code, and no tool. **Any
-  JSON-format change must be mirrored here** — it is authoritative alongside the
-  README.
+- **`skills/`** holds LLM-facing docs:
+  - `build-full-json.md` — a self-contained guide (it duplicates every field
+    table, value format and rule) that turns raw text/screenshots into the
+    **entire** itinerary as one `<title>.json`, needing no other file, no source
+    code, and no tool. **Any JSON-format change must be mirrored here** — it is
+    authoritative alongside the README.
+  - `fix-missing-duration-distance.md` — from a JSON + a list of validator
+    warnings about missing duration/distance/elevation, builds a fill-in-the-blank
+    Markdown worksheet (Google Maps links for road distances; web-inferred hike
+    figures tagged `[to be checked]`). If the magnitude-warning messages change,
+    update its warning-patterns table.
 - `README.md` documents the JSON schema field-by-field (one table per object,
   with Required/Type/Format/Default) — keep it authoritative.

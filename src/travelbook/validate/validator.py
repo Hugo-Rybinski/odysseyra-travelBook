@@ -286,6 +286,112 @@ class _Validator:
         if kind in NESTED_ACTIVITY_TYPES:
             self._nested_activities(act, kind, path)
             self._nested_duration_fit(act, path)
+        if kind != "buffer":
+            self._magnitude_warning(act, path, kind)
+
+    def _magnitude_warning(self, act, path, kind):
+        """Warn about the size an activity conveys. A point of interest or place
+        warns only when it has no determinable duration; a road or hike is
+        expected to give *each* of its magnitude fields (a duration plus
+        distance — and, for a hike, elevation) and warns naming any that are
+        missing. A duration counts as known when it is given or inferable from
+        the start/end times (or, for a road, from its waypoints)."""
+        dur_known = _obj_minutes(act) is not None
+        if kind == "road":
+            wps = act.get("waypoints")
+            legs = self._road_legs(str(act.get("start", "")).strip(),
+                                   wps if isinstance(wps, list) else [])
+            if len(legs) <= 1:
+                # a plain departure → arrival drive: the whole road is one leg,
+                # so its own duration/distance (or the sole leg's) covers it
+                src, dest, has_dur, has_dist = (legs[0] if legs
+                                                else (act.get("start"), None, False, False))
+                dur_ok = dur_known or has_dur
+                dist_ok = act.get("distance_km") is not None or has_dist
+                missing = ([] if dur_ok else ["duration"]) + \
+                          ([] if dist_ok else ["distance_km"])
+                if missing:
+                    self.add("warning", path, "this road ({route}) should give a "
+                             "duration and a 'distance_km' — missing: {missing}.",
+                             route=self._leg_label(src, dest),
+                             missing=", ".join(missing))
+            else:
+                # a multi-stop drive: each named leg is shown on its own, so each
+                # should carry its own duration and distance
+                for src, dest, has_dur, has_dist in legs:
+                    if dest is None:
+                        continue  # a trailing unnamed (route-shaping) arrival
+                    missing = ([] if has_dur else ["duration"]) + \
+                              ([] if has_dist else ["distance_km"])
+                    if missing:
+                        self.add("warning", path, "this road's leg ({route}) should "
+                                 "give a duration and a 'distance_km' — missing: "
+                                 "{missing}.", route=self._leg_label(src, dest),
+                                 missing=", ".join(missing))
+        elif kind == "hike":
+            missing = [] if dur_known else ["duration"]
+            if act.get("distance_km") is None:
+                missing.append("distance_km")
+            if act.get("elevation_m") is None:
+                missing.append("elevation_m")
+            if missing:
+                self.add("warning", path, "this hike ({name}) should give a "
+                         "duration, a 'distance_km' and an 'elevation_m' — missing: "
+                         "{missing}.", name=self._name_of(act),
+                         missing=", ".join(missing))
+        elif kind in ("point_of_interest", "place"):
+            if not dur_known and not self._nested_duration(act):
+                self.add("warning", path, "this activity ({name}) has no duration "
+                         "and none can be inferred from its start/end times — add a "
+                         "'duration', or a 'start_time' and 'end_time'.",
+                         name=self._name_of(act))
+
+    @staticmethod
+    def _nested_duration(act):
+        """True if a container's length is conveyed by a nested activity that
+        itself has a determinable duration."""
+        nested = act.get("activities")
+        if not isinstance(nested, list):
+            return False
+        return any(isinstance(s, dict) and _obj_minutes(s) is not None
+                   for s in nested)
+
+    @staticmethod
+    def _road_legs(start, waypoints):
+        """Group raw waypoint dicts into display legs, mirroring the PDF: an
+        unnamed (route-shaping) waypoint merges forward into the next named one,
+        its duration/distance folded into that leg. Returns a list of
+        ``(src, dest_or_None, has_duration, has_distance)`` — one per leg; ``src``
+        is the previous named point (or the road ``start`` for the first leg) and
+        ``dest`` is ``None`` for a trailing run of unnamed waypoints (an unnamed
+        arrival)."""
+        legs = []
+        prev = start
+        has_dur = has_dist = pending = False
+        for wp in waypoints:
+            if not isinstance(wp, dict):
+                continue
+            pending = True
+            if _dur(wp.get("duration")) is not None:
+                has_dur = True
+            if wp.get("distance_km") is not None:
+                has_dist = True
+            loc = str(wp.get("location", "")).strip()
+            if loc:
+                legs.append((prev, loc, has_dur, has_dist))
+                prev = loc
+                has_dur = has_dist = pending = False
+        if pending:
+            legs.append((prev, None, has_dur, has_dist))
+        return legs
+
+    @staticmethod
+    def _name_of(act):
+        return str(act.get("name", "")).strip() or "?"
+
+    @staticmethod
+    def _leg_label(src, dest):
+        return f"{src or '?'} → {dest or '?'}"
 
     def _nested_duration_fit(self, act, path):
         """Warn when the nested activities' total (explicit) length exceeds the
@@ -334,6 +440,7 @@ class _Validator:
             self.check_object(sub, spath, ACTIVITY_SPECS[kind], skip_optional=True)
             if kind == "hike":
                 self._hike_route_endpoints(sub, spath)
+                self._magnitude_warning(sub, spath, kind)
             if kind == "meal" and sub.get("restaurant") and sub.get("area"):
                 self.add("warning", spath, "both 'restaurant' and 'area' are set — "
                          "'area' is ignored when a restaurant is named.")
@@ -406,6 +513,10 @@ class _Validator:
         self.check_object(t, path, TRANSPORT_SPECS)
         self._time_consistency(t, path, tz_aware=True)
         self._magnitudes(t, path, "transport")
+        if _tmin(t.get("start_time")) is not None and _obj_minutes(t) is None:
+            self.add("warning", path, "this transport has no duration and none can "
+                     "be inferred from its start/end times — add a 'duration', or "
+                     "an 'end_time'.")
         sd, ed = _date(t.get("start_date")), _date(t.get("end_date"))
         if sd and ed and ed < sd:
             self.add("error", path, "transport end_date ({ed}) is before "

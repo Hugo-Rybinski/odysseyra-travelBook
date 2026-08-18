@@ -237,14 +237,98 @@ def test_hike_one_way_without_distinct_end_warns():
         _hike(route="one_way", start="A", end="B"))
 
 
-def test_hike_missing_distance_warns():
+def test_activity_without_determinable_duration_warns():
+    # a point_of_interest with no duration and no start/end span
+    findings = _one_day([{"type": "point_of_interest", "name": "M"}])
+    assert "no duration and none can be inferred" in _messages(_warnings(findings))
+    # giving both times (duration inferable) silences it
+    ok = _one_day([{"type": "point_of_interest", "name": "M",
+                    "start_time": "09:00", "end_time": "10:00"}])
+    assert "no duration and none can be inferred" not in _messages(_warnings(ok))
+    # a place whose nested activity carries a duration is fine
+    ok2 = _one_day([{"type": "place", "name": "P", "activities": [
+        {"type": "point_of_interest", "name": "inner", "duration": "1h"}]}])
+    assert "no duration and none can be inferred" not in _messages(_warnings(ok2))
+
+
+def test_single_leg_road_warns_for_each_missing_magnitude():
+    # a plain A→B drive: neither duration nor distance → both listed
+    w = _messages(_warnings(_one_day([{"type": "road", "start": "A",
+                                       "waypoints": [{"location": "B"}]}])))
+    assert "this road (A → B) should give a duration and a 'distance_km'" in w
+    assert "missing: duration, distance_km" in w
+    # road-level distance present, duration still missing → duration only
+    w2 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "distance_km": 12,
+                                        "waypoints": [{"location": "B"}]}])))
+    assert "missing: duration." in w2
+    # both known (duration via times, distance on the road) → no warning
+    w3 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "distance_km": 12,
+                                        "start_time": "09:00", "end_time": "10:00",
+                                        "waypoints": [{"location": "B"}]}])))
+    assert "this road should give" not in w3
+    # a waypoint duration + distance also satisfy the single leg
+    w4 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "waypoints": [
+        {"location": "B", "duration": "40 min", "distance_km": 30}]}])))
+    assert "this road should give" not in w4
+
+
+def test_multi_leg_road_warns_per_named_leg():
+    # two named legs; the second lacks its distance → only that leg warns
+    day = [{"type": "road", "start": "A", "waypoints": [
+        {"location": "B", "duration": "40 min", "distance_km": 30},
+        {"location": "C", "duration": "50 min"}]}]
+    w = _messages(_warnings(_one_day(day)))
+    assert "this road's leg (B → C) should give a duration and a 'distance_km'" in w
+    assert "missing: distance_km." in w
+    assert "(A → B)" not in w  # the complete leg doesn't warn
+    # unnamed shaping points fold their duration/distance into the next named leg
+    day2 = [{"type": "road", "start": "A", "waypoints": [
+        {"duration": "20 min", "distance_km": 10},
+        {"location": "B", "duration": "20 min", "distance_km": 20},
+        {"location": "C", "duration": "50 min", "distance_km": 40}]}]
+    assert "this road's leg" not in _messages(_warnings(_one_day(day2)))
+
+
+def test_hike_warns_for_each_missing_magnitude():
+    # nothing → all three listed
+    w = _messages(_warnings(_one_day([{"type": "hike", "name": "H"}])))
+    assert "missing: duration, distance_km, elevation_m" in w
+    # duration + distance given, elevation missing → warns for elevation only
+    w2 = _messages(_warnings(_one_day([{"type": "hike", "name": "H",
+                                        "duration": "2h", "distance_km": 5}])))
+    assert "missing: elevation_m." in w2
+    # all three present → no warning
+    w3 = _messages(_warnings(_one_day([{"type": "hike", "name": "H", "duration": "2h",
+                                        "distance_km": 5, "elevation_m": 800}])))
+    assert "this hike should give" not in w3
+
+
+def test_nested_hike_also_warns_for_missing_magnitude():
+    # a hike nested inside a place must be checked too
+    day = [{"type": "place", "name": "P", "activities": [
+        {"type": "hike", "name": "Ridge walk", "distance_km": 4}]}]
+    w = _messages(_warnings(_one_day(day)))
+    assert "this hike (Ridge walk) should give" in w
+    assert "missing: duration, elevation_m" in w
+    # a fully-specified nested hike is silent
+    ok = [{"type": "point_of_interest", "name": "POI", "activities": [
+        {"type": "hike", "name": "Ridge walk", "duration": "3h",
+         "distance_km": 4, "elevation_m": 500}]}]
+    assert "this hike (" not in _messages(_warnings(_one_day(ok)))
+
+
+def test_transport_without_determinable_duration_warns():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
-               {"type": "hike", "name": "H", "duration": "2h"}]}]}
+               {"type": "point_of_interest", "name": "M"}]}],
+           "transport": [{"type": "bus", "start": "A", "end": "B",
+                          "start_date": "2026-06-08", "start_time": "09:00"}]}
     findings = validate_text(json.dumps(doc))
-    assert "optional field 'distance_km' is missing" in _messages(_warnings(findings))
-    # and it is a ⚠️ warning, not an ℹ️ info
-    assert "distance_km" not in _messages(_infos(findings))
+    assert "this transport has no duration" in _messages(_warnings(findings))
+    # an end_time makes the duration inferable
+    doc["transport"][0]["end_time"] = "12:00"
+    assert "this transport has no duration" not in _messages(
+        _warnings(validate_text(json.dumps(doc))))
 
 
 def test_transport_required_fields_and_type_enum():

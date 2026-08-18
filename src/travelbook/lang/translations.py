@@ -346,6 +346,26 @@ _FR = {
     "single day.":
         "les activités du jour dépassent minuit — le programme ne tient pas "
         "en une seule journée.",
+    "this activity ({name}) has no duration and none can be inferred from its "
+    "start/end times — add a 'duration', or a 'start_time' and 'end_time'.":
+        "cette activité ({name}) n'a pas de durée et aucune ne peut être déduite "
+        "de ses horaires — ajoutez « duration », ou « start_time » et « end_time ».",
+    "this road ({route}) should give a duration and a 'distance_km' — "
+    "missing: {missing}.":
+        "cette route ({route}) devrait indiquer une durée et « distance_km » — "
+        "manquant : {missing}.",
+    "this road's leg ({route}) should give a duration and a 'distance_km' — "
+    "missing: {missing}.":
+        "l'étape de cette route ({route}) devrait indiquer une durée et "
+        "« distance_km » — manquant : {missing}.",
+    "this hike ({name}) should give a duration, a 'distance_km' and an "
+    "'elevation_m' — missing: {missing}.":
+        "cette randonnée ({name}) devrait indiquer une durée, « distance_km » et "
+        "« elevation_m » — manquant : {missing}.",
+    "this transport has no duration and none can be inferred from its start/end "
+    "times — add a 'duration', or an 'end_time'.":
+        "ce transport n'a pas de durée et aucune ne peut être déduite de ses "
+        "horaires — ajoutez « duration » ou « end_time ».",
     "invalid JSON — {error}": "JSON invalide — {error}",
     # -- validation: summary & CLI --
     "No problems found.": "Aucun problème trouvé.",

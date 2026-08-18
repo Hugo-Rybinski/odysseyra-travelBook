@@ -114,7 +114,15 @@ travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
     a different `end`, or a one-way with no distinct `end`),
   - an activity that ends after the trip's `defaults.end_time`,
   - a car-rental pick-up/drop-off that overlaps an activity or transport on the
-    same day.
+    same day,
+  - a point of interest, place, or transport with no determinable duration
+    (none given, and none inferable from its `start_time`/`end_time`),
+  - a road or hike missing a magnitude field: a hike (top-level **or nested**)
+    should give a duration, a `distance_km` **and** an `elevation_m`; a plain
+    drive a duration **and** a `distance_km`; and on a **multi-stop** drive each
+    named leg (a waypoint with a `location`) should carry its own leg duration
+    and `distance_km` — unnamed route-shaping waypoints fold into the next named
+    leg — with the warning naming each field that's missing.
 - ℹ️ **info** — a low-priority note (hidden unless `-v 3`): an optional field is
   missing (with the default that will be used), a zero-minute buffer, or a night
   with both a hotel and an overnight transport (the accommodation is used).
@@ -401,7 +409,7 @@ a validation error.
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Hike name | string | any text | — |
 | `description` |  | Description | string | any text | `""` |
-| `distance_km` |  | Distance (validation warns if missing) | number | positive number | none |
+| `distance_km` |  | Distance | number | positive number | none |
 | `elevation_m` |  | Elevation gain | number | positive number | none |
 | `start` |  | Trailhead address | string | any text | `""` |
 | `end` |  | End address | string | any text | `""` |

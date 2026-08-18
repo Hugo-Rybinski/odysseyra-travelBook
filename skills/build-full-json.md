@@ -197,7 +197,7 @@ A road departs from `start` and runs through its `waypoints`, in order — the
 |---|---|---|---|
 | `start` | **yes** | text | Where the drive begins. |
 | `coordinate` | no | `{ "lat": .., "long": .. }` | The departure point, for the map route. |
-| `distance_km` | no | positive number | Driving distance. |
+| `distance_km` | recommended | positive number | Driving distance. A road should carry a duration (its own/inferred times, or waypoint durations) **and** a `distance_km`; `validate` warns naming either that's missing. |
 | `off_road` | no | boolean | `true` if part is off-road. |
 | `waypoints` | **yes** | non-empty array of **waypoint** objects | Ordered stops through to the arrival. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
@@ -217,6 +217,9 @@ Each **waypoint** is an object:
   Leave `location` off for a point that only **shapes the route** on the map (a
   bend, a pass): it still gets a map disc, but in the PDF it merges into the next
   named waypoint and its `duration`/`distance_km` are summed into that leg.
+- On a **multi-stop** drive each named waypoint is its own displayed leg, so give
+  each one a `duration` **and** a `distance_km` (folding in any preceding unnamed
+  shaping points); `validate` warns for a named leg missing either.
 - Keep the waypoint `duration`s adding up to no more than the road's own
   `duration`; `validate` warns if the segments don't fit the drive.
 
@@ -269,8 +272,8 @@ located sub-activities.
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `name` | **yes** | text | Trail/hike name. |
-| `distance_km` | recommended | number | Length; `validate` warns if missing. |
-| `elevation_m` | no | number | Elevation gain in metres. |
+| `distance_km` | recommended | number | Length. A hike (top-level **or nested** under a place/point of interest) should carry a duration, a `distance_km` **and** an `elevation_m`; `validate` warns naming any of the three that's missing. |
+| `elevation_m` | recommended | number | Elevation gain in metres (see `distance_km`). |
 | `start` | no | text | Trailhead. |
 | `end` | no | text | End point. |
 | `route` | no | enum (default `back_and_forth`) | One of `loop`, `back_and_forth`, `one_way`. For `loop`/`back_and_forth`, `end` should match `start` (or be omitted); for `one_way`, `end` should differ. |
