@@ -131,7 +131,18 @@ identically to the original.
   automatically (editing changes the doc hash → cache miss). A separate "Apply &
   redraw maps" reuses `buildDayMaps(..., force)`.
 
-### P4 — Save / export (§4)
+### P4 — Save / export (§4) ✅ done
+
+Implemented: the Edit action bar has **Save** (overwrites the opened file in
+place via the FS Access handle — `writeHandle`, prompting for write permission),
+**Save as…** (`showSaveFilePicker` → the new file becomes the backing source, so
+later saves and "Reopen last" use it), and **Download JSON** (always available;
+the only route where the FS Access API is absent, e.g. iOS Safari). An `unsaved`
+indicator is tracked independently of `dirty` (Apply = preview; Save = disk).
+Export PDF uses the applied source text (Apply makes that the draft). Filenames
+come from `slugify(title)`. Full default-key pruning + stable key order on save
+is deferred to P6; field-level pruning (cleared keys dropped) already keeps
+files clean.
 
 - Save back via the FS Access `handle` (write) when present; **Download JSON**
   fallback via `downloadBytes` / `slugify`.

@@ -8,13 +8,17 @@ import {
   type BootProgress,
 } from "./pyodide/runtime";
 import {
+  canWriteHandle,
+  hasSavePicker,
   loadLastHandle,
   openFile,
   rememberHandle,
   reopenHandle,
+  saveAsJson,
+  writeHandle,
   type OpenedFile,
 } from "./file/openFile";
-import { downloadBytes, slugify } from "./file/saveExport";
+import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import {
   docHash,
   getCachedDay,
@@ -63,6 +67,10 @@ export function App() {
   // Draft has edits not yet applied to the rendered viewer/export.
   const [dirty, setDirty] = useState(false);
   const [applying, setApplying] = useState(false);
+  // Draft has edits not yet written to a file (P4). Independent of `dirty`:
+  // Apply updates the preview, Save writes the draft to disk.
+  const [saved, setSaved] = useState(true);
+  const [saving, setSaving] = useState(false);
   // After a plain Apply we carry the previously-rendered day maps over rather
   // than refetching (editing changes the doc hash → every day misses the cache);
   // this suppresses the per-day map loaders for days without one, so "Apply"
@@ -202,6 +210,7 @@ export function App() {
           setDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
         }
         setDirty(false);
+        setSaved(true);
         setMapsStale(false);
         setView("viewer"); // switch to the book once it's on screen
         // Text is on screen now; fetch the per-day maps in the background.
@@ -285,12 +294,69 @@ export function App() {
     }
   }, [source, itinerary, buildDayMaps]);
 
-  // Wrap draft edits so any change marks the draft dirty (drives the Apply
-  // button and the ✏️ tab's unapplied-edits dot).
+  // Wrap draft edits so any change marks the draft dirty (unapplied, drives the
+  // Apply button + ✏️ tab dot) and unsaved (drives Save).
   const onEditDraft = useCallback((next: SrcItinerary) => {
     setDraft(next);
     setDirty(true);
+    setSaved(false);
   }, []);
+
+  // A sensible filename for saving/downloading the draft.
+  const draftFilename = useCallback(
+    () => `${slugify(draft?.travel_description?.title || source?.name || "travelbook")}.json`,
+    [draft, source],
+  );
+
+  // Save the draft (P4): overwrite the opened file in place when we hold a
+  // writable handle, otherwise fall back to a download.
+  const onSave = useCallback(async () => {
+    if (!draft) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { text } = serializeWithPaths(draft);
+      const handle = source?.handle ?? null;
+      if (canWriteHandle(handle)) await writeHandle(handle, text);
+      else downloadText(text, draftFilename());
+      setSaved(true);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }, [draft, source, draftFilename]);
+
+  // Save the draft to a new file (Chromium's Save-as picker); the new file
+  // becomes the backing source so later in-place saves and "Reopen last" use it.
+  const onSaveAs = useCallback(async () => {
+    if (!draft) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { text } = serializeWithPaths(draft);
+      const opened = await saveAsJson(draftFilename(), text);
+      if (opened) {
+        setSource(opened);
+        await rememberHandle(opened.handle);
+        setCanReopen((prev) => !!opened.handle || prev);
+        setSaved(true);
+      }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }, [draft, draftFilename]);
+
+  // Download the draft as a .json file (always available; the only route where
+  // the FS Access API is absent, e.g. iOS Safari).
+  const onDownloadJson = useCallback(() => {
+    if (!draft) return;
+    setError(null);
+    downloadText(serializeWithPaths(draft).text, draftFilename());
+    setSaved(true);
+  }, [draft, draftFilename]);
 
   // Apply the draft to the rendered viewer + findings + export source (P3). The
   // preview refreshes only here, never live-on-keystroke. `redrawMaps` also
@@ -445,6 +511,13 @@ export function App() {
           mapsInRender={!!draft.defaults?.include_maps_in_render}
           onApply={() => onApply(false)}
           onApplyRedraw={() => onApply(true)}
+          saved={saved}
+          saving={saving}
+          canSaveInPlace={canWriteHandle(source?.handle)}
+          hasSavePicker={hasSavePicker()}
+          onSave={onSave}
+          onSaveAs={onSaveAs}
+          onDownloadJson={onDownloadJson}
         />
       ) : itinerary ? (
         <section className="report">

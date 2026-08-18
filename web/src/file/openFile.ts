@@ -9,9 +9,15 @@
 
 type PermState = "granted" | "denied" | "prompt";
 
+interface FsWritable {
+  write(data: string | BufferSource | Blob): Promise<void>;
+  close(): Promise<void>;
+}
+
 interface FsFileHandle {
   readonly name: string;
   getFile(): Promise<File>;
+  createWritable?(): Promise<FsWritable>;
   queryPermission?(d: { mode: "read" | "readwrite" }): Promise<PermState>;
   requestPermission?(d: { mode: "read" | "readwrite" }): Promise<PermState>;
 }
@@ -22,6 +28,11 @@ interface PickerWindow {
     excludeAcceptAllOption?: boolean;
     multiple?: boolean;
   }) => Promise<FsFileHandle[]>;
+  showSaveFilePicker?: (opts?: {
+    suggestedName?: string;
+    types?: { description?: string; accept: Record<string, string[]> }[];
+    excludeAcceptAllOption?: boolean;
+  }) => Promise<FsFileHandle>;
 }
 
 export interface OpenedFile {
@@ -77,6 +88,51 @@ function openViaInput(): Promise<OpenedFile | null> {
     // simply stays pending until the next open, which is acceptable here.
     input.click();
   });
+}
+
+// --- writing back (P4: save the edited itinerary) ---------------------------
+
+/** Whether this handle can be written in place (Chromium; not the input fallback). */
+export function canWriteHandle(handle: FsFileHandle | null | undefined): handle is FsFileHandle {
+  return !!handle && typeof handle.createWritable === "function";
+}
+
+/** Whether the browser can offer a "Save as…" file picker. */
+export function hasSavePicker(): boolean {
+  return typeof (window as PickerWindow).showSaveFilePicker === "function";
+}
+
+/** Overwrite a file in place through its handle, prompting for write access. */
+export async function writeHandle(handle: FsFileHandle, text: string): Promise<void> {
+  const opts = { mode: "readwrite" as const };
+  const query = (await handle.queryPermission?.(opts)) ?? "granted";
+  if (query !== "granted") {
+    const req = (await handle.requestPermission?.(opts)) ?? "denied";
+    if (req !== "granted") throw new Error("Permission to write the file was denied.");
+  }
+  const writable = await handle.createWritable!();
+  await writable.write(text);
+  await writable.close();
+}
+
+/** Show the OS "Save as…" picker, write `text`, and return the new handle. */
+export async function saveAsJson(suggestedName: string, text: string): Promise<OpenedFile | null> {
+  const picker = (window as PickerWindow).showSaveFilePicker;
+  if (!picker) return null;
+  let handle: FsFileHandle;
+  try {
+    handle = await picker({
+      suggestedName,
+      types: [{ description: "Itinerary JSON", accept: { "application/json": [".json"] } }],
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") return null; // user cancelled
+    throw e;
+  }
+  const writable = await handle.createWritable!();
+  await writable.write(text);
+  await writable.close();
+  return { name: handle.name, text, handle };
 }
 
 /** Re-read a previously kept handle, requesting read permission if needed. */

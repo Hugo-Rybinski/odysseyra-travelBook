@@ -216,19 +216,22 @@ README schema tables). It is being built in phases — see
   validator's line number → field path. Findings that don't map to a field —
   cross-object coherence warnings, missing-required, "optional missing" info —
   collect in a filterable rail at the top so nothing is dropped.
-- **P3 (current):** an **Apply changes** button pushes the draft into the viewer
-  (`Book`), the Findings tab and the PDF export — the preview refreshes only on
-  Apply, never on keystroke. The button is disabled until there are unapplied
-  edits (a dot on the ✏️ tab marks them). Maps aren't refetched on a plain Apply
-  (the previously-rendered ones are carried over); a separate **Apply & redraw
-  maps** rebuilds them.
+- **P3:** an **Apply changes** button pushes the draft into the viewer (`Book`),
+  the Findings tab and the PDF export — the preview refreshes only on Apply, never
+  on keystroke. The button is disabled until there are unapplied edits (a dot on
+  the ✏️ tab marks them). Maps aren't refetched on a plain Apply (the
+  previously-rendered ones are carried over); a separate **Apply & redraw maps**
+  rebuilds them.
+- **P4 (current):** save the draft. **Save** overwrites the opened file in place
+  (File System Access handle, prompting for write access); **Save as…** writes a
+  new file (which becomes the backing source); **Download JSON** always works
+  (the only route where the FS Access API is absent, e.g. iOS Safari). An
+  unsaved-changes indicator is tracked separately from unapplied edits (Apply =
+  preview, Save = disk).
 
-Edits update an in-memory draft that you Apply to preview; **saving back to the
-file (P4)** is still to come.
-
-Next up: P4 save/export to the file; then editing helpers and undo. Separately,
-moving Pyodide into a Web Worker so the first map render doesn't block the main
-thread.
+Next up: editing helpers (geocode-from-address, richer coordinate input) and
+undo/redo; a default-key prune + stable key order on save. Separately, moving
+Pyodide into a Web Worker so the first map render doesn't block the main thread.
 
 ## Layout
 

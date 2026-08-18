@@ -40,6 +40,14 @@ export interface EditPanelProps {
   mapsInRender: boolean;
   onApply: () => void;
   onApplyRedraw: () => void;
+  // Save (P4): write the draft to a file.
+  saved: boolean;
+  saving: boolean;
+  canSaveInPlace: boolean;
+  hasSavePicker: boolean;
+  onSave: () => void;
+  onSaveAs: () => void;
+  onDownloadJson: () => void;
 }
 
 export function EditPanel({
@@ -55,6 +63,13 @@ export function EditPanel({
   mapsInRender,
   onApply,
   onApplyRedraw,
+  saved,
+  saving,
+  canSaveInPlace,
+  hasSavePicker,
+  onSave,
+  onSaveAs,
+  onDownloadJson,
 }: EditPanelProps) {
   const days = draft.days ?? [];
   const transport = draft.transport ?? [];
@@ -82,11 +97,39 @@ export function EditPanel({
               Apply &amp; redraw maps
             </button>
           )}
+
+          <span className="edit-actions-sep" aria-hidden />
+
+          {canSaveInPlace && (
+            <button
+              className="btn subtle"
+              onClick={onSave}
+              disabled={saved || saving}
+              data-tip="Overwrite the opened file"
+            >
+              {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
+            </button>
+          )}
+          {hasSavePicker && (
+            <button className="btn subtle" onClick={onSaveAs} disabled={saving} data-tip="Save to a new file">
+              Save as…
+            </button>
+          )}
+          <button
+            className="btn subtle"
+            onClick={onDownloadJson}
+            disabled={saving}
+            data-tip="Download the itinerary as a .json file"
+          >
+            Download JSON
+          </button>
+
           {dirty && (
             <span className="edit-dirty">
               Unapplied edits — the viewer and export still show the last applied version.
             </span>
           )}
+          {!saved && !dirty && <span className="edit-dirty">Unsaved changes.</span>}
         </div>
 
         <EditStatus rail={rail} validating={validating} validationError={validationError} />
