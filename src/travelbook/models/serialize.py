@@ -127,7 +127,7 @@ def _activity(itin: Itinerary, act) -> dict:
         "type": act.kind,
         "title": act.title,
         "coordinate": _coord(getattr(act, "coordinate", None)),
-        # The map pin label (number / area letter / "*") when maps were rendered
+        # The map pin label (number / area letter / ★ stay) when maps were rendered
         # for this build; ``None`` otherwise. Stamped onto the model object by the
         # caller (see the PWA bridge) from the rendered day maps.
         "map_pin": getattr(act, "_map_pin", None),

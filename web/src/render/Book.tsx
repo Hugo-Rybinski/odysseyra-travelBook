@@ -13,7 +13,15 @@ import { AccommodationSummary } from "./AccommodationSummary";
 //
 // Days are collapsible (click the header band); the cover's overview rows jump
 // to — and expand — their day. Collapsed state lives here so the two cooperate.
-export function Book({ itinerary, lang }: { itinerary: Itinerary; lang: Lang }) {
+export function Book({
+  itinerary,
+  lang,
+  interactiveMaps = false,
+}: {
+  itinerary: Itinerary;
+  lang: Lang;
+  interactiveMaps?: boolean;
+}) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
 
@@ -51,6 +59,7 @@ export function Book({ itinerary, lang }: { itinerary: Itinerary; lang: Lang }) 
             collapsed={collapsed.has(day.day_number)}
             onToggle={toggle}
             mapExpected={itinerary.maps.include_in_render}
+            interactive={interactiveMaps}
           />
         ))}
       </div>

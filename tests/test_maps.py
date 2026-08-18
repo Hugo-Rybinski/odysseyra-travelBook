@@ -7,7 +7,7 @@ import math
 import pytest
 from PIL import Image
 
-from travelbook.maps.build import _anchor_city, _hex_to_rgb, resolve_day
+from travelbook.maps.build import _anchor_city, _hex_to_rgb, render_day_maps, resolve_day
 from travelbook.maps.render import lonlat_to_px, pin_angles, render_map
 from travelbook.maps.routing import route
 from travelbook.maps.writeback import fill_coordinates
@@ -269,3 +269,48 @@ def test_geocode_uses_http_get_seam(monkeypatch):
         lambda url, timeout=20: b'[{"lat": "43.1", "lon": "-0.05"}]')
     cache = type("C", (), {"geocode": {}})()
     assert geocode.geocode("Somewhere", ["FR"], cache) == (43.1, -0.05)
+
+
+# -- area detail map: the night's-stay ★ only when inside the extent ---------
+def test_area_map_includes_stay_star_only_when_inside(monkeypatch, tmp_path):
+    """The zoomed area map shows the night's-stay ★ pin only when the hotel
+    falls within the area's own extent — never dragged in from off-map (which
+    would widen the zoom)."""
+    from travelbook.maps import Cache
+    from travelbook.maps import build as buildmod
+
+    monkeypatch.setattr(buildmod, "route", lambda a, b, cache: [a, b])
+    captured = []
+
+    def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
+        captured.append(list(kw.get("labels") or []))
+        return Image.new("RGB", (10, 10))
+
+    monkeypatch.setattr(buildmod, "render_map", fake_render_map)
+
+    def make(stay_coord):
+        doc = {
+            "travel_description": {"title": "T", "cover_color": "#2f6b4f",
+                                   "start_date": "2026-06-01", "end_date": "2026-06-02"},
+            "defaults": {"include_maps_in_render": True},
+            "days": [{"title": "d", "date": "2026-06-01", "city": "X", "activities": [
+                {"type": "place", "name": "Old town", "activities": [
+                    {"type": "point_of_interest", "name": "A", "coordinate": {"lat": 43.0, "long": 0.0}},
+                    {"type": "point_of_interest", "name": "B", "coordinate": {"lat": 43.2, "long": 0.4}},
+                ]}]}],
+            "accommodations": [{"name": "H", "city": "X", "arrival": "2026-06-01",
+                                "departure": "2026-06-02", "coordinate": stay_coord}],
+        }
+        return Itinerary.from_dict(doc)
+
+    cache = Cache.open(tmp_path)
+    # area bbox is lat[43.0, 43.2] x lon[0.0, 0.4]
+    for coord, expect_star in (
+        ({"lat": 43.1, "long": 0.2}, True),   # inside → ★ on the area map
+        ({"lat": 50.0, "long": 50.0}, False),  # far away → not on the area map
+    ):
+        captured.clear()
+        it = make(coord)
+        render_day_maps(it.days[0], it, cache, ink_saver=False)
+        area_labels = next(lbls for lbls in captured if "A" in lbls)
+        assert ("★" in area_labels) is expect_star

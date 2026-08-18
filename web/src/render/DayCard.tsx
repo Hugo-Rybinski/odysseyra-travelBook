@@ -1,13 +1,23 @@
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type {
   Activity,
   CarEvent,
   Day,
+  DayMap,
+  MapGeo,
   RenderedMap,
   Transport,
 } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { Links, NavLink } from "./Links";
+import { MapErrorBoundary } from "./MapErrorBoundary";
 import { activityNav, fmtDurationMin, navUrl, roadLegs, transportTimes } from "./nav";
+
+// MapLibre is heavy (~300KB gz) and only needed for the interactive map, so it's
+// code-split into its own chunk loaded on demand (not parsed until interactive
+// is used). It's still precached, so it's served with the right MIME and works
+// offline; a failed load falls back to the static PNG via the error boundary.
+const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMapGL })));
 
 // A rendered day/area map (a base64 PNG from the Python renderer, pixel-identical
 // to the PDF) with an accent caption aligned to the PDF's map cards.
@@ -21,7 +31,7 @@ function MapFigure({ rendered, caption }: { rendered: RenderedMap; caption: stri
 }
 
 // The small accent disc carrying an activity's map-pin label (number / area
-// letter / "*"), shown inline before its title — mirroring the PDF's pin discs.
+// letter / ★ stay), shown inline before its title — mirroring the PDF's pin discs.
 function PinDisc({ label }: { label: string | null | undefined }) {
   if (!label) return null;
   return <span className="pin-disc" aria-hidden>{label}</span>;
@@ -36,6 +46,46 @@ function MapLoading({ lang }: { lang: Lang }) {
       {tr(lang, "buildingMap")}
     </div>
   );
+}
+
+// One map slot (used for both the day overview and each area detail map): the
+// interactive MapLibre map when possible (toggle on, geo present, loads OK),
+// otherwise the static PNG. A load failure or a fresh geo re-tries via the
+// error boundary + remount key.
+function MapView({
+  geo,
+  staticMap,
+  interactive,
+  caption,
+  lang,
+}: {
+  geo: MapGeo | null;
+  staticMap: RenderedMap | null;
+  interactive: boolean;
+  caption: string;
+  lang: Lang;
+}) {
+  const [glFailed, setGlFailed] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
+  useEffect(() => {
+    setGlFailed(false);
+    setMapKey((k) => k + 1);
+  }, [geo]);
+
+  const staticFigure = staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
+  const canInteractive =
+    interactive && !glFailed && !!geo && (geo.points.length > 0 || geo.routes.length > 0);
+
+  if (canInteractive && geo) {
+    return (
+      <MapErrorBoundary key={mapKey} onError={() => setGlFailed(true)} fallback={staticFigure}>
+        <Suspense fallback={<MapLoading lang={lang} />}>
+          <DayMapGL geo={geo} caption={caption} onFail={() => setGlFailed(true)} />
+        </Suspense>
+      </MapErrorBoundary>
+    );
+  }
+  return staticFigure;
 }
 
 // Uppercase type label shown in the gutter badge, mirroring the PDF's
@@ -69,15 +119,19 @@ export function DayCard({
   collapsed,
   onToggle,
   mapExpected = false,
+  interactive = false,
 }: {
   day: Day;
   lang: Lang;
   collapsed: boolean;
   onToggle: (dayNumber: number) => void;
   mapExpected?: boolean; // the itinerary opts into maps; show a loader until day.map arrives
+  interactive?: boolean; // user wants the interactive (MapLibre) map when possible
 }) {
   const timeline = mergeTimeline(day);
   const toggle = () => onToggle(day.day_number);
+
+  const mapCaption = fill(tr(lang, "dayMapCaption"), { index: day.day_number });
 
   return (
     <article
@@ -113,12 +167,15 @@ export function DayCard({
         <>
           {day.description && <p className="day-intro">{day.description}</p>}
 
-          {day.map?.main ? (
-            <MapFigure
-              rendered={day.map.main}
-              caption={fill(tr(lang, "dayMapCaption"), { index: day.day_number })}
+          {day.map ? (
+            <MapView
+              geo={day.map.geo ?? null}
+              staticMap={day.map.main}
+              interactive={interactive}
+              caption={mapCaption}
+              lang={lang}
             />
-          ) : mapExpected && day.map === undefined ? (
+          ) : mapExpected ? (
             <MapLoading lang={lang} />
           ) : null}
 
@@ -129,7 +186,13 @@ export function DayCard({
               ) : item.kind === "transport" ? (
                 <TransportRow key={i} t={item.t} lang={lang} />
               ) : (
-                <ActivityRow key={i} act={item.act} lang={lang} areas={day.map?.areas} />
+                <ActivityRow
+                  key={i}
+                  act={item.act}
+                  lang={lang}
+                  dayMap={day.map}
+                  interactive={interactive}
+                />
               ),
             )}
           </ol>
@@ -204,12 +267,40 @@ function Gutter({
 function ActivityRow({
   act,
   lang,
-  areas,
+  dayMap,
+  interactive = false,
 }: {
   act: Activity;
   lang: Lang;
-  areas?: (RenderedMap & { title: string })[];
+  dayMap?: DayMap; // present on top-level rows, for a place's area detail map
+  interactive?: boolean;
 }) {
+  // A place's zoomed detail map (matched by title), drawn inline after it —
+  // interactive when possible, falling back to the static PNG, like the overview.
+  // Computed before any early return so the hooks below run unconditionally.
+  const isPlace = act.type === "place";
+  const dayGeo = dayMap?.geo ?? null;
+  const areaStatic = isPlace ? dayMap?.areas.find((a) => a.title === act.title) ?? null : null;
+  const areaGeoEntry = isPlace ? dayGeo?.areas.find((a) => a.title === act.title) : undefined;
+  // Must be a STABLE reference across renders — MapView remounts the map when
+  // `geo` identity changes, so a fresh object literal each render would tear the
+  // map down before its markers render.
+  const areaGeo = useMemo<MapGeo | null>(
+    () =>
+      areaGeoEntry && dayGeo
+        ? {
+            points: areaGeoEntry.points,
+            routes: [],
+            route_nodes: [],
+            areas: [],
+            accent: dayGeo.accent,
+            bounds: areaGeoEntry.bounds,
+          }
+        : null,
+    [areaGeoEntry, dayGeo],
+  );
+  const areaCaption = fill(tr(lang, "areaMapCaption"), { area: act.title });
+
   if (act.type === "buffer") {
     return (
       <li className="act buffer">
@@ -225,8 +316,6 @@ function ActivityRow({
   // A multi-leg drive carries its Navigate links per VIA leg (not on the head).
   const multiLeg = act.type === "road" && roadLegs(act.start ?? "", act.waypoints ?? []).length > 1;
   const nav = multiLeg ? "" : activityNav(act);
-  // A place's zoomed detail map (matched by title) is drawn inline after it.
-  const areaMap = act.type === "place" ? areas?.find((a) => a.title === act.title) : undefined;
   return (
     <li className={`act ${act.type}`}>
       <Gutter
@@ -257,10 +346,13 @@ function ActivityRow({
             ))}
           </ol>
         )}
-        {areaMap && (
-          <MapFigure
-            rendered={areaMap}
-            caption={fill(tr(lang, "areaMapCaption"), { area: act.title })}
+        {(areaStatic || areaGeo) && (
+          <MapView
+            geo={areaGeo}
+            staticMap={areaStatic}
+            interactive={interactive}
+            caption={areaCaption}
+            lang={lang}
           />
         )}
       </div>

@@ -14,6 +14,11 @@ from .geocode import geocode
 from .render import render_map
 from .routing import route
 
+# The pin label for the night's accommodation (★, U+2605) — distinct from the
+# numbered activity pins (1..N) and the lettered area pins (A/B/C…). It renders
+# on the PNG map, the PDF discs and the interactive markers (it's in DejaVu Sans).
+STAY_PIN = "★"
+
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
     value = value.lstrip("#")
@@ -37,6 +42,15 @@ def _route_through(points, cache):
         else:
             line.extend(seg)
     return line
+
+
+def _within(lat: float, lon: float, coords) -> bool:
+    """True if ``(lat, lon)`` lies within the bounding box of ``coords``
+    (a list of ``(lat, long)``). Used to decide whether the night's-stay ★
+    belongs on an area's zoomed map (only when it's already inside its extent)."""
+    lats = [c[0] for c in coords]
+    lons = [c[1] for c in coords]
+    return min(lats) <= lat <= max(lats) and min(lons) <= lon <= max(lons)
 
 
 def _anchor_city(city: str) -> str:
@@ -174,12 +188,12 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
         if p.act is not None:
             result.numbers[id(p.act)] = str(i)
 
-    # the night's stay, pinned with "*"
+    # the night's stay, pinned with ★
     stay = itinerary.stay_for(getattr(day, "date", None))
     if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
         main_points.append((stay.coordinate.lat, stay.coordinate.long))
-        main_labels.append("*")
-        result.numbers[id(stay)] = "*"
+        main_labels.append(STAY_PIN)
+        result.numbers[id(stay)] = STAY_PIN
 
     # area detail maps: pins lettered A, B, C…
     for _title, pts in area_details:
@@ -194,11 +208,23 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
                          ink_saver=ink_saver, labels=main_labels, route_nodes=nodes)
         result.main = RenderedMap(img, [p.label for p in main_pts])
 
+    stay_coord = None
+    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+        stay_coord = (stay.coordinate.lat, stay.coordinate.long)
+
     for title, pts in area_details:
         coords = [(p.lat, p.long) for p in pts]
         letters = [chr(ord("A") + j) for j in range(len(pts))]
-        img = render_map(coords, [], coords, accent, cache.tiles,
-                         ink_saver=ink_saver, labels=letters)
+        # The extent is fixed by the area's own points (first arg); pins are the
+        # lettered points, plus the night's stay ★ — but only when it already
+        # falls inside that extent, so it's never dragged in from off-map (which
+        # would force the zoom to widen and defeat the "zoom" of the detail map).
+        points, labels = list(coords), list(letters)
+        if stay_coord is not None and _within(stay_coord[0], stay_coord[1], coords):
+            points.append(stay_coord)
+            labels.append(STAY_PIN)
+        img = render_map(coords, [], points, accent, cache.tiles,
+                         ink_saver=ink_saver, labels=labels)
         result.areas.append((title, RenderedMap(img, [p.label for p in pts])))
 
     return result

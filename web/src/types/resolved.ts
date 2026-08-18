@@ -125,7 +125,7 @@ export interface Accommodation {
   price: Money | null;
   breakfast_included: boolean;
   coordinate: Coordinate | null;
-  map_pin?: string | null; // "*" on the day map when this is the night's stay
+  map_pin?: string | null; // ★ on the day map when this is the night's stay
 }
 
 // A rendered day map (a base64 PNG data URI) plus its pin-ordered legend.
@@ -134,11 +134,36 @@ export interface RenderedMap {
   legend: string[]; // activity titles in pin order
 }
 
+// A located point for the interactive map: coordinates + its pin label + title.
+export interface MapPoint {
+  lat: number;
+  long: number;
+  label: string; // "1".."N", "★" (stay), or "A".."Z" (area)
+  title: string;
+}
+
+// Structured geo for the interactive (MapLibre) day map — the same points,
+// routes and areas the static PNG is drawn from, as data the browser can render.
+export interface MapGeo {
+  points: MapPoint[];
+  routes: [number, number][][]; // [lat, long] polylines (drives)
+  route_nodes: [number, number][]; // [lat, long] named stops on the routes
+  areas: {
+    title: string;
+    points: MapPoint[];
+    bounds: [[number, number], [number, number]]; // area's own extent
+  }[];
+  accent: string; // "#rrggbb"
+  bounds: [[number, number], [number, number]]; // [[minLat,minLong],[maxLat,maxLong]]
+}
+
 // Per-day maps inlined by the bridge when the itinerary opts into maps: the main
-// overview map and, per area with nested points, a zoomed detail map.
+// overview map and, per area with nested points, a zoomed detail map; plus the
+// structured `geo` the interactive map renders from.
 export interface DayMap {
   main: RenderedMap | null;
   areas: (RenderedMap & { title: string })[];
+  geo?: MapGeo | null;
 }
 
 export interface Stamp {

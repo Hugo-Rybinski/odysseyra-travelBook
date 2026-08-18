@@ -11,6 +11,19 @@ export default defineConfig({
   // Allow the production preview to be reached over a Tailscale HTTPS hostname
   // (needed so a phone can install the PWA + test offline over a secure origin).
   preview: { host: true, allowedHosts: [".ts.net"] },
+  build: {
+    // MapLibre is a deliberately large, lazily-loaded chunk — don't warn on it.
+    chunkSizeWarningLimit: 1100,
+    rollupOptions: {
+      output: {
+        // Split MapLibre into its own chunk so it loads on demand (interactive
+        // maps only) and can be kept out of the offline precache.
+        manualChunks(id) {
+          if (id.includes("node_modules/maplibre-gl")) return "maplibre";
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     // Copy the example itineraries in as bundled samples to open.
@@ -18,7 +31,10 @@ export default defineConfig({
       targets: [{ src: "../examples/*.json", dest: "samples" }],
     }),
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt" so the app controls the update lifecycle (see PwaProvider): it
+      // auto-applies a new version and reloads once, and exposes a manual
+      // "Update" button — no DevTools dance to pick up a new deploy.
+      registerType: "prompt",
       includeAssets: ["icon.svg"],
       manifest: {
         name: "Travelbook Viewer",
@@ -39,9 +55,18 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache the app shell + the local Python wheel (fonts included).
+        // Precache the app shell + the local Python wheel (fonts included). The
+        // MapLibre chunk is included too: it's code-split (so it's only parsed
+        // when the interactive map is used) but precaching it means it's served
+        // with the correct MIME from cache and works offline — rather than being
+        // fetched at runtime, which risked the navigation fallback returning
+        // index.html for it (a "non-JavaScript MIME type" module error).
         globPatterns: ["**/*.{js,css,html,svg,json,whl}"],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        // Never serve the SPA fallback (index.html) for asset URLs — a missing
+        // hashed chunk should 404 cleanly (and trigger a reload, see main.tsx),
+        // not masquerade as HTML.
+        navigateFallbackDenylist: [/^\/assets\//],
         runtimeCaching: [
           {
             // Pyodide runtime + core packages (wasm, stdlib, Pillow, …).
@@ -64,13 +89,15 @@ export default defineConfig({
             },
           },
           {
-            // Carto basemap tiles for the per-day maps — cache heavily so a map
-            // built once renders offline afterwards.
-            urlPattern: /^https:\/\/[a-z]*\.?basemaps\.cartocdn\.com\/.*/,
+            // Carto basemaps for the maps: the raster tiles (static PNG), the
+            // vector style/glyphs/sprite, and the vector tiles for the
+            // interactive map — including the sharded tiles-a/b/c/d hosts. Cache
+            // heavily so a day built (and prefetched) once works offline.
+            urlPattern: /^https:\/\/([a-z0-9-]+\.)?basemaps\.cartocdn\.com\/.*/,
             handler: "CacheFirst",
             options: {
               cacheName: "map-tiles",
-              expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              expiration: { maxEntries: 4000, maxAgeSeconds: 60 * 60 * 24 * 90 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

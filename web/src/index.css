@@ -637,6 +637,34 @@ body {
   margin: 8px 0 4px;
 }
 
+/* interactive (MapLibre) day map */
+.day-map-gl .gl-canvas {
+  width: 100%;
+  max-width: 620px;
+  height: 360px;
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid var(--accent-soft);
+  overflow: hidden;
+}
+/* numbered pin marker on the interactive map (mirrors the static pins/discs) */
+.map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  line-height: 1;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
 /* placeholder while a day's map images are still being fetched/built */
 .day-map-loading {
   display: flex;

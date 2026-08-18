@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { usePwa } from "./PwaProvider";
 
 // Non-standard install-prompt event (not in the DOM lib).
 interface BeforeInstallPromptEvent extends Event {
@@ -8,15 +8,11 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 // A small, unobtrusive strip of toasts: offline notice, "ready to work offline",
-// a new-version prompt (from the service worker), and an install prompt. The SW
-// only registers in a production build, so the update/offline-ready toasts are
-// inert in dev — the offline banner and install prompt still work.
+// an "updating…" notice, and an install prompt. Service-worker state comes from
+// <PwaProvider> (the single registration); updates auto-apply, so there's no
+// manual reload prompt here — the header's "Update" button forces a check.
 export function PwaStatus() {
-  const {
-    offlineReady: [offlineReady, setOfflineReady],
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
+  const { offlineReady, dismissOfflineReady, checking, updating } = usePwa();
 
   const [offline, setOffline] = useState(!navigator.onLine);
   const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -56,24 +52,22 @@ export function PwaStatus() {
         </div>
       )}
 
-      {needRefresh && (
-        <div className="toast update" role="alert">
-          A new version is available.
-          <span className="toast-actions">
-            <button className="btn" onClick={() => updateServiceWorker(true)}>
-              Reload
-            </button>
-            <button className="btn ghost dark" onClick={() => setNeedRefresh(false)}>
-              Later
-            </button>
-          </span>
+      {updating && (
+        <div className="toast update" role="status">
+          Updating to the latest version…
         </div>
       )}
 
-      {offlineReady && !needRefresh && (
+      {checking && !updating && (
+        <div className="toast update" role="status">
+          Checking for updates…
+        </div>
+      )}
+
+      {offlineReady && !updating && (
         <div className="toast ok" role="status">
           ✓ Ready to work offline.
-          <button className="link-btn" onClick={() => setOfflineReady(false)}>
+          <button className="link-btn" onClick={dismissOfflineReady}>
             Dismiss
           </button>
         </div>

@@ -52,6 +52,12 @@ service worker serves them offline.
 Re-run it whenever the Python package changes. Set `PIP=/path/to/pip` to use a
 different interpreter.
 
+> **Stale-wheel guard.** `dev` and `build` run `check-wheel` first (`npm run
+> check-wheel`): the browser executes the *wheel*, not `src/travelbook/`, so if
+> the source changed after the wheel was built the guard **fails the build** and
+> tells you to `npm run wheel`. This prevents silently shipping old Python (which
+> once made the maps vanish when a new constant wasn't in the wheel).
+
 ## Build / preview / typecheck
 
 ```bash
@@ -139,6 +145,13 @@ the exact rendered PNGs without recompositing them; expired entries are purged a
 startup, and the **Redraw maps** button clears just the current file's entries
 and re-renders. Editing the JSON changes its hash, so stale images miss naturally.
 
+The **interactive** map (`src/maps/carto.ts` + `src/render/DayMapGL.tsx`) uses
+Carto's vector Positron style with its tile source pinned to a single host, so
+`prefetchTiles` can warm the exact tile URLs MapLibre will request (fit-1…fit+1
+over the day's bounds, capped) — that plus the runtime-cached MapLibre chunk lets
+a day pan/zoom offline after one online view. If the style/tiles or the chunk
+can't load, an error boundary + timeout fall back to the static PNG.
+
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load:
@@ -155,14 +168,24 @@ The full v1 flow works in the browser, offline after first load:
   titles, plus zoomed area maps. Rendered maps are cached in IndexedDB for 30
   days (keyed by a hash of the JSON), so a relaunched app hydrates them instantly
   instead of redrawing; a **Redraw maps** button discards this file's cached
-  images and rebuilds them.
+  images and rebuilds them. An **Interactive** toggle swaps the static images
+  (both the day overview and each zoomed area map) for pan/zoom MapLibre maps
+  (Carto's keyless vector Positron style, drawn from the same points/routes);
+  each day's tiles are prefetched over its area so
+  it also pans/zooms **offline** after one online view, and it falls back to the
+  static PNG automatically if it can't load. MapLibre is code-split into its own
+  chunk (loaded on demand, only parsed when interactive is used) but precached, so
+  it's served with the right MIME and works offline.
 - **Findings** panel lists every validation ❌/⚠️/ℹ️ with line numbers and a level
   filter; **EN/FR** toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
   maps toggles; the maps toggle defaults to the file's own `include_maps_in_render`).
-- PWA polish: update-available / offline-ready / install toasts and an offline
-  banner (`src/pwa/PwaStatus.tsx`). Note the service worker only registers in a
-  production build, so use `npm run build && npm run preview` to exercise those.
+- PWA polish: an offline banner, offline-ready / updating / install toasts
+  (`src/pwa/PwaStatus.tsx`), and **automatic updates** — `src/pwa/PwaProvider.tsx`
+  owns the single service-worker registration and, when a new deploy is detected,
+  activates it and reloads once (no DevTools needed); the header's **Update**
+  button forces an immediate check. Note the SW only registers in a production
+  build, so use `npm run build && npm run preview` to exercise these.
 
 Next up (post-v1): editing the itinerary in the UI, and moving Pyodide into a
 Web Worker so the first map render doesn't block the main thread.
@@ -181,7 +204,10 @@ src/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
     bridge.py              JSON-in/out glue over the travelbook package (+ maps)
     netbridge.ts           synchronous fetch exposed to Python for the maps seam
+  pwa/PwaProvider.tsx      single SW registration; auto-applies updates
   maps/mapCache.ts         IndexedDB cache of rendered day maps (30-day TTL)
+  render/DayMapGL.tsx      interactive MapLibre day map (lazy-loaded, online)
+scripts/check-wheel.mjs    prebuild guard: fail if the wheel is older than src/
   types/resolved.ts        TS mirror of the resolved-model dict (to_dict)
 scripts/build-wheel.sh     wheel builder used by `npm run wheel`
 vite.config.ts             React + vite-plugin-pwa + static-copy of examples

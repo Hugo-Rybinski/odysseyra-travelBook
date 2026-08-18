@@ -6,12 +6,16 @@
   "description": "PWA travel-book viewer — renders a travelbook itinerary in the browser via Pyodide, with PDF export on the side.",
   "scripts": {
     "wheel": "bash scripts/build-wheel.sh",
+    "check-wheel": "node scripts/check-wheel.mjs",
+    "predev": "npm run check-wheel",
     "dev": "vite",
+    "prebuild": "npm run check-wheel",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "maplibre-gl": "^6.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

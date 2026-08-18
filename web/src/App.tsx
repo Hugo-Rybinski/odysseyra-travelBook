@@ -25,6 +25,7 @@ import {
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book } from "./render/Book";
 import { PwaStatus } from "./pwa/PwaStatus";
+import { usePwa } from "./pwa/PwaProvider";
 import type { Day, Finding, Itinerary } from "./types/resolved";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
@@ -57,8 +58,10 @@ export function App() {
   const [mapsExport, setMapsExport] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
+  const [interactiveMaps, setInteractiveMaps] = useState(true);
 
   const engineReady = progress.stage === "ready";
+  const { checkForUpdate, checking, updating } = usePwa();
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
 
@@ -248,6 +251,14 @@ export function App() {
           <button className="btn ghost" onClick={onOpenSample} disabled={busy}>
             Sample
           </button>
+          <button
+            className="btn ghost"
+            onClick={checkForUpdate}
+            disabled={checking || updating}
+            title="Check for a new version and update to it"
+          >
+            {updating ? "Updating…" : checking ? "Checking…" : "Update"}
+          </button>
           <div className="lang" role="group" aria-label="Language">
             {(["en", "fr"] as Lang[]).map((l) => (
               <button
@@ -285,14 +296,27 @@ export function App() {
                 Maps
               </label>
               {itinerary.maps.include_in_render && (
-                <button
-                  className="btn ghost"
-                  onClick={onRedraw}
-                  disabled={redrawing || !engineReady}
-                  title="Discard this file's cached map images and rebuild them"
-                >
-                  {redrawing ? "Redrawing…" : "Redraw maps"}
-                </button>
+                <>
+                  <label
+                    className="ink"
+                    title="Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={interactiveMaps}
+                      onChange={(e) => setInteractiveMaps(e.target.checked)}
+                    />
+                    Interactive
+                  </label>
+                  <button
+                    className="btn ghost"
+                    onClick={onRedraw}
+                    disabled={redrawing || !engineReady}
+                    title="Discard this file's cached map images and rebuild them"
+                  >
+                    {redrawing ? "Redrawing…" : "Redraw maps"}
+                  </button>
+                </>
               )}
               <button
                 className="btn"
@@ -333,7 +357,7 @@ export function App() {
           <p className="report-caption">
             {source?.name && <span className="filename">{source.name}</span>}
           </p>
-          <Book itinerary={itinerary} lang={lang} />
+          <Book itinerary={itinerary} lang={lang} interactiveMaps={interactiveMaps} />
           <FindingsPanel findings={findings} />
         </section>
       )}

@@ -100,6 +100,58 @@ def _stamp_pins(dm, day, day_out, itinerary) -> None:
             day_out["stay"]["map_pin"] = label
 
 
+def _day_geo(itinerary, day, cache):
+    """Structured geo for an interactive (MapLibre) day map: numbered points, the
+    OSRM route polylines, per-area detail points, the accent colour and a bounds
+    box. Mirrors render_day_maps' numbering (activities 1..N, the night's stay
+    '*', area points A/B/C…). ``None`` when the day has nothing locatable."""
+    from travelbook.maps.build import STAY_PIN, _within, resolve_day
+
+    main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
+    points = [{"lat": p.lat, "long": p.long, "label": str(i), "title": p.label}
+              for i, p in enumerate(main_pts, start=1)]
+    stay = itinerary.stay_for(day.date)
+    stay_coord = None
+    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+        stay_coord = (stay.coordinate.lat, stay.coordinate.long)
+        points.append({"lat": stay_coord[0], "long": stay_coord[1],
+                       "label": STAY_PIN, "title": stay.name})
+
+    areas = []
+    for title, pts in area_details:
+        coords = [(p.lat, p.long) for p in pts]
+        apoints = [{"lat": p.lat, "long": p.long, "label": chr(ord("A") + j), "title": p.label}
+                   for j, p in enumerate(pts)]
+        # the night's-stay ★, but only when it already sits inside this area's
+        # extent (mirrors the static area map — never widens the zoom).
+        if stay_coord is not None and _within(stay_coord[0], stay_coord[1], coords):
+            apoints.append({"lat": stay_coord[0], "long": stay_coord[1],
+                            "label": STAY_PIN, "title": stay.name})
+        alats = [c[0] for c in coords]
+        alons = [c[1] for c in coords]
+        areas.append({
+            "title": title,
+            "points": apoints,
+            # bounds from the area's own points only, so the ★ (when inside)
+            # doesn't widen the fitted extent.
+            "bounds": [[min(alats), min(alons)], [max(alats), max(alons)]],
+        })
+    coords = ([(p["lat"], p["long"]) for p in points]
+              + [(lat, lon) for line in routes for lat, lon in line])
+    if not coords:
+        return None
+    lats = [c[0] for c in coords]
+    lons = [c[1] for c in coords]
+    return {
+        "points": points,
+        "routes": [[[lat, lon] for lat, lon in line] for line in routes],
+        "route_nodes": [[lat, lon] for line in route_nodes for lat, lon in line],
+        "areas": areas,
+        "accent": itinerary.cover_color,
+        "bounds": [[min(lats), min(lons)], [max(lats), max(lons)]],
+    }
+
+
 # --- surface ----------------------------------------------------------------
 
 # Parse once and memoize (Pyodide keeps module state across calls), so the
@@ -149,7 +201,7 @@ def render_day(text, index):
         itinerary = _parsed(text)
         day = itinerary.days[index]
         day_out = to_dict(itinerary)["days"][index]
-        day_out["map"] = {"main": None, "areas": []}
+        day_out["map"] = {"main": None, "areas": [], "geo": None}
         try:
             from travelbook.maps import Cache, render_day_maps
             cache = Cache.open()
@@ -161,6 +213,9 @@ def render_day(text, index):
             day_out["map"] = {
                 "main": _rendered_map(dm.main) if dm.main else None,
                 "areas": [{"title": t, **_rendered_map(m)} for t, m in dm.areas],
+                # structured geo for the interactive map (shares resolve_day's
+                # routing cache with the PNG render just done above).
+                "geo": _day_geo(itinerary, day, cache),
             }
             _stamp_pins(dm, day, day_out, itinerary)
         except Exception:
