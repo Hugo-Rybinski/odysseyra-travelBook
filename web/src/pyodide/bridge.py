@@ -12,6 +12,20 @@ the JS wrappers surface it.
 
 import json
 
+# Pyodide's urllib.request omits the ssl/socket-based handlers (there are no
+# sockets in the browser sandbox), but fpdf2 imports some of them at module load
+# even though we never fetch images over the network. Stub any that are missing
+# before importing travelbook so the import succeeds; maps stay off in v1
+# regardless (see README "Future iterations").
+import urllib.request as _urllib_request
+
+for _name in (
+    "HTTPSHandler", "HTTPHandler", "ProxyHandler", "OpenerDirector",
+    "HTTPRedirectHandler", "build_opener", "install_opener",
+):
+    if not hasattr(_urllib_request, _name):
+        setattr(_urllib_request, _name, type(_name, (), {}))
+
 from travelbook import Itinerary, build_pdf, to_dict, validate_text
 
 

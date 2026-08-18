@@ -34,12 +34,15 @@ export function App() {
     (async () => {
       try {
         await boot((p) => !cancelled && setProgress(p));
+        console.info("[app] boot done; fetching sample + resolving/validating…");
         const text = await (await fetch(SAMPLE)).text();
         const [model, found] = await Promise.all([resolve(text), validate(text)]);
+        console.info("[app] resolved:", model.title, "| findings:", found.length);
         if (cancelled) return;
         setItinerary(model);
         setFindings(found);
       } catch (e) {
+        console.error("[app] boot/resolve failed:", e);
         if (!cancelled) setError(String(e));
       }
     })();
@@ -54,7 +57,9 @@ export function App() {
     return c;
   }, [findings]);
 
-  const ready = progress.stage === "ready" && itinerary;
+  // Render the report as soon as the model is resolved; `progress` only drives
+  // the loading label (its stage may lag under StrictMode's double-invoked boot).
+  const ready = itinerary !== null;
 
   return (
     <main className="shell">
