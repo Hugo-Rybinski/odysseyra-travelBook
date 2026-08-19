@@ -7,7 +7,7 @@ dependencies (uses `fpdf2` with a bundled DejaVu font; **no** Cairo/Pango).
 ## Commands
 
 ```bash
-# setup
+# setup (or use the Makefile — see below)
 python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 
 # build a PDF (the "build" sub-command is optional; validation runs first,
@@ -34,6 +34,12 @@ UPDATE_SNAPSHOTS=1 pytest tests/test_validate.py        # regenerate the snapsho
 ```
 
 Everything runs through the venv (`.venv/bin/...`); there is no `uv`. Python 3.13.
+
+A root `Makefile` wraps all of this and installs deps on demand (venv for the
+CLI, npm for the web viewer): `make cli` (install/verify the CLI), `make test`,
+`make pdf FILE=… OUT=…`, `make wheel` (rebuild the in-browser wheel), `make dev`
+/ `make preview` (run the PWA locally), `make clean`/`distclean`. It's a
+convenience layer over the raw commands above — both still work.
 
 ## What it produces
 

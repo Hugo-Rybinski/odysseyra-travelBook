@@ -1,11 +1,55 @@
 # travelbook
 
-Turn a JSON travel itinerary into a polished, print-ready PDF.
+**travelbook** turns a single JSON travel itinerary into a polished,
+print-ready PDF — and comes with a browser app to view, validate and edit that
+JSON along the way. It's pure Python (built on
+[fpdf2](https://py-pdf.github.io/fpdf2/)) with **no system dependencies** (no
+Cairo/Pango), plus a local-first PWA that runs the very same engine in the
+browser via Pyodide.
 
-Built with [fpdf2](https://py-pdf.github.io/fpdf2/) — pure Python, no system
-dependencies (no Cairo/Pango needed).
+One itinerary file gets you:
+
+- **A print-ready PDF** — a colored cover with a day-by-day overview table, one
+  page per day (a timeline of typed activity cards, nested stops, a "tonight's
+  stay" bar), and transport + accommodation summary pages, all themed from a
+  single `cover_color`.
+- **Precise validation** — line-numbered, localized diagnostics at three levels
+  (errors / warnings / info): missing fields, bad values, and whole-trip
+  incoherences (overlaps, nowhere-to-sleep nights, reversed date ranges…).
+- **Per-day maps** — optional OpenStreetMap maps with numbered pins and drawn
+  driving routes, in both the PDF and the browser (interactive pan/zoom there).
+- **Smart inference** — trip dates, each day's date, activity schedules and
+  durations are inferred, so you only write what's interesting.
+- **English & French** output, an **ink-saver** print mode, and a **stitch** mode
+  that assembles the itinerary from a folder of small JSON fragments.
+- **A browser viewer/editor (PWA)** — open a local file, render the book, review
+  findings, edit it in a form, and export the PDF — fully offline, nothing ever
+  leaves your device.
+
+## Contents
+
+- [Setup](#setup)
+- [Command-line tool](#command-line-tool)
+- [Browser viewer (the PWA)](#browser-viewer-the-pwa)
+- [JSON format](#json-format)
+- [Development](#development)
 
 ## Setup
+
+A root `Makefile` installs dependencies on demand and drives both halves of the
+project — the command-line tool and the browser viewer. Run `make` on its own to
+list every target.
+
+### Command-line tool
+
+```bash
+make cli        # create .venv and install the `travelbook` CLI into it
+make test       # run the test suite
+```
+
+`make cli` builds an isolated virtualenv (`.venv/`) and installs travelbook, so
+the CLI is available as `.venv/bin/travelbook` (or `source .venv/bin/activate`
+first). To set it up by hand instead:
 
 ```bash
 python3 -m venv .venv
@@ -13,174 +57,171 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Usage
+### Browser viewer (PWA)
 
 ```bash
-# Build a PDF (the "build" sub-command is optional)
-# Build first runs validation and prints any errors (errors only) before building.
+make dev        # run the viewer with hot reload (Vite dev server)
+make preview    # build it and serve the production PWA (default port 4173)
+```
+
+Both install the web dependencies (and rebuild the in-browser Python wheel) on
+first run. `make dev` is best while developing; `make preview` serves the real,
+installable, offline-capable PWA — use it to exercise the service worker.
+Override the bind address with `make preview HOST=0.0.0.0 PORT=4173`, or the
+interpreter with `make PYTHON=python3.13 …`. `make clean` / `make distclean`
+remove build artifacts / the venv + `node_modules`.
+
+## Command-line tool
+
+`travelbook <command> [options]`, with five commands: `build`, `validate`,
+`geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
+(`en` default, or `fr`) picks the language of *generated* text and diagnostics
+(never your JSON content), and `-v` / `--verbose` sets validation verbosity.
+Running `travelbook <file.json>` with no command implies `build`. Without the
+installed entry point, use `python -m travelbook.cli <command> …`.
+
+### `build` — render the PDF
+
+```bash
 travelbook build examples/pyrenees.json -o pyrenees.pdf
-travelbook examples/pyrenees.json -o pyrenees.pdf
-
-# Validate the JSON and report problems (with line numbers)
-travelbook validate examples/pyrenees.json
-
-# Output in another language (default: en). Both commands take --lang / -l.
-travelbook build examples/pyrenees_fr.json --lang fr -o pyrenees_fr.pdf
-travelbook validate examples/pyrenees_fr.json --lang fr
-
-# Ink-saving mode: replace the big solid accent fills with outlines and
-# thin rules (much less colored ink when printing).
+travelbook examples/pyrenees.json                    # implies build; writes <input>.pdf
 travelbook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
-
-# Per-day maps (see defaults.include_maps_in_render). Override per build with
-# --maps / --no-maps; restrict geocoding with --map-country; set the tile cache.
 travelbook build examples/pyrenees.json --maps --map-country FR -o pyrenees.pdf
-
-# Geocode missing coordinates once and write them back into the JSON, so later
-# builds are offline and deterministic (restrict with --country).
-travelbook geocode examples/pyrenees.json --country FR
-
-# Scaffold an empty fragment directory, then stitch it once it's filled in
-travelbook create-skeleton . mytrip        # creates ./mytrip/ with sub-folders
-travelbook stitch examples/pyrenees_pieces # validate each piece, assemble, re-validate
-
-# or without installing the entry point
-python -m travelbook.cli validate examples/pyrenees.json
 ```
 
-### Ink-saving mode
+Validation runs first (errors are printed to stderr), then it builds regardless.
 
-`--ink-saver` (or `build_pdf(..., ink_saver=True)`) keeps the same layout but
-drops the large solid accent areas — the cover banner, the per-page header
-bands and the card backgrounds — in favor of accent-colored text, outlined
-badges/pills and thin rules. Ideal for printing on a home printer.
+| Option | Description |
+| ------ | ----------- |
+| `-o`, `--output PATH` | Output PDF path (default: `<input>.pdf`) |
+| `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing |
+| `--maps` / `--no-maps` | Force per-day maps on/off, overriding `defaults.include_maps_in_render` |
+| `--map-country CODE` | ISO country code(s) to restrict geocoding to, e.g. `FR` |
+| `--cache-dir PATH` | Where to cache map tiles / geocode / route results |
+| `-l`, `--lang en\|fr` | Language of the generated PDF (default `en`) |
 
-```python
-build_pdf(itinerary, "pyrenees.pdf", ink_saver=True)
-```
+The PDF has a colored cover (title, inferred date range, day count, summary and a
+day-by-day overview table), one page per day (a colored header band, the day's
+intro, the merged time-ordered timeline of typed activity cards — including any
+car pick-up/drop-off — and a bottom "tonight's stay" bar), then a transport page
+and an accommodation summary. The whole palette is derived from `cover_color`.
+With maps on, each day page also carries an OpenStreetMap with numbered pins and
+drawn routes. `--ink-saver` keeps the layout but swaps the big solid accent
+areas (cover banner, header bands, card backgrounds) for accent-colored text,
+outlined badges and thin rules — ideal for a home printer.
 
-### Languages
-
-The PDF labels and validation messages are localized. `--lang` (`-l`) selects
-the output language — `en` (default) or `fr`. It only affects generated text;
-the JSON content (titles, descriptions, addresses…) is written in whatever
-language you author it in. All translatable strings live in
-`src/travelbook/lang/` (`translations.py` for strings, `dates.py` for
-month/weekday names); add a language by adding its map to `TRANSLATIONS` — English
-is the source, so any missing translation falls back to English.
-
-```python
-# As a library
-from travelbook import Itinerary, build_pdf
-
-itinerary = Itinerary.from_json_file("examples/pyrenees.json")
-build_pdf(itinerary, "pyrenees.pdf")
-```
-
-### Validating
-
-`travelbook validate <file>` checks the JSON and prints findings, each with the
-line it concerns. Findings come at three levels, filtered by `--verbose`
-(`-v`): `1` = errors only, `2` = errors + warnings (**default**), `3` =
-everything including low-priority info.
+### `validate` — check the JSON
 
 ```bash
-travelbook validate examples/pyrenees.json         # errors + warnings
-travelbook validate examples/pyrenees.json -v 3     # also the ℹ️ notes
+travelbook validate examples/pyrenees.json           # errors + warnings (default)
+travelbook validate examples/pyrenees.json -v 3      # also the ℹ️ info notes
+travelbook validate examples/pyrenees_fr.json --lang fr
 ```
 
-- ❌ **errors** — a required field is missing (`title`, a day's `title`), an
-  empty `days` array or a day with empty `activities`, a value is invalid (bad
-  date, time, duration, timezone, color, enum…), or the data is incoherent:
-  - reversed date ranges (trip / transport / accommodation),
-  - two accommodations booked for the same night,
-  - overlapping items on a day's timeline (activities and transport),
-  - a day whose schedule runs past midnight,
-  - duplicate or out-of-order day dates,
-  - a `start_time`/`end_time`/`duration` trio that doesn't add up,
-  - a non-positive `distance_km` or `duration`,
-  - a car rental whose pick-up/drop-off falls outside its booking period (or a
-    reversed booking window, or a drop-off before the pick-up),
-  - a price whose explicit `currency` is neither the default nor a declared
-    secondary currency (no rate to convert it), or a malformed
-    `secondary_currencies` entry.
-- ⚠️ **warnings** — a softer inconsistency worth attention:
-  - a night with nowhere to sleep (no accommodation, no overnight transport),
-  - a date outside a manual trip range, or a manual range that doesn't cover
-    the days,
-  - a booking marked paid/confirmed but missing its price / reference,
-  - an accommodation city that differs from the day's,
-  - a hike whose `route` and `start`/`end` disagree (a loop/back-and-forth with
-    a different `end`, or a one-way with no distinct `end`),
-  - an activity that ends after the trip's `defaults.end_time`,
-  - a car-rental pick-up/drop-off that overlaps an activity or transport on the
-    same day,
-  - a point of interest, place, or transport with no determinable duration
-    (none given, and none inferable from its `start_time`/`end_time`),
-  - a road or hike missing a magnitude field: a hike (top-level **or nested**)
-    should give a duration, a `distance_km` **and** an `elevation_m`; a plain
-    drive a duration **and** a `distance_km`; and on a **multi-stop** drive each
-    named leg (a waypoint with a `location`) should carry its own leg duration
-    and `distance_km` — unnamed route-shaping waypoints fold into the next named
-    leg — with the warning naming each field that's missing.
-- ℹ️ **info** — a low-priority note (hidden unless `-v 3`): an optional field is
-  missing (with the default that will be used), a zero-minute buffer, or a night
-  with both a hotel and an overnight transport (the accommodation is used).
+Prints findings, each with the line it concerns, at three levels selected by
+`-v` / `--verbose`: `1` = errors only, `2` = errors + warnings (**default**),
+`3` = everything including low-priority info. The command exits non-zero if there
+are any errors (warnings alone exit zero).
 
-Each finding names the field, its description, and the expected value. The
-command exits non-zero if there are any errors (warnings alone exit zero).
+- ❌ **errors** — a missing required field, an invalid value (bad date, time,
+  duration, color, enum…), or incoherent data — e.g. overlapping items on a
+  day's timeline, two accommodations booked for the same night, or a car rental
+  picked up outside its booking window. (…and more.)
+- ⚠️ **warnings** — softer inconsistencies worth a look — e.g. a night with
+  nowhere to sleep, an activity ending after `defaults.end_time`, or a hike whose
+  `route` and `start`/`end` disagree. (…and more.)
+- ℹ️ **info** — low-priority notes (hidden unless `-v 3`) — e.g. an optional field
+  missing (stating the default that will be used), or a night with both a hotel
+  and an overnight transport (the accommodation wins).
 
-### Stitching a directory of fragments
+The PDF labels and validation messages are localized (`--lang en|fr`); all
+translatable strings live in `src/travelbook/lang/` (English is the source, so a
+missing translation falls back to English).
 
-Rather than maintaining one large JSON file, you can keep each piece in its own
-file and let `travelbook stitch <directory>` assemble them. The directory
-mirrors the itinerary shape:
+### `geocode` — bake in coordinates
+
+```bash
+travelbook geocode examples/pyrenees.json --country FR
+```
+
+Geocodes the objects that lack an explicit `coordinate` (from their name /
+address) and writes the results **back into the JSON**, so later builds are
+offline and deterministic. `-o` / `--output` writes elsewhere (default: overwrite
+in place); `--country` restricts geocoding (default: the trip's
+`inference_countries`).
+
+### `stitch` & `create-skeleton` — build from fragments
+
+Rather than one large file, you can keep each piece in its own file and let
+`stitch` assemble them. The directory mirrors the itinerary shape:
 
 ```
 examples/pyrenees_pieces/
-  travel_description.json     # → "travel_description"  (optional; see below)
-  defaults.json               # → "defaults"           (optional)
+  travel_description.json     # → "travel_description"  (optional; prompted if absent)
+  defaults.json               # → "defaults"            (optional)
   days/*.json                 # → "days"            (one day per file)
   transports/*.json           # → "transport"       (one leg per file)
   accommodations/*.json       # → "accommodations"  (one stay per file)
   car-rentals/*.json          # → "car_rentals"     (one rental per file)
 ```
 
-To start one from scratch, `travelbook create-skeleton <path> <name>` scaffolds
-`<path>/<name>/` with the four (empty) array sub-folders and a
-`travel_description.json` stub whose title is `"FIXME"` — fill in the pieces,
-then `stitch` it:
-
 ```bash
-travelbook create-skeleton . mytrip     # → ./mytrip/{days,transports,…}/ + stub
-travelbook stitch mytrip                 # once you've added at least one day
+travelbook create-skeleton . mytrip     # scaffold ./mytrip/ (sub-folders + a title stub)
+travelbook stitch mytrip                 # assemble once you've added ≥1 day
+travelbook stitch examples/pyrenees_pieces -v 3
 ```
 
 Each array folder contributes one entry per JSON file, **ordered by file name**
-(so a numeric prefix like `1-arrival.json` keeps days in order); a file may also
-hold a JSON array, in which case each element becomes one entry. If
-`travel_description.json` is absent you are prompted for its fields (only
-`title` is required).
+(a numeric prefix like `1-arrival.json` keeps days in order); a file may also
+hold a JSON array, each element becoming one entry. Validation runs twice (both
+respecting `-v` / `--lang`): each fragment is validated on its own first (so line
+numbers point at the file you edit), then the stitched JSON is re-validated for
+the cross-file coherence checks no single fragment can see. The result is written
+into the directory as `<title>.json`; the command exits non-zero if either pass
+found errors.
 
-Validation runs in two passes (both respecting `--verbose` / `--lang`):
+### As a library
 
-1. **Each fragment file is validated on its own first**, and its findings are
-   printed under that file's path — so the line numbers point at the file you
-   actually edit. (After stitching, line numbers would point at the merged
-   output instead.)
-2. The pieces are stitched, and **the assembled JSON is validated again** —
-   this second pass adds the cross-file coherence checks that no single fragment
-   can see (nowhere-to-sleep nights, overlapping stays, day ordering, a manual
-   trip range that doesn't cover the days, …).
+```python
+from travelbook import Itinerary, build_pdf
 
-The result is written into the directory as `<title>.json` — e.g.
-`Pyrenees Road Trip.json`. The command exits non-zero if either pass found
-errors.
-
-```bash
-travelbook stitch examples/pyrenees_pieces            # → "Pyrenees Road Trip.json"
-travelbook stitch examples/pyrenees_pieces -v 3       # also show the ℹ️ notes
+itinerary = Itinerary.from_json_file("examples/pyrenees.json")
+build_pdf(itinerary, "pyrenees.pdf", ink_saver=True)
 ```
+
+## Browser viewer (the PWA)
+
+The `web/` app renders and edits the same itineraries in the browser, running the
+real travelbook engine locally through Pyodide — **everything stays on your
+device**, it works fully offline once loaded, and it's installable as an app.
+Start it with `make dev` or `make preview` (see [Setup](#setup)).
+
+The header switches between four views:
+
+- **⚙️ Options** — open a local JSON file (or reopen the last, or load the bundled
+  sample); toggle the language (**EN / FR**, which localizes the whole UI, dates
+  and diagnostics); toggle interactive maps and redraw them; and **export the
+  PDF** (with ink-saver / include-maps toggles). Also install the app and check
+  for updates.
+- **📖 Travel viewer** — the rendered book (cover, day-by-day, transport,
+  accommodation), prices with faded secondary-currency conversions. With maps on,
+  each day's Python-rendered overview map fills in — numbered pin discs next to
+  activity titles, plus zoomed area maps — and an **Interactive** toggle swaps
+  them for pan/zoom MapLibre maps that keep working offline after one online view.
+- **🔎 Findings** — every validation ❌ / ⚠️ / ℹ️ finding with its line number and a
+  level filter (the same engine as `travelbook validate`).
+- **✏️ Edit** — a structured form editor over the input JSON. Every field is
+  editable, with add / remove / reorder for days, activities (one level of
+  nesting), transport, accommodations, car rentals and waypoints. It **validates
+  live** as you type, anchoring each finding inline on its field; an **Apply
+  changes** button pushes the draft into the viewer, findings and PDF export (the
+  preview refreshes only on Apply). **Save** writes back to the opened file,
+  **Save as…** / **Download JSON** write a new one; there's **undo / redo /
+  revert**, an autosave that survives reloads, coordinate helpers (paste
+  "lat, long", or **geocode from address**), and normalize-on-save so a
+  round-tripped file stays diff-clean.
+
+See [`web/README.md`](web/README.md) for the viewer's architecture and internals.
 
 ## JSON format
 
@@ -559,85 +600,32 @@ drop-off location defaults to the pick-up location.
 ## Development
 
 ```bash
-pytest
+make test        # or: .venv/bin/pytest
 ```
 
-The code is organized into focused packages under `src/travelbook/`:
+The Python package lives under `src/travelbook/`, in focused sub-packages, each
+re-exporting its public API from `__init__.py` (so `from travelbook.models import
+Itinerary` stays stable):
 
-- `models/` — `parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `itinerary`
-- `validate/` — `jsonpos` (line-tracking parser), `findings`, `specs`, `validator`
-- `pdf/` — `base` + one mixin per section (`cover`, `days`, `transport`, `accommodation`, `car_rental`)
-- `lang/` — `dates` (localized names) and `translations` (the string maps)
-- `cli.py` — the command-line entry point
+- `models/` — the data model + JSON parsing (`parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `geo`, `itinerary`)
+- `validate/` — the read-only checker (`jsonpos` line-tracking parser, `findings`, `specs`, `validator`)
+- `pdf/` — `base` + one mixin per section (cover, days, day maps, transport, accommodation, car rental)
+- `maps/` — per-day map rendering (geocode → routing → tiles → image), imported only when maps are on
+- `lang/` — localization (`dates`, `translations`)
+- `cli.py` — the command-line entry point; `stitch.py` — fragment assembly
 
-Each package's `__init__.py` re-exports its public API, so imports like
-`from travelbook.models import Itinerary` are unchanged.
+The browser viewer is a separate Vite/React app under `web/` (see its README).
 
 ### Example files
 
-- `examples/pyrenees.json` — a full, valid itinerary. Build it with
-  `travelbook build examples/pyrenees.json -o pyrenees.pdf` (add `--ink-saver`
-  for the low-ink rendering).
-- `examples/pyrenees_pieces/` — the same trip split into per-file fragments,
-  for `travelbook stitch`. `stitch`ing it reproduces `pyrenees.json` exactly
-  (guarded by a test).
-- `examples/pyrenees_fr.json` — the same trip authored in French (build it with
-  `--lang fr` for a fully French PDF).
-- `examples/kyrgyzstan.json` — a maps-on itinerary with explicit coordinates in a
-  region with sparser OSM coverage; a few sights deliberately have no coordinate
-  and so aren't pinned. Build with maps: `travelbook build examples/kyrgyzstan.json`.
-- `examples/broken.json` — an intentionally broken itinerary that exercises the
-  validator (missing/invalid fields and incoherences).
-- `examples/broken_validator_output.txt` — the expected `validate` output for
-  `broken.json`, checked by a snapshot test.
+- `examples/pyrenees.json` — a full, valid itinerary.
+- `examples/pyrenees_pieces/` — the same trip split into per-file fragments for `stitch` (a test asserts it reassembles `pyrenees.json` exactly).
+- `examples/pyrenees_fr.json` — the same trip authored in French (build with `--lang fr`).
+- `examples/kyrgyzstan.json` — a maps-on itinerary with explicit coordinates in a region with sparser OSM coverage (a few sights deliberately have no coordinate, so aren't pinned).
+- `examples/broken.json` + `examples/broken_validator_output.txt` — an intentionally broken itinerary and the expected `validate` output (checked by a snapshot test).
 
-Whenever the JSON data format or the validator messages change, regenerate the
-snapshot:
+Whenever the JSON format or a validator message changes, regenerate the snapshot:
 
 ```bash
 UPDATE_SNAPSHOTS=1 pytest tests/test_validate.py
 ```
-
-The snapshot test fails if `broken_validator_output.txt` is out of date, so the
-saved output always reflects the current format.
-
-## Layout
-
-Each PDF has a colored cover page (title, traveler, dates, summary) with a
-**day-by-day overview table** (day number, date, main activities, and the town
-you sleep in). Then one section per day: a colored header band, an intro
-paragraph, the itinerary (each activity shown as a typed card with a badge and
-type-specific details, including any car pick-up/drop-off), and a bottom bar for
-that night's stay. Finally a transport page (transport legs plus rental-car
-bookings) and an accommodation summary page. The accent color is derived from
-`cover_color`.
-
-## Future iterations
-
-Features intentionally deferred so the first iteration of the **PWA travel-book
-viewer** (see `docs/pwa-migration-plan.md`) can ship focused. Each is scoped and
-ready to pick up later; nothing here is a blocker for v1.
-
-- **Non-blocking in-browser maps.** Maps now render both in the in-app book view
-  and in the exported PDF (the `maps/` package reaches the network through a
-  single overridable seam — `travelbook.maps.http_get` — which the PWA points at
-  a browser `fetch`; the three endpoints all send `Access-Control-Allow-Origin:
-  *`, so no proxy is needed and the app stays local-only). The fetch is a
-  *synchronous* XHR on the main thread, so the first (uncached) map build blocks
-  the tab briefly; the service worker then serves tiles/routes locally, so
-  repeats and offline are fast. Moving Pyodide into a Web Worker (with an
-  async fetch) would remove even that first-time blocking — deferred as a polish
-  step. Note browsers forbid setting a custom `User-Agent`, so in-app geocoding
-  relies on the browser's own header; favor itineraries with **explicit
-  coordinates** (run the `geocode` CLI once to bake them in) for the smoothest
-  in-browser maps.
-- **Editing the itinerary in the UI.** V1 is read-only: open a local JSON file,
-  render it, show findings, export a PDF. A form/JSON editor with write-back to
-  the local file (and re-validate-on-change) is the planned step two.
-- **Pixel-faithful in-app rendering.** The in-app view is a web-native
-  presentation of the same content, not a pixel-for-pixel replica of the PDF
-  page layout (though the maps themselves are the exact same Python-rendered
-  images). The one-click PDF export remains the print-exact artifact.
-- **Cloud/shared storage.** By design the app is local-only — data lives solely
-  in the user's local JSON file, nothing leaves the device. Any sync/sharing is
-  out of scope.
