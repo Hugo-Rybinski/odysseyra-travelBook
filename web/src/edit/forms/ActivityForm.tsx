@@ -138,6 +138,7 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
             items={activity.waypoints ?? []}
             onChange={(wp) => set({ ...rec, waypoints: wp })}
             basePath={`${path}.waypoints`}
+            defaultOpen={false}
             itemTitle={(w, i) => w.location || `Waypoint ${i + 1}`}
             add={[{ label: "waypoint", make: newWaypoint }]}
             emptyLabel="No waypoints — a road needs at least one (the arrival)."
