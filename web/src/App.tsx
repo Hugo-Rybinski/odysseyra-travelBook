@@ -68,6 +68,9 @@ export function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  // Why the itinerary couldn't be rendered (e.g. missing title) while the file
+  // is still open for editing/investigation; shown in the Travel viewer.
+  const [renderError, setRenderError] = useState<string | null>(null);
   // The editable input-JSON draft (Edit tab), with an undo/redo stack (P6).
   // Seeded from the opened file, pushed into the viewer/findings/export via the
   // Apply button (P3), and written to a file via Save (P4).
@@ -244,35 +247,57 @@ export function App() {
     return () => clearTimeout(timer);
   }, [draft, draftSer, unsaved, source]);
 
-  // Resolve + validate a freshly opened source.
+  // Resolve + validate a freshly opened source. Resilient to a model that won't
+  // build (e.g. missing title): we still load the draft + findings so the file
+  // can be edited/investigated, and the Travel viewer explains why it can't render.
   const analyze = useCallback(
     async (src: Source) => {
       setBusy(true);
       setError(null);
       try {
         await boot(setProgress);
-        const [model, found] = await Promise.all([
-          resolve(src.text),
-          validate(src.text, lang),
-        ]);
+        // Findings first — validate parses independently and reports problems
+        // even when the render model can't be built.
+        let found: Finding[] = [];
+        try {
+          found = await validate(src.text, lang);
+        } catch {
+          /* a bridge/validate failure still shouldn't block opening */
+        }
+        // Try to build the render model; capture (don't throw) if it can't.
+        let model: Itinerary | null = null;
+        let renderErr: string | null = null;
+        try {
+          model = await resolve(src.text);
+        } catch (e) {
+          renderErr = String(e);
+        }
+
         setSource(src);
         setItinerary(model);
+        setRenderError(renderErr);
         setFindings(found);
+
+        let seeded = false;
         try {
           const seed = jsonToDraft(src.text); // seed the Edit tab with the raw input JSON
           resetDraft(seed);
           const seedText = serializeWithPaths(seed).text;
-          setAppliedText(seedText); // the viewer shows this content (dirty = false)
-          setSavedText(seedText); // it matches the file on disk (unsaved = false)
+          setAppliedText(seedText);
+          setSavedText(seedText);
+          seeded = true;
         } catch {
-          resetDraft(null); // unparseable-but-resolvable shouldn't happen, but don't break the load
+          resetDraft(null); // not even valid JSON — nothing to edit
           setAppliedText(null);
           setSavedText(null);
         }
         setMapsStale(false);
-        setView("viewer"); // switch to the book once it's on screen
-        // Text is on screen now; fetch the per-day maps in the background.
-        if (model.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
+
+        // Land on the book when it renders; otherwise on Edit (to fix it) or
+        // Findings (to see why) so the user isn't stuck on a blank viewer.
+        setView(model ? "viewer" : seeded ? "edit" : "findings");
+
+        if (model?.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
         else mapRunRef.current++; // cancel any in-flight loop from a prior file
         await rememberHandle(src.handle);
         setCanReopen(!!src.handle || canReopen);
@@ -452,21 +477,32 @@ export function App() {
       setError(null);
       try {
         const { text } = serializeWithPaths(draft);
-        const [model, found] = await Promise.all([resolve(text), validate(text, lang)]);
-        const carried = itinerary
-          ? { ...model, days: model.days.map((d, i) => ({ ...d, map: itinerary.days[i]?.map })) }
-          : model;
+        const found = await validate(text, lang);
+        // Build the model, but don't let a still-invalid draft throw away the
+        // apply — findings/export update and the viewer explains it can't render.
+        let model: Itinerary | null = null;
+        let renderErr: string | null = null;
+        try {
+          model = await resolve(text);
+        } catch (e) {
+          renderErr = String(e);
+        }
+        const carried =
+          model && itinerary
+            ? { ...model, days: model.days.map((d, i) => ({ ...d, map: itinerary.days[i]?.map })) }
+            : model;
         setItinerary(redrawMaps ? model : carried);
+        setRenderError(renderErr);
         setFindings(found);
         setSource((prev) => (prev ? { ...prev, text } : { name: "edited.json", text, handle: null }));
         setAppliedText(text); // preview now reflects the draft (dirty = false)
-        if (model.maps.include_in_render && redrawMaps) {
+        if (model?.maps.include_in_render && redrawMaps) {
           setMapsStale(false);
           await buildDayMaps(text, model.days.length, true);
         } else {
-          // Plain apply (or maps off): don't refetch. Carried maps stay on
-          // screen; suppress loaders for any day without one.
-          setMapsStale(model.maps.include_in_render);
+          // Plain apply (or maps off / unrenderable): don't refetch. Carried maps
+          // stay on screen; suppress loaders for any day without one.
+          setMapsStale(!!model?.maps.include_in_render);
           mapRunRef.current++; // cancel any in-flight map loop from a prior state
         }
       } catch (e) {
@@ -516,11 +552,11 @@ export function App() {
           </button>
           <button
             className={`btn ghost ${view === "findings" ? "active" : ""}`}
-            onClick={() => itinerary && setView("findings")}
+            onClick={() => source && setView("findings")}
             role="tab"
             aria-selected={view === "findings"}
-            aria-disabled={!itinerary}
-            data-tip={itinerary ? undefined : "Open an itinerary first"}
+            aria-disabled={!source}
+            data-tip={source ? undefined : "Open an itinerary first"}
           >
             🔎 Findings
           </button>
@@ -578,7 +614,7 @@ export function App() {
           canInstall={canInstall}
           install={install}
         />
-      ) : view === "findings" && itinerary ? (
+      ) : view === "findings" && source ? (
         <FindingsPanel findings={findings} />
       ) : view === "edit" && draft ? (
         <EditPanel
@@ -619,6 +655,21 @@ export function App() {
             interactiveMaps={interactiveMaps}
             showMapLoaders={!mapsStale}
           />
+        </section>
+      ) : source ? (
+        // A file is open but the model can't be built yet (e.g. missing title).
+        <section className="empty-state">
+          <div className="book-mark" aria-hidden>
+            🚧
+          </div>
+          <h2>Can't render this itinerary yet</h2>
+          <p>
+            {renderError ? renderError.replace(/^Error:\s*/, "") : "The itinerary couldn't be built."}
+          </p>
+          <p>
+            Fix the errors in <strong>🔎 Findings</strong> or <strong>✏️ Edit</strong>, then{" "}
+            <strong>Apply changes</strong> to render it here.
+          </p>
         </section>
       ) : (
         !error && (
