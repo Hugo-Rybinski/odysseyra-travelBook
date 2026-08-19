@@ -1118,7 +1118,10 @@ body {
   display: grid;
   gap: 12px 16px;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  align-items: end;
+  /* top-align cells so all inputs on a row stay on the same line even when one
+     field carries an error/warning message below it (which just makes its cell
+     taller — the row grows downward, the inputs don't shift) */
+  align-items: start;
   margin: 12px 0;
 }
 .edit-field {
