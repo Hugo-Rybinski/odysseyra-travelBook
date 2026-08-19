@@ -74,15 +74,42 @@ export function buildFindingIndex(
 
   for (const f of findings) {
     const path = f.line == null ? undefined : pathByLine.get(f.line);
-    if (path !== undefined && fieldPaths.has(path)) {
-      const list = byPath.get(path);
+    const target = path === undefined ? undefined : resolveAnchor(path, f.message, fieldPaths);
+    if (target !== undefined) {
+      const list = byPath.get(target);
       if (list) list.push(f);
-      else byPath.set(path, [f]);
+      else byPath.set(target, [f]);
     } else {
       rail.push(f);
     }
   }
   return { byPath, rail };
+}
+
+// Map a finding's raw line-path to the field it should attach to, or undefined
+// (→ rail). Most findings land straight on a field; two shapes need a nudge:
+//   - a "required field 'X' is missing" finding is reported at the *container*
+//     line (the field is absent, so has no line of its own), but X is a field
+//     the form renders — anchor it to `<container>.X`.
+//   - an array-of-scalar element (e.g. `defaults.inference_countries.0`) has no
+//     field of its own; anchor to the parent array field.
+function resolveAnchor(
+  path: string,
+  message: string,
+  fieldPaths: Set<string>,
+): string | undefined {
+  if (fieldPaths.has(path)) return path;
+
+  const missing = /required field '([a-z_]+)' is missing/i.exec(message);
+  if (missing) {
+    const candidate = `${path}.${missing[1]}`;
+    if (fieldPaths.has(candidate)) return candidate;
+  }
+
+  const parent = path.replace(/\.\d+$/, "");
+  if (parent !== path && fieldPaths.has(parent)) return parent;
+
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,7 +138,9 @@ export function collectFieldPaths(draft: SrcItinerary): Set<string> {
 
   (draft.days ?? []).forEach((day, i) => {
     addFields(`days.${i}`, DAY_FIELDS);
-    (day.activities ?? []).forEach((act, j) => walkActivity(`days.${i}.activities.${j}`, act, addCoord, addFields));
+    (day.activities ?? []).forEach((act, j) =>
+      walkActivity(`days.${i}.activities.${j}`, act, add, addCoord, addFields),
+    );
   });
 
   (draft.transport ?? []).forEach((_t, i) => {
@@ -137,10 +166,12 @@ export function collectFieldPaths(draft: SrcItinerary): Set<string> {
 function walkActivity(
   base: string,
   act: SrcActivity,
+  add: (p: string) => void,
   addCoord: (base: string) => void,
   addFields: (base: string, keys: readonly { key: string }[]) => void,
 ) {
   const type = act.type;
+  add(`${base}.type`); // the type <select> can carry an "invalid/disallowed type" finding
   if (type === "buffer") {
     addFields(base, ACTIVITY_FIELDS.buffer);
     return;
@@ -166,6 +197,6 @@ function walkActivity(
         : [];
   if (nested.length) {
     const acts = (act as { activities?: SrcActivity[] }).activities ?? [];
-    acts.forEach((a, i) => walkActivity(`${base}.activities.${i}`, a, addCoord, addFields));
+    acts.forEach((a, i) => walkActivity(`${base}.activities.${i}`, a, add, addCoord, addFields));
   }
 }

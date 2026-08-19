@@ -10,6 +10,7 @@ import {
 } from "../schema";
 import { ArrayEditor } from "../fields/ArrayEditor";
 import { CoordinateField } from "../fields/CoordinateField";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
@@ -80,20 +81,23 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
   return (
     <div className="activity-form">
-      <label className="edit-field">
-        <span className="edit-field-label">Type</span>
-        <select
-          className="edit-input"
-          value={type}
-          onChange={(e) => onChange(changeType(activity, e.target.value as SrcActivityType))}
-        >
-          {ACTIVITY_TYPES.filter((t) => allowedTypes.includes(t)).map((t) => (
-            <option key={t} value={t}>
-              {ACTIVITY_TYPE_LABELS[t]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="edit-field-wrap">
+        <label className="edit-field">
+          <span className="edit-field-label">Type</span>
+          <select
+            className="edit-input"
+            value={type}
+            onChange={(e) => onChange(changeType(activity, e.target.value as SrcActivityType))}
+          >
+            {ACTIVITY_TYPES.filter((t) => allowedTypes.includes(t)).map((t) => (
+              <option key={t} value={t}>
+                {ACTIVITY_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <FieldFindings path={`${path}.type`} />
+      </div>
 
       <FieldList specs={specs} value={rec} path={path} onChange={set} />
 
