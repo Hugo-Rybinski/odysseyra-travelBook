@@ -162,6 +162,7 @@ export function collectContainerPaths(draft: SrcItinerary): Set<string> {
   const walk = (base: string, act: SrcActivity) => {
     out.add(base);
     if (act.type === "road") {
+      out.add(`${base}.waypoints`); // the array itself (e.g. "needs at least one waypoint")
       (act.waypoints ?? []).forEach((_w, i) => out.add(`${base}.waypoints.${i}`));
     }
     const canNest =

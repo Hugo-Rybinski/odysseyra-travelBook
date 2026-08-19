@@ -126,6 +126,9 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
       {type === "road" && (
         <section className="sub-array">
           <h4>Waypoints</h4>
+          <div className="box-findings">
+            <FieldFindings path={`${path}.waypoints`} />
+          </div>
           <ArrayEditor<SrcWaypoint>
             items={activity.waypoints ?? []}
             onChange={(wp) => set({ ...rec, waypoints: wp })}
