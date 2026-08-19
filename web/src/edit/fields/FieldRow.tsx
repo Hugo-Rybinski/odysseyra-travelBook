@@ -63,7 +63,7 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   }
 
   return (
-    <div className={`edit-field-wrap ${levelClass}`}>
+    <div className={`edit-field-wrap ${levelClass} ${spec.kind === "textarea" ? "full" : ""}`}>
       <label className="edit-field" htmlFor={id}>
         {label}
         {renderControl(id, spec, placeholder, value, onChange)}

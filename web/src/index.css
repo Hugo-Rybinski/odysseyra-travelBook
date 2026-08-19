@@ -1368,6 +1368,10 @@ textarea.edit-input {
   flex-direction: column;
   gap: 4px;
 }
+/* textareas (description / summary) span the full width of the field grid */
+.edit-fields .edit-field-wrap.full {
+  grid-column: 1 / -1;
+}
 .edit-field-wrap.has-error .edit-input,
 .edit-field-wrap.has-error .edit-color input[type="color"] {
   border-color: #c0392b;
