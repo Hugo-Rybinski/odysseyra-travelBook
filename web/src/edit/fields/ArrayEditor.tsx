@@ -16,7 +16,7 @@ export interface ArrayEditorProps<T> {
   // Dot-path of the array itself; each item's path is `${basePath}.${index}`,
   // passed to renderItem so nested fields can anchor validation findings.
   basePath: string;
-  itemTitle: (item: T, index: number) => string;
+  itemTitle: (item: T, index: number) => ReactNode;
   renderItem: (item: T, index: number, onItemChange: (next: T) => void, path: string) => ReactNode;
   add: AddOption<T>[];
   emptyLabel?: string;

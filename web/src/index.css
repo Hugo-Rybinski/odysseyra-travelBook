@@ -1314,6 +1314,18 @@ textarea.edit-input {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* "D1" index pill on a day box's header title */
+.day-pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
 .array-item-controls {
   display: inline-flex;
   gap: 4px;

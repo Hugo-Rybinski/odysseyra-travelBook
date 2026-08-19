@@ -225,7 +225,12 @@ export function EditPanel({
               onChange={(next) => onChange({ ...draft, days: next })}
               basePath="days"
               defaultOpen={false}
-              itemTitle={(d, i) => d.title || `Day ${i + 1}`}
+              itemTitle={(d, i) => (
+                <>
+                  <span className="day-pill">D{i + 1}</span>
+                  {d.title || `Day ${i + 1}`}
+                </>
+              )}
               add={[{ label: "day", make: newDay }]}
               emptyLabel="No days yet — an itinerary needs at least one."
               renderItem={(d, _i, onItemChange, itemPath) => (
