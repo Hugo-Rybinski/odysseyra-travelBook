@@ -153,6 +153,7 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
             items={(rec.activities as SrcActivity[] | undefined) ?? []}
             onChange={(acts) => set({ ...rec, activities: acts })}
             basePath={`${path}.activities`}
+            defaultOpen={false}
             itemTitle={activityTitle}
             add={nestedTypes.map((t) => ({
               label: ACTIVITY_TYPE_LABELS[t].toLowerCase(),

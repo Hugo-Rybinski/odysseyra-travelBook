@@ -239,6 +239,11 @@ README schema tables). It is being built in phases — see
   launch, and **normalize-on-save** (prune empty values + safe defaults so a
   round-tripped file stays diff-clean).
 
+Days and their (nested) activities start **collapsed** so a large itinerary is
+scannable; a collapsed tile that hides an inline error/warning shows a ❌/⚠️
+badge on its header. Field/button tooltips float above neighbouring tiles and
+aren't clipped by a tile's edges.
+
 The Edit tab is feature-complete for now. Separately, moving Pyodide into a Web
 Worker so the first map render doesn't block the main thread remains deferred.
 

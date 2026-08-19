@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
+import { EditFindingsContext, FINDING_ICON, worstLevelUnder } from "../findings";
 
 // A generic editor for an array of objects: each item is a card with a header
 // (its title + move up/down + remove) and a body rendered by the caller. New
@@ -20,6 +21,9 @@ export interface ArrayEditorProps<T> {
   add: AddOption<T>[];
   emptyLabel?: string;
   className?: string;
+  // Whether items start expanded. Days/activities default collapsed so a big
+  // itinerary is scannable; a badge on the header flags hidden findings.
+  defaultOpen?: boolean;
 }
 
 export function ArrayEditor<T>({
@@ -31,7 +35,9 @@ export function ArrayEditor<T>({
   add,
   emptyLabel = "None yet.",
   className = "",
+  defaultOpen = true,
 }: ArrayEditorProps<T>) {
+  const findingsMap = useContext(EditFindingsContext);
   const replaceAt = (i: number, next: T) => {
     const copy = items.slice();
     copy[i] = next;
@@ -54,13 +60,27 @@ export function ArrayEditor<T>({
     <div className={`array-editor ${className}`}>
       {items.length === 0 && <p className="array-empty">{emptyLabel}</p>}
 
-      {items.map((item, i) => (
+      {items.map((item, i) => {
+        // Worst finding anchored anywhere inside this item — badged on the header
+        // so a collapsed tile still flags a hidden error/warning (CSS hides it
+        // when the tile is expanded, where the inline marks are already visible).
+        const subtreeLevel = worstLevelUnder(findingsMap, `${basePath}.${i}`);
+        return (
         // <details> so a long list (many days/activities) can be collapsed. The
         // header controls live in <summary>; each stops propagation so clicking
         // move/remove doesn't also toggle the disclosure.
-        <details className="array-item" key={i} open>
+        <details className="array-item" key={i} open={defaultOpen}>
           <summary className="array-item-head">
             <span className="array-item-title">{itemTitle(item, i)}</span>
+            {subtreeLevel && (
+              <span
+                className={`subtree-finding ${subtreeLevel}`}
+                aria-label={`contains ${subtreeLevel === "error" ? "an error" : "a warning"}`}
+                title={`Contains ${subtreeLevel === "error" ? "an error" : "a warning"}`}
+              >
+                {FINDING_ICON[subtreeLevel]}
+              </span>
+            )}
             <span className="array-item-controls">
               <button
                 type="button"
@@ -109,7 +129,8 @@ export function ArrayEditor<T>({
             {renderItem(item, i, (next) => replaceAt(i, next), `${basePath}.${i}`)}
           </div>
         </details>
-      ))}
+        );
+      })}
 
       <div className="array-add">
         {add.map((opt) => (

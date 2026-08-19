@@ -26,6 +26,7 @@ export function DayForm({ day, path, onChange }: DayFormProps) {
           items={day.activities ?? []}
           onChange={(acts) => set({ ...rec, activities: acts })}
           basePath={`${path}.activities`}
+          defaultOpen={false}
           itemTitle={activityTitle}
           add={ACTIVITY_TYPES.map((t: SrcActivityType) => ({
             label: ACTIVITY_TYPE_LABELS[t].toLowerCase(),

@@ -42,6 +42,24 @@ export function worstLevel(findings: Finding[]): FindingLevel | null {
   return null;
 }
 
+// The highest-severity level among findings anchored anywhere under `prefix`
+// (the path itself or a descendant) — used to badge a collapsed array item that
+// hides a field with a finding. Ignores info (only errors/warnings badge).
+export function worstLevelUnder(
+  map: Map<string, Finding[]>,
+  prefix: string,
+): FindingLevel | null {
+  let worst: FindingLevel | null = null;
+  for (const [key, list] of map) {
+    if (key !== prefix && !key.startsWith(prefix + ".")) continue;
+    for (const f of list) {
+      if (f.level === "error") return "error";
+      if (f.level === "warning") worst = "warning";
+    }
+  }
+  return worst;
+}
+
 // Split findings into those anchored to a rendered field (by exact path) and
 // the rest (container-level coherence warnings, findings with no line, or paths
 // that don't correspond to a form field) — the "rail" so nothing is dropped.

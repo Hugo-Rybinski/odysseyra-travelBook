@@ -188,6 +188,14 @@ body {
 [data-tip] {
   position: relative;
 }
+/* Lift the hovered/focused trigger above sibling tiles so its bubble is never
+   painted under a later element (the edit tab's containers no longer clip with
+   overflow:hidden, so the bubble can also spill past a tile's edges). */
+[data-tip]:hover,
+[data-tip]:focus-visible,
+[data-tip]:focus-within {
+  z-index: 200;
+}
 [data-tip]:hover::after,
 [data-tip]:focus-visible::after,
 [data-tip]:focus-within::after {
@@ -195,7 +203,7 @@ body {
   position: absolute;
   left: 0;
   top: calc(100% + 6px);
-  z-index: 100;
+  z-index: 300;
   width: max-content;
   max-width: 260px;
   padding: 7px 10px;
@@ -1075,7 +1083,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  /* visible (not hidden) so field/button tooltips can spill past the edge */
+  overflow: visible;
 }
 .edit-section > summary {
   cursor: pointer;
@@ -1254,7 +1263,18 @@ textarea.edit-input {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(31, 78, 95, 0.03);
-  overflow: hidden;
+  /* visible (not hidden) so a nested field's tooltip isn't clipped by the tile */
+  overflow: visible;
+}
+/* finding badge on a collapsed tile's header; hidden once the tile is expanded
+   (the inline field marks are visible then, so the badge would be redundant) */
+.subtree-finding {
+  flex: none;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.array-item[open] > .array-item-head .subtree-finding {
+  display: none;
 }
 .array-item-head {
   display: flex;
