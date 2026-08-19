@@ -81,6 +81,9 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
   return (
     <div className="activity-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <div className="edit-field-wrap">
         <label className="edit-field">
           <span className="edit-field-label">Type</span>
@@ -132,6 +135,9 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
             emptyLabel="No waypoints — a road needs at least one (the arrival)."
             renderItem={(w, _i, onItemChange, itemPath) => (
               <>
+                <div className="box-findings">
+                  <FieldFindings path={itemPath} />
+                </div>
                 <FieldList
                   specs={WAYPOINT_FIELDS}
                   value={w as unknown as Rec}

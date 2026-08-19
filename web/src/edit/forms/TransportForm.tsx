@@ -1,6 +1,7 @@
 import type { SrcTransport } from "../../types/source";
 import { TRANSPORT_FIELDS } from "../schema";
 import { CoordinateField } from "../fields/CoordinateField";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
@@ -17,6 +18,9 @@ export function TransportForm({ value, path, onChange }: TransportFormProps) {
 
   return (
     <div className="transport-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <FieldList specs={TRANSPORT_FIELDS} value={rec} path={path} onChange={set} />
       <CoordinateField
         label="Start coordinate"

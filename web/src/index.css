@@ -1388,6 +1388,18 @@ textarea.edit-input {
   display: grid;
   gap: 2px;
 }
+/* box-level findings callout at the top of a container form (day, activity,
+   transport, …); hidden when the wrapped FieldFindings renders nothing */
+.box-findings:empty {
+  display: none;
+}
+.box-findings {
+  margin: 0 0 12px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: rgba(31, 78, 95, 0.05);
+  border-left: 3px solid var(--accent);
+}
 .field-findings .ff {
   font-size: 0.75rem;
   line-height: 1.35;

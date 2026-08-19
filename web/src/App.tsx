@@ -32,7 +32,7 @@ import { Book } from "./render/Book";
 import { Options } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
-import { buildFindingIndex, collectFieldPaths } from "./edit/findings";
+import { buildFindingIndex, collectContainerPaths, collectFieldPaths } from "./edit/findings";
 import { useDraftHistory } from "./edit/useDraftHistory";
 import {
   clearAutosave,
@@ -208,7 +208,12 @@ export function App() {
       try {
         const found = await validate(draftSer.text, lang);
         if (cancelled) return;
-        const { byPath, rail } = buildFindingIndex(found, draftSer.pathByLine, collectFieldPaths(draft));
+        const { byPath, rail } = buildFindingIndex(
+          found,
+          draftSer.pathByLine,
+          collectFieldPaths(draft),
+          collectContainerPaths(draft),
+        );
         setEditIndex(byPath);
         setEditRail(rail);
         setEditError(null);

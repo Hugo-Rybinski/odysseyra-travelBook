@@ -68,17 +68,21 @@ export function buildFindingIndex(
   findings: Finding[],
   pathByLine: Map<number, string>,
   fieldPaths: Set<string>,
+  containerPaths: Set<string>,
 ): { byPath: Map<string, Finding[]>; rail: Finding[] } {
   const byPath = new Map<string, Finding[]>();
   const rail: Finding[] = [];
 
   for (const f of findings) {
     const path = f.line == null ? undefined : pathByLine.get(f.line);
-    const target = path === undefined ? undefined : resolveAnchor(path, f.message, fieldPaths);
-    if (target !== undefined) {
-      const list = byPath.get(target);
-      if (list) list.push(f);
-      else byPath.set(target, [f]);
+    const targets =
+      path === undefined ? [] : resolveAnchor(path, f.message, fieldPaths, containerPaths);
+    if (targets.length > 0) {
+      for (const t of targets) {
+        const list = byPath.get(t);
+        if (list) list.push(f);
+        else byPath.set(t, [f]);
+      }
     } else {
       rail.push(f);
     }
@@ -86,30 +90,83 @@ export function buildFindingIndex(
   return { byPath, rail };
 }
 
-// Map a finding's raw line-path to the field it should attach to, or undefined
-// (→ rail). Most findings land straight on a field; two shapes need a nudge:
-//   - a "required field 'X' is missing" finding is reported at the *container*
-//     line (the field is absent, so has no line of its own), but X is a field
-//     the form renders — anchor it to `<container>.X`.
-//   - an array-of-scalar element (e.g. `defaults.inference_countries.0`) has no
-//     field of its own; anchor to the parent array field.
+// Map a finding's raw line-path to the field(s) or container it should attach to
+// (empty → rail). Order of preference:
+//   1. the exact path is a field → that field.
+//   2. the message names fields (a "missing: a, b" suffix, else quoted 'field'
+//      tokens) that belong to this container → each of them, so e.g. "add a
+//      'duration', or a 'start_time' and 'end_time'" flags all three, and
+//      "required field 'name' is missing" flags the name field.
+//   3. an array-of-scalar element (e.g. `defaults.inference_countries.0`) → the
+//      parent array field.
+//   4. the path is a rendered container (a day / activity / transport / … box)
+//      → the container itself, so box-level findings ("this activity ends after
+//      the day's end_time", overlaps, incoherent times) show inside that box.
 function resolveAnchor(
   path: string,
   message: string,
   fieldPaths: Set<string>,
-): string | undefined {
-  if (fieldPaths.has(path)) return path;
+  containerPaths: Set<string>,
+): string[] {
+  if (fieldPaths.has(path)) return [path];
 
-  const missing = /required field '([a-z_]+)' is missing/i.exec(message);
-  if (missing) {
-    const candidate = `${path}.${missing[1]}`;
-    if (fieldPaths.has(candidate)) return candidate;
-  }
+  const named = fieldNamesFrom(message)
+    .map((name) => `${path}.${name}`)
+    .filter((p) => fieldPaths.has(p));
+  if (named.length > 0) return named;
 
   const parent = path.replace(/\.\d+$/, "");
-  if (parent !== path && fieldPaths.has(parent)) return parent;
+  if (parent !== path && fieldPaths.has(parent)) return [parent];
 
-  return undefined;
+  if (containerPaths.has(path)) return [path];
+
+  // Last resort: attach to the nearest ancestor container (e.g. a road's
+  // `….waypoints` array line → the road's box) rather than the rail.
+  const ancestor = path.replace(/\.[^.]+$/, "");
+  if (ancestor !== path && containerPaths.has(ancestor)) return [ancestor];
+
+  return [];
+}
+
+// Field names a finding message refers to: the precise `missing: a, b` subset
+// when present, otherwise every quoted snake_case token (values like 'Lyon' or
+// 'bus' simply won't match a field and get filtered out by the caller).
+function fieldNamesFrom(message: string): string[] {
+  const missing = /\bmissing:\s*([a-z0-9_,\s]+)/i.exec(message);
+  if (missing) {
+    return missing[1].split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  const names: string[] = [];
+  for (const m of message.matchAll(/'([a-z_][a-z0-9_]*)'/gi)) names.push(m[1]);
+  return names;
+}
+
+// The set of rendered container boxes (config groups + every array item, incl.
+// nested activities and waypoints), so a finding that names no field can still
+// anchor to the box it concerns. Mirrors the form tree like collectFieldPaths.
+export function collectContainerPaths(draft: SrcItinerary): Set<string> {
+  const out = new Set<string>(["travel_description", "defaults"]);
+  const walk = (base: string, act: SrcActivity) => {
+    out.add(base);
+    if (act.type === "road") {
+      (act.waypoints ?? []).forEach((_w, i) => out.add(`${base}.waypoints.${i}`));
+    }
+    const canNest =
+      act.type === "point_of_interest" ||
+      act.type === "place" ||
+      act.type === "road" ||
+      act.type === "hike";
+    const nested = (act as { activities?: SrcActivity[] }).activities;
+    if (canNest && nested) nested.forEach((a, i) => walk(`${base}.activities.${i}`, a));
+  };
+  (draft.days ?? []).forEach((day, i) => {
+    out.add(`days.${i}`);
+    (day.activities ?? []).forEach((a, j) => walk(`days.${i}.activities.${j}`, a));
+  });
+  (draft.transport ?? []).forEach((_t, i) => out.add(`transport.${i}`));
+  (draft.accommodations ?? []).forEach((_a, i) => out.add(`accommodations.${i}`));
+  (draft.car_rentals ?? []).forEach((_c, i) => out.add(`car_rentals.${i}`));
+  return out;
 }
 
 // ---------------------------------------------------------------------------

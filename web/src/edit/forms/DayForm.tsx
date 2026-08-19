@@ -1,6 +1,7 @@
 import type { SrcActivity, SrcActivityType, SrcDay } from "../../types/source";
 import { ACTIVITY_TYPES, ACTIVITY_TYPE_LABELS, DAY_FIELDS, newActivity } from "../schema";
 import { ArrayEditor } from "../fields/ArrayEditor";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 import { ActivityForm, activityTitle } from "./ActivityForm";
 
@@ -18,6 +19,9 @@ export function DayForm({ day, path, onChange }: DayFormProps) {
 
   return (
     <div className="day-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <FieldList specs={DAY_FIELDS} value={rec} path={path} onChange={set} />
 
       <section className="sub-array">

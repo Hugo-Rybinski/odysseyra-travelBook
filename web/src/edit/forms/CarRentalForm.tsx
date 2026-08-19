@@ -1,6 +1,7 @@
 import type { SrcCarRental } from "../../types/source";
 import { CAR_RENTAL_FIELDS } from "../schema";
 import { CoordinateField } from "../fields/CoordinateField";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
@@ -17,6 +18,9 @@ export function CarRentalForm({ value, path, onChange }: CarRentalFormProps) {
 
   return (
     <div className="car-rental-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <FieldList specs={CAR_RENTAL_FIELDS} value={rec} path={path} onChange={set} />
       <CoordinateField
         label="Pick-up coordinate"

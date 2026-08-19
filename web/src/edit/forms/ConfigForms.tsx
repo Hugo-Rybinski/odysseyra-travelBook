@@ -6,6 +6,7 @@ import {
   TRAVEL_DESCRIPTION_FIELDS,
 } from "../schema";
 import { ArrayEditor } from "../fields/ArrayEditor";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
@@ -20,12 +21,17 @@ export function TravelDescriptionForm({
   onChange: (next: SrcTravelDescription) => void;
 }) {
   return (
-    <FieldList
-      specs={TRAVEL_DESCRIPTION_FIELDS}
-      value={value as unknown as Rec}
-      path={path}
-      onChange={(next) => onChange(next as unknown as SrcTravelDescription)}
-    />
+    <div className="travel-description-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
+      <FieldList
+        specs={TRAVEL_DESCRIPTION_FIELDS}
+        value={value as unknown as Rec}
+        path={path}
+        onChange={(next) => onChange(next as unknown as SrcTravelDescription)}
+      />
+    </div>
   );
 }
 
@@ -43,6 +49,9 @@ export function DefaultsForm({
 
   return (
     <div className="defaults-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <FieldList specs={DEFAULTS_FIELDS} value={rec} path={path} onChange={set} />
 
       <section className="sub-array">

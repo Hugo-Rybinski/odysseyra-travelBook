@@ -1,6 +1,7 @@
 import type { SrcAccommodation } from "../../types/source";
 import { ACCOMMODATION_FIELDS } from "../schema";
 import { CoordinateField } from "../fields/CoordinateField";
+import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
@@ -17,6 +18,9 @@ export function AccommodationForm({ value, path, onChange }: AccommodationFormPr
 
   return (
     <div className="accommodation-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
       <FieldList specs={ACCOMMODATION_FIELDS} value={rec} path={path} onChange={set} />
       <CoordinateField
         path={`${path}.coordinate`}
