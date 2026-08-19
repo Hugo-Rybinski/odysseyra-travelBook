@@ -32,7 +32,13 @@ import { Book } from "./render/Book";
 import { Options } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
-import { buildFindingIndex, collectContainerPaths, collectFieldPaths } from "./edit/findings";
+import {
+  buildFindingIndex,
+  collectContainerPaths,
+  collectFieldPaths,
+  EMPTY_FINDING_INDEX,
+  type FindingIndex,
+} from "./edit/findings";
 import { useDraftHistory } from "./edit/useDraftHistory";
 import {
   clearAutosave,
@@ -94,7 +100,7 @@ export function App() {
   const [mapsStale, setMapsStale] = useState(false);
   // Live validation of the draft (P2): findings anchored to fields by path, plus
   // a "rail" of the rest. Recomputed, debounced, whenever the draft changes.
-  const [editIndex, setEditIndex] = useState<Map<string, Finding[]>>(new Map());
+  const [editIndex, setEditIndex] = useState<FindingIndex>(EMPTY_FINDING_INDEX);
   const [editRail, setEditRail] = useState<Finding[]>([]);
   const [editValidating, setEditValidating] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -211,13 +217,13 @@ export function App() {
       try {
         const found = await validate(draftSer.text, lang);
         if (cancelled) return;
-        const { byPath, rail } = buildFindingIndex(
+        const { byPath, rail, shared } = buildFindingIndex(
           found,
           draftSer.pathByLine,
           collectFieldPaths(draft),
           collectContainerPaths(draft),
         );
-        setEditIndex(byPath);
+        setEditIndex({ byPath, shared });
         setEditRail(rail);
         setEditError(null);
       } catch (e) {

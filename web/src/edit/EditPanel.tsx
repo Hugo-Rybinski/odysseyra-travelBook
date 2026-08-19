@@ -8,7 +8,7 @@ import type {
 } from "../types/source";
 import { FindingsPanel } from "../findings/FindingsPanel";
 import { newAccommodation, newCarRental, newDay, newTransport } from "./schema";
-import { EditFindingsContext } from "./findings";
+import { EditFindingsContext, type FindingIndex } from "./findings";
 import { EditDefaultsContext } from "./defaultsContext";
 import { EditGeocodeContext, type GeocodeApi } from "./geocodeContext";
 import { ArrayEditor } from "./fields/ArrayEditor";
@@ -31,7 +31,7 @@ import { TransportForm } from "./forms/TransportForm";
 export interface EditPanelProps {
   draft: SrcItinerary;
   onChange: (next: SrcItinerary) => void;
-  findingIndex: Map<string, Finding[]>;
+  findingIndex: FindingIndex;
   rail: Finding[];
   validating: boolean;
   validationError: string | null;

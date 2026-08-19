@@ -1,5 +1,5 @@
-import { useContext, type ReactNode } from "react";
-import { countLevelsUnder, EditFindingsContext, FINDING_ICON } from "../findings";
+import { type ReactNode } from "react";
+import { countLevelsUnder, FINDING_ICON, useFindingIndex } from "../findings";
 
 // A generic editor for an array of objects: each item is a card with a header
 // (its title + move up/down + remove) and a body rendered by the caller. New
@@ -37,7 +37,7 @@ export function ArrayEditor<T>({
   className = "",
   defaultOpen = true,
 }: ArrayEditorProps<T>) {
-  const findingsMap = useContext(EditFindingsContext);
+  const { byPath: findingsMap } = useFindingIndex();
   const replaceAt = (i: number, next: T) => {
     const copy = items.slice();
     copy[i] = next;

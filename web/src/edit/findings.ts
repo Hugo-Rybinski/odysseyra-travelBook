@@ -24,14 +24,31 @@ export const FINDING_ICON: Record<FindingLevel, string> = {
   info: "ℹ️",
 };
 
-// Findings anchored to fields, keyed by the field's dot-path. Provided by the
-// EditPanel (built from a validate() pass over the draft) and read by each
-// FieldRow / CoordinateField for its own path. Empty map = no findings / not yet
-// validated.
-export const EditFindingsContext = createContext<Map<string, Finding[]>>(new Map());
+// A stable identity for a finding (so the same finding anchored to several
+// fields can be de-duplicated / recognised as "shared").
+export const findingKey = (f: Finding): string => `${f.level}|${f.line}|${f.message}`;
+
+// The finding index: `byPath` maps a field/container dot-path → its findings
+// (a finding anchored to N fields appears under all N paths so each highlights);
+// `shared` holds the keys of findings anchored to more than one field, so their
+// message can be shown once as a group instead of repeated under every field.
+export interface FindingIndex {
+  byPath: Map<string, Finding[]>;
+  shared: Set<string>;
+}
+
+export const EMPTY_FINDING_INDEX: FindingIndex = { byPath: new Map(), shared: new Set() };
+
+// Provided by EditPanel (from a validate() pass over the draft), read by each
+// FieldRow / FieldList / CoordinateField / ArrayEditor.
+export const EditFindingsContext = createContext<FindingIndex>(EMPTY_FINDING_INDEX);
+
+export function useFindingIndex(): FindingIndex {
+  return useContext(EditFindingsContext);
+}
 
 export function useFieldFindings(path: string): Finding[] {
-  return useContext(EditFindingsContext).get(path) ?? [];
+  return useContext(EditFindingsContext).byPath.get(path) ?? [];
 }
 
 // The highest-severity level in a set of findings (for styling the field).
@@ -75,9 +92,10 @@ export function buildFindingIndex(
   pathByLine: Map<number, string>,
   fieldPaths: Set<string>,
   containerPaths: Set<string>,
-): { byPath: Map<string, Finding[]>; rail: Finding[] } {
+): { byPath: Map<string, Finding[]>; rail: Finding[]; shared: Set<string> } {
   const byPath = new Map<string, Finding[]>();
   const rail: Finding[] = [];
+  const shared = new Set<string>();
 
   for (const f of findings) {
     // Info-level notes (mostly "optional field missing → default") are never
@@ -96,11 +114,13 @@ export function buildFindingIndex(
         if (list) list.push(f);
         else byPath.set(t, [f]);
       }
+      // Anchored to several fields → highlight each, but show the message once.
+      if (targets.length > 1) shared.add(findingKey(f));
     } else {
       rail.push(f);
     }
   }
-  return { byPath, rail };
+  return { byPath, rail, shared };
 }
 
 // Map a finding's raw line-path to the field(s) or container it should attach to
