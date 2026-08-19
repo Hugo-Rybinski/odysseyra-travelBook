@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { FieldSpec } from "../schema";
+import { useEditDefaults } from "../defaultsContext";
 import { useFieldFindings, worstLevel } from "../findings";
 import { FieldFindings } from "./FieldFindings";
 
@@ -22,6 +23,13 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   const id = useId();
   const findings = useFieldFindings(path);
   const level = worstLevel(findings);
+  const defaults = useEditDefaults();
+  // For a field that inherits an unset value from defaults.<key>, show the
+  // effective value + its source in the empty placeholder, e.g.
+  // "EUR (from defaults.currency)". Otherwise use the static placeholder.
+  const placeholder = spec.inheritsFrom
+    ? `${defaults[spec.inheritsFrom] ?? ""} (from defaults.${spec.inheritsFrom})`.trim()
+    : spec.placeholder;
   const label = (
     <span className="edit-field-label">
       {spec.label}
@@ -58,7 +66,7 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
     <div className={`edit-field-wrap ${levelClass}`}>
       <label className="edit-field" htmlFor={id}>
         {label}
-        {renderControl(id, spec, value, onChange)}
+        {renderControl(id, spec, placeholder, value, onChange)}
       </label>
       <FieldFindings path={path} />
     </div>
@@ -68,6 +76,7 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
 function renderControl(
   id: string,
   spec: FieldSpec,
+  placeholder: string | undefined,
   value: unknown,
   onChange: FieldRowProps["onChange"],
 ) {
@@ -80,7 +89,7 @@ function renderControl(
           id={id}
           className="edit-input"
           rows={3}
-          placeholder={spec.placeholder}
+          placeholder={placeholder}
           value={str}
           onChange={(e) => onChange(e.target.value || undefined)}
         />
@@ -94,7 +103,7 @@ function renderControl(
           className="edit-input"
           type="number"
           step={spec.kind === "integer" ? 1 : "any"}
-          placeholder={spec.placeholder}
+          placeholder={placeholder}
           value={str}
           onChange={(e) => {
             const v = e.target.value;
@@ -135,7 +144,7 @@ function renderControl(
           value={str}
           onChange={(e) => onChange(e.target.value || undefined)}
         >
-          <option value="">{spec.placeholder ? `— ${spec.placeholder} —` : "—"}</option>
+          <option value="">{placeholder ? `— ${placeholder} —` : "—"}</option>
           {(spec.enum ?? []).map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -171,7 +180,7 @@ function renderControl(
             id={id}
             className="edit-input"
             type="text"
-            placeholder={spec.placeholder}
+            placeholder={placeholder}
             value={str}
             onChange={(e) => onChange(e.target.value || undefined)}
           />
@@ -184,7 +193,7 @@ function renderControl(
           id={id}
           className="edit-input"
           type="text"
-          placeholder={spec.placeholder}
+          placeholder={placeholder}
           value={Array.isArray(value) ? value.join(", ") : str}
           onChange={(e) => {
             const parts = e.target.value
@@ -203,7 +212,7 @@ function renderControl(
           id={id}
           className="edit-input"
           type="text"
-          placeholder={spec.placeholder}
+          placeholder={placeholder}
           value={str}
           onChange={(e) => onChange(e.target.value || undefined)}
         />

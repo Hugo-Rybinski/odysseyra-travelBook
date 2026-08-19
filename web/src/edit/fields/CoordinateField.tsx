@@ -121,7 +121,12 @@ export function CoordinateField({
       <div className="edit-coord-row">
         <div className="edit-field-wrap">
           <label className="edit-field" htmlFor={latId}>
-            <span className="edit-field-label">Lat</span>
+            <span className="edit-field-label">
+              Lat
+              <span className="edit-help" data-tip="Latitude, −90 to 90. Leave both lat & long empty to omit the coordinate." tabIndex={0} role="img" aria-label="Latitude, −90 to 90.">
+                ?
+              </span>
+            </span>
             <input
               id={latId}
               className="edit-input"
@@ -136,7 +141,12 @@ export function CoordinateField({
         </div>
         <div className="edit-field-wrap">
           <label className="edit-field" htmlFor={longId}>
-            <span className="edit-field-label">Long</span>
+            <span className="edit-field-label">
+              Long
+              <span className="edit-help" data-tip="Longitude, −180 to 180. Leave both lat & long empty to omit the coordinate." tabIndex={0} role="img" aria-label="Longitude, −180 to 180.">
+                ?
+              </span>
+            </span>
             <input
               id={longId}
               className="edit-input"
@@ -157,7 +167,12 @@ export function CoordinateField({
               emit({ ...value, show_on_map: e.target.checked ? false : undefined })
             }
           />
-          <span className="edit-field-label">Hide on map</span>
+          <span className="edit-field-label">
+            Hide on map
+            <span className="edit-help" data-tip="Plot this point on the map. Shown by default when a coordinate is set; tick to hide it while keeping the coordinate." tabIndex={0} role="img" aria-label="Hide this point on the map.">
+              ?
+            </span>
+          </span>
         </label>
       </div>
       <FieldFindings path={`${path}.show_on_map`} />

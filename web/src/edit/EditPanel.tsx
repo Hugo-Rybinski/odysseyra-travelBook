@@ -9,6 +9,7 @@ import type {
 import { FindingsPanel } from "../findings/FindingsPanel";
 import { newAccommodation, newCarRental, newDay, newTransport } from "./schema";
 import { EditFindingsContext } from "./findings";
+import { EditDefaultsContext } from "./defaultsContext";
 import { EditGeocodeContext, type GeocodeApi } from "./geocodeContext";
 import { ArrayEditor } from "./fields/ArrayEditor";
 import { AccommodationForm } from "./forms/AccommodationForm";
@@ -91,8 +92,22 @@ export function EditPanel({
   const accommodations = draft.accommodations ?? [];
   const carRentals = draft.car_rentals ?? [];
 
+  // Effective defaults (with schema fallbacks) so inheriting fields can show
+  // "<value> (from defaults.<key>)" in their empty placeholder.
+  const d = draft.defaults ?? {};
+  const effectiveDefaults = {
+    currency: d.currency || "EUR",
+    timezone: d.timezone || "GMT",
+    start_time: d.start_time || "08:00",
+    breakfast_until: d.breakfast_until || "10:00",
+    lunch_until: d.lunch_until || "16:00",
+    meal_duration: d.meal_duration || "0",
+    buffer: d.buffer || "0",
+  };
+
   return (
     <EditFindingsContext.Provider value={findingIndex}>
+      <EditDefaultsContext.Provider value={effectiveDefaults}>
       <EditGeocodeContext.Provider value={geocode}>
       <div className="edit-panel" role="region" aria-label="Edit itinerary">
         <div className="edit-actions">
@@ -274,6 +289,7 @@ export function EditPanel({
         </details>
       </div>
       </EditGeocodeContext.Provider>
+      </EditDefaultsContext.Provider>
     </EditFindingsContext.Provider>
   );
 }
