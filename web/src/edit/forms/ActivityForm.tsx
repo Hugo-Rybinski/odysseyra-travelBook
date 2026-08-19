@@ -69,7 +69,12 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
   const rec = activity as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcActivity);
 
-  const specs = type === "buffer" ? ACTIVITY_FIELDS.buffer : [...SCHEDULED_FIELDS, ...ACTIVITY_FIELDS[type]];
+  // A hand-edited draft may carry an unknown/absent type; fall back to the
+  // scheduling fields only (ACTIVITY_FIELDS[type] would be undefined → a
+  // "not iterable" spread crash) so the form still renders and the type finding
+  // can be fixed.
+  const typeFields = ACTIVITY_FIELDS[type] ?? [];
+  const specs = type === "buffer" ? ACTIVITY_FIELDS.buffer : [...SCHEDULED_FIELDS, ...typeFields];
 
   // What may be nested, per container type (see README nesting rules).
   const nestedTypes: readonly SrcActivityType[] =
