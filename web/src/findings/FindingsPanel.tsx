@@ -9,8 +9,6 @@ const LEVEL_ICON: Record<FindingLevel, string> = {
 
 const LEVEL_ORDER: FindingLevel[] = ["error", "warning", "info"];
 
-type Filter = "all" | FindingLevel;
-
 export function FindingsPanel({
   findings,
   title = "Validation",
@@ -18,7 +16,19 @@ export function FindingsPanel({
   findings: Finding[];
   title?: string;
 }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  // Multi-select level toggles (combined additively): a finding shows when its
+  // level is selected. Errors + warnings are on by default so the "optional
+  // missing" info flood stays hidden until asked for.
+  const [selected, setSelected] = useState<Set<FindingLevel>>(
+    () => new Set<FindingLevel>(["error", "warning"]),
+  );
+
+  const toggle = (level: FindingLevel) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(level) ? next.delete(level) : next.add(level);
+      return next;
+    });
 
   const counts = useMemo(() => {
     const c: Record<FindingLevel, number> = { error: 0, warning: 0, info: 0 };
@@ -28,34 +38,24 @@ export function FindingsPanel({
 
   // Errors first, then warnings, then info; a stable order within each level.
   const shown = useMemo(() => {
-    const filtered =
-      filter === "all" ? findings : findings.filter((f) => f.level === filter);
-    return [...filtered].sort(
-      (a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level),
-    );
-  }, [findings, filter]);
-
-  const chips: { key: Filter; label: string }[] = [
-    { key: "all", label: `All ${findings.length}` },
-    { key: "error", label: `${LEVEL_ICON.error} ${counts.error}` },
-    { key: "warning", label: `${LEVEL_ICON.warning} ${counts.warning}` },
-    { key: "info", label: `${LEVEL_ICON.info} ${counts.info}` },
-  ];
+    return [...findings]
+      .filter((f) => selected.has(f.level))
+      .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level));
+  }, [findings, selected]);
 
   return (
     <section className="findings" aria-label="Validation findings">
       <div className="findings-head">
         <h3>{title}</h3>
-        <div className="chips" role="tablist">
-          {chips.map((c) => (
+        <div className="chips" role="group" aria-label="Filter by level">
+          {LEVEL_ORDER.map((level) => (
             <button
-              key={c.key}
-              role="tab"
-              aria-selected={filter === c.key}
-              className={`chip ${filter === c.key ? "active" : ""} ${c.key}`}
-              onClick={() => setFilter(c.key)}
+              key={level}
+              aria-pressed={selected.has(level)}
+              className={`chip ${selected.has(level) ? "active" : ""} ${level}`}
+              onClick={() => toggle(level)}
             >
-              {c.label}
+              {LEVEL_ICON[level]} {counts[level]}
             </button>
           ))}
         </div>
@@ -75,7 +75,9 @@ export function FindingsPanel({
           <li className="empty">
             {findings.length === 0
               ? "No findings — this itinerary validates clean 🎉"
-              : "Nothing at this level."}
+              : selected.size === 0
+                ? "Select a level above to show findings."
+                : "Nothing at the selected levels."}
           </li>
         )}
       </ul>
