@@ -617,6 +617,96 @@ _FR = {
     "the pick-up location": "le lieu de retrait",
     '"regular"': "« regular »",
     "0": "0",
+    # -- validation: field descriptions (maps + links) --
+    "whether to draw a per-day OpenStreetMap with a pin for each activity":
+        "s'il faut dessiner une carte OpenStreetMap par jour avec un point pour "
+        "chaque activité",
+    "whether to geocode activities that lack an explicit coordinate":
+        "s'il faut géocoder les activités sans coordonnée explicite",
+    "ISO country codes to restrict geocoding to (when inferring coordinates)":
+        "les codes pays ISO auxquels limiter le géocodage (lors de l'inférence "
+        "des coordonnées)",
+    "a link to the venue's website": "un lien vers le site du lieu",
+    "a link to the carrier's website": "un lien vers le site du transporteur",
+    "a link to the property's website": "un lien vers le site de l'établissement",
+    "a link to the rental company's website":
+        "un lien vers le site de la société de location",
+    "a direct link to this reservation": "un lien direct vers cette réservation",
+    # -- validation: expected values (links + ISO list) --
+    "a link like 'https://example.com'": "un lien comme « https://example.com »",
+    "an array of 2-letter ISO codes like ['FR']":
+        "un tableau de codes ISO à 2 lettres comme ['FR']",
+    # -- validation: default descriptions (maps + links) --
+    "none (no link shown)": "aucun (pas de lien affiché)",
+    "false (no maps)": "false (aucune carte)",
+    "false (only activities with an explicit coordinate are mapped)":
+        "false (seules les activités avec une coordonnée explicite sont "
+        "cartographiées)",
+    "[] (any country)": "[] (tous les pays)",
+    "[] (none nested)": "[] (aucune imbriquée)",
+    # -- validation: extra message templates --
+    "field '{name}' is invalid — {error}.":
+        "champ « {name} » invalide — {error}.",
+    "inference country {value} is invalid — {error}.":
+        "pays d'inférence {value} invalide — {error}.",
+    "'inference_countries' must be an array of 2-letter ISO country codes like "
+    "['FR'].":
+        "« inference_countries » doit être un tableau de codes pays ISO à "
+        "2 lettres comme ['FR'].",
+    "'inference_countries' is set but 'infer_coordinates_from_address' is off — "
+    "it is ignored.":
+        "« inference_countries » est défini mais « infer_coordinates_from_address » "
+        "est désactivé — il est ignoré.",
+    # -- validation: value-check messages (the parenthetical "(...)") --
+    "must be a number": "doit être un nombre",
+    "must be a number, not a boolean": "doit être un nombre, pas un booléen",
+    "must be true or false": "doit être true ou false",
+    "must be 'booked' or 'confirmed'": "doit être « booked » ou « confirmed »",
+    "must be a whole number": "doit être un nombre entier",
+    "must be zero or more": "doit être zéro ou plus",
+    "must be a hex color like '#2f6b4f'":
+        "doit être une couleur hex comme « #2f6b4f »",
+    "must be a 3-letter currency code like 'EUR'":
+        "doit être un code devise à 3 lettres comme « EUR »",
+    "must be a link like 'https://example.com'":
+        "doit être un lien comme « https://example.com »",
+    "must be a 2-letter ISO country code like 'FR'":
+        "doit être un code pays ISO à 2 lettres comme « FR »",
+    "must be one of: museum, church, building, viewpoint, ruins, castle, temple, "
+    "street, natural park, mountain, lake, beach, waterfall, other":
+        "doit être l'un de : museum, church, building, viewpoint, ruins, castle, "
+        "temple, street, natural park, mountain, lake, beach, waterfall, other",
+    "must be one of: plane, train, bus, taxi, ferry, other":
+        "doit être l'un de : plane, train, bus, taxi, ferry, other",
+    "must be one of: hotel, camping, b&b, other":
+        "doit être l'un de : hotel, camping, b&b, other",
+    "must be one of: breakfast, lunch, dinner, brunch, snack, picnic, meal":
+        "doit être l'un de : breakfast, lunch, dinner, brunch, snack, picnic, meal",
+    "must be one of: regular, small, suv, 4x4":
+        "doit être l'un de : regular, small, suv, 4x4",
+    # -- validation: parser errors (templates re-formatted after translation) --
+    "Invalid date {value}, expected YYYY-MM-DD":
+        "date invalide {value}, format attendu AAAA-MM-JJ",
+    "Invalid time {value}, expected HH:MM":
+        "heure invalide {value}, format attendu HH:MM",
+    "Invalid timezone {value}, expected e.g. '+02:00' or 'UTC-3'":
+        "fuseau horaire invalide {value}, attendu par ex. « +02:00 » ou « UTC-3 »",
+    "Could not parse duration {value}": "durée illisible {value}",
+    "hike route must be 'loop', 'back_and_forth' or 'one_way', got {value}":
+        "le parcours doit être « loop », « back_and_forth » ou « one_way », "
+        "reçu {value}",
+    "paid must be 'paid' or 'to pay', got {value}":
+        "« paid » doit être « paid » ou « to pay », reçu {value}",
+    "{name} must be an object with 'lat' and 'long'":
+        "{name} doit être un objet avec « lat » et « long »",
+    "{name} needs both 'lat' and 'long'":
+        "{name} nécessite « lat » et « long »",
+    "{name}.lat must be between -90 and 90 (got {value})":
+        "{name}.lat doit être entre -90 et 90 (reçu {value})",
+    "{name}.long must be between -180 and 180 (got {value})":
+        "{name}.long doit être entre -180 et 180 (reçu {value})",
+    "{name} must be a number, got {value}":
+        "{name} doit être un nombre, reçu {value}",
 }
 
 TRANSLATIONS = {"fr": _FR}

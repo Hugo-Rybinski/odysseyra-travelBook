@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { countLevelsUnder, FINDING_ICON, useFindingIndex } from "../findings";
+import { useT } from "../../i18n";
 
 // A generic editor for an array of objects: each item is a card with a header
 // (its title + move up/down + remove) and a body rendered by the caller. New
@@ -33,10 +34,11 @@ export function ArrayEditor<T>({
   itemTitle,
   renderItem,
   add,
-  emptyLabel = "None yet.",
+  emptyLabel,
   className = "",
   defaultOpen = true,
 }: ArrayEditorProps<T>) {
+  const t = useT();
   const { byPath: findingsMap } = useFindingIndex();
   const replaceAt = (i: number, next: T) => {
     const copy = items.slice();
@@ -58,7 +60,7 @@ export function ArrayEditor<T>({
 
   return (
     <div className={`array-editor ${className}`}>
-      {items.length === 0 && <p className="array-empty">{emptyLabel}</p>}
+      {items.length === 0 && <p className="array-empty">{emptyLabel ?? t("None yet.")}</p>}
 
       {items.map((item, i) => {
         // Errors/warnings anchored anywhere inside this item — badged on the
@@ -77,7 +79,7 @@ export function ArrayEditor<T>({
                 {counts.error > 0 && (
                   <span
                     className="finding-pill error"
-                    title={`${counts.error} error${counts.error > 1 ? "s" : ""}`}
+                    title={t(counts.error > 1 ? "{n} errors" : "{n} error", { n: counts.error })}
                   >
                     {FINDING_ICON.error} {counts.error}
                   </span>
@@ -85,7 +87,7 @@ export function ArrayEditor<T>({
                 {counts.warning > 0 && (
                   <span
                     className="finding-pill warning"
-                    title={`${counts.warning} warning${counts.warning > 1 ? "s" : ""}`}
+                    title={t(counts.warning > 1 ? "{n} warnings" : "{n} warning", { n: counts.warning })}
                   >
                     {FINDING_ICON.warning} {counts.warning}
                   </span>
@@ -102,8 +104,8 @@ export function ArrayEditor<T>({
                   move(i, -1);
                 }}
                 disabled={i === 0}
-                aria-label="Move up"
-                data-tip="Move up"
+                aria-label={t("Move up")}
+                data-tip={t("Move up")}
               >
                 ↑
               </button>
@@ -116,8 +118,8 @@ export function ArrayEditor<T>({
                   move(i, 1);
                 }}
                 disabled={i === items.length - 1}
-                aria-label="Move down"
-                data-tip="Move down"
+                aria-label={t("Move down")}
+                data-tip={t("Move down")}
               >
                 ↓
               </button>
@@ -129,8 +131,8 @@ export function ArrayEditor<T>({
                   e.stopPropagation();
                   removeAt(i);
                 }}
-                aria-label="Remove"
-                data-tip="Remove"
+                aria-label={t("Remove")}
+                data-tip={t("Remove")}
               >
                 ✕
               </button>

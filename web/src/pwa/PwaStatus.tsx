@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePwa } from "./PwaProvider";
+import { useT } from "../i18n";
 
 // A small, unobtrusive strip of toasts: offline notice, "ready to work offline",
 // and an "updating…"/"checking…" notice. Service-worker state comes from
@@ -8,6 +9,7 @@ import { usePwa } from "./PwaProvider";
 // forces a check, and "Install as an app" replays the install prompt.
 export function PwaStatus() {
   const { offlineReady, dismissOfflineReady, checking, updating } = usePwa();
+  const t = useT();
 
   const [offline, setOffline] = useState(!navigator.onLine);
 
@@ -26,27 +28,27 @@ export function PwaStatus() {
     <div className="toasts" aria-live="polite">
       {offline && (
         <div className="toast offline" role="status">
-          ⚡ You’re offline — the app still works.
+          {t("⚡ You’re offline — the app still works.")}
         </div>
       )}
 
       {updating && (
         <div className="toast update" role="status">
-          Updating to the latest version…
+          {t("Updating to the latest version…")}
         </div>
       )}
 
       {checking && !updating && (
         <div className="toast update" role="status">
-          Checking for updates…
+          {t("Checking for updates…")}
         </div>
       )}
 
       {offlineReady && !updating && (
         <div className="toast ok" role="status">
-          ✓ Ready to work offline.
+          {t("✓ Ready to work offline.")}
           <button className="link-btn" onClick={dismissOfflineReady}>
-            Dismiss
+            {t("Dismiss")}
           </button>
         </div>
       )}

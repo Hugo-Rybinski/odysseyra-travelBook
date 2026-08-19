@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   boot,
   buildPdf,
@@ -48,6 +48,7 @@ import {
 } from "./edit/autosave";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
+import { I18nProvider, translate } from "./i18n";
 import type { Day, Finding, Itinerary } from "./types/resolved";
 import type { SrcItinerary } from "./types/source";
 
@@ -127,6 +128,24 @@ export function App() {
   const unsaved = !!draftSer && draftSer.text !== savedText; // edits not yet written to a file
 
   const engineReady = progress.stage === "ready";
+
+  // App renders the i18n provider, so it sits *above* that context and can't use
+  // useT()/useTx(); it translates directly against its own `lang` state instead.
+  const t = useCallback(
+    (text: string, vars?: Record<string, string | number>) => translate(lang, text, vars),
+    [lang],
+  );
+  const tx = useCallback(
+    (text: string, nodes: Record<string, ReactNode>) =>
+      translate(lang, text)
+        .split(/(\{\w+\})/g)
+        .map((part, i) => {
+          const m = /^\{(\w+)\}$/.exec(part);
+          return <Fragment key={i}>{m && m[1] in nodes ? nodes[m[1]] : part}</Fragment>;
+        }),
+    [lang],
+  );
+
   const { checkForUpdate, checking, updating, canInstall, install } = usePwa();
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
@@ -535,18 +554,19 @@ export function App() {
   );
 
   return (
+    <I18nProvider lang={lang}>
     <main className="shell">
       <PwaStatus />
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
-        <h1>Travelbook Viewer</h1>
-        <div className="actions" role="tablist" aria-label="View">
+        <h1>{t("Travelbook Viewer")}</h1>
+        <div className="actions" role="tablist" aria-label={t("View")}>
           <button
             className={`btn ghost ${view === "options" ? "active" : ""}`}
             onClick={() => setView("options")}
             role="tab"
             aria-selected={view === "options"}
           >
-            ⚙️ Options
+            {t("⚙️ Options")}
           </button>
           <button
             className={`btn ghost ${view === "viewer" ? "active" : ""}`}
@@ -554,7 +574,7 @@ export function App() {
             role="tab"
             aria-selected={view === "viewer"}
           >
-            📖 Travel viewer
+            {t("📖 Travel viewer")}
           </button>
           <button
             className={`btn ghost ${view === "findings" ? "active" : ""}`}
@@ -562,9 +582,9 @@ export function App() {
             role="tab"
             aria-selected={view === "findings"}
             aria-disabled={!source}
-            data-tip={source ? undefined : "Open an itinerary first"}
+            data-tip={source ? undefined : t("Open an itinerary first")}
           >
-            🔎 Findings
+            {t("🔎 Findings")}
           </button>
           <button
             className={`btn ghost ${view === "edit" ? "active" : ""}`}
@@ -572,11 +592,11 @@ export function App() {
             role="tab"
             aria-selected={view === "edit"}
             aria-disabled={!draft}
-            data-tip={draft ? undefined : "Open an itinerary first"}
+            data-tip={draft ? undefined : t("Open an itinerary first")}
           >
-            ✏️ Edit
+            {t("✏️ Edit")}
             {dirty && (
-              <span className="dirty-dot" aria-label="unapplied edits" title="Unapplied edits">
+              <span className="dirty-dot" aria-label={t("unapplied edits")} title={t("Unapplied edits")}>
                 {" "}
                 ●
               </span>
@@ -586,8 +606,8 @@ export function App() {
       </header>
 
       <p className={`engine ${engineReady ? "ok" : ""}`}>
-        {engineReady ? "● Engine ready" : `◌ ${STAGE_LABEL[progress.stage]}`}
-        {busy && " · working…"}
+        {engineReady ? t("● Engine ready") : `◌ ${t(STAGE_LABEL[progress.stage])}`}
+        {busy && t(" · working…")}
       </p>
 
       {error && <p className="banner error">⚠️ {error}</p>}
@@ -668,13 +688,16 @@ export function App() {
           <div className="book-mark" aria-hidden>
             🚧
           </div>
-          <h2>Can't render this itinerary yet</h2>
+          <h2>{t("Can't render this itinerary yet")}</h2>
           <p>
-            {renderError ? renderError.replace(/^Error:\s*/, "") : "The itinerary couldn't be built."}
+            {renderError ? renderError.replace(/^Error:\s*/, "") : t("The itinerary couldn't be built.")}
           </p>
           <p>
-            Fix the errors in <strong>🔎 Findings</strong> or <strong>✏️ Edit</strong>, then{" "}
-            <strong>Apply changes</strong> to render it here.
+            {tx("Fix the errors in {findings} or {edit}, then {apply} to render it here.", {
+              findings: <strong>{t("🔎 Findings")}</strong>,
+              edit: <strong>{t("✏️ Edit")}</strong>,
+              apply: <strong>{t("Apply changes")}</strong>,
+            })}
           </p>
         </section>
       ) : (
@@ -683,31 +706,35 @@ export function App() {
             <div className="book-mark" aria-hidden>
               📖
             </div>
-            <h2>Open an itinerary</h2>
+            <h2>{t("Open an itinerary")}</h2>
             <p>
-              Choose a travelbook JSON file in <strong>⚙️ Options</strong> to render the
-              travel book and see its validation findings. Everything stays on your device.
+              {tx(
+                "Choose a travelbook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.",
+                { options: <strong>{t("⚙️ Options")}</strong> },
+              )}
             </p>
             {restorable && (
               <div className="restore-banner" role="status">
                 <span>
-                  Unsaved edits from a previous session
-                  {restorable.name ? ` (${restorable.name})` : ""} were found.
+                  {t("Unsaved edits from a previous session{name} were found.", {
+                    name: restorable.name ? ` (${restorable.name})` : "",
+                  })}
                 </span>
                 <span className="restore-actions">
                   <button className="btn" onClick={onRestore}>
-                    Restore
+                    {t("Restore")}
                   </button>
                   <button className="btn subtle" onClick={onDiscardRestore}>
-                    Discard
+                    {t("Discard")}
                   </button>
                 </span>
               </div>
             )}
-            {!engineReady && <small>The engine is still warming up…</small>}
+            {!engineReady && <small>{t("The engine is still warming up…")}</small>}
           </section>
         )
       )}
     </main>
+    </I18nProvider>
   );
 }

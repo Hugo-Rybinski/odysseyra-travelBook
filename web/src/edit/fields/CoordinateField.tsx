@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import type { SrcCoordinate } from "../../types/source";
 import { useGeocode } from "../geocodeContext";
+import { useT } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
 
 // A grouped editor for an optional coordinate ({lat, long, show_on_map}). Empty
@@ -38,6 +39,7 @@ export function CoordinateField({
   geocodeQuery,
   onChange,
 }: CoordinateFieldProps) {
+  const t = useT();
   const latId = useId();
   const longId = useId();
   const geo = useGeocode();
@@ -74,7 +76,7 @@ export function CoordinateField({
     try {
       const hit = await geo.geocode(query);
       if (hit) emit({ ...value, lat: hit.lat, long: hit.long });
-      else setNote(`No match for “${query}”.`);
+      else setNote(t("No match for “{query}”.", { query }));
     } catch (e) {
       setNote(String(e));
     } finally {
@@ -88,15 +90,15 @@ export function CoordinateField({
 
   return (
     <fieldset className="edit-coord">
-      <legend>{label}</legend>
+      <legend>{t(label)}</legend>
       <FieldFindings path={path} />
 
       <div className="edit-coord-helpers">
         <input
           className="edit-input edit-coord-paste"
           type="text"
-          aria-label={`${label}: paste latitude, longitude`}
-          placeholder="paste: 43.0974, -0.0583"
+          aria-label={t("{label}: paste latitude, longitude", { label: t(label) })}
+          placeholder={t("paste: 43.0974, -0.0583")}
           value={paste}
           onChange={(e) => applyPair(e.target.value)}
         />
@@ -108,11 +110,11 @@ export function CoordinateField({
             disabled={!geo.ready || geocoding}
             data-tip={
               geo.ready
-                ? `Look up “${query}” and fill the coordinate`
-                : "Geocoding needs the engine ready and a network connection"
+                ? t("Look up “{query}” and fill the coordinate", { query })
+                : t("Geocoding needs the engine ready and a network connection")
             }
           >
-            {geocoding ? "Geocoding…" : "Geocode from address"}
+            {geocoding ? t("Geocoding…") : t("Geocode from address")}
           </button>
         )}
       </div>
@@ -122,8 +124,8 @@ export function CoordinateField({
         <div className="edit-field-wrap">
           <label className="edit-field" htmlFor={latId}>
             <span className="edit-field-label">
-              Lat
-              <span className="edit-help" data-tip="Latitude, −90 to 90. Leave both lat & long empty to omit the coordinate." tabIndex={0} role="img" aria-label="Latitude, −90 to 90.">
+              {t("Lat")}
+              <span className="edit-help" data-tip={t("Latitude, −90 to 90. Leave both lat & long empty to omit the coordinate.")} tabIndex={0} role="img" aria-label={t("Latitude, −90 to 90.")}>
                 ?
               </span>
             </span>
@@ -142,8 +144,8 @@ export function CoordinateField({
         <div className="edit-field-wrap">
           <label className="edit-field" htmlFor={longId}>
             <span className="edit-field-label">
-              Long
-              <span className="edit-help" data-tip="Longitude, −180 to 180. Leave both lat & long empty to omit the coordinate." tabIndex={0} role="img" aria-label="Longitude, −180 to 180.">
+              {t("Long")}
+              <span className="edit-help" data-tip={t("Longitude, −180 to 180. Leave both lat & long empty to omit the coordinate.")} tabIndex={0} role="img" aria-label={t("Longitude, −180 to 180.")}>
                 ?
               </span>
             </span>
@@ -168,8 +170,8 @@ export function CoordinateField({
             }
           />
           <span className="edit-field-label">
-            Hide on map
-            <span className="edit-help" data-tip="Plot this point on the map. Shown by default when a coordinate is set; tick to hide it while keeping the coordinate." tabIndex={0} role="img" aria-label="Hide this point on the map.">
+            {t("Hide on map")}
+            <span className="edit-help" data-tip={t("Plot this point on the map. Shown by default when a coordinate is set; tick to hide it while keeping the coordinate.")} tabIndex={0} role="img" aria-label={t("Hide this point on the map.")}>
               ?
             </span>
           </span>

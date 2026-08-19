@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, time, timedelta
 
 from ..lang import DEFAULT_LANGUAGE, tr
@@ -39,6 +40,42 @@ COORDINATE_KEYS = (
     "coordinate", "start_coordinate", "end_coordinate",
     "pickup_coordinate", "dropoff_coordinate",
 )
+
+# The parenthetical ``({error})`` detail comes from the value parsers/checks as a
+# fully-formatted English string, so it can't be looked up verbatim once a value
+# is interpolated. Each entry maps the English form back to a translatable
+# template (with named groups) so the validator can localize it: match → the
+# template's translation is re-``.format``ed with the captured pieces. Static
+# check() returns (no interpolation) translate directly and never reach here.
+# Order matters — the broad "{name} must be a number" pattern must come last.
+_ERROR_TEMPLATES = [
+    (re.compile(r"^Invalid date (?P<value>.+), expected YYYY-MM-DD$"),
+     "Invalid date {value}, expected YYYY-MM-DD"),
+    (re.compile(r"^Invalid time (?P<value>.+), expected HH:MM$"),
+     "Invalid time {value}, expected HH:MM"),
+    (re.compile(r"^Invalid timezone (?P<value>.+), expected e\.g\. "
+                r"'\+02:00' or 'UTC-3'$"),
+     "Invalid timezone {value}, expected e.g. '+02:00' or 'UTC-3'"),
+    (re.compile(r"^Could not parse duration (?P<value>.+)$"),
+     "Could not parse duration {value}"),
+    (re.compile(r"^hike route must be 'loop', 'back_and_forth' or 'one_way', "
+                r"got (?P<value>.+)$"),
+     "hike route must be 'loop', 'back_and_forth' or 'one_way', got {value}"),
+    (re.compile(r"^paid must be 'paid' or 'to pay', got (?P<value>.+)$"),
+     "paid must be 'paid' or 'to pay', got {value}"),
+    (re.compile(r"^(?P<name>.+) must be an object with 'lat' and 'long'$"),
+     "{name} must be an object with 'lat' and 'long'"),
+    (re.compile(r"^(?P<name>.+) needs both 'lat' and 'long'$"),
+     "{name} needs both 'lat' and 'long'"),
+    (re.compile(r"^(?P<name>.+)\.lat must be between -90 and 90 "
+                r"\(got (?P<value>.+)\)$"),
+     "{name}.lat must be between -90 and 90 (got {value})"),
+    (re.compile(r"^(?P<name>.+)\.long must be between -180 and 180 "
+                r"\(got (?P<value>.+)\)$"),
+     "{name}.long must be between -180 and 180 (got {value})"),
+    (re.compile(r"^(?P<name>.+) must be a number, got (?P<value>.+)$"),
+     "{name} must be a number, got {value}"),
+]
 
 
 def _tmin(value):
@@ -135,6 +172,25 @@ class _Validator:
     def t(self, text):
         return tr(text, self.lang)
 
+    def _terr(self, err):
+        """Translate the ``({error})`` detail from a value check/parser. Static
+        messages translate directly; a formatted parser error (with an
+        interpolated value) is matched back to a template, whose translation is
+        re-formatted with the captured pieces. Falls back to English."""
+        if not err:
+            return err
+        direct = self.t(err)
+        if direct != err:  # a verbatim translation exists
+            return direct
+        for rx, template in _ERROR_TEMPLATES:
+            m = rx.match(err)
+            if m:
+                try:
+                    return self.t(template).format(**m.groupdict())
+                except (KeyError, IndexError, ValueError):
+                    return err  # never let a bad template break validation
+        return err
+
     def line(self, path):
         for k in range(len(path), -1, -1):
             ln = self.lines.get(tuple(path[:k]))
@@ -163,7 +219,7 @@ class _Validator:
                             "field '{name}' is invalid ({value}) — {description}. "
                             "Expected {expected} ({error}).").format(
                             name=spec.name, value=repr(value), description=desc,
-                            expected=expected, error=err)))
+                            expected=expected, error=self._terr(err))))
             elif spec.required:
                 self.findings.append(Finding("error", obj_line, self.t(
                     "required field '{name}' is missing — {description}. "
@@ -482,7 +538,7 @@ class _Validator:
                 if err:
                     self.add("error", wpath + ("distance_km",),
                              "field '{name}' is invalid ({value}) — {error}.",
-                             name="distance_km", value=repr(dk), error=err)
+                             name="distance_km", value=repr(dk), error=self._terr(err))
                 elif float(dk) <= 0:
                     self.add("error", wpath + ("distance_km",),
                              "distance_km must be a positive number (got {value}).",
@@ -493,7 +549,7 @@ class _Validator:
                 if err:
                     self.add("error", wpath + ("duration",),
                              "field '{name}' is invalid ({value}) — {error}.",
-                             name="duration", value=repr(dur), error=err)
+                             name="duration", value=repr(dur), error=self._terr(err))
                 else:
                     d = _dur(dur)
                     if d is not None:
@@ -595,7 +651,7 @@ class _Validator:
             elif V_CURRENCY(cur):
                 self.add("error", epath + ("currency",),
                          "field 'currency' is invalid ({value}) — {error}.",
-                         value=repr(cur), error=V_CURRENCY(cur))
+                         value=repr(cur), error=self._terr(V_CURRENCY(cur)))
             rate = entry.get("change_rate")
             if rate in (None, ""):
                 self.add("error", epath, "a secondary currency needs a "
@@ -624,7 +680,7 @@ class _Validator:
             if err:
                 self.add("error", base_path + ("inference_countries", i),
                          "inference country {value} is invalid — {error}.",
-                         value=repr(code), error=err)
+                         value=repr(code), error=self._terr(err))
 
     def _maps_coherence(self, df, df_path):
         """Soft checks that only apply when maps are on: a located activity with
@@ -687,7 +743,7 @@ class _Validator:
                     if err:
                         self.add("error", child,
                                  "field '{name}' is invalid — {error}.",
-                                 name=key, error=err)
+                                 name=key, error=self._terr(err))
                 else:
                     self._walk_coordinates(value, child)
         elif isinstance(node, list):

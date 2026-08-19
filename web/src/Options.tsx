@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Lang } from "./render/format";
+import { useT } from "./i18n";
 
 // The options panel: every control that used to live in the top bar, moved into
 // one place and grouped by theme (File / Language / Maps / PDF export / App).
@@ -85,48 +86,52 @@ export function Options(props: OptionsProps) {
     install,
   } = props;
 
+  const t = useT();
+
   // Why a control is unavailable (empty string = available). Transient states
   // (busy / exporting / a check in flight) just disable without an explanation.
-  const noFile = "Open an itinerary first";
-  const engineReason = engineReady ? "" : "The engine is still starting…";
-  const reopenReason = canReopen ? "" : "No previously opened file to reopen";
+  const noFile = t("Open an itinerary first");
+  const engineReason = engineReady ? "" : t("The engine is still starting…");
+  const reopenReason = canReopen ? "" : t("No previously opened file to reopen");
   const fileReason = hasItinerary ? "" : noFile;
   const mapsReason = !hasItinerary
     ? noFile
     : !mapsInRender
-      ? "This itinerary doesn't enable maps (include_maps_in_render is off)"
+      ? t("This itinerary doesn't enable maps (include_maps_in_render is off)")
       : "";
   const installReason = canInstall
     ? ""
-    : "Your browser hasn't offered to install the app (it may already be installed, or your browser doesn't support this)";
+    : t(
+        "Your browser hasn't offered to install the app (it may already be installed, or your browser doesn't support this)",
+      );
 
   return (
-    <div className="options" role="region" aria-label="Options">
+    <div className="options" role="region" aria-label={t("Options")}>
       <section className="opt-group">
-        <h2>File</h2>
+        <h2>{t("File")}</h2>
         <div className="opt-row">
-          <Tip text="Open a travelbook JSON file from your device">
+          <Tip text={t("Open a travelbook JSON file from your device")}>
             <button className="btn" onClick={onOpen} disabled={busy}>
-              Open JSON…
+              {t("Open JSON…")}
             </button>
           </Tip>
-          <Tip text={reopenReason || "Reopen the last opened file"}>
+          <Tip text={reopenReason || t("Reopen the last opened file")}>
             <button className="btn subtle" onClick={onReopen} disabled={!canReopen || busy}>
-              Reopen last
+              {t("Reopen last")}
             </button>
           </Tip>
-          <Tip text="Load the bundled Pyrenees sample itinerary">
+          <Tip text={t("Load the bundled Pyrenees sample itinerary")}>
             <button className="btn subtle" onClick={onOpenSample} disabled={busy}>
-              Sample
+              {t("Sample")}
             </button>
           </Tip>
         </div>
       </section>
 
       <section className="opt-group">
-        <h2>Language</h2>
+        <h2>{t("Language")}</h2>
         <div className="opt-row">
-          <div className="seg" role="group" aria-label="Language">
+          <div className="seg" role="group" aria-label={t("Language")}>
             {(["en", "fr"] as Lang[]).map((l) => (
               <button
                 key={l}
@@ -142,12 +147,14 @@ export function Options(props: OptionsProps) {
       </section>
 
       <section className="opt-group">
-        <h2>Maps</h2>
+        <h2>{t("Maps")}</h2>
         <div className="opt-row">
           <Tip
             text={
               mapsReason ||
-              "Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load"
+              t(
+                "Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load",
+              )
             }
           >
             <label className={`opt-check ${mapsReason ? "disabled" : ""}`}>
@@ -157,27 +164,27 @@ export function Options(props: OptionsProps) {
                 disabled={!!mapsReason}
                 onChange={(e) => setInteractiveMaps(e.target.checked)}
               />
-              Interactive maps
+              {t("Interactive maps")}
             </label>
           </Tip>
-          <Tip text={mapsReason || engineReason || "Discard this file's cached map images and rebuild them"}>
+          <Tip text={mapsReason || engineReason || t("Discard this file's cached map images and rebuild them")}>
             <button
               className="btn subtle"
               onClick={onRedraw}
               disabled={!!mapsReason || redrawing || !engineReady}
             >
-              {redrawing ? "Redrawing…" : "Redraw maps"}
+              {redrawing ? t("Redrawing…") : t("Redraw maps")}
             </button>
           </Tip>
         </div>
       </section>
 
       <section className="opt-group">
-        <h2>PDF export</h2>
+        <h2>{t("PDF export")}</h2>
         <div className="opt-row">
           <Tip
             text={
-              fileReason || "Outlines instead of solid accent fills — less colored ink when printing"
+              fileReason || t("Outlines instead of solid accent fills — less colored ink when printing")
             }
           >
             <label className={`opt-check ${fileReason ? "disabled" : ""}`}>
@@ -187,12 +194,12 @@ export function Options(props: OptionsProps) {
                 disabled={!!fileReason}
                 onChange={(e) => setInkSaver(e.target.checked)}
               />
-              Ink-saver
+              {t("Ink-saver")}
             </label>
           </Tip>
           <Tip
             text={
-              fileReason || "Embed the per-day maps in the exported PDF (fetches map tiles; slower)"
+              fileReason || t("Embed the per-day maps in the exported PDF (fetches map tiles; slower)")
             }
           >
             <label className={`opt-check ${fileReason ? "disabled" : ""}`}>
@@ -202,14 +209,14 @@ export function Options(props: OptionsProps) {
                 disabled={!!fileReason}
                 onChange={(e) => setMapsExport(e.target.checked)}
               />
-              Include maps
+              {t("Include maps")}
             </label>
           </Tip>
           <Tip
             text={
               fileReason ||
               engineReason ||
-              (mapsExport ? "Maps are embedded in the PDF" : "Maps are omitted from the PDF")
+              (mapsExport ? t("Maps are embedded in the PDF") : t("Maps are omitted from the PDF"))
             }
           >
             <button
@@ -217,27 +224,27 @@ export function Options(props: OptionsProps) {
               onClick={onExport}
               disabled={!!fileReason || exporting || !engineReady}
             >
-              {exporting ? "Exporting…" : "Export PDF"}
+              {exporting ? t("Exporting…") : t("Export PDF")}
             </button>
           </Tip>
         </div>
       </section>
 
       <section className="opt-group">
-        <h2>App</h2>
+        <h2>{t("App")}</h2>
         <div className="opt-row">
-          <Tip text={installReason || "Install Travelbook Viewer as an app on this device"}>
+          <Tip text={installReason || t("Install Travelbook Viewer as an app on this device")}>
             <button className="btn" onClick={install} disabled={!canInstall}>
-              Install as an app
+              {t("Install as an app")}
             </button>
           </Tip>
-          <Tip text="Check for a new version and update to it">
+          <Tip text={t("Check for a new version and update to it")}>
             <button
               className="btn subtle"
               onClick={checkForUpdate}
               disabled={checking || updating}
             >
-              {updating ? "Updating…" : checking ? "Checking…" : "Check for updates"}
+              {updating ? t("Updating…") : checking ? t("Checking…") : t("Check for updates")}
             </button>
           </Tip>
         </div>

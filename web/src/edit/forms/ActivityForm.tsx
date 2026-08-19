@@ -8,6 +8,7 @@ import {
   SCHEDULED_FIELDS,
   WAYPOINT_FIELDS,
 } from "../schema";
+import { useT, type TFn } from "../../i18n";
 import { ArrayEditor } from "../fields/ArrayEditor";
 import { CoordinateField } from "../fields/CoordinateField";
 import { FieldFindings } from "../fields/FieldFindings";
@@ -15,9 +16,10 @@ import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
 
-// A short title for an activity, used in array-item headers and nav.
-export function activityTitle(a: SrcActivity, index: number): string {
-  const label = ACTIVITY_TYPE_LABELS[a.type];
+// A short title for an activity, used in array-item headers and nav. `t` is
+// threaded in so the type label (and meal type) localize with the UI language.
+export function activityTitle(a: SrcActivity, index: number, t: TFn): string {
+  const label = t(ACTIVITY_TYPE_LABELS[a.type]);
   switch (a.type) {
     case "road":
       return a.start ? `${label}: ${a.start} → …` : label;
@@ -29,12 +31,12 @@ export function activityTitle(a: SrcActivity, index: number): string {
       return a.restaurant || a.area
         ? `${label}: ${a.restaurant || a.area}`
         : a.meal_type
-          ? `${label}: ${a.meal_type}`
+          ? `${label}: ${t(a.meal_type)}`
           : label;
     case "buffer":
       return a.duration ? `${label} (${a.duration})` : label;
     default:
-      return `Activity ${index + 1}`;
+      return t("Activity {n}", { n: index + 1 });
   }
 }
 
@@ -65,6 +67,7 @@ export interface ActivityFormProps {
 }
 
 export function ActivityForm({ activity, path, onChange, allowedTypes, allowNesting }: ActivityFormProps) {
+  const t = useT();
   const type = activity.type;
   const rec = activity as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcActivity);
@@ -91,15 +94,15 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
       </div>
       <div className="edit-field-wrap">
         <label className="edit-field">
-          <span className="edit-field-label">Type</span>
+          <span className="edit-field-label">{t("Type")}</span>
           <select
             className="edit-input"
             value={type}
             onChange={(e) => onChange(changeType(activity, e.target.value as SrcActivityType))}
           >
-            {ACTIVITY_TYPES.filter((t) => allowedTypes.includes(t)).map((t) => (
-              <option key={t} value={t}>
-                {ACTIVITY_TYPE_LABELS[t]}
+            {ACTIVITY_TYPES.filter((ty) => allowedTypes.includes(ty)).map((ty) => (
+              <option key={ty} value={ty}>
+                {t(ACTIVITY_TYPE_LABELS[ty])}
               </option>
             ))}
           </select>
@@ -130,7 +133,7 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
       {type === "road" && (
         <section className="sub-array">
-          <h4>Waypoints</h4>
+          <h4>{t("Waypoints")}</h4>
           <div className="box-findings">
             <FieldFindings path={`${path}.waypoints`} />
           </div>
@@ -139,9 +142,9 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
             onChange={(wp) => set({ ...rec, waypoints: wp })}
             basePath={`${path}.waypoints`}
             defaultOpen={false}
-            itemTitle={(w, i) => w.location || `Waypoint ${i + 1}`}
-            add={[{ label: "waypoint", make: newWaypoint }]}
-            emptyLabel="No waypoints — a road needs at least one (the arrival)."
+            itemTitle={(w, i) => w.location || t("Waypoint {n}", { n: i + 1 })}
+            add={[{ label: t("waypoint"), make: newWaypoint }]}
+            emptyLabel={t("No waypoints — a road needs at least one (the arrival).")}
             renderItem={(w, _i, onItemChange, itemPath) => (
               <>
                 <div className="box-findings">
@@ -167,18 +170,18 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
       {allowNesting && nestedTypes.length > 0 && (
         <section className="sub-array">
-          <h4>Nested activities</h4>
+          <h4>{t("Nested activities")}</h4>
           <ArrayEditor<SrcActivity>
             items={(rec.activities as SrcActivity[] | undefined) ?? []}
             onChange={(acts) => set({ ...rec, activities: acts })}
             basePath={`${path}.activities`}
             defaultOpen={false}
-            itemTitle={activityTitle}
-            add={nestedTypes.map((t) => ({
-              label: ACTIVITY_TYPE_LABELS[t].toLowerCase(),
-              make: () => newActivity(t),
+            itemTitle={(a, i) => activityTitle(a, i, t)}
+            add={nestedTypes.map((ty) => ({
+              label: t(ACTIVITY_TYPE_LABELS[ty]).toLowerCase(),
+              make: () => newActivity(ty),
             }))}
-            emptyLabel="No nested activities."
+            emptyLabel={t("No nested activities.")}
             renderItem={(a, _i, onItemChange, itemPath) => (
               <ActivityForm
                 activity={a}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Finding, FindingLevel } from "../types/resolved";
+import { useT } from "../i18n";
 
 const LEVEL_ICON: Record<FindingLevel, string> = {
   error: "❌",
@@ -16,6 +17,7 @@ export function FindingsPanel({
   findings: Finding[];
   title?: string;
 }) {
+  const t = useT();
   // Multi-select level toggles (combined additively): a finding shows when its
   // level is selected. Errors + warnings are on by default so the "optional
   // missing" info flood stays hidden until asked for.
@@ -44,10 +46,10 @@ export function FindingsPanel({
   }, [findings, selected]);
 
   return (
-    <section className="findings" aria-label="Validation findings">
+    <section className="findings" aria-label={t("Validation findings")}>
       <div className="findings-head">
-        <h3>{title}</h3>
-        <div className="chips" role="group" aria-label="Filter by level">
+        <h3>{t(title)}</h3>
+        <div className="chips" role="group" aria-label={t("Filter by level")}>
           {LEVEL_ORDER.map((level) => (
             <button
               key={level}
@@ -67,17 +69,17 @@ export function FindingsPanel({
             <span className="icon" aria-hidden>
               {LEVEL_ICON[f.level]}
             </span>
-            <span className="line">line {f.line ?? "?"}</span>
+            <span className="line">{t("line {line}", { line: f.line ?? "?" })}</span>
             <span className="msg">{f.message}</span>
           </li>
         ))}
         {shown.length === 0 && (
           <li className="empty">
             {findings.length === 0
-              ? "No findings — this itinerary validates clean 🎉"
+              ? t("No findings — this itinerary validates clean 🎉")
               : selected.size === 0
-                ? "Select a level above to show findings."
-                : "Nothing at the selected levels."}
+                ? t("Select a level above to show findings.")
+                : t("Nothing at the selected levels.")}
           </li>
         )}
       </ul>

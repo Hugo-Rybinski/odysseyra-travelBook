@@ -5,6 +5,7 @@ import {
   SECONDARY_CURRENCY_FIELDS,
   TRAVEL_DESCRIPTION_FIELDS,
 } from "../schema";
+import { useT } from "../../i18n";
 import { ArrayEditor } from "../fields/ArrayEditor";
 import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
@@ -44,6 +45,7 @@ export function DefaultsForm({
   path: string;
   onChange: (next: SrcDefaults) => void;
 }) {
+  const t = useT();
   const rec = value as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcDefaults);
 
@@ -55,14 +57,14 @@ export function DefaultsForm({
       <FieldList specs={DEFAULTS_FIELDS} value={rec} path={path} onChange={set} />
 
       <section className="sub-array">
-        <h4>Secondary currencies</h4>
+        <h4>{t("Secondary currencies")}</h4>
         <ArrayEditor<SrcSecondaryCurrency>
           items={value.secondary_currencies ?? []}
           onChange={(list) => set({ ...rec, secondary_currencies: list })}
           basePath={`${path}.secondary_currencies`}
-          itemTitle={(c, i) => c.currency || `Currency ${i + 1}`}
-          add={[{ label: "currency", make: newSecondaryCurrency }]}
-          emptyLabel="No secondary currencies."
+          itemTitle={(c, i) => c.currency || t("Currency {n}", { n: i + 1 })}
+          add={[{ label: t("currency"), make: newSecondaryCurrency }]}
+          emptyLabel={t("No secondary currencies.")}
           renderItem={(c, _i, onItemChange, itemPath) => (
             <FieldList
               specs={SECONDARY_CURRENCY_FIELDS}

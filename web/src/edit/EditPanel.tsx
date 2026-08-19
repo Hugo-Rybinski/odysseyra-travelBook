@@ -7,6 +7,7 @@ import type {
   SrcTransport,
 } from "../types/source";
 import { FindingsPanel } from "../findings/FindingsPanel";
+import { useT } from "../i18n";
 import { newAccommodation, newCarRental, newDay, newTransport } from "./schema";
 import { EditFindingsContext, type FindingIndex } from "./findings";
 import { EditDefaultsContext } from "./defaultsContext";
@@ -87,6 +88,7 @@ export function EditPanel({
   onRevert,
   geocode,
 }: EditPanelProps) {
+  const t = useT();
   const days = draft.days ?? [];
   const transport = draft.transport ?? [];
   const accommodations = draft.accommodations ?? [];
@@ -109,23 +111,23 @@ export function EditPanel({
     <EditFindingsContext.Provider value={findingIndex}>
       <EditDefaultsContext.Provider value={effectiveDefaults}>
       <EditGeocodeContext.Provider value={geocode}>
-      <div className="edit-panel" role="region" aria-label="Edit itinerary">
+      <div className="edit-panel" role="region" aria-label={t("Edit itinerary")}>
         <div className="edit-actions">
           <button
             className="btn"
             onClick={onApply}
             disabled={!dirty || applying || !engineReady}
           >
-            {applying ? "Applying…" : dirty ? "Apply changes" : "Applied ✓"}
+            {applying ? t("Applying…") : dirty ? t("Apply changes") : t("Applied ✓")}
           </button>
           {mapsInRender && (
             <button
               className="btn subtle"
               onClick={onApplyRedraw}
               disabled={applying || !engineReady}
-              data-tip="Apply the draft and rebuild this itinerary's maps"
+              data-tip={t("Apply the draft and rebuild this itinerary's maps")}
             >
-              Apply &amp; redraw maps
+              {t("Apply & redraw maps")}
             </button>
           )}
 
@@ -136,27 +138,27 @@ export function EditPanel({
             className="btn subtle"
             onClick={onUndo}
             disabled={!canUndo}
-            data-tip="Undo the last edit"
+            data-tip={t("Undo the last edit")}
           >
-            ↶ Undo
+            {t("↶ Undo")}
           </button>
           <button
             type="button"
             className="btn subtle"
             onClick={onRedo}
             disabled={!canRedo}
-            data-tip="Redo"
+            data-tip={t("Redo")}
           >
-            ↷ Redo
+            {t("↷ Redo")}
           </button>
           <button
             type="button"
             className="btn subtle"
             onClick={onRevert}
             disabled={!unsaved}
-            data-tip="Discard changes since the last save/open"
+            data-tip={t("Discard changes since the last save/open")}
           >
-            Revert
+            {t("Revert")}
           </button>
 
           <span className="edit-actions-sep" aria-hidden />
@@ -166,37 +168,37 @@ export function EditPanel({
               className="btn subtle"
               onClick={onSave}
               disabled={!unsaved || saving}
-              data-tip="Overwrite the opened file"
+              data-tip={t("Overwrite the opened file")}
             >
-              {saving ? "Saving…" : unsaved ? "Save" : "Saved ✓"}
+              {saving ? t("Saving…") : unsaved ? t("Save") : t("Saved ✓")}
             </button>
           )}
           {hasSavePicker && (
-            <button className="btn subtle" onClick={onSaveAs} disabled={saving} data-tip="Save to a new file">
-              Save as…
+            <button className="btn subtle" onClick={onSaveAs} disabled={saving} data-tip={t("Save to a new file")}>
+              {t("Save as…")}
             </button>
           )}
           <button
             className="btn subtle"
             onClick={onDownloadJson}
             disabled={saving}
-            data-tip="Download the itinerary as a .json file"
+            data-tip={t("Download the itinerary as a .json file")}
           >
-            Download JSON
+            {t("Download JSON")}
           </button>
 
           {dirty && (
             <span className="edit-dirty">
-              Unapplied edits — the viewer and export still show the last applied version.
+              {t("Unapplied edits — the viewer and export still show the last applied version.")}
             </span>
           )}
-          {unsaved && !dirty && <span className="edit-dirty">Unsaved changes.</span>}
+          {unsaved && !dirty && <span className="edit-dirty">{t("Unsaved changes.")}</span>}
         </div>
 
         <EditStatus rail={rail} validating={validating} validationError={validationError} />
 
         <details className="edit-section" open>
-          <summary>Trip</summary>
+          <summary>{t("Trip")}</summary>
           <div className="edit-section-body">
             <TravelDescriptionForm
               value={draft.travel_description ?? {}}
@@ -207,7 +209,7 @@ export function EditPanel({
         </details>
 
         <details className="edit-section">
-          <summary>Defaults</summary>
+          <summary>{t("Defaults")}</summary>
           <div className="edit-section-body">
             <DefaultsForm
               value={draft.defaults ?? {}}
@@ -218,7 +220,7 @@ export function EditPanel({
         </details>
 
         <details className="edit-section" open>
-          <summary>Days ({days.length})</summary>
+          <summary>{t("Days ({n})", { n: days.length })}</summary>
           <div className="edit-section-body">
             <ArrayEditor<SrcDay>
               items={days}
@@ -228,11 +230,11 @@ export function EditPanel({
               itemTitle={(d, i) => (
                 <>
                   <span className="day-pill">D{i + 1}</span>
-                  {d.title || `Day ${i + 1}`}
+                  {d.title || t("Day {n}", { n: i + 1 })}
                 </>
               )}
-              add={[{ label: "day", make: newDay }]}
-              emptyLabel="No days yet — an itinerary needs at least one."
+              add={[{ label: t("day"), make: newDay }]}
+              emptyLabel={t("No days yet — an itinerary needs at least one.")}
               renderItem={(d, _i, onItemChange, itemPath) => (
                 <DayForm day={d} path={itemPath} onChange={onItemChange} />
               )}
@@ -241,36 +243,38 @@ export function EditPanel({
         </details>
 
         <details className="edit-section">
-          <summary>Transport ({transport.length})</summary>
+          <summary>{t("Transport ({n})", { n: transport.length })}</summary>
           <div className="edit-section-body">
             <ArrayEditor<SrcTransport>
               items={transport}
               onChange={(next) => onChange({ ...draft, transport: next })}
               basePath="transport"
               defaultOpen={false}
-              itemTitle={(t, i) =>
-                t.start || t.end ? `${t.start || "?"} → ${t.end || "?"}` : `Transport ${i + 1}`
+              itemTitle={(item, i) =>
+                item.start || item.end
+                  ? `${item.start || "?"} → ${item.end || "?"}`
+                  : t("Transport {n}", { n: i + 1 })
               }
-              add={[{ label: "transport", make: newTransport }]}
-              emptyLabel="No transport legs."
-              renderItem={(t, _i, onItemChange, itemPath) => (
-                <TransportForm value={t} path={itemPath} onChange={onItemChange} />
+              add={[{ label: t("transport"), make: newTransport }]}
+              emptyLabel={t("No transport legs.")}
+              renderItem={(item, _i, onItemChange, itemPath) => (
+                <TransportForm value={item} path={itemPath} onChange={onItemChange} />
               )}
             />
           </div>
         </details>
 
         <details className="edit-section">
-          <summary>Accommodations ({accommodations.length})</summary>
+          <summary>{t("Accommodations ({n})", { n: accommodations.length })}</summary>
           <div className="edit-section-body">
             <ArrayEditor<SrcAccommodation>
               items={accommodations}
               onChange={(next) => onChange({ ...draft, accommodations: next })}
               basePath="accommodations"
               defaultOpen={false}
-              itemTitle={(a, i) => a.name || a.city || `Accommodation ${i + 1}`}
-              add={[{ label: "accommodation", make: newAccommodation }]}
-              emptyLabel="No accommodations."
+              itemTitle={(a, i) => a.name || a.city || t("Accommodation {n}", { n: i + 1 })}
+              add={[{ label: t("accommodation"), make: newAccommodation }]}
+              emptyLabel={t("No accommodations.")}
               renderItem={(a, _i, onItemChange, itemPath) => (
                 <AccommodationForm value={a} path={itemPath} onChange={onItemChange} />
               )}
@@ -279,16 +283,16 @@ export function EditPanel({
         </details>
 
         <details className="edit-section">
-          <summary>Car rentals ({carRentals.length})</summary>
+          <summary>{t("Car rentals ({n})", { n: carRentals.length })}</summary>
           <div className="edit-section-body">
             <ArrayEditor<SrcCarRental>
               items={carRentals}
               onChange={(next) => onChange({ ...draft, car_rentals: next })}
               basePath="car_rentals"
               defaultOpen={false}
-              itemTitle={(c, i) => c.company || c.pickup_location || `Car rental ${i + 1}`}
-              add={[{ label: "car rental", make: newCarRental }]}
-              emptyLabel="No car rentals."
+              itemTitle={(c, i) => c.company || c.pickup_location || t("Car rental {n}", { n: i + 1 })}
+              add={[{ label: t("car rental"), make: newCarRental }]}
+              emptyLabel={t("No car rentals.")}
               renderItem={(c, _i, onItemChange, itemPath) => (
                 <CarRentalForm value={c} path={itemPath} onChange={onItemChange} />
               )}
@@ -316,9 +320,10 @@ function EditStatus({
   validating: boolean;
   validationError: string | null;
 }) {
+  const t = useT();
   return (
     <div className="edit-status">
-      {validating && <p className="edit-validating">◌ Validating…</p>}
+      {validating && <p className="edit-validating">{t("◌ Validating…")}</p>}
       {validationError && <p className="banner error">⚠️ {validationError}</p>}
       {/* Only surface the rail when it holds a real (non-info) finding — info
           notes live in the 🔎 Findings tab, not here. */}

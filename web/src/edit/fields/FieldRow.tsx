@@ -2,6 +2,7 @@ import { useId } from "react";
 import type { FieldSpec } from "../schema";
 import { useEditDefaults } from "../defaultsContext";
 import { useFieldFindings, worstLevel } from "../findings";
+import { useT, type TFn } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
 
 // Renders one registry field as a labelled control. The value is whatever the
@@ -21,6 +22,7 @@ export interface FieldRowProps {
 
 export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   const id = useId();
+  const t = useT();
   const findings = useFieldFindings(path);
   const level = worstLevel(findings);
   const defaults = useEditDefaults();
@@ -28,14 +30,20 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   // effective value + its source in the empty placeholder, e.g.
   // "EUR (from defaults.currency)". Otherwise use the static placeholder.
   const placeholder = spec.inheritsFrom
-    ? `${defaults[spec.inheritsFrom] ?? ""} (from defaults.${spec.inheritsFrom})`.trim()
-    : spec.placeholder;
+    ? t("{value} (from defaults.{key})", {
+        value: defaults[spec.inheritsFrom] ?? "",
+        key: spec.inheritsFrom,
+      })
+    : spec.placeholder
+      ? t(spec.placeholder)
+      : undefined;
+  const help = spec.help ? t(spec.help) : undefined;
   const label = (
     <span className="edit-field-label">
-      {spec.label}
+      {t(spec.label)}
       {spec.required && <em className="req" aria-hidden> *</em>}
-      {spec.help && (
-        <span className="edit-help" data-tip={spec.help} tabIndex={0} role="img" aria-label={spec.help}>
+      {help && (
+        <span className="edit-help" data-tip={help} tabIndex={0} role="img" aria-label={help}>
           ?
         </span>
       )}
@@ -66,7 +74,7 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
     <div className={`edit-field-wrap ${levelClass} ${spec.kind === "textarea" ? "full" : ""}`}>
       <label className="edit-field" htmlFor={id}>
         {label}
-        {renderControl(id, spec, placeholder, value, onChange)}
+        {renderControl(id, spec, placeholder, value, onChange, t)}
       </label>
       <FieldFindings path={path} />
     </div>
@@ -79,6 +87,7 @@ function renderControl(
   placeholder: string | undefined,
   value: unknown,
   onChange: FieldRowProps["onChange"],
+  t: TFn,
 ) {
   const str = value === undefined || value === null ? "" : String(value);
 
@@ -147,7 +156,7 @@ function renderControl(
           <option value="">{placeholder ? `— ${placeholder} —` : "—"}</option>
           {(spec.enum ?? []).map((opt) => (
             <option key={opt} value={opt}>
-              {opt}
+              {t(opt)}
             </option>
           ))}
         </select>
@@ -161,9 +170,9 @@ function renderControl(
           value={value === true ? "paid" : value === false ? "to pay" : str}
           onChange={(e) => onChange(e.target.value || undefined)}
         >
-          <option value="">— unset —</option>
-          <option value="paid">paid</option>
-          <option value="to pay">to pay</option>
+          <option value="">{t("— unset —")}</option>
+          <option value="paid">{t("paid")}</option>
+          <option value="to pay">{t("to pay")}</option>
         </select>
       );
 
@@ -172,7 +181,7 @@ function renderControl(
         <span className="edit-color">
           <input
             type="color"
-            aria-label={`${spec.label} swatch`}
+            aria-label={t("{label} swatch", { label: t(spec.label) })}
             value={/^#[0-9a-fA-F]{6}$/.test(str) ? str : "#1f4e5f"}
             onChange={(e) => onChange(e.target.value)}
           />

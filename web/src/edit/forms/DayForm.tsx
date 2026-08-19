@@ -1,5 +1,6 @@
 import type { SrcActivity, SrcActivityType, SrcDay } from "../../types/source";
 import { ACTIVITY_TYPES, ACTIVITY_TYPE_LABELS, DAY_FIELDS, newActivity } from "../schema";
+import { useT } from "../../i18n";
 import { ArrayEditor } from "../fields/ArrayEditor";
 import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
@@ -14,6 +15,7 @@ export interface DayFormProps {
 }
 
 export function DayForm({ day, path, onChange }: DayFormProps) {
+  const t = useT();
   const rec = day as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcDay);
 
@@ -25,18 +27,18 @@ export function DayForm({ day, path, onChange }: DayFormProps) {
       <FieldList specs={DAY_FIELDS} value={rec} path={path} onChange={set} />
 
       <section className="sub-array">
-        <h4>Activities</h4>
+        <h4>{t("Activities")}</h4>
         <ArrayEditor<SrcActivity>
           items={day.activities ?? []}
           onChange={(acts) => set({ ...rec, activities: acts })}
           basePath={`${path}.activities`}
           defaultOpen={false}
-          itemTitle={activityTitle}
-          add={ACTIVITY_TYPES.map((t: SrcActivityType) => ({
-            label: ACTIVITY_TYPE_LABELS[t].toLowerCase(),
-            make: () => newActivity(t),
+          itemTitle={(a, i) => activityTitle(a, i, t)}
+          add={ACTIVITY_TYPES.map((ty: SrcActivityType) => ({
+            label: t(ACTIVITY_TYPE_LABELS[ty]).toLowerCase(),
+            make: () => newActivity(ty),
           }))}
-          emptyLabel="No activities — a day needs at least one."
+          emptyLabel={t("No activities — a day needs at least one.")}
           renderItem={(a, _i, onItemChange, itemPath) => (
             <ActivityForm
               activity={a}

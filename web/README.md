@@ -166,6 +166,16 @@ once the book is on screen. Controls (and the Findings tab) are never hidden whe
 unavailable — they're greyed with a hover tooltip explaining why (no file open,
 the itinerary opts out of maps, the browser hasn't offered an install prompt…).
 
+The whole UI is **localized** (English / French) via the *Language* toggle — not
+just the rendered travel book (which has always localized through
+`render/format.ts`) but the entire chrome: the header, Options, the Edit tab
+(field labels, `?` help tooltips, placeholders, enum options) and the findings
+panel. It's a gettext-style layer (`src/i18n/`): English is the source string
+*and* the lookup key, French is a table (`i18n/fr.ts`), a missing key falls back
+to English, and templates keep `{placeholders}` (translate *then* fill) — the
+same convention as the Python side. Validator findings themselves are localized
+by the Python engine (`validate(text, lang)`).
+
 - **Open** a local itinerary JSON (File System Access API, or an `<input>`
   fallback; "Reopen last" remembers the file) — or load the bundled **Sample**.
 - **Render** the whole travel book: cover + day-by-day overview, one card per day
@@ -268,6 +278,9 @@ src/
     fields/                FieldRow/FieldList/FieldFindings, ArrayEditor, CoordinateField
     forms/                 per-object forms (day, activity, transport, …)
   types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)
+  i18n/                    UI-chrome localization (en source / fr table)
+    index.tsx              I18nProvider + useT/useTx hooks + translate()
+    fr.ts                  English→French table (keyed by the English source)
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
