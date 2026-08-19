@@ -51,9 +51,15 @@ export function countLevelsUnder(
 ): { error: number; warning: number } {
   let error = 0;
   let warning = 0;
+  // A finding anchored to several fields appears under multiple paths; dedupe by
+  // line+message so it counts once on the tile's pill.
+  const seen = new Set<string>();
   for (const [key, list] of map) {
     if (key !== prefix && !key.startsWith(prefix + ".")) continue;
     for (const f of list) {
+      const id = `${f.line}|${f.message}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
       if (f.level === "error") error++;
       else if (f.level === "warning") warning++;
     }
