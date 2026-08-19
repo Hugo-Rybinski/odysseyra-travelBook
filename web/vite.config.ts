@@ -35,7 +35,7 @@ export default defineConfig({
       // auto-applies a new version and reloads once, and exposes a manual
       // "Update" button — no DevTools dance to pick up a new deploy.
       registerType: "prompt",
-      includeAssets: ["icon.svg"],
+      includeAssets: ["img/favicon.svg"],
       manifest: {
         name: "Odysseyra TravelBook",
         short_name: "Odysseyra",
@@ -47,7 +47,7 @@ export default defineConfig({
         start_url: "./",
         icons: [
           {
-            src: "icon.svg",
+            src: "img/favicon.svg",
             sizes: "any",
             type: "image/svg+xml",
             purpose: "any maskable",
