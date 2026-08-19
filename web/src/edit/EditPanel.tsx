@@ -315,7 +315,11 @@ function EditStatus({
     <div className="edit-status">
       {validating && <p className="edit-validating">◌ Validating…</p>}
       {validationError && <p className="banner error">⚠️ {validationError}</p>}
-      {rail.length > 0 && <FindingsPanel findings={rail} title="Other findings" />}
+      {/* Only surface the rail when it holds a real (non-info) finding — info
+          notes live in the 🔎 Findings tab, not here. */}
+      {rail.some((f) => f.level !== "info") && (
+        <FindingsPanel findings={rail} title="Other findings" />
+      )}
     </div>
   );
 }

@@ -80,6 +80,13 @@ export function buildFindingIndex(
   const rail: Finding[] = [];
 
   for (const f of findings) {
+    // Info-level notes (mostly "optional field missing → default") are never
+    // inlined onto fields/boxes — they'd bury the real issues. They go to the
+    // rail (hidden by default there and toggleable), and stay in the Findings tab.
+    if (f.level === "info") {
+      rail.push(f);
+      continue;
+    }
     const path = f.line == null ? undefined : pathByLine.get(f.line);
     const targets =
       path === undefined ? [] : resolveAnchor(path, f.message, fieldPaths, containerPaths);
