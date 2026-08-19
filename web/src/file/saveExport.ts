@@ -11,6 +11,15 @@ export function slugify(name: string): string {
   return slug || "travelbook";
 }
 
+/** Trigger a download of `text` as `filename` (default MIME: JSON). */
+export function downloadText(
+  text: string,
+  filename: string,
+  mime = "application/json",
+): void {
+  downloadBytes(new TextEncoder().encode(text), filename, mime);
+}
+
 /** Trigger a download of `bytes` as `filename` (default MIME: PDF). */
 export function downloadBytes(
   bytes: Uint8Array,

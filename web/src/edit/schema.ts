@@ -1,0 +1,323 @@
+// The field registry: a data description of every editable field, driven by the
+// README "JSON format" tables. Forms render from these descriptors so the schema
+// lives in one place — adding/renaming a field is a change here (plus the TS type
+// in types/source.ts) rather than in every form component.
+//
+// `placeholder` carries the format/default hint (shown as the input placeholder);
+// `help` is a longer tooltip. `NEW_*` are the stubs the "Add" buttons insert.
+
+import type {
+  SrcAccommodation,
+  SrcActivity,
+  SrcActivityType,
+  SrcCarRental,
+  SrcDay,
+  SrcMeal,
+  SrcSecondaryCurrency,
+  SrcTransport,
+  SrcWaypoint,
+} from "../types/source";
+
+export type FieldKind =
+  | "text"
+  | "textarea"
+  | "number"
+  | "integer"
+  | "date"
+  | "time"
+  | "duration"
+  | "tz"
+  | "enum"
+  | "color"
+  | "bool"
+  | "paid"
+  | "csv" // comma-separated string[] (e.g. inference_countries)
+  | "coordinate";
+
+export interface FieldSpec {
+  key: string;
+  label: string;
+  kind: FieldKind;
+  enum?: readonly string[];
+  placeholder?: string; // default / format hint
+  help?: string; // the (?) tooltip: what the field is + how it defaults
+  // When the field inherits an unset value from a `defaults.<key>`, the empty
+  // placeholder is rendered as "<effective value> (from defaults.<key>)" using
+  // the live draft defaults (see EditDefaultsContext).
+  inheritsFrom?: string;
+  required?: boolean;
+}
+
+// ---------------------------------------------------------------- enum tables
+export const ACTIVITY_TYPES = [
+  "road",
+  "point_of_interest",
+  "place",
+  "hike",
+  "meal",
+  "buffer",
+] as const;
+
+// Nested activities are restricted by container; these are the ones we offer to
+// add inside a place/poi (poi|hike|meal) vs a road/hike (meal only).
+export const NESTED_TYPES_POI = ["point_of_interest", "hike", "meal"] as const;
+export const NESTED_TYPES_MEAL_ONLY = ["meal"] as const;
+
+export const POI_CATEGORIES = [
+  "museum",
+  "church",
+  "building",
+  "viewpoint",
+  "ruins",
+  "castle",
+  "temple",
+  "street",
+  "natural park",
+  "mountain",
+  "lake",
+  "beach",
+  "waterfall",
+  "other",
+] as const;
+export const HIKE_ROUTES = ["loop", "back_and_forth", "one_way"] as const;
+export const TRANSPORT_TYPES = ["plane", "train", "bus", "taxi", "ferry", "other"] as const;
+export const ACCOMMODATION_TYPES = ["hotel", "camping", "b&b", "other"] as const;
+export const CAR_TYPES = ["regular", "small", "SUV", "4x4"] as const;
+export const MEAL_TYPES = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "brunch",
+  "snack",
+  "picnic",
+  "meal",
+] as const;
+export const STATUSES = ["booked", "confirmed"] as const;
+
+export const ACTIVITY_TYPE_LABELS: Record<SrcActivityType, string> = {
+  road: "Road / drive",
+  point_of_interest: "Point of interest",
+  place: "Place",
+  hike: "Hike",
+  meal: "Meal",
+  buffer: "Buffer",
+};
+
+// ------------------------------------------------------------- field tables
+export const TRAVEL_DESCRIPTION_FIELDS: FieldSpec[] = [
+  { key: "title", label: "Title", kind: "text", required: true, placeholder: "Trip title (shown on the cover)", help: "The trip title shown on the cover. Required." },
+  { key: "subtitle", label: "Subtitle", kind: "text", placeholder: "Line under the title", help: "A line shown under the title on the cover. Optional — hidden when empty." },
+  { key: "start_date", label: "Start date", kind: "date", placeholder: "inferred (earliest date)", help: "Trip start date. Defaults to the earliest date across days, transport and accommodation." },
+  { key: "end_date", label: "End date", kind: "date", placeholder: "inferred (latest date)", help: "Trip end date. Defaults to the latest date across days, transport and accommodation." },
+  { key: "cover_color", label: "Cover color", kind: "color", placeholder: "#1f4e5f", help: "Accent colour driving the whole palette. Defaults to #1f4e5f." },
+  { key: "summary", label: "Summary", kind: "textarea", placeholder: "Paragraph shown on the cover", help: "A paragraph shown on the cover. Optional — hidden when empty." },
+];
+
+export const DEFAULTS_FIELDS: FieldSpec[] = [
+  { key: "start_time", label: "Start time", kind: "time", placeholder: "08:00", help: "The first activity's start time each day. Defaults to 08:00." },
+  { key: "end_time", label: "End time", kind: "time", placeholder: "none (no check)", help: "The latest an activity should end; validation warns past it. No check when unset." },
+  { key: "buffer", label: "Buffer", kind: "duration", placeholder: "0 (no buffer)", help: "Buffer auto-inserted between consecutive activities. Defaults to 0 (none)." },
+  { key: "timezone", label: "Time zone", kind: "tz", placeholder: "GMT", help: "Default UTC offset for all times (e.g. +02:00, UTC-3, Z). Defaults to GMT (UTC+0)." },
+  { key: "breakfast_until", label: "Breakfast until", kind: "time", placeholder: "10:00", help: "A meal starting before this is inferred as breakfast. Defaults to 10:00." },
+  { key: "lunch_until", label: "Lunch until", kind: "time", placeholder: "16:00", help: "A meal up to this (after breakfast) is lunch; later is dinner. Defaults to 16:00." },
+  { key: "meal_duration", label: "Meal duration", kind: "duration", placeholder: "0 (instant)", help: "Default length of a meal with no duration/end time. Defaults to 0 (instant)." },
+  { key: "currency", label: "Currency", kind: "text", placeholder: "EUR", help: "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR." },
+  { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
+  { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
+  { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
+];
+
+export const SECONDARY_CURRENCY_FIELDS: FieldSpec[] = [
+  { key: "currency", label: "Currency", kind: "text", required: true, placeholder: "USD", help: "The secondary currency's 3-letter ISO code. Required." },
+  { key: "change_rate", label: "Rate", kind: "number", required: true, placeholder: "units per 1 default (1 € = 1.09 $ → 1.09)", help: "Units of this currency per one unit of the default currency (e.g. 1 € = 1.09 $ → 1.09). Required." },
+];
+
+export const DAY_FIELDS: FieldSpec[] = [
+  { key: "title", label: "Title", kind: "text", required: true, placeholder: "The day's title", help: "The day's title. Required." },
+  { key: "city", label: "City", kind: "text", placeholder: "City/region label", help: "City/region label for the day. Optional." },
+  { key: "date", label: "Date", kind: "date", placeholder: "trip start + the day's index", help: "The day's date, matched to stays & transport. Defaults to the trip start date plus the day's index." },
+  { key: "description", label: "Description", kind: "textarea", placeholder: "Intro paragraph for the day", help: "Intro paragraph for the day. Optional." },
+];
+
+// Shared scheduling fields (all activities except buffer).
+export const SCHEDULED_FIELDS: FieldSpec[] = [
+  { key: "start_time", label: "Start time", kind: "time", placeholder: "previous item's end / defaults.start_time", help: "Clock time this activity starts. Defaults to the previous item's end (or defaults.start_time for the first)." },
+  { key: "end_time", label: "End time", kind: "time", placeholder: "start + duration", help: "Clock time this activity ends. Inferred from start + duration when unset." },
+  { key: "duration", label: "Duration", kind: "duration", placeholder: "1h30 / 45 min", help: "How long it lasts (e.g. 1h30, 45 min). Inferred from start/end when unset, else 0." },
+  { key: "start_tz", label: "Start tz", kind: "tz", inheritsFrom: "timezone", help: "Start time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "End time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+];
+
+// Per-activity-type fields (excluding the shared scheduling ones and nested
+// `activities`/`waypoints`/`coordinate`, which the form renders specially).
+export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
+  road: [
+    { key: "start", label: "Start (departure)", kind: "text", required: true, placeholder: "Departure address", help: "Departure address/name; also the map route's start. Required." },
+    { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km. Optional." },
+    { key: "off_road", label: "Off-road", kind: "bool", help: "Highlight off-road sections. Defaults to off." },
+  ],
+  point_of_interest: [
+    { key: "name", label: "Name", kind: "text", required: true, placeholder: "Point-of-interest name", help: "Point-of-interest name. Required." },
+    { key: "category", label: "Category", kind: "enum", enum: POI_CATEGORIES, placeholder: "other", help: "The kind of place, shown as a badge. Defaults to 'other'." },
+    { key: "address", label: "Address", kind: "text", help: "Street address. Optional." },
+    { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+    { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the venue's website, shown as a clickable link. Optional." },
+  ],
+  place: [
+    { key: "name", label: "Name", kind: "text", required: true, placeholder: "Place name", help: "Place name (e.g. a town) grouping the nested activities. Required." },
+    { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+  ],
+  hike: [
+    { key: "name", label: "Name", kind: "text", required: true, placeholder: "Hike name", help: "Hike name. Required." },
+    { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+    { key: "distance_km", label: "Distance (km)", kind: "number", help: "Distance in km. Optional." },
+    { key: "elevation_m", label: "Elevation (m)", kind: "number", help: "Elevation gain in m. Optional." },
+    { key: "start", label: "Start (trailhead)", kind: "text", help: "Trailhead address. Optional." },
+    { key: "end", label: "End", kind: "text", help: "End address. For a loop/back-and-forth it should equal (or omit) start; for one-way it should differ. Optional." },
+    { key: "route", label: "Route", kind: "enum", enum: HIKE_ROUTES, placeholder: "back_and_forth", help: "Route shape. Defaults to back_and_forth." },
+  ],
+  meal: [
+    { key: "meal_type", label: "Meal type", kind: "enum", enum: MEAL_TYPES, placeholder: "inferred from start_time", help: "Which meal it is. Inferred from the start time when unset (breakfast/lunch/dinner); the others are explicit-only." },
+    { key: "restaurant", label: "Restaurant", kind: "text", help: "Restaurant name; shown in the head and the cover highlights. Optional." },
+    { key: "area", label: "Area", kind: "text", help: "Town/region to eat in, used when no restaurant is named. Optional." },
+    { key: "address", label: "Address", kind: "text", help: "Street address. Optional." },
+  ],
+  buffer: [{ key: "duration", label: "Duration", kind: "duration", required: true, placeholder: "Length of the free time", help: "Length of the free time (e.g. 30 min). A 0 min buffer just suppresses the default buffer here. Required." }],
+};
+
+export const WAYPOINT_FIELDS: FieldSpec[] = [
+  { key: "location", label: "Location", kind: "text", placeholder: "The waypoint's name", help: "The waypoint's name. Optional — an unnamed waypoint still draws a map pin but merges into the next named leg." },
+  { key: "duration", label: "Leg duration", kind: "duration", placeholder: "1h30 / 45 min", help: "Driving time for the leg reaching this waypoint. Optional." },
+  { key: "distance_km", label: "Leg distance (km)", kind: "number", help: "Driving distance for the leg reaching this waypoint. Optional." },
+];
+
+export const TRANSPORT_FIELDS: FieldSpec[] = [
+  { key: "type", label: "Type", kind: "enum", enum: TRANSPORT_TYPES, placeholder: "other", help: "Transport kind, shown as a badge. Defaults to 'other'." },
+  { key: "start", label: "Start (departure)", kind: "text", required: true, placeholder: "Departure address", help: "Departure address. Required." },
+  { key: "end", label: "End (arrival)", kind: "text", required: true, placeholder: "Arrival address", help: "Arrival address. Required." },
+  { key: "start_date", label: "Start date", kind: "date", required: true, help: "Departure date; slots the leg into that day. Required." },
+  { key: "end_date", label: "End date", kind: "date", placeholder: "inferred (+1 day if crosses midnight)", help: "Arrival date. Inferred (+1 day if the leg crosses midnight)." },
+  { key: "start_time", label: "Start time", kind: "time", required: true, help: "Departure time. Required." },
+  { key: "end_time", label: "End time", kind: "time", placeholder: "start + duration", help: "Arrival time. Inferred from start + duration when unset." },
+  { key: "duration", label: "Duration", kind: "duration", placeholder: "inferred from the two times", help: "Travel time. Inferred from the two times when unset." },
+  { key: "start_tz", label: "Start tz", kind: "tz", inheritsFrom: "timezone", help: "Departure time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "Arrival time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "flight_number", label: "Flight number", kind: "text", help: "Flight number (planes only), shown on the card. Optional." },
+  { key: "train_number", label: "Train number", kind: "text", help: "Train number (trains only), shown on the card. Optional." },
+  { key: "booking_number", label: "Booking number", kind: "text", help: "Reservation reference / PNR. Optional." },
+  { key: "booking_source", label: "Booking source", kind: "text", help: "Where it was booked. Optional." },
+  { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the carrier's website. Optional." },
+  { key: "booking_link", label: "Booking link", kind: "text", placeholder: "https://example.com", help: "Direct link to this reservation. Optional." },
+  { key: "status", label: "Status", kind: "enum", enum: STATUSES, placeholder: "none (no badge)", help: "Reservation status, shown as a badge. No badge when unset." },
+  { key: "price", label: "Price", kind: "number", placeholder: "amount only, no symbol", help: "Ticket price (amount only, no symbol). Optional." },
+  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", help: "Currency this price is in (3-letter ISO). Defaults to defaults.currency." },
+  { key: "paid", label: "Paid", kind: "paid", help: "Payment state, shown as a badge. No badge when unset." },
+];
+
+export const ACCOMMODATION_FIELDS: FieldSpec[] = [
+  { key: "name", label: "Name", kind: "text", required: true, help: "Accommodation name. Required." },
+  { key: "arrival", label: "Arrival (check-in)", kind: "date", required: true, help: "Check-in date; the stay covers nights from here up to (not including) departure. Required." },
+  { key: "departure", label: "Departure (check-out)", kind: "date", required: true, help: "Check-out date; the checkout day shows no stay bar. Required." },
+  { key: "city", label: "City", kind: "text", required: true, help: "Town shown in the cover overview. Required." },
+  { key: "type", label: "Type", kind: "enum", enum: ACCOMMODATION_TYPES, placeholder: "hotel", help: "Kind of accommodation, shown as a badge. Defaults to 'hotel'." },
+  { key: "address", label: "Address", kind: "text", help: "Street address. Optional." },
+  { key: "contact", label: "Contact", kind: "text", placeholder: "phone or email", help: "Phone or email. Optional." },
+  { key: "booking_source", label: "Booking source", kind: "text", help: "Where it was booked. Optional." },
+  { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the property's website. Optional." },
+  { key: "booking_link", label: "Booking link", kind: "text", placeholder: "https://example.com", help: "Direct link to this reservation. Optional." },
+  { key: "status", label: "Status", kind: "enum", enum: STATUSES, placeholder: "none (no badge)", help: "Reservation status, shown as a badge. No badge when unset." },
+  { key: "price", label: "Price", kind: "number", placeholder: "whole-stay amount, no symbol", help: "Price for the whole stay (amount only, no symbol). Optional." },
+  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", help: "Currency this price is in (3-letter ISO). Defaults to defaults.currency." },
+  { key: "paid", label: "Paid", kind: "paid", help: "Payment state, shown as a badge. No badge when unset." },
+  { key: "breakfast_included", label: "Breakfast included", kind: "bool", help: "Show a 'Breakfast included' line. Defaults to off." },
+];
+
+export const CAR_RENTAL_FIELDS: FieldSpec[] = [
+  { key: "booking_start_date", label: "Booking start date", kind: "date", required: true, help: "Start of the booking window. The pick-up/drop-off must fall inside it. Required." },
+  { key: "booking_start_time", label: "Booking start time", kind: "time", required: true, help: "Booking-window start time. Required." },
+  { key: "booking_start_tz", label: "Booking start tz", kind: "tz", inheritsFrom: "timezone", help: "Booking-start time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "booking_end_date", label: "Booking end date", kind: "date", required: true, help: "End of the booking window. Required." },
+  { key: "booking_end_time", label: "Booking end time", kind: "time", required: true, help: "Booking-window end time. Required." },
+  { key: "booking_end_tz", label: "Booking end tz", kind: "tz", inheritsFrom: "timezone", help: "Booking-end time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "pickup_date", label: "Pick-up date", kind: "date", required: true, help: "Pick-up date; must be within the booking window. Woven into that day. Required." },
+  { key: "pickup_time", label: "Pick-up time", kind: "time", required: true, help: "Pick-up time. Required." },
+  { key: "pickup_tz", label: "Pick-up tz", kind: "tz", inheritsFrom: "timezone", help: "Pick-up time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "pickup_location", label: "Pick-up location", kind: "text", required: true, help: "Where you pick up the car. Required." },
+  { key: "pickup_duration", label: "Pick-up duration", kind: "duration", help: "How long the pick-up takes. Optional (not shown when unset)." },
+  { key: "dropoff_date", label: "Drop-off date", kind: "date", required: true, help: "Drop-off date; must be within the booking window and not before pick-up. Required." },
+  { key: "dropoff_time", label: "Drop-off time", kind: "time", required: true, help: "Drop-off time. Required." },
+  { key: "dropoff_tz", label: "Drop-off tz", kind: "tz", inheritsFrom: "timezone", help: "Drop-off time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "dropoff_location", label: "Drop-off location", kind: "text", placeholder: "the pick-up location", help: "Where you drop off the car. Defaults to the pick-up location." },
+  { key: "dropoff_duration", label: "Drop-off duration", kind: "duration", help: "How long the drop-off takes. Optional (not shown when unset)." },
+  { key: "company", label: "Company", kind: "text", help: "Rental company. Optional." },
+  { key: "booking_number", label: "Booking number", kind: "text", help: "Reservation reference. Optional." },
+  { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the rental company's website. Optional." },
+  { key: "booking_link", label: "Booking link", kind: "text", placeholder: "https://example.com", help: "Direct link to this reservation. Optional." },
+  { key: "status", label: "Status", kind: "enum", enum: STATUSES, placeholder: "none (no badge)", help: "Reservation status, shown as a badge. No badge when unset." },
+  { key: "price", label: "Price", kind: "number", placeholder: "amount only, no symbol", help: "Rental price (amount only, no symbol). Optional." },
+  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", help: "Currency this price is in (3-letter ISO). Defaults to defaults.currency." },
+  { key: "paid", label: "Paid", kind: "paid", help: "Payment state, shown as a badge. No badge when unset." },
+  { key: "car_type", label: "Car type", kind: "enum", enum: CAR_TYPES, placeholder: "regular", help: "Car category, shown as a badge. Defaults to 'regular'." },
+  { key: "car_model", label: "Car model", kind: "text", help: "Car make/model. Optional." },
+  { key: "contact", label: "Contact", kind: "text", placeholder: "phone or email", help: "Phone or email for the rental company. Optional." },
+  { key: "additional_drivers", label: "Additional drivers", kind: "integer", placeholder: "0", help: "Number of additional drivers. Defaults to 0." },
+];
+
+// -------------------------------------------------------------- new-item stubs
+// Minimal valid-ish starting points inserted by the "Add" buttons. Kept sparse
+// (only the required fields) so pruning on save keeps files clean.
+export function newActivity(type: SrcActivityType): SrcActivity {
+  switch (type) {
+    case "road":
+      return { type, start: "", waypoints: [newWaypoint()] };
+    case "point_of_interest":
+      return { type, name: "" };
+    case "place":
+      return { type, name: "" };
+    case "hike":
+      return { type, name: "" };
+    case "meal":
+      return { type };
+    case "buffer":
+      return { type, duration: "" };
+  }
+}
+
+export function newWaypoint(): SrcWaypoint {
+  return { location: "" };
+}
+
+export function newMeal(): SrcMeal {
+  return { type: "meal" };
+}
+
+export function newDay(): SrcDay {
+  return { title: "", activities: [newActivity("point_of_interest")] };
+}
+
+export function newTransport(): SrcTransport {
+  return { type: "other", start: "", end: "", start_date: "", start_time: "" };
+}
+
+export function newAccommodation(): SrcAccommodation {
+  return { name: "", arrival: "", departure: "", city: "", type: "hotel" };
+}
+
+export function newCarRental(): SrcCarRental {
+  return {
+    booking_start_date: "",
+    booking_start_time: "",
+    booking_end_date: "",
+    booking_end_time: "",
+    pickup_date: "",
+    pickup_time: "",
+    dropoff_date: "",
+    dropoff_time: "",
+    pickup_location: "",
+    car_type: "regular",
+  };
+}
+
+export function newSecondaryCurrency(): SrcSecondaryCurrency {
+  return { currency: "", change_rate: 1 };
+}

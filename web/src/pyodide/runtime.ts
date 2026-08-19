@@ -160,6 +160,22 @@ export async function renderDayMap(text: string, index: number): Promise<Day> {
   return parsed.day;
 }
 
+/** Geocode a free-text address/name to a coordinate via Nominatim (needs the
+ * network). `countries` are 2-letter ISO codes narrowing the search. Returns
+ * null on no match; throws on a bridge error. */
+export async function geocode(
+  query: string,
+  countries: string[] = [],
+): Promise<{ lat: number; long: number } | null> {
+  const raw = bridge().geocode(query, countries.join(",")) as string;
+  const parsed = JSON.parse(raw) as {
+    coordinate?: { lat: number; long: number } | null;
+    error?: string;
+  };
+  if (parsed.error) throw new Error(parsed.error);
+  return parsed.coordinate ?? null;
+}
+
 /** Build the PDF. `maps` overrides the file's `include_maps_in_render` for this
  * export (undefined leaves the file's own setting in force). Returns the bytes
  * for download. */

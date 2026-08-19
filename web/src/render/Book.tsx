@@ -17,10 +17,14 @@ export function Book({
   itinerary,
   lang,
   interactiveMaps = false,
+  showMapLoaders = true,
 }: {
   itinerary: Itinerary;
   lang: Lang;
   interactiveMaps?: boolean;
+  // When false, days without a rendered map show nothing instead of a loader —
+  // used after a plain Apply, whose maps are carried over rather than rebuilt.
+  showMapLoaders?: boolean;
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
@@ -58,7 +62,7 @@ export function Book({
             lang={lang}
             collapsed={collapsed.has(day.day_number)}
             onToggle={toggle}
-            mapExpected={itinerary.maps.include_in_render}
+            mapExpected={itinerary.maps.include_in_render && showMapLoaders}
             interactive={interactiveMaps}
           />
         ))}

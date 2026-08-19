@@ -155,8 +155,9 @@ can't load, an error boundary + timeout fall back to the static PNG.
 ## Current status — v1 complete
 
 The full v1 flow works in the browser, offline after first load. The header
-switches between views — **⚙️ Options**, **📖 Travel viewer**, and **🔎 Findings**
-(the validation findings) — showing one at a time. Every control lives in the
+switches between views — **⚙️ Options**, **📖 Travel viewer**, **🔎 Findings**
+(the validation findings), and **✏️ Edit** (a structured form editor over the
+input JSON) — showing one at a time. Every control lives in the
 **Options** view (`src/Options.tsx`), grouped by theme — *File* (open / reopen /
 sample), *Language*, *Maps* (interactive toggle + redraw), *PDF export* (ink-saver
 / include-maps / export) and *App* (install as an app / check for updates).
@@ -201,8 +202,50 @@ the itinerary opts out of maps, the browser hasn't offered an install prompt…)
   registers in a production build, so use `npm run build && npm run preview` to
   exercise these.
 
-Next up (post-v1): editing the itinerary in the UI, and moving Pyodide into a
-Web Worker so the first map render doesn't block the main thread.
+The **✏️ Edit** tab is a structured/form editor over the *input* JSON
+(`src/edit/`, driven by a field registry in `src/edit/schema.ts` that mirrors the
+README schema tables). It is being built in phases — see
+[`../docs/edit-tab-plan.md`](../docs/edit-tab-plan.md).
+
+- **P1:** the form surface — every object/field, grouped in collapsible sections,
+  with add/remove/reorder for days, activities (incl. one level of nesting),
+  transport, accommodations, car rentals, waypoints and secondary currencies.
+- **P2:** live validation. The draft is serialized (with a line→path map) and
+  re-validated as you type (debounced); each finding is anchored **inline on its
+  field** (the input is flagged, with the message beneath) by translating the
+  validator's line number → field path. Findings that don't map to a field —
+  cross-object coherence warnings, missing-required, "optional missing" info —
+  collect in a filterable rail at the top so nothing is dropped.
+- **P3:** an **Apply changes** button pushes the draft into the viewer (`Book`),
+  the Findings tab and the PDF export — the preview refreshes only on Apply, never
+  on keystroke. The button is disabled until there are unapplied edits (a dot on
+  the ✏️ tab marks them). Maps aren't refetched on a plain Apply (the
+  previously-rendered ones are carried over); a separate **Apply & redraw maps**
+  rebuilds them.
+- **P4:** save the draft. **Save** overwrites the opened file in place (File
+  System Access handle, prompting for write access); **Save as…** writes a new
+  file (which becomes the backing source); **Download JSON** always works (the
+  only route where the FS Access API is absent, e.g. iOS Safari). An
+  unsaved-changes indicator is tracked separately from unapplied edits (Apply =
+  preview, Save = disk).
+- **P5:** coordinate helpers. Every add/remove/reorder, insert scaffold and enum
+  picker already exists from P1; P5 adds **paste "lat, long"** (fills both fields
+  at once) and **Geocode from address** on each coordinate — a Nominatim lookup
+  (through the maps seam, narrowed to `defaults.inference_countries`) gated on
+  the engine being ready and the device online.
+- **P6 (current):** safety & recovery. **Undo/redo** (a capped history stack),
+  **Revert** to the last saved/loaded baseline, an **IndexedDB autosave** that
+  survives a reload / service-worker update and is offered for restore on next
+  launch, and **normalize-on-save** (prune empty values + safe defaults so a
+  round-tripped file stays diff-clean).
+
+Days and their (nested) activities start **collapsed** so a large itinerary is
+scannable; a collapsed tile that hides inline findings shows count pills on its
+header (`❌ 3`, `⚠️ 2`) for the errors/warnings anchored inside it. Field/button
+tooltips float above neighbouring tiles and aren't clipped by a tile's edges.
+
+The Edit tab is feature-complete for now. Separately, moving Pyodide into a Web
+Worker so the first map render doesn't block the main thread remains deferred.
 
 ## Layout
 
@@ -214,6 +257,17 @@ src/
   main.tsx                 entry; registers the service worker
   App.tsx                  top-level state + layout (header, book, findings)
   Options.tsx              the themed Options panel (all controls live here)
+  edit/                    the ✏️ Edit tab: form editor over the input JSON
+    schema.ts              field registry (mirrors the README schema tables)
+    EditPanel.tsx          stacked collapsible sections (config + content arrays)
+    serialize.ts           jsonToDraft / serializeWithPaths / serializeForSave
+    findings.ts            finding index (line→path), context, collectFieldPaths
+    geocodeContext.ts      geocode-from-address seam for coordinate fields (P5)
+    useDraftHistory.ts     undo/redo stack for the draft (P6)
+    autosave.ts            IndexedDB autosave/restore of the draft (P6)
+    fields/                FieldRow/FieldList/FieldFindings, ArrayEditor, CoordinateField
+    forms/                 per-object forms (day, activity, transport, …)
+  types/source.ts          TS types for the INPUT JSON (what the Edit tab edits)
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
