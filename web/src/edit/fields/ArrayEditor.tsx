@@ -1,5 +1,5 @@
 import { useContext, type ReactNode } from "react";
-import { EditFindingsContext, FINDING_ICON, worstLevelUnder } from "../findings";
+import { countLevelsUnder, EditFindingsContext, FINDING_ICON } from "../findings";
 
 // A generic editor for an array of objects: each item is a card with a header
 // (its title + move up/down + remove) and a body rendered by the caller. New
@@ -61,10 +61,10 @@ export function ArrayEditor<T>({
       {items.length === 0 && <p className="array-empty">{emptyLabel}</p>}
 
       {items.map((item, i) => {
-        // Worst finding anchored anywhere inside this item — badged on the header
-        // so a collapsed tile still flags a hidden error/warning (CSS hides it
-        // when the tile is expanded, where the inline marks are already visible).
-        const subtreeLevel = worstLevelUnder(findingsMap, `${basePath}.${i}`);
+        // Errors/warnings anchored anywhere inside this item — badged on the
+        // header as count pills so a collapsed tile still flags hidden findings
+        // (CSS hides them when the tile is expanded, where the inline marks show).
+        const counts = countLevelsUnder(findingsMap, `${basePath}.${i}`);
         return (
         // <details> so a long list (many days/activities) can be collapsed. The
         // header controls live in <summary>; each stops propagation so clicking
@@ -72,13 +72,24 @@ export function ArrayEditor<T>({
         <details className="array-item" key={i} open={defaultOpen}>
           <summary className="array-item-head">
             <span className="array-item-title">{itemTitle(item, i)}</span>
-            {subtreeLevel && (
-              <span
-                className={`subtree-finding ${subtreeLevel}`}
-                aria-label={`contains ${subtreeLevel === "error" ? "an error" : "a warning"}`}
-                title={`Contains ${subtreeLevel === "error" ? "an error" : "a warning"}`}
-              >
-                {FINDING_ICON[subtreeLevel]}
+            {(counts.error > 0 || counts.warning > 0) && (
+              <span className="subtree-finding">
+                {counts.error > 0 && (
+                  <span
+                    className="finding-pill error"
+                    title={`${counts.error} error${counts.error > 1 ? "s" : ""}`}
+                  >
+                    {FINDING_ICON.error} {counts.error}
+                  </span>
+                )}
+                {counts.warning > 0 && (
+                  <span
+                    className="finding-pill warning"
+                    title={`${counts.warning} warning${counts.warning > 1 ? "s" : ""}`}
+                  >
+                    {FINDING_ICON.warning} {counts.warning}
+                  </span>
+                )}
               </span>
             )}
             <span className="array-item-controls">

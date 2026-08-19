@@ -1266,12 +1266,30 @@ textarea.edit-input {
   /* visible (not hidden) so a nested field's tooltip isn't clipped by the tile */
   overflow: visible;
 }
-/* finding badge on a collapsed tile's header; hidden once the tile is expanded
-   (the inline field marks are visible then, so the badge would be redundant) */
+/* finding count pills on a collapsed tile's header; hidden once the tile is
+   expanded (the inline field marks are visible then, so they'd be redundant) */
 .subtree-finding {
   flex: none;
-  font-size: 0.85rem;
+  display: inline-flex;
+  gap: 5px;
+}
+.finding-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
   line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.finding-pill.error {
+  background: #fdecea;
+  color: #b23225;
+}
+.finding-pill.warning {
+  background: #fff3d6;
+  color: #8a5d00;
 }
 .array-item[open] > .array-item-head .subtree-finding {
   display: none;

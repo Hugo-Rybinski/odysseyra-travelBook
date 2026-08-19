@@ -42,22 +42,23 @@ export function worstLevel(findings: Finding[]): FindingLevel | null {
   return null;
 }
 
-// The highest-severity level among findings anchored anywhere under `prefix`
-// (the path itself or a descendant) — used to badge a collapsed array item that
-// hides a field with a finding. Ignores info (only errors/warnings badge).
-export function worstLevelUnder(
+// Count the errors and warnings anchored anywhere under `prefix` (the path
+// itself or a descendant) — used to badge a collapsed array item that hides
+// fields with findings. Info is ignored (only errors/warnings badge).
+export function countLevelsUnder(
   map: Map<string, Finding[]>,
   prefix: string,
-): FindingLevel | null {
-  let worst: FindingLevel | null = null;
+): { error: number; warning: number } {
+  let error = 0;
+  let warning = 0;
   for (const [key, list] of map) {
     if (key !== prefix && !key.startsWith(prefix + ".")) continue;
     for (const f of list) {
-      if (f.level === "error") return "error";
-      if (f.level === "warning") worst = "warning";
+      if (f.level === "error") error++;
+      else if (f.level === "warning") warning++;
     }
   }
-  return worst;
+  return { error, warning };
 }
 
 // Split findings into those anchored to a rendered field (by exact path) and
