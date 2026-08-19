@@ -151,7 +151,7 @@ export async function reopenHandle(handle: FsFileHandle): Promise<OpenedFile | n
 // File System Access handles are structured-cloneable, so the last one can be
 // stashed to offer "reopen last file" across sessions.
 
-const DB_NAME = "travelbook";
+const DB_NAME = "odysseyra";
 const STORE = "kv";
 const LAST_KEY = "lastFileHandle";
 

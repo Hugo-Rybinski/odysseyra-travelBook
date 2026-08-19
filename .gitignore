@@ -25,4 +25,4 @@ docs/
 .claude/settings.local.json
 
 # Local-only extracted badge icons (kept on disk, not shipped)
-src/travelbook/icons/
+src/odysseyra_travelbook/icons/

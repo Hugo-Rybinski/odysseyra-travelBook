@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from pathlib import Path
 
-from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
+from odysseyra_travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 

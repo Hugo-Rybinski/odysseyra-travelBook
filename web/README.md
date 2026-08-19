@@ -1,8 +1,8 @@
-# Travelbook Viewer (PWA)
+# Odysseyra TravelBook (PWA)
 
-A local-only, installable web app that opens a travelbook itinerary JSON,
+A local-only, installable web app that opens an Odysseyra TravelBook itinerary JSON,
 **renders the travel book in the browser**, shows every validation finding, and
-exports a PDF **on the side** — reusing the Python `travelbook` package in-browser
+exports a PDF **on the side** — reusing the Python `odysseyra_travelbook` package in-browser
 via [Pyodide](https://pyodide.org). No server, no cloud: your data stays in the
 local JSON file.
 
@@ -14,19 +14,19 @@ thread). Per-day maps now render both in the book view and in the exported PDF.
 ## How it works
 
 ```
-React + TS  ──►  Pyodide (CPython → WASM)  ──►  travelbook package (the wheel)
+React + TS  ──►  Pyodide (CPython → WASM)  ──►  odysseyra_travelbook package (the wheel)
    UI            loaded from a pinned CDN,        validate_text / to_dict / build_pdf
                  cached by the service worker     via src/pyodide/bridge.py
 ```
 
-- The `travelbook` wheel (fonts bundled) plus its pure-Python deps (`fpdf2`,
+- The `odysseyra_travelbook` wheel (fonts bundled) plus its pure-Python deps (`fpdf2`,
   `defusedxml`) are built locally into `public/py/` and precached by the service
   worker — nothing is pulled from PyPI at run time.
 - Pyodide's runtime + `Pillow` + `fonttools` come from a version-pinned jsDelivr
   CDN, cached by the service worker, so the app works offline after the first run.
-- **Maps** run in-browser too: the `travelbook.maps` package fetches tiles
+- **Maps** run in-browser too: the `odysseyra_travelbook.maps` package fetches tiles
   (Carto), routes (OSRM) and geocoding (Nominatim) through an overridable seam
-  (`travelbook.maps.http_get`) that the app points at a synchronous `fetch`. All
+  (`odysseyra_travelbook.maps.http_get`) that the app points at a synchronous `fetch`. All
   three endpoints send `Access-Control-Allow-Origin: *`, so there's no proxy and
   data stays on-device; the service worker caches the responses for offline use.
 
@@ -40,7 +40,7 @@ React + TS  ──►  Pyodide (CPython → WASM)  ──►  travelbook package
 ```bash
 cd web
 npm install
-npm run wheel      # builds ../ into public/py/travelbook-*.whl (+ wheel.json)
+npm run wheel      # builds ../ into public/py/odysseyra_travelbook-*.whl (+ wheel.json)
 npm run dev        # Vite dev server
 ```
 
@@ -53,7 +53,7 @@ Re-run it whenever the Python package changes. Set `PIP=/path/to/pip` to use a
 different interpreter.
 
 > **Stale-wheel guard.** `dev` and `build` run `check-wheel` first (`npm run
-> check-wheel`): the browser executes the *wheel*, not `src/travelbook/`, so if
+> check-wheel`): the browser executes the *wheel*, not `src/odysseyra_travelbook/`, so if
 > the source changed after the wheel was built the guard **fails the build** and
 > tells you to `npm run wheel`. This prevents silently shipping old Python (which
 > once made the maps vanish when a new constant wasn't in the wheel).
@@ -81,7 +81,7 @@ The flow is the same either way:
 
 1. Serve the built `dist/` over HTTPS (see routes).
 2. On the phone, open the HTTPS URL **while online** and let it finish booting
-   (past "installing travelbook" to the "Open an itinerary" screen) — this caches
+   (past "installing Odysseyra TravelBook" to the "Open an itinerary" screen) — this caches
    everything. First load pulls the Pyodide runtime + packages from a CDN (a few
    MB, one time).
 3. Install it: **iOS Safari** → Share → *Add to Home Screen*; **Android Chrome**
@@ -126,7 +126,7 @@ files — recipients just open the URL and install.
 ### Offline internals
 
 `npm run wheel` vendors the Python wheels the app needs into `public/py/` —
-`travelbook` plus `fpdf2` and `defusedxml` (Pillow and fonttools ship with
+`odysseyra_travelbook` plus `fpdf2` and `defusedxml` (Pillow and fonttools ship with
 Pyodide) — and the service worker precaches them. Installs run with dependency
 resolution off, so **nothing contacts PyPI at run time** and the boot completes
 offline. The Pyodide runtime + Pillow/fonttools are fetched from the CDN on first
@@ -139,7 +139,7 @@ has been rendered once online renders offline afterwards. A map that has never
 been fetched simply doesn't appear offline — the build degrades gracefully.
 
 On top of that HTTP cache, the *finished* map images are persisted in IndexedDB
-(`src/maps/mapCache.ts`, database `travelbook-maps`, 30-day TTL) keyed by a hash
+(`src/maps/mapCache.ts`, database `odysseyra-maps`, 30-day TTL) keyed by a hash
 of the itinerary JSON + the day index. So a relaunched (or killed) app rehydrates
 the exact rendered PNGs without recompositing them; expired entries are purged at
 startup, and the **Redraw maps** button clears just the current file's entries
@@ -284,7 +284,7 @@ src/
   index.css
   pyodide/
     runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
-    bridge.py              JSON-in/out glue over the travelbook package (+ maps)
+    bridge.py              JSON-in/out glue over the odysseyra_travelbook package (+ maps)
     netbridge.ts           synchronous fetch exposed to Python for the maps seam
   pwa/PwaProvider.tsx      single SW registration; auto-applies updates
   maps/mapCache.ts         IndexedDB cache of rendered day maps (30-day TTL)

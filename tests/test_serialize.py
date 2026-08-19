@@ -1,4 +1,4 @@
-"""Tests for the resolved-model serializer (`travelbook.models.to_dict`).
+"""Tests for the resolved-model serializer (`odysseyra_travelbook.models.to_dict`).
 
 The serializer is the contract the PWA renders from, so these assert that it
 (a) is pure JSON, (b) carries *resolved* values (inferred times/dates, meal
@@ -9,7 +9,7 @@ per-day associations the renderer needs.
 import json
 from pathlib import Path
 
-from travelbook import Itinerary, to_dict
+from odysseyra_travelbook import Itinerary, to_dict
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 PYRENEES = EXAMPLES / "pyrenees.json"

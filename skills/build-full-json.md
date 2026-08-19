@@ -1,7 +1,7 @@
 # Skill: build the full itinerary JSON
 
 **Output:** a single `<title>.json` — the **complete** itinerary in one file.
-The user will later turn it into a PDF with the `travelbook` tool; your job is
+The user will later turn it into a PDF with the `odysseyra-travelBook` tool; your job is
 only to produce correct JSON. You do **not** run any commands.
 
 Use this skill when you want to turn a pile of source material (a trip brief,

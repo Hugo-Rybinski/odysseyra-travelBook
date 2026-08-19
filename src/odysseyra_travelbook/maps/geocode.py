@@ -12,7 +12,7 @@ import json
 import time
 import urllib.parse
 
-from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
+from odysseyra_travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 _MIN_INTERVAL = 1.1  # Nominatim usage policy: <= 1 request/second

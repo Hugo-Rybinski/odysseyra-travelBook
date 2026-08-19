@@ -1,5 +1,5 @@
 [project]
-name = "travelbook"
+name = "odysseyra-travelbook"
 version = "0.1.0"
 description = "Generate a beautiful travel PDF from a JSON itinerary."
 readme = "README.md"
@@ -17,15 +17,15 @@ dev = [
 ]
 
 [project.scripts]
-travelbook = "travelbook.cli:main"
+odysseyra-travelBook = "odysseyra_travelbook.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/travelbook"]
-artifacts = ["src/travelbook/fonts/*.ttf"]
+packages = ["src/odysseyra_travelbook"]
+artifacts = ["src/odysseyra_travelbook/fonts/*.ttf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

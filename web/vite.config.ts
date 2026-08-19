@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
-// The travel-book viewer runs the Python `travelbook` package in the browser via
+// The travel-book viewer runs the Python `odysseyra_travelbook` package in the browser via
 // Pyodide (loaded from a version-pinned CDN, then cached by the service worker
 // so the app works offline after first load). The local wheel and the bundled
 // example itineraries are copied into the build and precached.
@@ -37,8 +37,8 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["icon.svg"],
       manifest: {
-        name: "Travelbook Viewer",
-        short_name: "Travelbook",
+        name: "Odysseyra TravelBook",
+        short_name: "Odysseyra",
         description:
           "Open a local itinerary JSON and render the travel book, with PDF export on the side.",
         theme_color: "#1f4e5f",

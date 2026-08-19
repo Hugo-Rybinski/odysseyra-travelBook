@@ -15,14 +15,14 @@ import os
 import time
 import urllib.error
 
-from travelbook import maps as _maps  # call _maps.http_get so the browser override applies
+from odysseyra_travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
-logger = logging.getLogger("travelbook.maps")
+logger = logging.getLogger("odysseyra_travelbook.maps")
 
-# Public demo server (light use). Override with TRAVELBOOK_OSRM to point at a
+# Public demo server (light use). Override with ODYSSEYRA_OSRM to point at a
 # self-hosted OSRM or another provider using the same /route/v1 API.
 OSRM = os.environ.get(
-    "TRAVELBOOK_OSRM",
+    "ODYSSEYRA_OSRM",
     "https://router.project-osrm.org/route/v1/driving/{coords}?overview=full&geometries=geojson",
 )
 

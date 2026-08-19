@@ -34,7 +34,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      # Build the travelbook wheel (fonts bundled) into public/py; PIP=pip uses
+      # Build the odysseyra_travelbook wheel (fonts bundled) into public/py; PIP=pip uses
       # the CI's Python instead of the local ../.venv.
       - run: PIP=pip npm run wheel
       - run: npm run typecheck

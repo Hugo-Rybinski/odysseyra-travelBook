@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from travelbook import (
+from odysseyra_travelbook import (
     Accommodation,
     CarRental,
     Hike,
@@ -163,8 +163,8 @@ def test_road_title():
 
 
 def test_road_display_legs():
-    from travelbook.models import Coordinate, Waypoint
-    from travelbook.pdf.days import road_display_legs
+    from odysseyra_travelbook.models import Coordinate, Waypoint
+    from odysseyra_travelbook.pdf.days import road_display_legs
 
     def wp(loc=None, d=None, km=None):
         return Waypoint(coordinate=Coordinate(0.0, 0.0), location=loc or "",
@@ -447,7 +447,7 @@ def test_explicit_start_time_overrides_chain():
 
 
 def test_duration_parsing_formats():
-    from travelbook.models import _format_duration, _parse_duration
+    from odysseyra_travelbook.models import _format_duration, _parse_duration
 
     assert _parse_duration("1h30") == 90
     assert _parse_duration("2h") == 120
@@ -765,7 +765,7 @@ def test_transport_bad_status_rejected():
 
 
 def test_timezone_parsing_variants():
-    from travelbook.models import _parse_tz
+    from odysseyra_travelbook.models import _parse_tz
 
     assert _parse_tz("+02:00") == 120
     assert _parse_tz("UTC-3") == -180
@@ -775,7 +775,7 @@ def test_timezone_parsing_variants():
 
 
 def test_maps_url_prefers_coordinate_then_address():
-    from travelbook.models import Coordinate, maps_url
+    from odysseyra_travelbook.models import Coordinate, maps_url
 
     # a coordinate wins, exact and un-rounded
     assert maps_url(Coordinate(43.0974, -0.0583)) == (

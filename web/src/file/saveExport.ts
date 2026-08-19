@@ -1,6 +1,6 @@
 // Save exported bytes to a file the user downloads — entirely client-side.
 
-/** A filesystem-friendly slug from a trip title (fallback "travelbook"). */
+/** A filesystem-friendly slug from a trip title (fallback "odysseyra"). */
 export function slugify(name: string): string {
   const slug = name
     .normalize("NFKD") // decompose accents so the next pass drops the marks
@@ -8,7 +8,7 @@ export function slugify(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || "travelbook";
+  return slug || "odysseyra";
 }
 
 /** Trigger a download of `text` as `filename` (default MIME: JSON). */

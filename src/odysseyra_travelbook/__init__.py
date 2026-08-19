@@ -1,4 +1,4 @@
-"""travelbook — turn a JSON travel itinerary into a polished PDF."""
+"""Odysseyra TravelBook — turn a JSON travel itinerary into a polished PDF."""
 
 from .models import (
     Accommodation,

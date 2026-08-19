@@ -1,4 +1,4 @@
-# Travelbook build system.
+# Odysseyra TravelBook build system.
 #
 # One entry point that installs everything on demand, then either builds the
 # command-line tool or runs the PWA (browser viewer) locally. Dependencies are
@@ -7,7 +7,7 @@
 #
 #   make            # this help
 #   make install    # Python venv + web npm deps
-#   make cli        # install & verify the `travelbook` CLI
+#   make cli        # install & verify the `odysseyra-travelBook` CLI
 #   make dev        # run the PWA dev server (hot reload)
 #   make preview    # build the PWA and serve it locally
 #
@@ -30,7 +30,7 @@ WEB_DEPS   := $(WEB)/node_modules/.install-stamp
 # ------------------------------------------------------------------ help
 .PHONY: help
 help: ## Show this help
-	@echo "Travelbook — make targets:"
+	@echo "Odysseyra TravelBook — make targets:"
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 	@echo ""
@@ -40,7 +40,7 @@ help: ## Show this help
 	@echo "  make preview HOST=0.0.0.0 PORT=4173"
 
 # --------------------------------------------------- dependency install
-# Create the venv (if missing) and editable-install travelbook + dev extras.
+# Create the venv (if missing) and editable-install odysseyra_travelbook + dev extras.
 $(VENV_STAMP): pyproject.toml
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
@@ -64,19 +64,19 @@ deps-web: $(WEB_DEPS) ## Install web (npm) deps only
 
 # ----------------------------------------------------- command-line tool
 .PHONY: cli
-cli: $(VENV_STAMP) ## Install & verify the travelbook CLI
-	@$(BIN)/travelbook --help >/dev/null
-	@echo "✓ CLI ready. Run: $(BIN)/travelbook <cmd>   (or: source $(VENV)/bin/activate)"
+cli: $(VENV_STAMP) ## Install & verify the odysseyra-travelBook CLI
+	@$(BIN)/odysseyra-travelBook --help >/dev/null
+	@echo "✓ CLI ready. Run: $(BIN)/odysseyra-travelBook <cmd>   (or: source $(VENV)/bin/activate)"
 
 .PHONY: wheel-dist
-wheel-dist: $(VENV_STAMP) ## Build a distributable travelbook wheel into dist/
+wheel-dist: $(VENV_STAMP) ## Build a distributable odysseyra_travelbook wheel into dist/
 	$(PIP) wheel . --no-deps -w dist
 	@echo "✓ wheel written to dist/"
 
 .PHONY: pdf
 pdf: $(VENV_STAMP) ## Build a PDF: make pdf FILE=examples/x.json [OUT=out.pdf]
 	@test -n "$(FILE)" || { echo "usage: make pdf FILE=path/to.json [OUT=out.pdf]"; exit 2; }
-	$(BIN)/travelbook build "$(FILE)" -o "$(or $(OUT),out.pdf)"
+	$(BIN)/odysseyra-travelBook build "$(FILE)" -o "$(or $(OUT),out.pdf)"
 	@echo "✓ wrote $(or $(OUT),out.pdf)"
 
 .PHONY: test

@@ -7,11 +7,11 @@ import math
 import pytest
 from PIL import Image
 
-from travelbook.maps.build import _anchor_city, _hex_to_rgb, render_day_maps, resolve_day
-from travelbook.maps.render import lonlat_to_px, pin_angles, render_map
-from travelbook.maps.routing import route
-from travelbook.maps.writeback import fill_coordinates
-from travelbook.models import Coordinate, ItineraryError, Itinerary, _parse_coordinate
+from odysseyra_travelbook.maps.build import _anchor_city, _hex_to_rgb, render_day_maps, resolve_day
+from odysseyra_travelbook.maps.render import lonlat_to_px, pin_angles, render_map
+from odysseyra_travelbook.maps.routing import route
+from odysseyra_travelbook.maps.writeback import fill_coordinates
+from odysseyra_travelbook.models import Coordinate, ItineraryError, Itinerary, _parse_coordinate
 
 
 # -- model coordinate parsing ------------------------------------------------
@@ -92,7 +92,7 @@ DAY = {
 
 def test_resolve_day_points_routes_and_areas(monkeypatch):
     # stub routing so the road's route needs no network
-    monkeypatch.setattr("travelbook.maps.build.route", lambda a, b, cache: [a, b])
+    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache: [a, b])
     it = _itin([DAY])
     points, routes, _nodes, areas = resolve_day(it.days[0], it, cache=None)
     labels = [p.label for p in points]
@@ -124,7 +124,7 @@ def test_area_centroid_fallback():
 def test_resolve_day_road_routes_through_waypoints(monkeypatch):
     """A road draws departure (coordinate) → wp1 → … → last waypoint; the last
     waypoint is the arrival."""
-    monkeypatch.setattr("travelbook.maps.build.route", lambda a, b, cache: [a, b])
+    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache: [a, b])
     day = {"title": "d", "city": "Lourdes", "activities": [
         {"type": "road", "start": "A",
          "coordinate": {"lat": 0.0, "long": 0.0},
@@ -144,9 +144,9 @@ def test_route_failure_falls_back_but_does_not_cache(monkeypatch):
     """A failed OSRM lookup returns a straight [a, b] line but must NOT be
     cached — otherwise a transient failure poisons the cache into a permanent
     straight line."""
-    from travelbook.maps import routing
+    from odysseyra_travelbook.maps import routing
     monkeypatch.setattr(routing.time, "sleep", lambda s: None)  # no real backoff
-    monkeypatch.setattr("travelbook.maps.routing.urllib.request.urlopen",
+    monkeypatch.setattr("odysseyra_travelbook.maps.routing.urllib.request.urlopen",
                         lambda *a, **k: (_ for _ in ()).throw(OSError("no network")))
     cache = type("C", (), {"routes": {}})()
     a, b = (42.9, 0.36), (43.0, 0.57)
@@ -156,7 +156,7 @@ def test_route_failure_falls_back_but_does_not_cache(monkeypatch):
 
 def test_route_retries_transient_failure_then_caches(monkeypatch):
     """A transient failure is retried; once it succeeds the geometry is cached."""
-    from travelbook.maps import routing
+    from odysseyra_travelbook.maps import routing
     monkeypatch.setattr(routing.time, "sleep", lambda s: None)
     good = [(1.0, 2.0), (1.1, 2.1), (1.2, 2.2)]
     calls = {"n": 0}
@@ -175,7 +175,7 @@ def test_route_retries_transient_failure_then_caches(monkeypatch):
 
 def test_route_no_route_is_not_retried(monkeypatch):
     """A definitive 'no route' answer is not retried — it falls straight back."""
-    from travelbook.maps import routing
+    from odysseyra_travelbook.maps import routing
     monkeypatch.setattr(routing.time, "sleep", lambda s: None)
     calls = {"n": 0}
 
@@ -193,7 +193,7 @@ def test_route_no_route_is_not_retried(monkeypatch):
 def test_render_map_offline(monkeypatch, tmp_path):
     """render_map produces an RGB image without network (tiles stubbed)."""
     monkeypatch.setattr(
-        "travelbook.maps.render._fetch_tile",
+        "odysseyra_travelbook.maps.render._fetch_tile",
         lambda url, style, z, x, y, td: Image.new("RGBA", (512, 512), (240, 240, 240, 255)))
     pts = [(43.09, -0.05), (43.10, -0.04)]
     img = render_map(pts, [pts], pts, (47, 107, 79), tmp_path)
@@ -235,14 +235,14 @@ def test_fill_coordinates_adds_and_preserves():
     assert filled == 2 and missed == 1
 
 
-# -- the network seam (travelbook.maps.http_get) -----------------------------
+# -- the network seam (odysseyra_travelbook.maps.http_get) -----------------------------
 def test_fetch_tile_uses_http_get_seam(monkeypatch, tmp_path):
-    """Tiles are fetched through the overridable travelbook.maps.http_get seam,
+    """Tiles are fetched through the overridable odysseyra_travelbook.maps.http_get seam,
     so the browser (Pyodide, no sockets) can swap in a fetch-based transport."""
     import io
 
-    import travelbook.maps as maps
-    from travelbook.maps import render
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import render
 
     buf = io.BytesIO()
     Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(buf, "PNG")
@@ -260,8 +260,8 @@ def test_fetch_tile_uses_http_get_seam(monkeypatch, tmp_path):
 
 def test_geocode_uses_http_get_seam(monkeypatch):
     """Geocoding goes through the same seam and parses Nominatim's JSON body."""
-    import travelbook.maps as maps
-    from travelbook.maps import geocode
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import geocode
 
     monkeypatch.setattr(geocode.time, "sleep", lambda s: None)  # no rate-limit wait
     monkeypatch.setattr(
@@ -276,8 +276,8 @@ def test_area_map_includes_stay_star_only_when_inside(monkeypatch, tmp_path):
     """The zoomed area map shows the night's-stay ★ pin only when the hotel
     falls within the area's own extent — never dragged in from off-map (which
     would widen the zoom)."""
-    from travelbook.maps import Cache
-    from travelbook.maps import build as buildmod
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps import build as buildmod
 
     monkeypatch.setattr(buildmod, "route", lambda a, b, cache: [a, b])
     captured = []

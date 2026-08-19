@@ -8,7 +8,7 @@
 
 export const FR: Record<string, string> = {
   // ---------------------------------------------------------------- App shell
-  "Travelbook Viewer": "Visionneuse Travelbook",
+  "Odysseyra TravelBook": "Odysseyra TravelBook",
   View: "Vue",
   "⚙️ Options": "⚙️ Options",
   "📖 Travel viewer": "📖 Visionneuse",
@@ -24,7 +24,7 @@ export const FR: Record<string, string> = {
   "Starting…": "Démarrage…",
   "Loading Python runtime…": "Chargement de l'environnement Python…",
   "Installing packages…": "Installation des paquets…",
-  "Installing travelbook…": "Installation de travelbook…",
+  "Installing Odysseyra TravelBook…": "Installation d'Odysseyra TravelBook…",
   Ready: "Prêt",
   "Engine failed to start": "Échec du démarrage du moteur",
 
@@ -35,8 +35,8 @@ export const FR: Record<string, string> = {
     "Corrigez les erreurs dans {findings} ou {edit}, puis {apply} pour l'afficher ici.",
   "Apply changes": "Appliquer les modifications",
   "Open an itinerary": "Ouvrir un itinéraire",
-  "Choose a travelbook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.":
-    "Choisissez un fichier JSON travelbook dans {options} pour afficher le carnet de voyage et voir ses diagnostics de validation. Tout reste sur votre appareil.",
+  "Choose an Odysseyra TravelBook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.":
+    "Choisissez un fichier JSON Odysseyra TravelBook dans {options} pour afficher le carnet de voyage et voir ses diagnostics de validation. Tout reste sur votre appareil.",
   "Unsaved edits from a previous session{name} were found.":
     "Des modifications non enregistrées d'une session précédente{name} ont été trouvées.",
   Restore: "Restaurer",
@@ -56,8 +56,8 @@ export const FR: Record<string, string> = {
     "Cet itinéraire n'active pas les cartes (include_maps_in_render est désactivé)",
   "Your browser hasn't offered to install the app (it may already be installed, or your browser doesn't support this)":
     "Votre navigateur n'a pas proposé d'installer l'application (elle est peut-être déjà installée, ou votre navigateur ne le prend pas en charge)",
-  "Open a travelbook JSON file from your device":
-    "Ouvrir un fichier JSON travelbook depuis votre appareil",
+  "Open an Odysseyra TravelBook JSON file from your device":
+    "Ouvrir un fichier JSON Odysseyra TravelBook depuis votre appareil",
   "Open JSON…": "Ouvrir un JSON…",
   "Reopen the last opened file": "Rouvrir le dernier fichier ouvert",
   "Reopen last": "Rouvrir le dernier",
@@ -80,8 +80,8 @@ export const FR: Record<string, string> = {
   "Maps are omitted from the PDF": "Les cartes sont exclues du PDF",
   "Exporting…": "Export…",
   "Export PDF": "Exporter en PDF",
-  "Install Travelbook Viewer as an app on this device":
-    "Installer la visionneuse Travelbook comme application sur cet appareil",
+  "Install Odysseyra TravelBook as an app on this device":
+    "Installer Odysseyra TravelBook comme application sur cet appareil",
   "Install as an app": "Installer comme application",
   "Check for a new version and update to it": "Rechercher une nouvelle version et l'installer",
   "Updating…": "Mise à jour…",

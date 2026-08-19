@@ -1,5 +1,5 @@
 // The network seam the in-browser maps rendering uses. Pyodide has no sockets,
-// so the Python `travelbook.maps.http_get` seam is overridden (in bridge.py) to
+// so the Python `odysseyra_travelbook.maps.http_get` seam is overridden (in bridge.py) to
 // call `httpGetSync` here, exposed to Python as the `tb_js` module.
 //
 // It is a *synchronous* XHR on purpose: the maps code is synchronous Python

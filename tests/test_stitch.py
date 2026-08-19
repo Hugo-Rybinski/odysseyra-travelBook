@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from travelbook.cli import main
-from travelbook.stitch import (
+from odysseyra_travelbook.cli import main
+from odysseyra_travelbook.stitch import (
     SKELETON_DIRS,
     StitchError,
     aggregate,

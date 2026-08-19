@@ -1,5 +1,5 @@
 """Glue executed inside Pyodide: a thin, JSON-in/JSON-out surface over the
-`travelbook` package for the JS layer to call. Kept deliberately small — all
+`odysseyra_travelbook` package for the JS layer to call. Kept deliberately small — all
 real logic stays in the Python package.
 
 - validate(text, lang)  -> JSON string {findings: [{level, line, message}]}
@@ -13,8 +13,8 @@ real logic stays in the Python package.
 Each returns {"error": "..."} (validate/resolve) or raises (build) on failure;
 the JS wrappers surface it.
 
-Maps: the `travelbook.maps` package reaches the network through a single seam,
-``travelbook.maps.http_get``. Pyodide has no sockets, so we override that seam
+Maps: the `odysseyra_travelbook.maps` package reaches the network through a single seam,
+``odysseyra_travelbook.maps.http_get``. Pyodide has no sockets, so we override that seam
 with a browser ``fetch`` (a synchronous XHR exposed from JS as ``tb_js``). All
 three map endpoints (Carto tiles, OSRM, Nominatim) send ``ACAO: *``, so the
 fetch works cross-origin with no proxy — the app stays local-only.
@@ -27,7 +27,7 @@ import json
 # Pyodide's urllib.request omits the ssl/socket-based handlers (there are no
 # sockets in the browser sandbox), but fpdf2 imports some of them at module load
 # even though we never fetch images over the network from that path. Stub any
-# that are missing before importing travelbook so the import succeeds.
+# that are missing before importing odysseyra_travelbook so the import succeeds.
 import urllib.request as _urllib_request
 
 for _name in (
@@ -37,7 +37,7 @@ for _name in (
     if not hasattr(_urllib_request, _name):
         setattr(_urllib_request, _name, type(_name, (), {}))
 
-from travelbook import Itinerary, build_pdf, to_dict, validate_text
+from odysseyra_travelbook import Itinerary, build_pdf, to_dict, validate_text
 
 
 # --- browser network seam for maps -----------------------------------------
@@ -52,7 +52,7 @@ def _install_browser_http() -> None:
         return
     import urllib.error
 
-    import travelbook.maps as _maps
+    import odysseyra_travelbook.maps as _maps
 
     def http_get(url, timeout=20):  # noqa: ARG001 — timeout unused in the browser
         res = tb_js.httpGetSync(url)
@@ -105,7 +105,7 @@ def _day_geo(itinerary, day, cache):
     OSRM route polylines, per-area detail points, the accent colour and a bounds
     box. Mirrors render_day_maps' numbering (activities 1..N, the night's stay
     '*', area points A/B/C…). ``None`` when the day has nothing locatable."""
-    from travelbook.maps.build import STAY_PIN, _within, resolve_day
+    from odysseyra_travelbook.maps.build import STAY_PIN, _within, resolve_day
 
     main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
     points = [{"lat": p.lat, "long": p.long, "label": str(i), "title": p.label}
@@ -203,7 +203,7 @@ def render_day(text, index):
         day_out = to_dict(itinerary)["days"][index]
         day_out["map"] = {"main": None, "areas": [], "geo": None}
         try:
-            from travelbook.maps import Cache, render_day_maps
+            from odysseyra_travelbook.maps import Cache, render_day_maps
             cache = Cache.open()
             dm = render_day_maps(day, itinerary, cache, ink_saver=False)
             try:
@@ -232,8 +232,8 @@ def geocode(text_query, countrycodes=""):
     ``{"error": ...}``. Needs the network. ``countrycodes`` is a comma-joined
     list of 2-letter ISO codes (from ``defaults.inference_countries``)."""
     try:
-        from travelbook.maps import Cache
-        from travelbook.maps.geocode import geocode as _geocode
+        from odysseyra_travelbook.maps import Cache
+        from odysseyra_travelbook.maps.geocode import geocode as _geocode
         countries = [c.strip() for c in countrycodes.split(",") if c.strip()]
         cache = Cache.open()
         result = _geocode(text_query, countries, cache)
@@ -250,7 +250,7 @@ def geocode(text_query, countrycodes=""):
 
 def build(text, lang="en", ink_saver=False, maps=None):
     itinerary = Itinerary.from_dict(json.loads(text))
-    out = "/tmp/travelbook-out.pdf"
+    out = "/tmp/odysseyra-out.pdf"
     # `maps=None` leaves the file's own `include_maps_in_render` in force; the
     # browser HTTP seam (installed above) lets tiles/routes/geocoding work.
     build_pdf(itinerary, out, lang=lang, ink_saver=ink_saver, maps=maps)

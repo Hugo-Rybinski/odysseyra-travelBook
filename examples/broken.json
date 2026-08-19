@@ -1,6 +1,6 @@
 {
   "travel_description": {
-    "subtitle": "Intentionally broken, to demonstrate `travelbook validate`",
+    "subtitle": "Intentionally broken, to demonstrate `odysseyra-travelBook validate`",
     "start_date": "2026-06-12",
     "end_date": "2026-06-08",
     "cover_color": "not-a-color"

@@ -1,4 +1,4 @@
-"""Render an :class:`~travelbook.models.Itinerary` to a polished PDF.
+"""Render an :class:`~odysseyra_travelbook.models.Itinerary` to a polished PDF.
 
 ``TravelPDF`` is assembled from per-section mixins: :mod:`.cover`, :mod:`.days`,
 :mod:`.transport` and :mod:`.accommodation`, on top of :mod:`.base`.

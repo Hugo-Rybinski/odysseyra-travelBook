@@ -13,7 +13,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-USER_AGENT = "travelbook/0.1 (per-day maps; https://github.com/Hugo-Rybinski/travelBook)"
+USER_AGENT = "odysseyra/0.1 (per-day maps; https://github.com/Hugo-Rybinski/travelBook)"
 
 
 def http_get(url: str, timeout: int = 20) -> bytes:
@@ -22,7 +22,7 @@ def http_get(url: str, timeout: int = 20) -> bytes:
 
     This is the **single network seam** for the maps package — geocoding, routing
     and tiles all go through it. Native builds use ``urllib``; the browser
-    (Pyodide has no sockets) overrides ``travelbook.maps.http_get`` with a
+    (Pyodide has no sockets) overrides ``odysseyra_travelbook.maps.http_get`` with a
     ``fetch``-based implementation. Keep the contract identical in both.
     """
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -32,8 +32,8 @@ def http_get(url: str, timeout: int = 20) -> bytes:
 
 def default_cache_dir() -> Path:
     """Where geocode results, routes and tiles are cached between builds."""
-    env = os.environ.get("TRAVELBOOK_CACHE")
-    base = Path(env) if env else Path.home() / ".cache" / "travelbook"
+    env = os.environ.get("ODYSSEYRA_CACHE")
+    base = Path(env) if env else Path.home() / ".cache" / "odysseyra"
     return base
 
 

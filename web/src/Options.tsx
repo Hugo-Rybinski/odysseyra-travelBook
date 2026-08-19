@@ -110,7 +110,7 @@ export function Options(props: OptionsProps) {
       <section className="opt-group">
         <h2>{t("File")}</h2>
         <div className="opt-row">
-          <Tip text={t("Open a travelbook JSON file from your device")}>
+          <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
             <button className="btn" onClick={onOpen} disabled={busy}>
               {t("Open JSON…")}
             </button>
@@ -233,7 +233,7 @@ export function Options(props: OptionsProps) {
       <section className="opt-group">
         <h2>{t("App")}</h2>
         <div className="opt-row">
-          <Tip text={installReason || t("Install Travelbook Viewer as an app on this device")}>
+          <Tip text={installReason || t("Install Odysseyra TravelBook as an app on this device")}>
             <button className="btn" onClick={install} disabled={!canInstall}>
               {t("Install as an app")}
             </button>

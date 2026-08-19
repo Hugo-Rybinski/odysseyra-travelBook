@@ -1,4 +1,4 @@
-# travelbook
+# Odysseyra TravelBook
 
 Turn a JSON travel itinerary into a polished, print-ready PDF — and validate the
 JSON with precise, localized, line-numbered diagnostics. Pure Python, no system
@@ -12,22 +12,22 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 
 # build a PDF (the "build" sub-command is optional; validation runs first,
 # printing errors-only to stderr, then it builds anyway)
-travelbook build examples/pyrenees.json -o out.pdf
-travelbook examples/pyrenees.json -o out.pdf            # implies build
-travelbook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
-travelbook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
-travelbook build examples/pyrenees.json --maps --map-country FR -o out.pdf   # per-day maps
-travelbook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
+odysseyra-travelBook build examples/pyrenees.json -o out.pdf
+odysseyra-travelBook examples/pyrenees.json -o out.pdf            # implies build
+odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
+odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
+odysseyra-travelBook build examples/pyrenees.json --maps --map-country FR -o out.pdf   # per-day maps
+odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
 
 # validate (-v 1 errors, 2 +warnings [default], 3 +info; -l/--lang en|fr)
-travelbook validate examples/pyrenees.json
-travelbook validate examples/pyrenees.json -v 3 --lang fr
+odysseyra-travelBook validate examples/pyrenees.json
+odysseyra-travelBook validate examples/pyrenees.json -v 3 --lang fr
 
 # scaffold an empty fragment dir (sub-folders + travel_description.json stub)
-travelbook create-skeleton . mytrip
+odysseyra-travelBook create-skeleton . mytrip
 
 # stitch a directory of JSON fragments into one <title>.json (validates first)
-travelbook stitch examples/pyrenees_pieces
+odysseyra-travelBook stitch examples/pyrenees_pieces
 
 pytest                                                  # all tests
 UPDATE_SNAPSHOTS=1 pytest tests/test_validate.py        # regenerate the snapshot (see below)
@@ -49,10 +49,10 @@ a merged time-ordered itinerary, and a bottom "tonight's stay" bar), a
 **transport** page, and an **accommodation** summary page. The whole palette is
 derived from one `cover_color`.
 
-## Architecture (`src/travelbook/`)
+## Architecture (`src/odysseyra_travelbook/`)
 
 Four focused packages; each `__init__.py` re-exports its public API, so import
-paths are stable (`from travelbook.models import Itinerary`, etc.).
+paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 
 - **`models/`** — the data model, built from JSON via `from_dict` classmethods.
   - `parsers.py` — scalar parsers (`_parse_date/_time/_duration/_tz/_paid/_route/`
@@ -95,8 +95,8 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   theme-colored route → rotated numbered teardrop pins → label sandwich; pure
   Pillow), `build.py` (`resolve_day` → points/routes/area-details, `render_day_maps`
   → PIL images), `writeback.py` (`fill_coordinates` for the `geocode` command),
-  and `Cache` (geocode/routes/tiles on disk under `~/.cache/travelbook`, or
-  `$TRAVELBOOK_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
+  and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
+  `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
@@ -178,7 +178,7 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
 
 ## Conventions & gotchas
 
-- Text is drawn with the bundled **DejaVu** TTF (`src/travelbook/fonts/`) so any
+- Text is drawn with the bundled **DejaVu** TTF (`src/odysseyra_travelbook/fonts/`) so any
   Unicode (accents, arrows `→`, `✓`) renders. Do not switch to core fonts.
 - The model raises `ItineraryError` on bad data; the validator instead reports it
   (it does its own parsing and never calls a mutating path except a guarded
@@ -201,10 +201,10 @@ paths are stable (`from travelbook.models import Itinerary`, etc.).
   so it needs network for tiles/routes unless the cache is warm, but the build
   degrades gracefully offline):
   ```bash
-  .venv/bin/travelbook build examples/pyrenees.json -o examples/pyrenees.pdf
-  .venv/bin/travelbook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
-  .venv/bin/travelbook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf
-  .venv/bin/travelbook build examples/kyrgyzstan.json -o examples/kyrgyzstan.pdf
+  .venv/bin/odysseyra-travelBook build examples/pyrenees.json -o examples/pyrenees.pdf
+  .venv/bin/odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
+  .venv/bin/odysseyra-travelBook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf
+  .venv/bin/odysseyra-travelBook build examples/kyrgyzstan.json -o examples/kyrgyzstan.pdf
   ```
   (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
 - When adding/renaming a field or message, update: the model `from_dict`, the

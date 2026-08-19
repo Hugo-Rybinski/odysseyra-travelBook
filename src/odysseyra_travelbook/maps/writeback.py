@@ -1,6 +1,6 @@
 """Fill missing ``coordinate`` objects in a raw itinerary dict by geocoding
 names/addresses, so a later build is deterministic and offline. Used by the
-``travelbook geocode`` command. The geocoder is injectable for testing."""
+``odysseyra-travelBook geocode`` command. The geocoder is injectable for testing."""
 
 from __future__ import annotations
 

@@ -1,11 +1,11 @@
 """Command-line interface.
 
-    travelbook build trip.json -o trip.pdf   # build a PDF (default)
-    travelbook validate trip.json            # check the JSON, report problems
-    travelbook stitch trip/                   # assemble one JSON from a directory
+    odysseyra-travelBook build trip.json -o trip.pdf   # build a PDF (default)
+    odysseyra-travelBook validate trip.json            # check the JSON, report problems
+    odysseyra-travelBook stitch trip/                   # assemble one JSON from a directory
 
 For convenience the ``build`` sub-command may be omitted:
-``travelbook trip.json -o trip.pdf`` still works.
+``odysseyra-travelBook trip.json -o trip.pdf`` still works.
 """
 
 from __future__ import annotations
@@ -162,7 +162,7 @@ def _run_create_skeleton(path: Path, name: str) -> int:
     for d in SKELETON_DIRS:
         print(f"  {root / d}/")
     print(f"  {root / 'travel_description.json'}  (title: FIXME)")
-    print(f"Fill it in, then: travelbook stitch {root}")
+    print(f"Fill it in, then: odysseyra-travelBook stitch {root}")
     return 0
 
 
@@ -175,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
 
     parser = argparse.ArgumentParser(
-        prog="travelbook",
+        prog="odysseyra-travelBook",
         description="Build a travel PDF from JSON, or validate the JSON.",
     )
     sub = parser.add_subparsers(dest="command")
@@ -232,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("name", help="name of the skeleton directory to create")
 
     _commands = ("build", "validate", "stitch", "create-skeleton", "geocode")
-    # Backward-compat: `travelbook trip.json ...` implies `build`.
+    # Backward-compat: `odysseyra-travelBook trip.json ...` implies `build`.
     if argv and argv[0] not in _commands + ("-h", "--help"):
         argv = ["build"] + argv
 

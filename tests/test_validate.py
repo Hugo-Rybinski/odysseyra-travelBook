@@ -2,8 +2,8 @@ import json
 import os
 from pathlib import Path
 
-from travelbook import format_findings, validate_text
-from travelbook.validate import load_with_lines
+from odysseyra_travelbook import format_findings, validate_text
+from odysseyra_travelbook.validate import load_with_lines
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 EXAMPLE = EXAMPLES / "pyrenees.json"
@@ -72,7 +72,7 @@ def test_optional_missing_gives_info_with_default():
 
 
 def test_verbose_levels_filter_output():
-    from travelbook import format_findings
+    from odysseyra_travelbook import format_findings
 
     findings = validate_text(BROKEN.read_text(encoding="utf-8"))
     lvl1 = format_findings(findings, verbose=1)
@@ -581,7 +581,7 @@ def test_no_end_time_check_when_default_end_time_absent():
 
 
 def test_build_surfaces_validation_errors(tmp_path, capsys):
-    from travelbook.cli import main
+    from odysseyra_travelbook.cli import main
 
     # overlapping activities: a validator error, but the model still builds
     doc = {

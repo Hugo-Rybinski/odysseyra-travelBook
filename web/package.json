@@ -1,9 +1,9 @@
 {
-  "name": "travelbook-web",
+  "name": "odysseyra-web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "PWA travel-book viewer — renders a travelbook itinerary in the browser via Pyodide, with PDF export on the side.",
+  "description": "PWA travel-book viewer — renders an Odysseyra TravelBook itinerary in the browser via Pyodide, with PDF export on the side.",
   "scripts": {
     "wheel": "bash scripts/build-wheel.sh",
     "check-wheel": "node scripts/check-wheel.mjs",

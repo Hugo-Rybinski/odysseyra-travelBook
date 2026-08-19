@@ -58,7 +58,7 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
   idle: "Starting…",
   "loading-runtime": "Loading Python runtime…",
   "installing-packages": "Installing packages…",
-  "installing-travelbook": "Installing travelbook…",
+  "installing-odysseyra": "Installing Odysseyra TravelBook…",
   ready: "Ready",
   error: "Engine failed to start",
 };
@@ -372,7 +372,7 @@ export function App() {
     setError(null);
     try {
       const bytes = await buildPdf(source.text, { lang, inkSaver, maps: mapsExport });
-      const base = itinerary?.title || source.name || "travelbook";
+      const base = itinerary?.title || source.name || "odysseyra";
       downloadBytes(bytes, `${slugify(base)}.pdf`);
     } catch (e) {
       setError(String(e));
@@ -404,7 +404,7 @@ export function App() {
 
   // A sensible filename for saving/downloading the draft.
   const draftFilename = useCallback(
-    () => `${slugify(draft?.travel_description?.title || source?.name || "travelbook")}.json`,
+    () => `${slugify(draft?.travel_description?.title || source?.name || "odysseyra")}.json`,
     [draft, source],
   );
 
@@ -558,7 +558,7 @@ export function App() {
     <main className="shell">
       <PwaStatus />
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
-        <h1>{t("Travelbook Viewer")}</h1>
+        <h1>{t("Odysseyra TravelBook")}</h1>
         <div className="actions" role="tablist" aria-label={t("View")}>
           <button
             className={`btn ghost ${view === "options" ? "active" : ""}`}
@@ -709,7 +709,7 @@ export function App() {
             <h2>{t("Open an itinerary")}</h2>
             <p>
               {tx(
-                "Choose a travelbook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.",
+                "Choose an Odysseyra TravelBook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.",
                 { options: <strong>{t("⚙️ Options")}</strong> },
               )}
             </p>

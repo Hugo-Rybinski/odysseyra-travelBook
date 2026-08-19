@@ -1,7 +1,7 @@
 // Guard against shipping a stale in-browser wheel.
 //
-// The browser runs the `travelbook` *wheel* (built into public/py/), not the
-// Python source — so if src/travelbook/ changes and the wheel isn't rebuilt,
+// The browser runs the `odysseyra_travelbook` *wheel* (built into public/py/), not the
+// Python source — so if src/odysseyra_travelbook/ changes and the wheel isn't rebuilt,
 // the app silently ships old Python (e.g. a missing constant → maps vanish).
 // This fails the build loudly when the wheel is older than the source, telling
 // you to run `npm run wheel`. Runs as a `prebuild`/`predev` step.
@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const srcDir = join(here, "..", "..", "src", "travelbook");
+const srcDir = join(here, "..", "..", "src", "odysseyra");
 const pyDir = join(here, "..", "public", "py");
 
 function newestMtime(dir) {
@@ -25,7 +25,7 @@ function newestMtime(dir) {
 
 function newestWheelMtime() {
   if (!existsSync(pyDir)) return -1;
-  const wheels = readdirSync(pyDir).filter((f) => f.startsWith("travelbook-") && f.endsWith(".whl"));
+  const wheels = readdirSync(pyDir).filter((f) => f.startsWith("odysseyra_travelbook-") && f.endsWith(".whl"));
   return wheels.length ? Math.max(...wheels.map((f) => statSync(join(pyDir, f)).mtimeMs)) : -1;
 }
 
@@ -36,13 +36,13 @@ const fail = (msg) => {
 
 if (!existsSync(srcDir)) {
   // No source tree to compare against (e.g. a wheel-only checkout) — skip.
-  console.log("ℹ check-wheel: no src/travelbook to compare against, skipping.");
+  console.log("ℹ check-wheel: no src/odysseyra_travelbook to compare against, skipping.");
   process.exit(0);
 }
 
 const wheel = newestWheelMtime();
-if (wheel < 0) fail("The in-browser travelbook wheel is missing.");
+if (wheel < 0) fail("The in-browser odysseyra_travelbook wheel is missing.");
 if (newestMtime(srcDir) > wheel) {
-  fail("The in-browser travelbook wheel is STALE (src/travelbook changed after it was built).");
+  fail("The in-browser odysseyra_travelbook wheel is STALE (src/odysseyra_travelbook changed after it was built).");
 }
-console.log("✓ check-wheel: wheel is up to date with src/travelbook.");
+console.log("✓ check-wheel: wheel is up to date with src/odysseyra_travelbook.");

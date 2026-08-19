@@ -3,7 +3,7 @@
 // offers to restore it on next launch and clears it once the draft is saved to a
 // file or the user discards it. Everything stays on-device.
 
-const DB_NAME = "travelbook-edit";
+const DB_NAME = "odysseyra-edit";
 const STORE = "kv";
 const KEY = "autosaveDraft";
 

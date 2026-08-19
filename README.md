@@ -1,6 +1,6 @@
-# travelbook
+# Odysseyra TravelBook
 
-**travelbook** turns a single JSON travel itinerary into a polished,
+**Odysseyra TravelBook** turns a single JSON travel itinerary into a polished,
 print-ready PDF — and comes with a browser app to view, validate and edit that
 JSON along the way. It's pure Python (built on
 [fpdf2](https://py-pdf.github.io/fpdf2/)) with **no system dependencies** (no
@@ -43,12 +43,12 @@ list every target.
 ### Command-line tool
 
 ```bash
-make cli        # create .venv and install the `travelbook` CLI into it
+make cli        # create .venv and install the `odysseyra-travelBook` CLI into it
 make test       # run the test suite
 ```
 
-`make cli` builds an isolated virtualenv (`.venv/`) and installs travelbook, so
-the CLI is available as `.venv/bin/travelbook` (or `source .venv/bin/activate`
+`make cli` builds an isolated virtualenv (`.venv/`) and installs Odysseyra TravelBook, so
+the CLI is available as `.venv/bin/odysseyra-travelBook` (or `source .venv/bin/activate`
 first). To set it up by hand instead:
 
 ```bash
@@ -73,20 +73,20 @@ remove build artifacts / the venv + `node_modules`.
 
 ## Command-line tool
 
-`travelbook <command> [options]`, with five commands: `build`, `validate`,
+`odysseyra-travelBook <command> [options]`, with five commands: `build`, `validate`,
 `geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
 (`en` default, or `fr`) picks the language of *generated* text and diagnostics
 (never your JSON content), and `-v` / `--verbose` sets validation verbosity.
-Running `travelbook <file.json>` with no command implies `build`. Without the
-installed entry point, use `python -m travelbook.cli <command> …`.
+Running `odysseyra-travelBook <file.json>` with no command implies `build`. Without the
+installed entry point, use `python -m odysseyra_travelbook.cli <command> …`.
 
 ### `build` — render the PDF
 
 ```bash
-travelbook build examples/pyrenees.json -o pyrenees.pdf
-travelbook examples/pyrenees.json                    # implies build; writes <input>.pdf
-travelbook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
-travelbook build examples/pyrenees.json --maps --map-country FR -o pyrenees.pdf
+odysseyra-travelBook build examples/pyrenees.json -o pyrenees.pdf
+odysseyra-travelBook examples/pyrenees.json                    # implies build; writes <input>.pdf
+odysseyra-travelBook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
+odysseyra-travelBook build examples/pyrenees.json --maps --map-country FR -o pyrenees.pdf
 ```
 
 Validation runs first (errors are printed to stderr), then it builds regardless.
@@ -113,9 +113,9 @@ outlined badges and thin rules — ideal for a home printer.
 ### `validate` — check the JSON
 
 ```bash
-travelbook validate examples/pyrenees.json           # errors + warnings (default)
-travelbook validate examples/pyrenees.json -v 3      # also the ℹ️ info notes
-travelbook validate examples/pyrenees_fr.json --lang fr
+odysseyra-travelBook validate examples/pyrenees.json           # errors + warnings (default)
+odysseyra-travelBook validate examples/pyrenees.json -v 3      # also the ℹ️ info notes
+odysseyra-travelBook validate examples/pyrenees_fr.json --lang fr
 ```
 
 Prints findings, each with the line it concerns, at three levels selected by
@@ -135,13 +135,13 @@ are any errors (warnings alone exit zero).
   and an overnight transport (the accommodation wins).
 
 The PDF labels and validation messages are localized (`--lang en|fr`); all
-translatable strings live in `src/travelbook/lang/` (English is the source, so a
+translatable strings live in `src/odysseyra_travelbook/lang/` (English is the source, so a
 missing translation falls back to English).
 
 ### `geocode` — bake in coordinates
 
 ```bash
-travelbook geocode examples/pyrenees.json --country FR
+odysseyra-travelBook geocode examples/pyrenees.json --country FR
 ```
 
 Geocodes the objects that lack an explicit `coordinate` (from their name /
@@ -166,9 +166,9 @@ examples/pyrenees_pieces/
 ```
 
 ```bash
-travelbook create-skeleton . mytrip     # scaffold ./mytrip/ (sub-folders + a title stub)
-travelbook stitch mytrip                 # assemble once you've added ≥1 day
-travelbook stitch examples/pyrenees_pieces -v 3
+odysseyra-travelBook create-skeleton . mytrip     # scaffold ./mytrip/ (sub-folders + a title stub)
+odysseyra-travelBook stitch mytrip                 # assemble once you've added ≥1 day
+odysseyra-travelBook stitch examples/pyrenees_pieces -v 3
 ```
 
 Each array folder contributes one entry per JSON file, **ordered by file name**
@@ -183,7 +183,7 @@ found errors.
 ### As a library
 
 ```python
-from travelbook import Itinerary, build_pdf
+from odysseyra_travelbook import Itinerary, build_pdf
 
 itinerary = Itinerary.from_json_file("examples/pyrenees.json")
 build_pdf(itinerary, "pyrenees.pdf", ink_saver=True)
@@ -192,7 +192,7 @@ build_pdf(itinerary, "pyrenees.pdf", ink_saver=True)
 ## Browser viewer (the PWA)
 
 The `web/` app renders and edits the same itineraries in the browser, running the
-real travelbook engine locally through Pyodide — **everything stays on your
+real Odysseyra TravelBook engine locally through Pyodide — **everything stays on your
 device**, it works fully offline once loaded, and it's installable as an app.
 Start it with `make dev` or `make preview` (see [Setup](#setup)).
 
@@ -209,7 +209,7 @@ The header switches between four views:
   activity titles, plus zoomed area maps — and an **Interactive** toggle swaps
   them for pan/zoom MapLibre maps that keep working offline after one online view.
 - **🔎 Findings** — every validation ❌ / ⚠️ / ℹ️ finding with its line number and a
-  level filter (the same engine as `travelbook validate`).
+  level filter (the same engine as `odysseyra-travelBook validate`).
 - **✏️ Edit** — a structured form editor over the input JSON. Every field is
   editable, with add / remove / reorder for days, activities (one level of
   nesting), transport, accommodations, car rentals and waypoints. It **validates
@@ -603,8 +603,8 @@ drop-off location defaults to the pick-up location.
 make test        # or: .venv/bin/pytest
 ```
 
-The Python package lives under `src/travelbook/`, in focused sub-packages, each
-re-exporting its public API from `__init__.py` (so `from travelbook.models import
+The Python package lives under `src/odysseyra_travelbook/`, in focused sub-packages, each
+re-exporting its public API from `__init__.py` (so `from odysseyra_travelbook.models import
 Itinerary` stays stable):
 
 - `models/` — the data model + JSON parsing (`parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `geo`, `itinerary`)

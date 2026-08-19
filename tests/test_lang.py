@@ -2,8 +2,8 @@ import json
 from datetime import date
 from pathlib import Path
 
-from travelbook import Itinerary, build_pdf, format_findings, validate_text
-from travelbook.lang import LANGUAGES, fmt_date, tr
+from odysseyra_travelbook import Itinerary, build_pdf, format_findings, validate_text
+from odysseyra_travelbook.lang import LANGUAGES, fmt_date, tr
 
 EXAMPLE_FR = Path(__file__).resolve().parent.parent / "examples" / "pyrenees_fr.json"
 

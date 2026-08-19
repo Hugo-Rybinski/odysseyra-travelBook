@@ -1,5 +1,5 @@
 // TypeScript mirror of the resolved-model dict emitted by
-// `travelbook.models.to_dict` (see src/travelbook/models/serialize.py). This is
+// `odysseyra_travelbook.models.to_dict` (see src/odysseyra_travelbook/models/serialize.py). This is
 // the single contract the UI renders from — every value here is already
 // resolved by the Python model (inferred times/dates, meal categories,
 // converted prices). Kept intentionally close to the Python shape.

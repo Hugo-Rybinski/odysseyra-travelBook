@@ -8,7 +8,7 @@
 // Everything is best-effort: any failure resolves to a cache miss, never throws.
 import type { Day } from "../types/resolved";
 
-const DB_NAME = "travelbook-maps";
+const DB_NAME = "odysseyra-maps";
 const STORE = "days";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 

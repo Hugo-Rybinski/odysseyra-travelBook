@@ -1,7 +1,7 @@
 # Skill: fix missing durations & distances
 
-**Input:** a travelbook itinerary JSON **and** a list of validator warnings about
-missing size information — the ⚠️ lines `travelbook validate` prints for
+**Input:** an Odysseyra TravelBook itinerary JSON **and** a list of validator warnings about
+missing size information — the ⚠️ lines `odysseyra-travelBook validate` prints for
 activities, roads, hikes and transports that carry no duration/distance/
 elevation (English or French).
 
@@ -200,4 +200,4 @@ Report a short summary: how many blanks you left for the user to fill, and how
 many values you pre-filled from the web (all `[to be checked]`, each with a source
 link and quote, needing confirmation). Once the user completes the worksheet, each value merges back into
 its JSON path — durations/distances onto the activity or road leg, hike figures
-onto the hike — after which `travelbook validate` should no longer warn.
+onto the hike — after which `odysseyra-travelBook validate` should no longer warn.
