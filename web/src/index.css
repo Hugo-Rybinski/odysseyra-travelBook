@@ -32,10 +32,19 @@ body {
   align-items: center;
   gap: 12px;
   margin: 0 -16px 24px;
-  padding: 20px 16px;
+  padding: 0 16px;
   color: #fff;
   background: var(--accent);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.topbar .logo {
+  /* Fill the banner top-to-bottom: the logo defines the topbar height (the
+     banner has no vertical padding), and the title/actions center against it. */
+  height: 64px;
+  width: auto;
+  flex: none;
+  display: block;
 }
 
 .topbar h1 {

@@ -558,6 +558,7 @@ export function App() {
     <main className="shell">
       <PwaStatus />
       <header className="topbar" style={{ background: itinerary?.cover_color }}>
+        <img className="logo" src="/img/odysseyra-white-no-bg.svg" alt="" aria-hidden="true" />
         <h1>{t("Odysseyra TravelBook")}</h1>
         <div className="actions" role="tablist" aria-label={t("View")}>
           <button
