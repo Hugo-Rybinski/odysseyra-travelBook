@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="img/odysseyra-no-bg.svg" alt="Odysseyra" width="140" />
+</p>
+
 # Odysseyra TravelBook
 
 **Odysseyra TravelBook** turns a single JSON travel itinerary into a polished,
