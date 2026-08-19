@@ -13,6 +13,9 @@ venv/
 # Generated output
 *.pdf
 
+# Planning docs (kept locally, not tracked)
+docs/
+
 # OS / editor
 .DS_Store
 .idea/
