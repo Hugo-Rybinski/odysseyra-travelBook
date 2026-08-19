@@ -242,6 +242,7 @@ export function EditPanel({
               items={transport}
               onChange={(next) => onChange({ ...draft, transport: next })}
               basePath="transport"
+              defaultOpen={false}
               itemTitle={(t, i) =>
                 t.start || t.end ? `${t.start || "?"} → ${t.end || "?"}` : `Transport ${i + 1}`
               }
@@ -261,6 +262,7 @@ export function EditPanel({
               items={accommodations}
               onChange={(next) => onChange({ ...draft, accommodations: next })}
               basePath="accommodations"
+              defaultOpen={false}
               itemTitle={(a, i) => a.name || a.city || `Accommodation ${i + 1}`}
               add={[{ label: "accommodation", make: newAccommodation }]}
               emptyLabel="No accommodations."
@@ -278,6 +280,7 @@ export function EditPanel({
               items={carRentals}
               onChange={(next) => onChange({ ...draft, car_rentals: next })}
               basePath="car_rentals"
+              defaultOpen={false}
               itemTitle={(c, i) => c.company || c.pickup_location || `Car rental ${i + 1}`}
               add={[{ label: "car rental", make: newCarRental }]}
               emptyLabel="No car rentals."
