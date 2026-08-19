@@ -1413,10 +1413,11 @@ textarea.edit-input {
 .box-findings {
   margin: 0 0 12px;
 }
-/* findings that span several of an object's fields — shown once, below the
-   field grid, while each field's border stays highlighted */
-.group-findings {
-  margin: 8px 0 4px;
+/* a finding spanning several fields — shown once, full-width, right after the
+   last field it involves (each involved field's border stays highlighted) */
+.edit-fields .group-findings {
+  grid-column: 1 / -1;
+  margin: -2px 0 2px;
 }
 .field-findings .ff {
   font-size: 0.75rem;
