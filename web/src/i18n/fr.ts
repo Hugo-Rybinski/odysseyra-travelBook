@@ -253,6 +253,10 @@ export const FR: Record<string, string> = {
   currency: "devise",
   "No waypoints — a road needs at least one (the arrival).":
     "Aucun point de passage — une route en nécessite au moins un (l'arrivée).",
+  "Travel time is missing.": "Le temps de trajet est manquant.",
+  "Distance is missing.": "La distance est manquante.",
+  "Travel time and distance are missing.": "Le temps de trajet et la distance sont manquants.",
+  "Check online to fill it.": "Vérifier en ligne pour le compléter.",
   "No nested activities.": "Aucune activité imbriquée.",
   "No activities — a day needs at least one.":
     "Aucune activité — un jour en nécessite au moins une.",

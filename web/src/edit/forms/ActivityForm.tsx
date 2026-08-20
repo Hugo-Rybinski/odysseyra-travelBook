@@ -9,6 +9,7 @@ import {
   WAYPOINT_FIELDS,
 } from "../schema";
 import { useT, type TFn } from "../../i18n";
+import { directionsUrl, useMapProvider } from "../../render/nav";
 import { ArrayEditor } from "../fields/ArrayEditor";
 import { CoordinateField } from "../fields/CoordinateField";
 import { FieldFindings } from "../fields/FieldFindings";
@@ -41,6 +42,52 @@ export function activityTitle(a: SrcActivity, index: number, t: TFn): string {
 }
 
 const SCHED_KEYS = ["start_time", "end_time", "duration", "start_tz", "end_tz"] as const;
+
+// A road whose driving time and/or distance is blank: warn and offer a link that
+// opens the chosen map app's directions for start → arrival, where the real
+// figures are shown, so they can be copied back in. Edit-tab only. "Missing"
+// means neither the road-level field nor any per-leg waypoint value is set.
+function RoadCheckOnline({ activity }: { activity: SrcActivity }) {
+  const t = useT();
+  const provider = useMapProvider();
+  if (activity.type !== "road") return null;
+
+  const wps = activity.waypoints ?? [];
+  const hasLegDist = wps.some((w) => w.distance_km != null);
+  const hasLegDur = wps.some((w) => (w.duration ?? "").trim() !== "");
+  const missingDist = activity.distance_km == null && !hasLegDist;
+  const missingTime = (activity.duration ?? "").trim() === "" && !hasLegDur;
+  if (!missingDist && !missingTime) return null;
+
+  // Destination = the arrival (last waypoint): its coordinate when set, else name.
+  const last = wps.length ? wps[wps.length - 1] : undefined;
+  const c = last?.coordinate;
+  const destCoord =
+    c && c.lat != null && c.long != null
+      ? { lat: c.lat, long: c.long, show_on_map: c.show_on_map ?? true }
+      : null;
+  const href = directionsUrl(provider, activity.start, destCoord, last?.location);
+
+  const message = missingTime && missingDist
+    ? t("Travel time and distance are missing.")
+    : missingTime
+      ? t("Travel time is missing.")
+      : t("Distance is missing.");
+
+  return (
+    <p className="road-check">
+      <span aria-hidden>⚠️</span> {message}
+      {href && (
+        <>
+          {" "}
+          <a className="road-check-link" href={href} target="_blank" rel="noreferrer">
+            {t("Check online to fill it.")}
+          </a>
+        </>
+      )}
+    </p>
+  );
+}
 
 // Carry the scheduling fields across a type change so re-typing an activity
 // doesn't wipe its times.
@@ -111,6 +158,8 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
       </div>
 
       <FieldList specs={specs} value={rec} path={path} onChange={set} />
+
+      {type === "road" && <RoadCheckOnline activity={activity} />}
 
       {type !== "buffer" && (
         <CoordinateField

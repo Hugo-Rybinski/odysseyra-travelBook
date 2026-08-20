@@ -63,6 +63,37 @@ export function navUrl(
   }
 }
 
+// A directions/route URL from ``origin`` to the destination (its ``destCoord``
+// when known, else ``destName``) in the chosen app — used by the "Check online
+// to fill it." link on a road leg that's missing its travel time / distance, so
+// the provider shows the real figures. "" when there's no destination at all.
+// Google / Apple / OpenStreetMap render a full A→B route on the web; Waze and
+// MAPS.ME have no usable web route link, so they fall back to the destination.
+export function directionsUrl(
+  provider: MapProvider,
+  origin: string | null | undefined,
+  destCoord: Coordinate | null | undefined,
+  destName: string | null | undefined,
+): string {
+  const dest = destCoord ? `${destCoord.lat},${destCoord.long}` : (destName ?? "").trim();
+  if (!dest) return "";
+  const org = (origin ?? "").trim();
+  const d = encodeURIComponent(dest);
+  const o = encodeURIComponent(org);
+  switch (provider) {
+    case "apple":
+      return `https://maps.apple.com/?daddr=${d}&dirflg=d` + (org ? `&saddr=${o}` : "");
+    case "osm":
+      return `https://www.openstreetmap.org/directions?from=${o}&to=${d}`;
+    case "waze":
+    case "mapsme":
+      return navUrl(provider, destCoord, destName ?? "");
+    case "google":
+    default:
+      return `https://www.google.com/maps/dir/?api=1&destination=${d}` + (org ? `&origin=${o}` : "");
+  }
+}
+
 export interface RoadLeg {
   src: string;
   dest: string | null; // null for a trailing unnamed arrival

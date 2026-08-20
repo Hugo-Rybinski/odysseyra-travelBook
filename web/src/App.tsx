@@ -29,7 +29,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
-import type { MapProvider } from "./render/nav";
+import { MapProviderContext, type MapProvider } from "./render/nav";
 import { Options, FileGroup } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
@@ -711,6 +711,7 @@ export function App() {
       ) : view === "findings" && source ? (
         <FindingsPanel findings={findings} />
       ) : view === "edit" && draft ? (
+        <MapProviderContext.Provider value={mapProvider}>
         <EditPanel
           draft={draft}
           onChange={setDraftHist}
@@ -738,6 +739,7 @@ export function App() {
           onRevert={onRevert}
           geocode={{ geocode: onGeocode, ready: engineReady && online }}
         />
+        </MapProviderContext.Provider>
       ) : view === "transport" && itinerary ? (
         <section className="report">
           <Book

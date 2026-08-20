@@ -1689,6 +1689,23 @@ textarea.edit-input {
   color: var(--muted);
 }
 
+/* Road "check online to fill it" hint in the Edit tab — same amber tint as a
+   warning finding, with an accent link to the map provider's directions. */
+.road-check {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #8a5d00;
+  background: #fff6e5;
+}
+.road-check-link {
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* header strip: validating note, error banner, and the non-anchored rail
    (the rail itself reuses .findings styling via <FindingsPanel>) */
 .edit-status {
