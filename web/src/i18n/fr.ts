@@ -50,6 +50,18 @@ export const FR: Record<string, string> = {
   Maps: "Cartes",
   "PDF export": "Export PDF",
   App: "Application",
+  Display: "Affichage",
+  "How the on-screen travel book shows days and long text.":
+    "Comment le carnet de voyage à l'écran affiche les jours et les textes longs.",
+  Days: "Jours",
+  "Collapse all": "Tout replier",
+  "Collapse all but the current day": "Tout replier sauf le jour actuel",
+  "Expand all": "Tout déplier",
+  "Truncate long descriptions": "Tronquer les descriptions longues",
+  "Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full":
+    "Tronquer les descriptions longues à quelques lignes avec un lien « Voir plus » ; désactivé pour tout afficher",
+  "Show more": "Voir plus",
+  "Show less": "Voir moins",
   "Open an itinerary, reopen the last one, or load a bundled sample.":
     "Ouvrez un itinéraire, rouvrez le dernier, ou chargez un exemple fourni.",
   "Current file opened:": "Fichier actuellement ouvert :",
@@ -98,6 +110,9 @@ export const FR: Record<string, string> = {
   "Updating…": "Mise à jour…",
   "Checking…": "Vérification…",
   "Check for updates": "Rechercher des mises à jour",
+  "🔄 Update": "🔄 Mettre à jour",
+  "🔄 Checking…": "🔄 Vérification…",
+  "🔄 Updating…": "🔄 Mise à jour…",
 
   // ------------------------------------------------------------ FindingsPanel
   Validation: "Validation",

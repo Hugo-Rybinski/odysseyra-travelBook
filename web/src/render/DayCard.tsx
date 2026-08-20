@@ -9,6 +9,7 @@ import type {
   Transport,
 } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
+import { Clamp } from "./Clamp";
 import { Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { activityNav, fmtDurationMin, navUrl, roadLegs, transportTimes } from "./nav";
@@ -158,17 +159,21 @@ export function DayCard({
         <span className="day-caret" aria-hidden>
           {collapsed ? "▸" : "▾"}
         </span>
-        <span className="day-num">
-          {tr(lang, "day")} {day.day_number}
+        <span className="day-band-body">
+          <span className="day-meta">
+            <span className="day-num">
+              {tr(lang, "day")} {day.day_number}
+            </span>
+            <span className="day-date">{fmtDate(day.date, lang, true)}</span>
+          </span>
+          <span className="day-title">{day.title}</span>
+          {day.city && <span className="day-city">{day.city}</span>}
         </span>
-        <span className="day-date">{fmtDate(day.date, lang, true)}</span>
-        <span className="day-title">{day.title}</span>
-        {day.city && <span className="day-city">{day.city}</span>}
       </header>
 
       {!collapsed && (
         <>
-          {day.description && <p className="day-intro">{day.description}</p>}
+          {day.description && <Clamp className="day-intro" text={day.description} />}
 
           {day.map ? (
             <MapView
@@ -342,14 +347,19 @@ function ActivityRow({
         <ActivityDetails act={act} lang={lang} nav={nav} />
         {act.type === "road" && <RoadVia act={act} lang={lang} />}
         {act.type === "point_of_interest" && <Links lang={lang} website={act.website} />}
-        {act.activities && act.activities.length > 0 && (
-          <ol className="nested">
-            {act.activities.map((sub, i) => (
-              <ActivityRow key={i} act={sub} lang={lang} />
-            ))}
-          </ol>
-        )}
-        {(areaStatic || areaGeo) && (
+      </div>
+      {/* Nested sub-activities and the area map live outside .act-body so they
+          sit in the .act grid: in the content column on desktop, and full-width
+          below the badge on mobile (see the mobile block). */}
+      {act.activities && act.activities.length > 0 && (
+        <ol className="nested">
+          {act.activities.map((sub, i) => (
+            <ActivityRow key={i} act={sub} lang={lang} />
+          ))}
+        </ol>
+      )}
+      {(areaStatic || areaGeo) && (
+        <div className="act-map">
           <MapView
             geo={areaGeo}
             staticMap={areaStatic}
@@ -357,8 +367,8 @@ function ActivityRow({
             caption={areaCaption}
             lang={lang}
           />
-        )}
-      </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -409,7 +419,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
         </p>
       )}
       {trail && <p className="trail">{trail}</p>}
-      {description && <p className="desc">{description}</p>}
+      {description && <Clamp className="desc" text={description} />}
     </div>
   );
 }

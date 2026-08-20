@@ -28,7 +28,7 @@ import {
   putCachedDay,
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
-import { Book } from "./render/Book";
+import { Book, type DayView } from "./render/Book";
 import { Options } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
@@ -114,6 +114,11 @@ export function App() {
   const [exporting, setExporting] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
+  // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
+  // viewer; off shows them in full. Default on.
+  const [clampDescriptions, setClampDescriptions] = useState(true);
+  // Which days start open in the viewer (see DayView). Default: current only.
+  const [daysView, setDaysView] = useState<DayView>("current-only");
   // Which top-level view is showing. Starts on "options" (so a first-run user
   // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
   const [view, setView] = useState<View>("options");
@@ -629,6 +634,17 @@ export function App() {
                   )}
                 </button>
               ))}
+              <button
+                className="menu-item"
+                role="menuitem"
+                disabled={checking || updating}
+                onClick={() => {
+                  checkForUpdate();
+                  setMenuOpen(false);
+                }}
+              >
+                {updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update")}
+              </button>
             </div>
           )}
         </div>
@@ -652,6 +668,10 @@ export function App() {
           currentFile={source?.name}
           interactiveMaps={interactiveMaps}
           setInteractiveMaps={setInteractiveMaps}
+          clampDescriptions={clampDescriptions}
+          setClampDescriptions={setClampDescriptions}
+          daysView={daysView}
+          setDaysView={setDaysView}
           onRedraw={onRedraw}
           redrawing={redrawing}
           inkSaver={inkSaver}
@@ -703,6 +723,8 @@ export function App() {
             lang={lang}
             interactiveMaps={interactiveMaps}
             showMapLoaders={!mapsStale}
+            clampDescriptions={clampDescriptions}
+            daysView={daysView}
           />
         </section>
       ) : source ? (

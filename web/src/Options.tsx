@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Lang } from "./render/format";
+import type { DayView } from "./render/Book";
 import { useT } from "./i18n";
 
 // The options panel: every control that used to live in the top bar, moved into
@@ -35,6 +36,11 @@ export interface OptionsProps {
   setInteractiveMaps: (v: boolean) => void;
   onRedraw: () => void;
   redrawing: boolean;
+  // Display
+  clampDescriptions: boolean;
+  setClampDescriptions: (v: boolean) => void;
+  daysView: DayView;
+  setDaysView: (v: DayView) => void;
   // PDF export
   inkSaver: boolean;
   setInkSaver: (v: boolean) => void;
@@ -77,6 +83,10 @@ export function Options(props: OptionsProps) {
     currentFile,
     interactiveMaps,
     setInteractiveMaps,
+    clampDescriptions,
+    setClampDescriptions,
+    daysView,
+    setDaysView,
     onRedraw,
     redrawing,
     inkSaver,
@@ -195,6 +205,35 @@ export function Options(props: OptionsProps) {
             >
               {redrawing ? t("Redrawing…") : t("Redraw maps")}
             </button>
+          </Tip>
+        </div>
+      </section>
+
+      <section className="opt-group">
+        <h2>{t("Display")}</h2>
+        <p className="opt-desc">{t("How the on-screen travel book shows days and long text.")}</p>
+        <div className="opt-row">
+          <label className="opt-select">
+            {t("Days")}
+            <select value={daysView} onChange={(e) => setDaysView(e.target.value as DayView)}>
+              <option value="collapse-all">{t("Collapse all")}</option>
+              <option value="current-only">{t("Collapse all but the current day")}</option>
+              <option value="expand-all">{t("Expand all")}</option>
+            </select>
+          </label>
+        </div>
+        <div className="opt-row">
+          <Tip
+            text={t("Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full")}
+          >
+            <label className="opt-check">
+              <input
+                type="checkbox"
+                checked={clampDescriptions}
+                onChange={(e) => setClampDescriptions(e.target.checked)}
+              />
+              {t("Truncate long descriptions")}
+            </label>
           </Tip>
         </div>
       </section>

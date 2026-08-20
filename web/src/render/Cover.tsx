@@ -1,5 +1,6 @@
 import type { Day, Itinerary, Transport } from "../types/resolved";
 import { fill, fmtDate, fmtDateRange, tr, type Lang } from "./format";
+import { Clamp } from "./Clamp";
 
 // The cover: title / subtitle / inferred date range / day count / summary, plus
 // a day-by-day overview table (day number, date, the day's highlights, and the
@@ -28,7 +29,7 @@ export function Cover({
         </p>
       </div>
 
-      {itinerary.summary && <p className="cover-summary">{itinerary.summary}</p>}
+      {itinerary.summary && <Clamp className="cover-summary" text={itinerary.summary} />}
 
       <div className="overview">
         <h2>{tr(lang, "overview")}</h2>
@@ -56,7 +57,9 @@ export function Cover({
                   }
                 }}
               >
-                <td className="num">{d.day_number}</td>
+                <td className="num" data-label={tr(lang, "day")}>
+                  {d.day_number}
+                </td>
                 <td className="date">{fmtDate(d.date, lang)}</td>
                 <td>{highlightsOf(d, lang)}</td>
                 <td className="sleep">{sleepLabel(d, lang)}</td>
