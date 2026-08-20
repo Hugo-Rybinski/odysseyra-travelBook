@@ -65,6 +65,26 @@ const SKILLS: Skill[] = [
       "import into Google My Maps — plus the source CSVs and scripts to rebuild it.",
   },
   {
+    file: "build-itinerary-from-guidebook.md",
+    emoji: "📖",
+    title: "Expand a guidebook into a day-by-day itinerary",
+    what:
+      "Turns a guidebook PDF plus a bare-bones outline (just days → destinations) " +
+      "into a detailed, chronological Markdown itinerary: each day expanded with " +
+      "guide-sourced activities and descriptions, clearly-labelled walks/hikes with " +
+      "their metrics, explicit “Route from X to Y” stops, and printed-page citations. " +
+      "It enriches your outline from the guide alone — it never invents facts.",
+    inputs: [
+      "A guidebook PDF for the region — even a scanned, image-only one (the prompt " +
+        "reads pages visually rather than assuming selectable text).",
+      "A very brief trip outline: one line per day with its destination " +
+        "(e.g. “Day 1 → Paris, Day 2 → Mont Saint-Michel…”). No timings needed.",
+    ],
+    output:
+      "A <destination>_<dates>_detailed_itinerary.md you can then feed to the " +
+      "itinerary-JSON prompt above (or edit by hand first).",
+  },
+  {
     file: "fix-missing-duration-distance.md",
     emoji: "📏",
     title: "Fix missing durations & distances",

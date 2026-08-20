@@ -674,6 +674,17 @@ export const FR: Record<string, string> = {
   "A grouped, color-coded guidebook_places_grouped_colored.kml, ready to import into Google My Maps — plus the source CSVs and scripts to rebuild it.":
     "Un fichier guidebook_places_grouped_colored.kml regroupé et coloré, prêt à importer dans Google My Maps — avec les CSV sources et les scripts pour le régénérer.",
 
+  "Expand a guidebook into a day-by-day itinerary":
+    "Développer un guide en un itinéraire jour par jour",
+  "Turns a guidebook PDF plus a bare-bones outline (just days → destinations) into a detailed, chronological Markdown itinerary: each day expanded with guide-sourced activities and descriptions, clearly-labelled walks/hikes with their metrics, explicit “Route from X to Y” stops, and printed-page citations. It enriches your outline from the guide alone — it never invents facts.":
+    "Transforme un PDF de guide et un canevas minimal (juste des jours → destinations) en un itinéraire Markdown détaillé et chronologique : chaque jour développé avec les activités et descriptions tirées du guide, des marches/randonnées clairement identifiées avec leurs données, des étapes explicites « Route de X à Y », et des références aux pages imprimées. Il enrichit votre canevas à partir du guide seul — sans jamais inventer de faits.",
+  "A guidebook PDF for the region — even a scanned, image-only one (the prompt reads pages visually rather than assuming selectable text).":
+    "Un PDF de guide pour la région — même scanné, en images seules (le prompt lit les pages visuellement plutôt que de supposer un texte sélectionnable).",
+  "A very brief trip outline: one line per day with its destination (e.g. “Day 1 → Paris, Day 2 → Mont Saint-Michel…”). No timings needed.":
+    "Un canevas de voyage très bref : une ligne par jour avec sa destination (par ex. « Jour 1 → Paris, Jour 2 → Mont Saint-Michel… »). Aucun horaire nécessaire.",
+  "A <destination>_<dates>_detailed_itinerary.md you can then feed to the itinerary-JSON prompt above (or edit by hand first).":
+    "Un fichier <destination>_<dates>_detailed_itinerary.md que vous pouvez ensuite fournir au prompt de JSON d'itinéraire ci-dessus (ou modifier à la main d'abord).",
+
   "Fix missing durations & distances": "Compléter les durées et distances manquantes",
   "Builds a fill-in-the-blank Markdown worksheet for the roads, hikes and activities that are missing a duration, distance or elevation — one entry per missing value, with Google Maps links for road distances and web-sourced estimates (tagged “to be checked”) for hikes.":
     "Construit une fiche Markdown à compléter pour les routes, randonnées et activités auxquelles il manque une durée, une distance ou un dénivelé — une entrée par valeur manquante, avec des liens Google Maps pour les distances routières et des estimations issues du web (marquées « à vérifier ») pour les randonnées.",
