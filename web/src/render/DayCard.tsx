@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   Activity,
   CarEvent,
@@ -10,7 +10,7 @@ import type {
 } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { Clamp } from "./Clamp";
-import { Links, NavLink } from "./Links";
+import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import {
   activityNav,
@@ -396,13 +396,17 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   } else if (act.type === "meal") {
     if (act.duration_display) bits.push(act.duration_display);
     if (act.area) bits.push(act.area);
-    if (act.address) bits.push(act.address);
   } else if (act.type === "point_of_interest") {
     if (act.duration_display) bits.push(act.duration_display);
-    if (act.address) bits.push(act.address);
   } else if (act.type === "place") {
     if (act.duration_display) bits.push(act.duration_display);
   }
+
+  // The address is rendered as its own clickable AddressLink (navigate by the
+  // address text) rather than as a plain bit, so it complements the
+  // coordinate-based Navigate link.
+  const address =
+    act.type === "meal" || act.type === "point_of_interest" ? act.address : undefined;
 
   // A hike's trailhead line, when the title is the hike name (not start → end).
   const trail =
@@ -412,18 +416,24 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   const description =
     act.type === "point_of_interest" || act.type === "place" ? act.description : "";
 
-  if (!bits.length && !trail && !description && !nav) return null;
+  // Compose the meta line from nodes so the address stays a link amid the
+  // text bits and the Navigate link, all "·"-separated.
+  const chips: ReactNode[] = [];
+  if (bits.length) chips.push(bits.join("  ·  "));
+  if (address) chips.push(<AddressLink key="addr" address={address} />);
+  if (nav) chips.push(<NavLink key="nav" lang={lang} href={nav} />);
+
+  if (!chips.length && !trail && !description) return null;
   return (
     <div className="act-details">
-      {(bits.length > 0 || nav) && (
+      {chips.length > 0 && (
         <p className="chips-line">
-          {bits.join("  ·  ")}
-          {nav && (
-            <>
-              {bits.length > 0 ? "  ·  " : ""}
-              <NavLink lang={lang} href={nav} />
-            </>
-          )}
+          {chips.map((c, i) => (
+            <Fragment key={i}>
+              {i > 0 ? "  ·  " : ""}
+              {c}
+            </Fragment>
+          ))}
         </p>
       )}
       {trail && <p className="trail">{trail}</p>}
@@ -552,28 +562,32 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
     const bookedVia = s.booking_source
       ? fill(tr(lang, "bookedVia"), { source: s.booking_source })
       : "";
-    const sub = [s.address, bookedVia].filter(Boolean).join("  ·  ");
     const where = [s.name, s.city].filter(Boolean).join(", ");
     const nav = navUrl(provider, s.coordinate, s.address, where);
+    // Address (clickable, navigate-by-address), booked-via, then the
+    // coordinate-based Navigate link — all "·"-separated.
+    const subChips: ReactNode[] = [];
+    if (s.address) subChips.push(<AddressLink key="addr" address={s.address} />);
+    if (bookedVia) subChips.push(bookedVia);
+    if (nav) subChips.push(<NavLink key="nav" lang={lang} href={nav} />);
     return (
       <footer className="stay-bar">
         <div className="stay-line">
           <span>
-            🛏 {tr(lang, "tonight")}: <PinDisc label={s.map_pin} />
+            <strong className="tonight">{tr(lang, "tonight")}:</strong> <PinDisc label={s.map_pin} />
             <strong>{s.name}</strong>
             {s.city ? ` (${s.city})` : ""}
           </span>
           {progress && <span className="stay-progress">{progress}</span>}
         </div>
-        {(sub || nav) && (
+        {subChips.length > 0 && (
           <p className="stay-sub">
-            {sub}
-            {nav && (
-              <>
-                {sub ? "  ·  " : ""}
-                <NavLink lang={lang} href={nav} />
-              </>
-            )}
+            {subChips.map((c, i) => (
+              <Fragment key={i}>
+                {i > 0 ? "  ·  " : ""}
+                {c}
+              </Fragment>
+            ))}
           </p>
         )}
         <Links lang={lang} website={s.website} reservation={s.booking_link} />
@@ -586,7 +600,8 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
       <footer className="stay-bar aboard">
         <div className="stay-line">
           <span>
-            🌙 {tr(lang, "tonight")}: {tr(lang, "aboard")} <strong>{leg.title}</strong>
+            🌙 <strong className="tonight">{tr(lang, "tonight")}:</strong> {tr(lang, "aboard")}{" "}
+            <strong>{leg.title}</strong>
           </span>
           <span className="stay-progress">{tr(lang, "onBoard")}</span>
         </div>
@@ -597,7 +612,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   }
   return (
     <footer className="stay-bar none">
-      🛏 {tr(lang, "tonight")}: {tr(lang, "nowhere")}
+      <strong className="tonight">{tr(lang, "tonight")}:</strong> {tr(lang, "nowhere")}
     </footer>
   );
 }

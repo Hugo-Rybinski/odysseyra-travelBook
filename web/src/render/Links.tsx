@@ -2,6 +2,7 @@
 // Reservation — shared across the day timeline and the section cards. Renders
 // nothing when there's nothing to link.
 import { tr, type Lang } from "./format";
+import { navUrl, useMapProvider } from "./nav";
 
 export function Links({
   lang,
@@ -38,6 +39,24 @@ export function NavLink({ lang, href }: { lang: Lang; href?: string }) {
   return (
     <a className="link nav-inline" href={href} target="_blank" rel="noreferrer">
       ({tr(lang, "navigate")})
+    </a>
+  );
+}
+
+// The address text itself, made clickable — it navigates by the *address string*
+// (never coordinates). This complements the coordinate-based Navigate link: when
+// an object has both a coordinate and an address, Navigate goes to the exact
+// point while the address stays clickable as a search by name. Plain text when
+// no maps URL can be built.
+export function AddressLink({ address }: { address?: string | null }) {
+  const provider = useMapProvider();
+  const text = (address ?? "").trim();
+  if (!text) return null;
+  const href = navUrl(provider, null, text);
+  if (!href) return <>{text}</>;
+  return (
+    <a className="link addr-link" href={href} target="_blank" rel="noreferrer">
+      {text}
     </a>
   );
 }

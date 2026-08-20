@@ -246,15 +246,26 @@ class _PDFBase(FPDF):
             return len(lines) * h
         return len(lines) * h if fits else (len(lines) + 1) * h
 
+    def _addr_url(self, coordinate, address: str) -> str:
+        """An address-based maps URL that *complements* the coordinate Navigate
+        link: returned only when BOTH a coordinate and an address exist (so the
+        two differ). The displayed address then stays clickable as a search by
+        name while "(Navigate)" goes to the exact point. "" otherwise."""
+        if coordinate is None or not address:
+            return ""
+        return maps_url(None, address, provider=self.map_provider)
+
     def _line_with_nav(self, x: float, w: float, text: str, coordinate,
                        *query_parts, size: float = 9, h: float = 5,
-                       style: str = "", color=MUTED) -> None:
+                       style: str = "", color=MUTED, text_url: str = "") -> None:
         """Draw ``text`` (wrapped to ``w``, font ``style``/``size``, colour
         ``color``) with a clickable accent "(Navigate)" link right after its
         last line — the link points at ``coordinate``, else the first non-empty
         ``query_parts`` address / place name. The link drops to its own line
         only when it would not fit. With no text, just the link is drawn; with
-        no locatable target, just the text. Advances the cursor below."""
+        no locatable target, just the text. ``text_url`` (see :meth:`_addr_url`)
+        makes the drawn ``text`` itself clickable — an address-based search that
+        complements the coordinate Navigate link. Advances the cursor below."""
         url = maps_url(coordinate, *query_parts, provider=self.map_provider)
         y = self.get_y()
         if not text and not url:
@@ -271,7 +282,7 @@ class _PDFBase(FPDF):
         n = len(lines)
         self.set_xy(x, y)
         self.set_text_color(*color)
-        self.multi_cell(w, h, text)
+        self.multi_cell(w, h, text, link=text_url)
         if not url:
             return
         self.set_font(FONT, "", size)

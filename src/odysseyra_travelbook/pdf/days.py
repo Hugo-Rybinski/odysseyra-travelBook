@@ -110,7 +110,8 @@ class DayMixin:
             self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
                              links=links,
                              nav=maps_url(acc.coordinate, acc.address, where,
-                                          provider=self.map_provider))
+                                          provider=self.map_provider),
+                             addr_url=self._addr_url(acc.coordinate, acc.address))
             return
         leg = self.itinerary.night_transport(day.date)
         if leg is not None:
@@ -122,7 +123,7 @@ class DayMixin:
                              links=links)
 
     def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
-                    links=None, nav: str = "") -> None:
+                    links=None, nav: str = "", addr_url: str = "") -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
@@ -168,7 +169,7 @@ class DayMixin:
         self.set_xy(cx, y + pad + 9)
         self.set_text_color(*MUTED)
         sub_w = self.get_string_width(sub)
-        self.cell(sub_w, 4, sub)
+        self.cell(sub_w, 4, sub, link=addr_url)
         if nav:
             self.set_text_color(*self.accent)
             self.cell(nav_w, 4, nav_label, link=nav)
@@ -286,7 +287,8 @@ class DayMixin:
         w = self.content_width - self.GUTTER
         self.set_xy(x, self.get_y())
         self._line_with_nav(x, w, meta, meal.coordinate, meal.address,
-                            meal.restaurant, meal.area, size=8.5, h=4.5)
+                            meal.restaurant, meal.area, size=8.5, h=4.5,
+                            text_url=self._addr_url(meal.coordinate, meal.address))
         self.ln(1.5)
 
     def _transport_row(self, t) -> None:
@@ -475,7 +477,8 @@ class DayMixin:
         if act.address:
             parts.append(act.address)
         meta = "  ·  ".join(p for p in parts if p)
-        self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name)
+        self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name,
+                            text_url=self._addr_url(act.coordinate, act.address))
         if act.description:
             self._para(x, w, act.description)
         if act.website:
@@ -570,7 +573,8 @@ class DayMixin:
         if meta or maps_url(poi.coordinate, poi.address, poi.name,
                             provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
-                                poi.name, size=8.5, h=4.5)
+                                poi.name, size=8.5, h=4.5,
+                                text_url=self._addr_url(poi.coordinate, poi.address))
         if poi.description:
             self.set_x(tx)
             self.set_font(FONT, "", 9)
@@ -653,7 +657,8 @@ class DayMixin:
         if meta or maps_url(meal.coordinate, meal.address, meal.restaurant,
                             meal.area, provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, meal.coordinate, meal.address,
-                                meal.restaurant, meal.area, size=8.5, h=4.5)
+                                meal.restaurant, meal.area, size=8.5, h=4.5,
+                                text_url=self._addr_url(meal.coordinate, meal.address))
         self.ln(1)
 
 

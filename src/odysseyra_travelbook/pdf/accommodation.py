@@ -88,7 +88,8 @@ class AccommodationMixin:
         self.set_text_color(*MUTED)
         self.set_xy(cx, yy)
         self._line_with_nav(cx, inner_w, acc.address, acc.coordinate,
-                            acc.address, where, size=10, h=5, color=MUTED)
+                            acc.address, where, size=10, h=5, color=MUTED,
+                            text_url=self._addr_url(acc.coordinate, acc.address))
         yy += addr_h
         if acc.contact:
             self.set_xy(cx, yy)

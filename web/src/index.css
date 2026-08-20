@@ -1138,6 +1138,10 @@ body {
 .stay-bar.none {
   color: var(--muted);
 }
+.tonight {
+  color: var(--accent);
+  font-weight: 700;
+}
 .stay-line {
   display: flex;
   gap: 12px;

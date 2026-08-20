@@ -3,7 +3,7 @@ import type { Accommodation, Itinerary } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
-import { Links, NavLink } from "./Links";
+import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, useMapProvider } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
@@ -102,7 +102,7 @@ function StayCard({
           </p>
           {(a.address || a.coordinate) && (
             <p className="card-addr">
-              {a.address}
+              {a.address && <AddressLink address={a.address} />}
               {a.address ? "  " : ""}
               <NavLink lang={lang} href={navUrl(provider, a.coordinate, a.address, where)} />
             </p>
