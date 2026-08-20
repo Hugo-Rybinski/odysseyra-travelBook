@@ -43,37 +43,24 @@ export function activityTitle(a: SrcActivity, index: number, t: TFn): string {
 
 const SCHED_KEYS = ["start_time", "end_time", "duration", "start_tz", "end_tz"] as const;
 
-// A road whose driving time and/or distance is blank: warn and offer a link that
-// opens the chosen map app's directions for start → arrival, where the real
-// figures are shown, so they can be copied back in. Edit-tab only. "Missing"
-// means neither the road-level field nor any per-leg waypoint value is set.
-function RoadCheckOnline({ activity }: { activity: SrcActivity }) {
+// The amber "check online to fill it" hint: names what's missing (travel time /
+// distance / both) and links to the given directions URL when one is available.
+function GapWarning({
+  missingTime,
+  missingDist,
+  href,
+}: {
+  missingTime: boolean;
+  missingDist: boolean;
+  href: string;
+}) {
   const t = useT();
-  const provider = useMapProvider();
-  if (activity.type !== "road") return null;
-
-  const wps = activity.waypoints ?? [];
-  const hasLegDist = wps.some((w) => w.distance_km != null);
-  const hasLegDur = wps.some((w) => (w.duration ?? "").trim() !== "");
-  const missingDist = activity.distance_km == null && !hasLegDist;
-  const missingTime = (activity.duration ?? "").trim() === "" && !hasLegDur;
-  if (!missingDist && !missingTime) return null;
-
-  // Destination = the arrival (last waypoint): its coordinate when set, else name.
-  const last = wps.length ? wps[wps.length - 1] : undefined;
-  const c = last?.coordinate;
-  const destCoord =
-    c && c.lat != null && c.long != null
-      ? { lat: c.lat, long: c.long, show_on_map: c.show_on_map ?? true }
-      : null;
-  const href = directionsUrl(provider, activity.start, destCoord, last?.location);
-
-  const message = missingTime && missingDist
-    ? t("Travel time and distance are missing.")
-    : missingTime
-      ? t("Travel time is missing.")
-      : t("Distance is missing.");
-
+  const message =
+    missingTime && missingDist
+      ? t("Travel time and distance are missing.")
+      : missingTime
+        ? t("Travel time is missing.")
+        : t("Distance is missing.");
   return (
     <p className="road-check">
       <span aria-hidden>⚠️</span> {message}
@@ -87,6 +74,72 @@ function RoadCheckOnline({ activity }: { activity: SrcActivity }) {
       )}
     </p>
   );
+}
+
+function srcCoord(c?: SrcCoordinate) {
+  return c && c.lat != null && c.long != null
+    ? { lat: c.lat, long: c.long, show_on_map: c.show_on_map ?? true }
+    : null;
+}
+
+interface LegGap {
+  index: number; // the waypoint the leg ends at
+  origin: string; // the previous named point, else the road's start
+  destName: string;
+  destCoord: { lat: number; long: number; show_on_map: boolean } | null;
+  missingTime: boolean;
+  missingDist: boolean;
+}
+
+// One entry per NAMED waypoint (a leg end), summing any preceding unnamed
+// (route-shaping) waypoints into that leg — mirroring the viewer's roadLegs
+// merge — so a leg counts as complete if its figures sit on any of its points.
+function roadLegGaps(activity: SrcActivity): LegGap[] {
+  if (activity.type !== "road") return [];
+  const wps = activity.waypoints ?? [];
+  const out: LegGap[] = [];
+  let origin = (activity.start ?? "").trim();
+  let hasDur = false;
+  let hasDist = false;
+  for (let i = 0; i < wps.length; i++) {
+    const w = wps[i];
+    if ((w.duration ?? "").trim() !== "") hasDur = true;
+    if (w.distance_km != null) hasDist = true;
+    if ((w.location ?? "").trim() !== "") {
+      out.push({
+        index: i,
+        origin,
+        destName: w.location ?? "",
+        destCoord: srcCoord(w.coordinate),
+        missingTime: !hasDur,
+        missingDist: !hasDist,
+      });
+      origin = (w.location ?? "").trim() || origin;
+      hasDur = false;
+      hasDist = false;
+    }
+  }
+  return out;
+}
+
+// A single-leg road (0/1 waypoints) whose driving time and/or distance is blank:
+// warn on the road with a start → arrival directions link. Multi-leg roads warn
+// per waypoint instead (see the waypoint editor below).
+function RoadCheckOnline({ activity }: { activity: SrcActivity }) {
+  const provider = useMapProvider();
+  if (activity.type !== "road") return null;
+  const wps = activity.waypoints ?? [];
+  if (wps.length > 1) return null;
+
+  const hasLegDist = wps.some((w) => w.distance_km != null);
+  const hasLegDur = wps.some((w) => (w.duration ?? "").trim() !== "");
+  const missingDist = activity.distance_km == null && !hasLegDist;
+  const missingTime = (activity.duration ?? "").trim() === "" && !hasLegDur;
+  if (!missingDist && !missingTime) return null;
+
+  const last = wps.length ? wps[wps.length - 1] : undefined;
+  const href = directionsUrl(provider, activity.start, srcCoord(last?.coordinate), last?.location);
+  return <GapWarning missingTime={missingTime} missingDist={missingDist} href={href} />;
 }
 
 // Carry the scheduling fields across a type change so re-typing an activity
@@ -115,9 +168,15 @@ export interface ActivityFormProps {
 
 export function ActivityForm({ activity, path, onChange, allowedTypes, allowNesting }: ActivityFormProps) {
   const t = useT();
+  const provider = useMapProvider();
   const type = activity.type;
   const rec = activity as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcActivity);
+
+  // Per-leg gaps for a multi-leg road, keyed by the waypoint they end at, so the
+  // "check online" hint sits on the waypoint that's missing its figures.
+  const legGaps = roadLegGaps(activity);
+  const multiLegRoad = type === "road" && (activity.waypoints ?? []).length > 1;
 
   // A hand-edited draft may carry an unknown/absent type; fall back to the
   // scheduling fields only (ACTIVITY_FIELDS[type] would be undefined → a
@@ -194,25 +253,38 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
             itemTitle={(w, i) => w.location || t("Waypoint {n}", { n: i + 1 })}
             add={[{ label: t("waypoint"), make: newWaypoint }]}
             emptyLabel={t("No waypoints — a road needs at least one (the arrival).")}
-            renderItem={(w, _i, onItemChange, itemPath) => (
-              <>
-                <div className="box-findings">
-                  <FieldFindings path={itemPath} />
-                </div>
-                <FieldList
-                  specs={WAYPOINT_FIELDS}
-                  value={w as unknown as Rec}
-                  path={itemPath}
-                  onChange={(next) => onItemChange(next as unknown as SrcWaypoint)}
-                />
-                <CoordinateField
-                  path={`${itemPath}.coordinate`}
-                  value={w.coordinate}
-                  geocodeQuery={w.location}
-                  onChange={(c: SrcCoordinate | undefined) => onItemChange({ ...w, coordinate: c })}
-                />
-              </>
-            )}
+            renderItem={(w, i, onItemChange, itemPath) => {
+              // On a multi-leg road, this named waypoint's leg may be missing its
+              // travel time / distance — hint here (not on the road) with a link
+              // to the map for this leg (previous point → this waypoint).
+              const gap = multiLegRoad ? legGaps.find((l) => l.index === i) : undefined;
+              return (
+                <>
+                  <div className="box-findings">
+                    <FieldFindings path={itemPath} />
+                  </div>
+                  <FieldList
+                    specs={WAYPOINT_FIELDS}
+                    value={w as unknown as Rec}
+                    path={itemPath}
+                    onChange={(next) => onItemChange(next as unknown as SrcWaypoint)}
+                  />
+                  {gap && (gap.missingTime || gap.missingDist) && (
+                    <GapWarning
+                      missingTime={gap.missingTime}
+                      missingDist={gap.missingDist}
+                      href={directionsUrl(provider, gap.origin, gap.destCoord, gap.destName)}
+                    />
+                  )}
+                  <CoordinateField
+                    path={`${itemPath}.coordinate`}
+                    value={w.coordinate}
+                    geocodeQuery={w.location}
+                    onChange={(c: SrcCoordinate | undefined) => onItemChange({ ...w, coordinate: c })}
+                  />
+                </>
+              );
+            }}
           />
         </section>
       )}
