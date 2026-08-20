@@ -2,6 +2,7 @@ import { useCallback, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
 import type { Lang } from "./format";
 import { paletteVars } from "./palette";
+import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
 import { TransportList } from "./TransportList";
@@ -18,6 +19,7 @@ export function Book({
   lang,
   interactiveMaps = false,
   showMapLoaders = true,
+  clampDescriptions = true,
 }: {
   itinerary: Itinerary;
   lang: Lang;
@@ -25,6 +27,9 @@ export function Book({
   // When false, days without a rendered map show nothing instead of a loader —
   // used after a plain Apply, whose maps are carried over rather than rebuilt.
   showMapLoaders?: boolean;
+  // When true (default), long descriptions truncate to a few lines with a
+  // "Show more" toggle; when false they're shown in full.
+  clampDescriptions?: boolean;
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
@@ -52,6 +57,7 @@ export function Book({
   }, []);
 
   return (
+    <ClampProvider value={clampDescriptions}>
     <div className="book" style={style}>
       <Cover itinerary={itinerary} lang={lang} onJump={jump} />
       <div className="days">
@@ -70,5 +76,6 @@ export function Book({
       <TransportList itinerary={itinerary} lang={lang} />
       <AccommodationSummary itinerary={itinerary} lang={lang} />
     </div>
+    </ClampProvider>
   );
 }

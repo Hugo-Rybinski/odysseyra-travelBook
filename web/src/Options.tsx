@@ -35,6 +35,9 @@ export interface OptionsProps {
   setInteractiveMaps: (v: boolean) => void;
   onRedraw: () => void;
   redrawing: boolean;
+  // Display
+  clampDescriptions: boolean;
+  setClampDescriptions: (v: boolean) => void;
   // PDF export
   inkSaver: boolean;
   setInkSaver: (v: boolean) => void;
@@ -77,6 +80,8 @@ export function Options(props: OptionsProps) {
     currentFile,
     interactiveMaps,
     setInteractiveMaps,
+    clampDescriptions,
+    setClampDescriptions,
     onRedraw,
     redrawing,
     inkSaver,
@@ -195,6 +200,25 @@ export function Options(props: OptionsProps) {
             >
               {redrawing ? t("Redrawing…") : t("Redraw maps")}
             </button>
+          </Tip>
+        </div>
+      </section>
+
+      <section className="opt-group">
+        <h2>{t("Display")}</h2>
+        <p className="opt-desc">{t("How the on-screen travel book shows long text.")}</p>
+        <div className="opt-row">
+          <Tip
+            text={t("Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full")}
+          >
+            <label className="opt-check">
+              <input
+                type="checkbox"
+                checked={clampDescriptions}
+                onChange={(e) => setClampDescriptions(e.target.checked)}
+              />
+              {t("Truncate long descriptions")}
+            </label>
           </Tip>
         </div>
       </section>

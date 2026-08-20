@@ -9,6 +9,7 @@ import type {
   Transport,
 } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
+import { Clamp } from "./Clamp";
 import { Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { activityNav, fmtDurationMin, navUrl, roadLegs, transportTimes } from "./nav";
@@ -168,7 +169,7 @@ export function DayCard({
 
       {!collapsed && (
         <>
-          {day.description && <p className="day-intro">{day.description}</p>}
+          {day.description && <Clamp className="day-intro" text={day.description} />}
 
           {day.map ? (
             <MapView
@@ -409,7 +410,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
         </p>
       )}
       {trail && <p className="trail">{trail}</p>}
-      {description && <p className="desc">{description}</p>}
+      {description && <Clamp className="desc" text={description} />}
     </div>
   );
 }

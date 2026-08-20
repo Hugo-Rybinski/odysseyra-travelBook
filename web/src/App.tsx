@@ -114,6 +114,9 @@ export function App() {
   const [exporting, setExporting] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
+  // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
+  // viewer; off shows them in full. Default on.
+  const [clampDescriptions, setClampDescriptions] = useState(true);
   // Which top-level view is showing. Starts on "options" (so a first-run user
   // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
   const [view, setView] = useState<View>("options");
@@ -629,6 +632,17 @@ export function App() {
                   )}
                 </button>
               ))}
+              <button
+                className="menu-item"
+                role="menuitem"
+                disabled={checking || updating}
+                onClick={() => {
+                  checkForUpdate();
+                  setMenuOpen(false);
+                }}
+              >
+                {updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update")}
+              </button>
             </div>
           )}
         </div>
@@ -652,6 +666,8 @@ export function App() {
           currentFile={source?.name}
           interactiveMaps={interactiveMaps}
           setInteractiveMaps={setInteractiveMaps}
+          clampDescriptions={clampDescriptions}
+          setClampDescriptions={setClampDescriptions}
           onRedraw={onRedraw}
           redrawing={redrawing}
           inkSaver={inkSaver}
@@ -703,6 +719,7 @@ export function App() {
             lang={lang}
             interactiveMaps={interactiveMaps}
             showMapLoaders={!mapsStale}
+            clampDescriptions={clampDescriptions}
           />
         </section>
       ) : source ? (
