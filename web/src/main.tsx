@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { PwaProvider } from "./pwa/PwaProvider";
 import "./index.css";
+import "./tipPosition";
 
 // The service worker is registered by useRegisterSW() inside <PwaStatus/>, which
 // also surfaces the update-available / offline-ready toasts.

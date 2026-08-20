@@ -6,6 +6,9 @@
   --border: #e2e5e8;
   --accent: #122e4b;
   --topbar-h: 64px;
+  /* horizontal page gutter; full-bleed elements (top bar, toasts) cancel it with
+     a negative margin, so they must all reference this one value */
+  --gutter: 16px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: var(--fg);
 }
@@ -14,26 +17,39 @@
   box-sizing: border-box;
 }
 
+/* Navy overscroll: the pull-to-refresh rubber-band above the sticky top bar
+   should show navy (a continuation of the bar), not the light page background.
+   Both html and body are navy (browsers differ on which paints the overscroll
+   canvas); the light page background lives on #root, which spans the full
+   viewport, so the visible page is unchanged and navy only shows on overscroll. */
+html,
 body {
   margin: 0;
+  background: var(--accent);
+}
+#root {
+  min-height: 100vh;
   background: var(--bg);
 }
 
 .shell {
   max-width: 860px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 var(--gutter) 48px;
 }
 
 .topbar {
   position: sticky;
   top: 0;
   z-index: 40;
-  display: flex;
+  /* three columns with equal-weight sides so the title's middle column is
+     centered in the bar regardless of the logo / burger widths */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 12px;
-  margin: 0 -16px 24px;
-  padding: 0 16px;
+  margin: 0 calc(-1 * var(--gutter)) 24px;
+  padding: 0 var(--gutter);
   color: #fff;
   background: var(--accent);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
@@ -46,12 +62,21 @@ body {
   width: auto;
   flex: none;
   display: block;
+  justify-self: start;
 }
 
 .topbar h1 {
   font-size: 1.1rem;
   margin: 0;
-  flex: 1;
+  justify-self: center;
+  text-align: center;
+  max-width: 100%;
+  /* let the title shrink and ellipsize rather than pushing the burger off-screen
+     on narrow viewports */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actions {
@@ -65,6 +90,7 @@ body {
 .menu {
   position: relative;
   flex: none;
+  justify-self: end;
 }
 .btn.ghost.burger {
   font-size: 1.2rem;
@@ -288,7 +314,9 @@ body {
   top: calc(100% + 6px);
   z-index: 300;
   width: max-content;
-  max-width: 260px;
+  /* never wider than the viewport, so it wraps to more lines instead of being
+     clipped on a narrow screen */
+  max-width: min(260px, calc(100vw - 24px));
   padding: 7px 10px;
   border-radius: 6px;
   background: #1a1a1a;
@@ -300,6 +328,14 @@ body {
   white-space: normal;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+}
+/* When a left-anchored bubble wouldn't fit, tipPosition.ts adds `.tip-flip` and
+   we right-anchor it so it opens leftward and stays on screen. */
+[data-tip].tip-flip:hover::after,
+[data-tip].tip-flip:focus-visible::after,
+[data-tip].tip-flip:focus-within::after {
+  left: auto;
+  right: 0;
 }
 /* disabled controls eat pointer events, so route the hover to the `.tip`
    wrapper (buttons) or the `.opt-check` label (checkboxes) that carries the tip */
@@ -508,7 +544,7 @@ body {
   z-index: 50;
   display: grid;
   gap: 8px;
-  margin: 0 -16px;
+  margin: 0 calc(-1 * var(--gutter));
 }
 .toasts:empty {
   display: none;
@@ -1605,4 +1641,75 @@ textarea.edit-input {
 }
 .btn.ghost.active .dirty-dot {
   color: #b26a00;
+}
+
+/* ================================================================== mobile */
+/* Phones and small tablets: a shorter top bar, roomier tap targets, tighter
+   page gutters, and a few font trims so nothing overflows a narrow viewport. */
+@media (max-width: 640px) {
+  :root {
+    /* a shorter bar (and logo) so it doesn't dominate a small screen; the
+       sticky edit-actions offset tracks this automatically */
+    --topbar-h: 48px;
+    /* tighter page gutter — the full-bleed top bar/toasts track it via var */
+    --gutter: 12px;
+  }
+  .shell {
+    padding-bottom: 40px;
+  }
+  .topbar {
+    gap: 8px;
+  }
+  .topbar h1 {
+    font-size: 1rem;
+  }
+
+  /* comfortable touch targets (≈44px) for the controls a finger taps */
+  .btn {
+    padding: 10px 14px;
+  }
+  .btn.ghost.burger {
+    font-size: 1.35rem;
+    padding: 6px 12px;
+  }
+  .menu-item {
+    padding: 12px 14px;
+  }
+  .menu-list {
+    min-width: 200px;
+  }
+  .seg-btn {
+    padding: 9px 16px;
+  }
+  .opt-check {
+    padding: 4px 0;
+  }
+
+  .options-title {
+    font-size: 1.3rem;
+  }
+
+  /* the floating edit action bar: let its buttons stretch to fill each wrapped
+     row so they're easy to hit, and tighten the gap */
+  .edit-actions {
+    gap: 8px;
+  }
+
+  /* trim the itinerary cover/type headings so they don't wrap awkwardly */
+  .cover-band {
+    padding: 22px 18px;
+  }
+  .cover-band h1 {
+    font-size: 1.4rem;
+  }
+  .cover-summary,
+  .overview {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  /* a little less tall so the map + surrounding content fit a phone screen */
+  .day-map-gl .gl-canvas {
+    height: 300px;
+  }
 }
