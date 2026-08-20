@@ -29,6 +29,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
+import type { MapProvider } from "./render/nav";
 import { Options, FileGroup } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
@@ -122,6 +123,8 @@ export function App() {
   const [daysView, setDaysView] = useState<DayView>("collapse-past");
   const [transportView, setTransportView] = useState<DayView>("collapse-past");
   const [accommodationView, setAccommodationView] = useState<DayView>("collapse-past");
+  // Which mapping app the viewer's "Navigate" links open. Default Google Maps.
+  const [mapProvider, setMapProvider] = useState<MapProvider>("google");
   // Which top-level view is showing. Starts on "viewer": with no file open its
   // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
   // first-run user can open a file without visiting Options.
@@ -401,7 +404,7 @@ export function App() {
     setExporting(true);
     setError(null);
     try {
-      const bytes = await buildPdf(source.text, { lang, inkSaver, maps: mapsExport });
+      const bytes = await buildPdf(source.text, { lang, inkSaver, maps: mapsExport, mapProvider });
       const base = itinerary?.title || source.name || "odysseyra";
       downloadBytes(bytes, `${slugify(base)}.pdf`);
     } catch (e) {
@@ -409,7 +412,7 @@ export function App() {
     } finally {
       setExporting(false);
     }
-  }, [source, lang, inkSaver, mapsExport, itinerary]);
+  }, [source, lang, inkSaver, mapsExport, mapProvider, itinerary]);
 
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.
@@ -685,6 +688,8 @@ export function App() {
           setTransportView={setTransportView}
           accommodationView={accommodationView}
           setAccommodationView={setAccommodationView}
+          mapProvider={mapProvider}
+          setMapProvider={setMapProvider}
           onRedraw={onRedraw}
           redrawing={redrawing}
           inkSaver={inkSaver}
@@ -735,7 +740,13 @@ export function App() {
         />
       ) : view === "transport" && itinerary ? (
         <section className="report">
-          <Book itinerary={itinerary} lang={lang} show="transport" transportView={transportView} />
+          <Book
+            itinerary={itinerary}
+            lang={lang}
+            show="transport"
+            transportView={transportView}
+            mapProvider={mapProvider}
+          />
         </section>
       ) : view === "accommodations" && itinerary ? (
         <section className="report">
@@ -744,6 +755,7 @@ export function App() {
             lang={lang}
             show="accommodations"
             accommodationView={accommodationView}
+            mapProvider={mapProvider}
           />
         </section>
       ) : itinerary ? (
@@ -755,6 +767,7 @@ export function App() {
             showMapLoaders={!mapsStale}
             clampDescriptions={clampDescriptions}
             daysView={daysView}
+            mapProvider={mapProvider}
           />
         </section>
       ) : source ? (

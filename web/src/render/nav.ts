@@ -1,23 +1,66 @@
 // Client-side helpers that mirror bits of the Python renderer/model so the UI
 // can offer the same links and leg breakdown without another round-trip.
+import { createContext, useContext } from "react";
 import type { Activity, Coordinate, Transport, Waypoint } from "../types/resolved";
 
-// A Google Maps URL to the first available location — the exact coordinate, else
-// the first non-empty name — mirroring models.geo.maps_url. "" when nothing is
-// locatable. The same URL opens navigation on mobile and Maps on desktop.
+// Which mapping app the "Navigate" links open. Chosen in Options and shared with
+// every render component via MapProviderContext (default Google Maps).
+export type MapProvider = "google" | "apple" | "osm" | "waze" | "mapsme";
+
+// The picker's options, in display order. Labels are plain product names, so
+// they read the same in both languages (no translation needed).
+export const MAP_PROVIDERS: { id: MapProvider; label: string }[] = [
+  { id: "google", label: "Google Maps" },
+  { id: "apple", label: "Apple Plans / Maps" },
+  { id: "osm", label: "OpenStreetMap" },
+  { id: "waze", label: "Waze" },
+  { id: "mapsme", label: "MAPS.ME" },
+];
+
+export const MapProviderContext = createContext<MapProvider>("google");
+export const useMapProvider = (): MapProvider => useContext(MapProviderContext);
+
+// A URL to the first available location — the exact coordinate, else the first
+// non-empty name — in the chosen mapping app. "" when nothing is locatable. The
+// URL opens navigation on mobile and the map on desktop.
 export function navUrl(
+  provider: MapProvider,
   coordinate: Coordinate | null | undefined,
   ...names: (string | null | undefined)[]
 ): string {
-  let query = "";
   if (coordinate) {
-    query = `${coordinate.lat},${coordinate.long}`;
-  } else {
-    const name = names.find((n) => n && n.trim());
-    if (!name) return "";
-    query = name.trim();
+    const { lat, long } = coordinate;
+    switch (provider) {
+      case "apple":
+        return `https://maps.apple.com/?ll=${lat},${long}&q=${encodeURIComponent(`${lat},${long}`)}`;
+      case "osm":
+        return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${long}#map=16/${lat}/${long}`;
+      case "waze":
+        return `https://waze.com/ul?ll=${lat},${long}&navigate=yes`;
+      case "mapsme":
+        // MAPS.ME only opens via its app-scheme deep link (no web fallback).
+        return `mapsme://map?v=1&ll=${lat},${long}&zoom=16`;
+      case "google":
+      default:
+        return `https://www.google.com/maps/search/?api=1&query=${lat},${long}`;
+    }
   }
-  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query);
+  const name = names.find((n) => n && n.trim());
+  if (!name) return "";
+  const q = encodeURIComponent(name.trim());
+  switch (provider) {
+    case "apple":
+      return `https://maps.apple.com/?q=${q}`;
+    case "osm":
+      return `https://www.openstreetmap.org/search?query=${q}`;
+    case "waze":
+      return `https://waze.com/ul?q=${q}&navigate=yes`;
+    case "mapsme":
+      return `mapsme://search?query=${q}`;
+    case "google":
+    default:
+      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  }
 }
 
 export interface RoadLeg {
@@ -107,7 +150,7 @@ export function transportTimes(t: Transport): string {
 }
 
 /** The navigate target for an activity (its coordinate, else a sensible name). */
-export function activityNav(act: Activity): string {
+export function activityNav(provider: MapProvider, act: Activity): string {
   const names: (string | undefined)[] = [
     act.type === "road" ? act.destination : undefined,
     act.address,
@@ -118,5 +161,5 @@ export function activityNav(act: Activity): string {
     act.area,
   ];
   const coord = act.type === "road" ? act.waypoints?.at(-1)?.coordinate ?? null : act.coordinate;
-  return navUrl(coord, ...names);
+  return navUrl(provider, coord, ...names);
 }

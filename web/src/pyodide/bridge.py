@@ -248,11 +248,12 @@ def geocode(text_query, countrycodes=""):
         return json.dumps({"error": str(exc)})
 
 
-def build(text, lang="en", ink_saver=False, maps=None):
+def build(text, lang="en", ink_saver=False, maps=None, map_provider="google"):
     itinerary = Itinerary.from_dict(json.loads(text))
     out = "/tmp/odysseyra-out.pdf"
     # `maps=None` leaves the file's own `include_maps_in_render` in force; the
     # browser HTTP seam (installed above) lets tiles/routes/geocoding work.
-    build_pdf(itinerary, out, lang=lang, ink_saver=ink_saver, maps=maps)
+    build_pdf(itinerary, out, lang=lang, ink_saver=ink_saver, maps=maps,
+              map_provider=map_provider)
     with open(out, "rb") as fh:
         return fh.read()

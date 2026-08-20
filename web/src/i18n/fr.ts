@@ -77,6 +77,9 @@ export const FR: Record<string, string> = {
     "Choisissez la langue de la visionneuse et des exports PDF.",
   "Turn on interactive maps and rebuild this file's cached map images.":
     "Activez les cartes interactives et reconstruisez les images de carte en cache de ce fichier.",
+  "Choose the navigation app, turn on interactive maps, and rebuild this file's cached map images.":
+    "Choisissez l'application de navigation, activez les cartes interactives et reconstruisez les images de carte en cache de ce fichier.",
+  "Navigate links open in": "Les liens « Naviguer » s'ouvrent dans",
   "Choose print options, then export the print-ready PDF.":
     "Choisissez les options d'impression, puis exportez le PDF prêt à imprimer.",
   "Install Odysseyra on this device and check for updates.":

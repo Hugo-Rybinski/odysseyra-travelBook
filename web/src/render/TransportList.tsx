@@ -4,7 +4,7 @@ import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
 import { Links, NavLink } from "./Links";
-import { navUrl, transportTimes } from "./nav";
+import { navUrl, transportTimes, useMapProvider } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
   plane: "✈️",
@@ -120,8 +120,9 @@ function TransportCard({
       (t.end_date && t.end_date !== t.start_date ? ` → ${fmtDate(t.end_date, lang)}` : "")
     : "";
   const info = [dateStr, transportTimes(t)].filter(Boolean).join("  ·  ");
+  const provider = useMapProvider();
   const booking = transportBooking(t, lang);
-  const navHref = navUrl(t.start_coordinate ?? t.coordinate, t.start);
+  const navHref = navUrl(provider, t.start_coordinate ?? t.coordinate, t.start);
   return (
     <div className={`card ${collapsed ? "collapsed" : ""}`}>
       <CardHead collapsed={collapsed} onToggle={onToggle}>
@@ -193,6 +194,7 @@ function CarRentalCard({
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const provider = useMapProvider();
   const pickup = [
     `${tr(lang, "pickUp")}: ${c.pickup_location}`,
     stampLine(c.pickup, lang),
@@ -228,11 +230,11 @@ function CarRentalCard({
           <p className="card-meta">
             <span>
               {pickup}{"  "}
-              <NavLink lang={lang} href={navUrl(c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
+              <NavLink lang={lang} href={navUrl(provider, c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
             </span>
             <span>
               {dropoff}{"  "}
-              <NavLink lang={lang} href={navUrl(c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
+              <NavLink lang={lang} href={navUrl(provider, c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
             </span>
             {window && <span>{window}</span>}
             {meta && <span>{meta}</span>}

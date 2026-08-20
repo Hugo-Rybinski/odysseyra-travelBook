@@ -8,7 +8,13 @@ from pathlib import Path
 from fpdf import FPDF
 
 from ..lang import DEFAULT_LANGUAGE, fmt_date, tr
-from ..models import Itinerary, _format_tz, format_money, maps_url
+from ..models import (
+    DEFAULT_MAP_PROVIDER,
+    Itinerary,
+    _format_tz,
+    format_money,
+    maps_url,
+)
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 FONT = "DejaVu"  # bundled Unicode font: handles accents, CJK-latin, arrows, …
@@ -36,7 +42,7 @@ def _tint(rgb: tuple[int, int, int], amount: float) -> tuple[int, int, int]:
 
 class _PDFBase(FPDF):
     def __init__(self, itinerary: Itinerary, lang: str = DEFAULT_LANGUAGE,
-                 ink_saver: bool = False):
+                 ink_saver: bool = False, map_provider: str = DEFAULT_MAP_PROVIDER):
         super().__init__(orientation="P", unit="mm", format="A4")
         self.add_font(FONT, "", FONT_DIR / "DejaVuSans.ttf")
         self.add_font(FONT, "B", FONT_DIR / "DejaVuSans-Bold.ttf")
@@ -47,6 +53,8 @@ class _PDFBase(FPDF):
         # header bands, card backgrounds) and draw outlines / thin rules
         # instead, keeping the accent color only for text and hairlines.
         self.ink_saver = ink_saver
+        # Which maps/navigation app the inline "(Navigate)" links open.
+        self.map_provider = map_provider
         self.accent = _hex_to_rgb(itinerary.cover_color)
         self.default_tz = itinerary.default_timezone
 
@@ -230,7 +238,7 @@ class _PDFBase(FPDF):
                      size: float = 9, h: float = 5, style: str = "") -> float:
         """The height :meth:`_line_with_nav` will consume for these arguments
         (so cards can reserve exactly the right space)."""
-        url = maps_url(coordinate, *query_parts)
+        url = maps_url(coordinate, *query_parts, provider=self.map_provider)
         if not text:
             return h if url else 0
         lines, _, _, _, fits = self._nav_geom(text, w, size, style)
@@ -247,7 +255,7 @@ class _PDFBase(FPDF):
         ``query_parts`` address / place name. The link drops to its own line
         only when it would not fit. With no text, just the link is drawn; with
         no locatable target, just the text. Advances the cursor below."""
-        url = maps_url(coordinate, *query_parts)
+        url = maps_url(coordinate, *query_parts, provider=self.map_provider)
         y = self.get_y()
         if not text and not url:
             return

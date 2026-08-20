@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Lang } from "./render/format";
 import type { DayView } from "./render/Book";
+import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
 import { useT } from "./i18n";
 
 // The options panel: every control that used to live in the top bar, moved into
@@ -45,6 +46,8 @@ export interface OptionsProps {
   setTransportView: (v: DayView) => void;
   accommodationView: DayView;
   setAccommodationView: (v: DayView) => void;
+  mapProvider: MapProvider;
+  setMapProvider: (v: MapProvider) => void;
   // PDF export
   inkSaver: boolean;
   setInkSaver: (v: boolean) => void;
@@ -175,6 +178,8 @@ export function Options(props: OptionsProps) {
     setTransportView,
     accommodationView,
     setAccommodationView,
+    mapProvider,
+    setMapProvider,
     onRedraw,
     redrawing,
     inkSaver,
@@ -257,7 +262,22 @@ export function Options(props: OptionsProps) {
 
       <section className="opt-group">
         <h2>{t("Maps")}</h2>
-        <p className="opt-desc">{t("Turn on interactive maps and rebuild this file's cached map images.")}</p>
+        <p className="opt-desc">{t("Choose the navigation app, turn on interactive maps, and rebuild this file's cached map images.")}</p>
+        <div className="opt-row">
+          <label className="opt-select">
+            {t("Navigate links open in")}
+            <select
+              value={mapProvider}
+              onChange={(e) => setMapProvider(e.target.value as MapProvider)}
+            >
+              {MAP_PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="opt-row">
           <Tip
             text={

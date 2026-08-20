@@ -109,7 +109,8 @@ class DayMixin:
                      (self.t("Reservation"), acc.booking_link)]
             self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
                              links=links,
-                             nav=maps_url(acc.coordinate, acc.address, where))
+                             nav=maps_url(acc.coordinate, acc.address, where,
+                                          provider=self.map_provider))
             return
         leg = self.itinerary.night_transport(day.date)
         if leg is not None:
@@ -388,7 +389,7 @@ class DayMixin:
         ) if p)
         coord = (cr.pickup_coordinate if ev.kind == "car_pickup"
                  else cr.dropoff_coordinate) or cr.coordinate
-        if meta or maps_url(coord, ev.location):
+        if meta or maps_url(coord, ev.location, provider=self.map_provider):
             self.set_xy(x, self.get_y())
             self._line_with_nav(x, detail_w, meta, coord, ev.location)
 
@@ -460,7 +461,7 @@ class DayMixin:
                 self.set_text_color(*FAINT)
                 mtext = "   " + "  ·  ".join(meta)
                 self.cell(self.get_string_width(mtext) + 1, 5, mtext)
-            url = maps_url(dest_coord, dest or "")
+            url = maps_url(dest_coord, dest or "", provider=self.map_provider)
             if url:
                 label2 = self.t("(Navigate)")
                 self.set_font(FONT, "", 8.5)
@@ -566,7 +567,8 @@ class DayMixin:
         self.multi_cell(tw, 5, poi.title)
 
         meta = "  ·  ".join(p for p in (poi.duration_display, poi.address) if p)
-        if meta or maps_url(poi.coordinate, poi.address, poi.name):
+        if meta or maps_url(poi.coordinate, poi.address, poi.name,
+                            provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
                                 poi.name, size=8.5, h=4.5)
         if poi.description:
@@ -648,7 +650,8 @@ class DayMixin:
 
         parts = [p for p in (meal.duration_display, meal.address) if p]
         meta = "  ·  ".join(parts)
-        if meta or maps_url(meal.coordinate, meal.address, meal.restaurant, meal.area):
+        if meta or maps_url(meal.coordinate, meal.address, meal.restaurant,
+                            meal.area, provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, meal.coordinate, meal.address,
                                 meal.restaurant, meal.area, size=8.5, h=4.5)
         self.ln(1)

@@ -101,6 +101,7 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 | `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing |
 | `--maps` / `--no-maps` | Force per-day maps on/off, overriding `defaults.include_maps_in_render` |
 | `--map-country CODE` | ISO country code(s) to restrict geocoding to, e.g. `FR` |
+| `--map-provider google\|apple\|osm\|waze\|mapsme` | Which app the inline **(Navigate)** links open (default `google`) |
 | `--cache-dir PATH` | Where to cache map tiles / geocode / route results |
 | `-l`, `--lang en\|fr` | Language of the generated PDF (default `en`) |
 
@@ -354,7 +355,10 @@ Turn it on to geocode the rest from their `name`/`address` at build time
 link (labelled *(S'y rendre)* in French) right next to its address / location
 line — activities, transport, accommodation and car rentals alike. Opening it on
 a phone launches the maps / navigation app with the destination pre-filled; in a
-browser it opens Google Maps. The link points at the object's `coordinate` when
+browser it opens the chosen provider's web map. The target app is Google Maps by
+default, or Apple Maps / OpenStreetMap / Waze / MAPS.ME — pick it with
+`--map-provider` (the web viewer has a matching **Navigate links open in** option
+that also drives its PDF export). The link points at the object's `coordinate` when
 it has one, otherwise it falls back to its `address` / place name, so it appears
 even when maps are off and independently of `show_on_map`. A multi-leg `road`
 gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's

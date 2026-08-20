@@ -43,19 +43,53 @@ def _parse_coordinate(value, name: str = "coordinate") -> Coordinate | None:
     return Coordinate.from_dict(value, name)
 
 
-def maps_url(coordinate: "Coordinate | None", *query_parts: str) -> str:
-    """A Google Maps URL pointing at the first available location: the exact
+# The navigation apps a "(Navigate)" link can target. Mirrors the web viewer's
+# MAP_PROVIDERS (see web/src/render/nav.ts) so the two stay in step.
+MAP_PROVIDERS = ("google", "apple", "osm", "waze", "mapsme")
+DEFAULT_MAP_PROVIDER = "google"
+
+
+def maps_url(
+    coordinate: "Coordinate | None",
+    *query_parts: str,
+    provider: str = DEFAULT_MAP_PROVIDER,
+) -> str:
+    """A map/navigation URL pointing at the first available location: the exact
     ``coordinate`` when set, otherwise the first non-empty text part (an address
     or place name). Returns ``""`` when there is nothing locatable.
 
-    Opening the link on a phone launches the maps / navigation app with the
-    destination pre-filled (a tap away from turn-by-turn directions); in a
-    desktop browser it opens Google Maps. Cross-platform by design — the same
-    URL works on iOS, Android and the web."""
+    ``provider`` picks the target app (see :data:`MAP_PROVIDERS`); it defaults to
+    Google Maps. Opening the link on a phone launches that maps / navigation app
+    with the destination pre-filled (a tap away from turn-by-turn directions); in
+    a desktop browser the ``https`` providers open their web map. Google, Apple,
+    OpenStreetMap and Waze are plain cross-platform ``https`` URLs; MAPS.ME uses
+    its app-scheme deep link (no web fallback)."""
     if coordinate is not None:
-        query = f"{coordinate.lat},{coordinate.long}"
-    else:
-        query = next((p.strip() for p in query_parts if p and p.strip()), "")
-        if not query:
-            return ""
-    return "https://www.google.com/maps/search/?api=1&query=" + quote(query, safe=",")
+        lat, long = coordinate.lat, coordinate.long
+        if provider == "apple":
+            ll = f"{lat},{long}"
+            return f"https://maps.apple.com/?ll={ll}&q={quote(ll, safe=',')}"
+        if provider == "osm":
+            return (
+                f"https://www.openstreetmap.org/?mlat={lat}&mlon={long}"
+                f"#map=16/{lat}/{long}"
+            )
+        if provider == "waze":
+            return f"https://waze.com/ul?ll={lat},{long}&navigate=yes"
+        if provider == "mapsme":
+            return f"mapsme://map?v=1&ll={lat},{long}&zoom=16"
+        return f"https://www.google.com/maps/search/?api=1&query={lat},{long}"
+
+    query = next((p.strip() for p in query_parts if p and p.strip()), "")
+    if not query:
+        return ""
+    q = quote(query, safe=",")
+    if provider == "apple":
+        return f"https://maps.apple.com/?q={q}"
+    if provider == "osm":
+        return f"https://www.openstreetmap.org/search?query={q}"
+    if provider == "waze":
+        return f"https://waze.com/ul?q={q}&navigate=yes"
+    if provider == "mapsme":
+        return f"mapsme://search?query={q}"
+    return "https://www.google.com/maps/search/?api=1&query=" + q

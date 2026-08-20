@@ -12,7 +12,14 @@ import { fill, fmtDate, tr, type Lang } from "./format";
 import { Clamp } from "./Clamp";
 import { Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
-import { activityNav, fmtDurationMin, navUrl, roadLegs, transportTimes } from "./nav";
+import {
+  activityNav,
+  fmtDurationMin,
+  navUrl,
+  roadLegs,
+  transportTimes,
+  useMapProvider,
+} from "./nav";
 
 // MapLibre is heavy (~300KB gz) and only needed for the interactive map, so it's
 // code-split into its own chunk loaded on demand (not parsed until interactive
@@ -321,9 +328,10 @@ function ActivityRow({
     );
   }
 
+  const provider = useMapProvider();
   // A multi-leg drive carries its Navigate links per VIA leg (not on the head).
   const multiLeg = act.type === "road" && roadLegs(act.start ?? "", act.waypoints ?? []).length > 1;
-  const nav = multiLeg ? "" : activityNav(act);
+  const nav = multiLeg ? "" : activityNav(provider, act);
   return (
     <li className={`act ${act.type}`}>
       <Gutter
@@ -427,6 +435,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
 // The VIA breakdown for a multi-leg drive: one row per named leg with its own
 // duration/distance and a Navigate link.
 function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
+  const provider = useMapProvider();
   const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
   if (legs.length <= 1) return null;
   return (
@@ -437,7 +446,7 @@ function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
           fmtDurationMin(leg.durationMin),
           leg.distanceKm != null ? `${leg.distanceKm} km` : "",
         ].filter(Boolean);
-        const nav = navUrl(leg.destCoord, leg.dest ?? "");
+        const nav = navUrl(provider, leg.destCoord, leg.dest ?? "");
         return (
           <p key={i} className="via-leg">
             <span className="via-route">
@@ -468,8 +477,9 @@ function transportBooking(t: Transport, lang: Lang): string {
 }
 
 function TransportRow({ t, lang }: { t: Transport; lang: Lang }) {
+  const provider = useMapProvider();
   const booking = transportBooking(t, lang);
-  const nav = navUrl(t.start_coordinate ?? t.coordinate, t.start);
+  const nav = navUrl(provider, t.start_coordinate ?? t.coordinate, t.start);
   return (
     <li className="act transport">
       <Gutter
@@ -500,6 +510,7 @@ function TransportRow({ t, lang }: { t: Transport; lang: Lang }) {
 }
 
 function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
+  const provider = useMapProvider();
   const label = event.kind === "car_pickup" ? tr(lang, "pickUp") : tr(lang, "dropOff");
   const who = [event.company, event.car_model].filter(Boolean).join(" · ");
   return (
@@ -519,7 +530,7 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
         {event.location && (
           <p className="chips-line">
             {event.location}{"  "}
-            <NavLink lang={lang} href={navUrl(null, event.location)} />
+            <NavLink lang={lang} href={navUrl(provider, null, event.location)} />
           </p>
         )}
       </div>
@@ -528,6 +539,7 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
 }
 
 function StayBar({ day, lang }: { day: Day; lang: Lang }) {
+  const provider = useMapProvider();
   if (day.stay) {
     const s = day.stay;
     const total = s.nights;
@@ -542,7 +554,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
       : "";
     const sub = [s.address, bookedVia].filter(Boolean).join("  ·  ");
     const where = [s.name, s.city].filter(Boolean).join(", ");
-    const nav = navUrl(s.coordinate, s.address, where);
+    const nav = navUrl(provider, s.coordinate, s.address, where);
     return (
       <footer className="stay-bar">
         <div className="stay-line">

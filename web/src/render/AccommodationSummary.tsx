@@ -4,7 +4,7 @@ import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
 import { Links, NavLink } from "./Links";
-import { navUrl } from "./nav";
+import { navUrl, useMapProvider } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
   hotel: "🏨",
@@ -75,6 +75,7 @@ function StayCard({
       ? `${a.nights} ${a.nights === 1 ? tr(lang, "night") : tr(lang, "nights")}`
       : "";
 
+  const provider = useMapProvider();
   const bookedVia = a.booking_source
     ? fill(tr(lang, "bookedVia"), { source: a.booking_source })
     : "";
@@ -103,7 +104,7 @@ function StayCard({
             <p className="card-addr">
               {a.address}
               {a.address ? "  " : ""}
-              <NavLink lang={lang} href={navUrl(a.coordinate, a.address, where)} />
+              <NavLink lang={lang} href={navUrl(provider, a.coordinate, a.address, where)} />
             </p>
           )}
           {a.contact && <p className="card-addr">{a.contact}</p>}

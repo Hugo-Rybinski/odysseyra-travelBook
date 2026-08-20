@@ -3,6 +3,7 @@ import type { Itinerary } from "../types/resolved";
 import { tr, type Lang } from "./format";
 import { todayISO, type CollapseView } from "./collapse";
 import { paletteVars } from "./palette";
+import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
@@ -51,6 +52,7 @@ export function Book({
   daysView = "collapse-past",
   transportView = "collapse-past",
   accommodationView = "collapse-past",
+  mapProvider = "google",
   show = "travel",
 }: {
   itinerary: Itinerary;
@@ -67,6 +69,8 @@ export function Book({
   // Which transport / accommodation cards start open (same options as days).
   transportView?: DayView;
   accommodationView?: DayView;
+  // Which mapping app the "Navigate" links open.
+  mapProvider?: MapProvider;
   // Which section this render shows: the trip itself (cover + days), or one of
   // the transport / accommodation summaries (their own pages in the app).
   show?: "travel" | "transport" | "accommodations";
@@ -105,29 +109,34 @@ export function Book({
   if (show === "transport") {
     const empty = !itinerary.transports.length && !itinerary.car_rentals.length;
     return (
-      <div className="book" style={style}>
-        {empty ? (
-          <p className="section-empty">{tr(lang, "noTransport")}</p>
-        ) : (
-          <TransportList itinerary={itinerary} lang={lang} view={transportView} />
-        )}
-      </div>
+      <MapProviderContext.Provider value={mapProvider}>
+        <div className="book" style={style}>
+          {empty ? (
+            <p className="section-empty">{tr(lang, "noTransport")}</p>
+          ) : (
+            <TransportList itinerary={itinerary} lang={lang} view={transportView} />
+          )}
+        </div>
+      </MapProviderContext.Provider>
     );
   }
 
   if (show === "accommodations") {
     return (
-      <div className="book" style={style}>
-        {itinerary.accommodations.length ? (
-          <AccommodationSummary itinerary={itinerary} lang={lang} view={accommodationView} />
-        ) : (
-          <p className="section-empty">{tr(lang, "noAccommodation")}</p>
-        )}
-      </div>
+      <MapProviderContext.Provider value={mapProvider}>
+        <div className="book" style={style}>
+          {itinerary.accommodations.length ? (
+            <AccommodationSummary itinerary={itinerary} lang={lang} view={accommodationView} />
+          ) : (
+            <p className="section-empty">{tr(lang, "noAccommodation")}</p>
+          )}
+        </div>
+      </MapProviderContext.Provider>
     );
   }
 
   return (
+    <MapProviderContext.Provider value={mapProvider}>
     <ClampProvider value={clampDescriptions}>
     <div className="book" style={style}>
       <Cover itinerary={itinerary} lang={lang} onJump={jump} />
@@ -146,5 +155,6 @@ export function Book({
       </div>
     </div>
     </ClampProvider>
+    </MapProviderContext.Provider>
   );
 }

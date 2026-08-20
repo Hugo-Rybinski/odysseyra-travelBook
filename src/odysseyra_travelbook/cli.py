@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from .lang import DEFAULT_LANGUAGE, LANGUAGES, tr
-from .models import Itinerary, ItineraryError
+from .models import DEFAULT_MAP_PROVIDER, MAP_PROVIDERS, Itinerary, ItineraryError
 from .pdf import build_pdf
 from .stitch import (
     SKELETON_DIRS,
@@ -31,7 +31,8 @@ from .validate import format_findings, validate_fragment, validate_text
 
 def _run_build(input_path: Path, output: Path | None, lang: str,
                ink_saver: bool = False, maps: bool | None = None,
-               map_country: str | None = None, cache_dir: Path | None = None) -> int:
+               map_country: str | None = None, cache_dir: Path | None = None,
+               map_provider: str = DEFAULT_MAP_PROVIDER) -> int:
     output = output or input_path.with_suffix(".pdf")
 
     # Surface validation errors (errors only) before building.
@@ -49,7 +50,8 @@ def _run_build(input_path: Path, output: Path | None, lang: str,
             itinerary.inference_countries = [c.strip().upper()
                                              for c in map_country.split(",") if c.strip()]
         path = build_pdf(itinerary, output, lang, ink_saver,
-                         maps=maps, cache_dir=cache_dir)
+                         maps=maps, cache_dir=cache_dir,
+                         map_provider=map_provider)
     except ItineraryError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -193,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
                         "defaults.include_maps_in_render")
     b.add_argument("--map-country", default=None,
                    help="ISO country code(s) to restrict geocoding to, e.g. FR")
+    b.add_argument("--map-provider", choices=MAP_PROVIDERS,
+                   default=DEFAULT_MAP_PROVIDER,
+                   help="which app the inline (Navigate) links open "
+                        f"(default: {DEFAULT_MAP_PROVIDER})")
     b.add_argument("--cache-dir", type=Path, default=None,
                    help="where to cache map tiles / geocode / route results")
     _add_lang(b)
@@ -248,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "build":
         return _run_build(args.input, args.output, args.lang, args.ink_saver,
                           maps=args.maps, map_country=args.map_country,
-                          cache_dir=args.cache_dir)
+                          cache_dir=args.cache_dir, map_provider=args.map_provider)
     parser.print_help()
     return 1
 
