@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/odysseyra-no-bg.svg" alt="Odysseyra" width="140" />
+  <img src="img/logo-white-bg.png" alt="Odysseyra" width="180" />
 </p>
 
 # Odysseyra TravelBook
