@@ -449,7 +449,7 @@ class DayMixin:
             self.set_x(x + 3)
             self.set_font(FONT, "", 9)
             self.set_text_color(*low_accent)
-            label = f"{src or '?'}  →  {dest or self.t('arrival')}"
+            label = f"•  {src or '?'}  →  {dest or self.t('arrival')}"
             self.cell(self.get_string_width(label) + 1, 5, label)
             meta = []
             if dur_min is not None:

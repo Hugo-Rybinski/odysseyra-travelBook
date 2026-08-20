@@ -1065,6 +1065,12 @@ body {
 .via-route {
   color: var(--fg);
 }
+/* Bullet each leg of a multi-leg road (RoadVia only renders for 2+ legs). */
+.via-route::before {
+  content: "•";
+  margin-right: 6px;
+  color: var(--accent);
+}
 .via-meta {
   color: var(--muted);
 }
