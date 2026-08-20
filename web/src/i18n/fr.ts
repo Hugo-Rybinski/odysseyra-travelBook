@@ -656,8 +656,8 @@ export const FR: Record<string, string> = {
   "Build the full itinerary JSON": "Construire le JSON complet de l'itinéraire",
   "Turns raw trip material into one complete, ready-to-render itinerary JSON file. The prompt is self-contained: it carries every field, value format and rule the LLM needs to get the JSON right on the first pass.":
     "Transforme vos documents de voyage en un fichier JSON d'itinéraire complet, prêt à être rendu. Le prompt est autonome : il contient tous les champs, formats de valeurs et règles dont l'IA a besoin pour produire un JSON correct du premier coup.",
-  "Your trip material — a brief, a day-by-day plan, booking-confirmation emails, hotel/rental vouchers, screenshots, a guidebook PDF, links to blog posts, or a KML/KMZ track (e.g. exported from a custom Google Map).":
-    "Vos documents de voyage — un brief, un programme jour par jour, des e-mails de confirmation, des bons d'hôtel/location, des captures d'écran, un PDF de guide, des liens vers des articles de blog, ou une trace KML/KMZ (par ex. exportée depuis une carte Google personnalisée).",
+  "Your trip material — a brief, a day-by-day plan, booking-confirmation emails, hotel/rental vouchers, screenshots, a guidebook PDF, links to blog posts, a KML/KMZ track (e.g. exported from a custom Google Map), a GPX track for a hike or off-road drive, or an MBOX export (e.g. a Gmail label exported via Google Takeout).":
+    "Vos documents de voyage — un brief, un programme jour par jour, des e-mails de confirmation, des bons d'hôtel/location, des captures d'écran, un PDF de guide, des liens vers des articles de blog, une trace KML/KMZ (par ex. exportée depuis une carte Google personnalisée), une trace GPX pour une randonnée ou une piste hors route, ou un export MBOX (par ex. un libellé Gmail exporté via Google Takeout).",
   "The more concrete the sources, the fewer gaps the LLM has to leave blank.":
     "Plus les sources sont concrètes, moins l'IA laisse de champs vides.",
   "A single <title>.json you can open here (Options → Open JSON…), plus a report of the gaps and any conflicts it found between your sources.":

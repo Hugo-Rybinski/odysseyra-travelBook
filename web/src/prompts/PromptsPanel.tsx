@@ -38,7 +38,9 @@ const SKILLS: Skill[] = [
     inputs: [
       "Your trip material — a brief, a day-by-day plan, booking-confirmation " +
         "emails, hotel/rental vouchers, screenshots, a guidebook PDF, links to " +
-        "blog posts, or a KML/KMZ track (e.g. exported from a custom Google Map).",
+        "blog posts, a KML/KMZ track (e.g. exported from a custom Google Map), a " +
+        "GPX track for a hike or off-road drive, or an MBOX export (e.g. a Gmail " +
+        "label exported via Google Takeout).",
       "The more concrete the sources, the fewer gaps the LLM has to leave blank.",
     ],
     output:

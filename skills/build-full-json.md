@@ -7,7 +7,9 @@ only to produce correct JSON. You do **not** run any commands.
 Use this skill when you want to turn a pile of source material (a trip brief,
 booking-confirmation emails, hotel/rental vouchers, screenshots, a day-by-day
 plan, a guidebook PDF, links to blog posts, a KML/KMZ track — e.g. one exported
-from a custom Google Map) **directly into one finished JSON file**.
+from a custom Google Map, a GPX track for a hike or off-road drive, or an MBOX
+export — e.g. a Gmail label exported via Google Takeout) **directly into one
+finished JSON file**.
 
 **This document is self-contained.** Everything you need — the top-level shape,
 every object's fields, the value formats, and all the rules — is here; you do
@@ -29,6 +31,17 @@ JSON you emit must be correct on the first pass.
    only safety net.
 4. Output the finished JSON, then report the gaps and the inconsistencies (see
    the end of this document).
+
+**Mining an MBOX for booking links.** When the source includes an MBOX export
+(e.g. a Gmail label saved via Google Takeout), treat each confirmation email as
+a rich source for the reservation fields — especially the **direct booking
+link**. Scan every message's body (and, where present, the HTML part) for the
+"manage / view / modify your booking" URL and put it in the matching entry's
+`booking_link` (transport or accommodation); do the same for the carrier's or
+property's `website`, and pull the `booking_number`/PNR, `booking_source`,
+`price`, dates and times from the same email. Prefer the stable manage-booking
+URL over one-time tracking links, and never invent a link — only use one that
+actually appears in the email.
 
 ---
 
@@ -454,10 +467,17 @@ One rental-car booking, with its booking window and pick-up / drop-off events.
 
 A `price` is a bare number (write `89`, not `"€89"`). It's in the trip's default
 currency (`defaults.currency`, EUR by default) unless the object sets its own
-`currency` — a 3-letter ISO code that **must** be the default or one of
-`defaults.secondary_currencies` (`validate` errors otherwise). On the PDF each
-price prints in the default currency with the secondary conversions faded in
-parentheses.
+`currency` — a 3-letter ISO code. On the PDF each price prints in the default
+currency with the secondary conversions faded in parentheses.
+
+**Using a currency with no rate yet is fine.** If a booking is priced in a
+currency you have no exchange rate for (say a hotel in `GBP` on a EUR trip),
+still record the price in its real `currency` — do **not** convert it yourself,
+force it into EUR, or drop it. Without a matching `defaults.secondary_currencies`
+entry the PDF simply prints that amount as-is (no conversion), and `validate`
+flags the currency as one to resolve — neither blocks the build. Add a
+`{currency, change_rate}` entry later, once the rate is known, to turn
+conversion on.
 
 ---
 
@@ -629,13 +649,21 @@ your sources.)
 - **A KML/KMZ file is the principal source of truth for coordinates.** When one
   is provided, take every `coordinate` from it. If another document states
   different coordinates for the same place, trust the KML/KMZ.
+- **A GPX track is the principal source of truth for a hike's (or off-road
+  drive's) figures.** When a GPX is provided for a hike, take its `distance_km`,
+  `elevation_m` and start/end from the track. If the prose text states different
+  numbers, use the GPX values in the JSON — but flag the discrepancy in the
+  end-of-run inconsistency report (below), naming both figures.
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
-- **Once you're done, report the inconsistencies.** List every conflict you found
-  between the source documents (a place, date, time, price, coordinate… stated
-  differently in two places) and how you arbitrated each — which source you
-  trusted and why.
+- **Once you're done, report the inconsistencies.** Present them as a **bullet
+  list**, one bullet per conflict, and for each one state clearly: *what* was in
+  conflict (the field/place and the differing values, e.g. "arrival time: email
+  says 14:00, voucher says 14:30"), *which value you chose* for the JSON, and
+  *why* (which source you trusted). Cover every conflict you found between the
+  source documents — a place, date, time, price, coordinate, hike figure…
+  stated differently in two places.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
