@@ -1790,6 +1790,20 @@ textarea.edit-input {
     flex: none;
   }
 
+  /* Tonight box: stack the stay line into one column (name over the night
+     progress) instead of two, so a long stay name gets the full width. */
+  .stay-bar {
+    padding: 12px 14px;
+  }
+  .stay-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .stay-progress {
+    white-space: normal;
+  }
+
   /* The 4-column overview table is too wide for a phone: collapse each day into
      a single stacked card. The click/keyboard jump lives on the <tr>, so it
      keeps working. The hidden header's info is carried inline (the "Day" label
