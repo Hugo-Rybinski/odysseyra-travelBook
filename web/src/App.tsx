@@ -175,7 +175,7 @@ export function App() {
     [lang],
   );
 
-  const { checkForUpdate, checking, updating, canInstall, install, isIOS, isStandalone } =
+  const { checkForUpdate, checking, updating, canInstall, install, isIOS, isStandalone, offlineReady } =
     usePwa();
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
@@ -700,6 +700,8 @@ export function App() {
           install={install}
           isIOS={isIOS}
           isStandalone={isStandalone}
+          online={online}
+          offlineReady={offlineReady}
         />
       ) : view === "findings" && source ? (
         <FindingsPanel findings={findings} />

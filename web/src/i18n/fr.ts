@@ -20,6 +20,9 @@ export const FR: Record<string, string> = {
   "unapplied edits": "modifications non appliquées",
   "Unapplied edits": "Modifications non appliquées",
   "● Engine ready": "● Moteur prêt",
+  "● Online": "● En ligne",
+  "⚡ Offline — the app still works.": "⚡ Hors ligne — l'application fonctionne quand même.",
+  "⚡ Offline": "⚡ Hors ligne",
   " · working…": " · en cours…",
 
   // Boot stages

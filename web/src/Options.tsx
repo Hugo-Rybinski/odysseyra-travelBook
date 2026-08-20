@@ -60,6 +60,9 @@ export interface OptionsProps {
   install: () => void;
   isIOS: boolean;
   isStandalone: boolean;
+  // Connectivity, surfaced here below the title instead of as a floating banner.
+  online: boolean;
+  offlineReady: boolean;
 }
 
 // Anchor a hover/focus tooltip on a control. The bubble is drawn by CSS from the
@@ -187,6 +190,8 @@ export function Options(props: OptionsProps) {
     install,
     isIOS,
     isStandalone,
+    online,
+    offlineReady,
   } = props;
 
   const t = useT();
@@ -213,6 +218,13 @@ export function Options(props: OptionsProps) {
       <p className={`engine ${engineReady ? "ok" : ""}`}>
         {engineReady ? t("● Engine ready") : `◌ ${engineStageLabel}`}
         {busy && t(" · working…")}
+      </p>
+      <p className={`net-status ${online ? "online" : "offline"}`}>
+        {online
+          ? t("● Online")
+          : offlineReady
+            ? t("⚡ Offline — the app still works.")
+            : t("⚡ Offline")}
       </p>
       <div className="options">
       <FileGroup

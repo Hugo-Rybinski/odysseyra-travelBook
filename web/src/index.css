@@ -381,10 +381,21 @@ body {
 .engine {
   font-size: 0.78rem;
   color: var(--muted);
-  margin: 0 0 16px;
+  margin: 0 0 2px;
 }
 .engine.ok {
   color: #1c7c4a;
+}
+.net-status {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.net-status.online {
+  color: #1c7c4a;
+}
+.net-status.offline {
+  color: #b25a00;
 }
 
 .empty-state {
