@@ -58,6 +58,8 @@ export interface OptionsProps {
   updating: boolean;
   canInstall: boolean;
   install: () => void;
+  isIOS: boolean;
+  isStandalone: boolean;
 }
 
 // Anchor a hover/focus tooltip on a control. The bubble is drawn by CSS from the
@@ -183,6 +185,8 @@ export function Options(props: OptionsProps) {
     updating,
     canInstall,
     install,
+    isIOS,
+    isStandalone,
   } = props;
 
   const t = useT();
@@ -360,12 +364,34 @@ export function Options(props: OptionsProps) {
       <section className="opt-group">
         <h2>{t("App")}</h2>
         <p className="opt-desc">{t("Install Odysseyra on this device and check for updates.")}</p>
+        {isStandalone ? (
+          <p className="opt-note">{t("Odysseyra is already installed on this device. ✓")}</p>
+        ) : isIOS ? (
+          // iOS Safari has no install API — guide the manual gesture instead of
+          // showing a button that can never do anything. Installing also only
+          // works from Safari itself (not an in-app browser), so offer a button
+          // that re-opens the current page in Safari via the x-safari- scheme.
+          <>
+            <p className="opt-note">
+              {t(
+                "On iPhone/iPad you must use Safari: tap the Share button, then “Add to Home Screen” to install.",
+              )}
+            </p>
+            <div className="opt-row">
+              <a className="btn" href={`x-safari-${location.href}`}>
+                {t("Open in Safari")}
+              </a>
+            </div>
+          </>
+        ) : null}
         <div className="opt-row">
-          <Tip text={installReason || t("Install Odysseyra TravelBook as an app on this device")}>
-            <button className="btn" onClick={install} disabled={!canInstall}>
-              {t("Install as an app")}
-            </button>
-          </Tip>
+          {!isIOS && !isStandalone && (
+            <Tip text={installReason || t("Install Odysseyra TravelBook as an app on this device")}>
+              <button className="btn" onClick={install} disabled={!canInstall}>
+                {t("Install as an app")}
+              </button>
+            </Tip>
+          )}
           <Tip text={t("Check for a new version and update to it")}>
             <button
               className="btn subtle"

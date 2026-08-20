@@ -111,6 +111,11 @@ export const FR: Record<string, string> = {
   "Install Odysseyra TravelBook as an app on this device":
     "Installer Odysseyra TravelBook comme application sur cet appareil",
   "Install as an app": "Installer comme application",
+  "Odysseyra is already installed on this device. ✓":
+    "Odysseyra est déjà installé sur cet appareil. ✓",
+  "On iPhone/iPad you must use Safari: tap the Share button, then “Add to Home Screen” to install.":
+    "Sur iPhone/iPad, vous devez utiliser Safari : appuyez sur le bouton Partager, puis « Sur l'écran d'accueil » pour installer.",
+  "Open in Safari": "Ouvrir dans Safari",
   "Check for a new version and update to it": "Rechercher une nouvelle version et l'installer",
   "Updating…": "Mise à jour…",
   "Checking…": "Vérification…",

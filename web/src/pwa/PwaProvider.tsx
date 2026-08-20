@@ -30,6 +30,31 @@ interface PwaContextValue {
   updating: boolean; // a new version is being applied (page will reload)
   canInstall: boolean; // the browser offered an install prompt we can replay
   install: () => Promise<void>;
+  // iOS Safari has no install API (`beforeinstallprompt` never fires), so the
+  // button can't work there — the UI shows "Share → Add to Home Screen" instead.
+  isIOS: boolean;
+  // Already running as an installed PWA (standalone) — hide the install UI.
+  isStandalone: boolean;
+}
+
+// iOS Safari (incl. iPadOS pretending to be desktop) — no programmatic install.
+function detectIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    // iPadOS 13+ reports as "MacIntel" but is touch-capable.
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+function detectStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    // Non-standard iOS Safari flag.
+    (navigator as unknown as { standalone?: boolean }).standalone === true
+  );
 }
 
 const PwaContext = createContext<PwaContextValue | null>(null);
@@ -108,6 +133,8 @@ export function PwaProvider({ children }: { children: ReactNode }) {
         updating,
         canInstall: !!installEvt,
         install,
+        isIOS: detectIOS(),
+        isStandalone: detectStandalone(),
       }}
     >
       {children}

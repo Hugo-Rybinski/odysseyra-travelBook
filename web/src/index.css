@@ -223,6 +223,12 @@ body {
   font-size: 0.8rem;
   color: var(--muted);
 }
+.opt-note {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--fg);
+}
 .opt-current-file .filename {
   margin: 0;
   color: var(--fg);

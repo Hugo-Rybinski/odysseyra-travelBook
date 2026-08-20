@@ -35,7 +35,12 @@ export default defineConfig({
       // auto-applies a new version and reloads once, and exposes a manual
       // "Update" button — no DevTools dance to pick up a new deploy.
       registerType: "prompt",
-      includeAssets: ["img/favicon.svg"],
+      includeAssets: [
+        "img/favicon.svg",
+        "img/icon-192.png",
+        "img/icon-512.png",
+        "img/icon-512-maskable.png",
+      ],
       manifest: {
         name: "Odysseyra TravelBook",
         short_name: "Odysseyra",
@@ -45,12 +50,34 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         start_url: "./",
+        // Android Chrome only fires `beforeinstallprompt` (which powers the
+        // "Install as an app" button) when the manifest has real PNG icons at
+        // 192 and 512 — an SVG-only icon set does NOT meet its installability
+        // criteria. Keep the SVG as an extra for crisp scaling.
         icons: [
+          {
+            src: "img/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "img/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "img/icon-512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
           {
             src: "img/favicon.svg",
             sizes: "any",
             type: "image/svg+xml",
-            purpose: "any maskable",
+            purpose: "any",
           },
         ],
       },
