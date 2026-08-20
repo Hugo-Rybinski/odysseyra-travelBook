@@ -4,7 +4,8 @@
   --bg: #f6f7f8;
   --card: #fff;
   --border: #e2e5e8;
-  --accent: #1f4e5f;
+  --accent: #122e4b;
+  --topbar-h: 64px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: var(--fg);
 }
@@ -41,7 +42,7 @@ body {
 .topbar .logo {
   /* Fill the banner top-to-bottom: the logo defines the topbar height (the
      banner has no vertical padding), and the title/actions center against it. */
-  height: 64px;
+  height: var(--topbar-h);
   width: auto;
   flex: none;
   display: block;
@@ -58,6 +59,57 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* The top-bar burger menu that holds the view switcher. */
+.menu {
+  position: relative;
+  flex: none;
+}
+.btn.ghost.burger {
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 6px 10px;
+}
+.menu-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+}
+.menu-item {
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-item:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
+.menu-item.active,
+.menu-item.active:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+.menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.menu-item.active .dirty-dot {
+  color: #ffd479;
 }
 
 .btn {
@@ -99,29 +151,51 @@ body {
 }
 
 /* ---------------------------------------------------------- options panel */
-.options {
-  display: grid;
-  gap: 18px 24px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  align-items: start;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px 20px;
+.options-page {
   margin: 0 0 24px;
 }
+.options-title {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  color: var(--fg);
+}
+.options {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+/* each option group is its own card */
 .opt-group {
   display: grid;
   gap: 8px;
   align-content: start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
 }
 .opt-group h2 {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--fg);
+}
+.opt-desc {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--muted);
+}
+.opt-current-file {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.opt-current-file .filename {
+  margin: 0;
+  color: var(--fg);
+  font-weight: 600;
 }
 .opt-row {
   display: flex;
@@ -142,7 +216,7 @@ body {
 }
 /* a secondary button on the light panel (vs the solid primary .btn above) */
 .options .btn.subtle {
-  background: rgba(31, 78, 95, 0.09);
+  background: rgba(18, 46, 75, 0.09);
   color: var(--accent);
   border-color: transparent;
 }
@@ -1274,7 +1348,7 @@ textarea.edit-input {
 .array-item {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(31, 78, 95, 0.03);
+  background: rgba(18, 46, 75, 0.03);
   /* visible (not hidden) so a nested field's tooltip isn't clipped by the tile */
   overflow: visible;
 }
@@ -1380,7 +1454,7 @@ textarea.edit-input {
 }
 /* reuse the light-panel button styling inside the edit tab */
 .edit-panel .btn.subtle {
-  background: rgba(31, 78, 95, 0.09);
+  background: rgba(18, 46, 75, 0.09);
   color: var(--accent);
   border-color: transparent;
 }
@@ -1467,6 +1541,11 @@ textarea.edit-input {
 
 /* P3: the Apply action bar at the top of the Edit tab */
 .edit-actions {
+  /* Float below the sticky top bar so the Apply / Undo / Save controls stay
+     reachable while scrolling the edit form. */
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 30;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1475,6 +1554,7 @@ textarea.edit-input {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 .edit-actions-sep {
   width: 1px;
@@ -1513,7 +1593,7 @@ textarea.edit-input {
   border-color: var(--accent);
 }
 .empty-state .restore-banner .btn.subtle {
-  background: rgba(31, 78, 95, 0.09);
+  background: rgba(18, 46, 75, 0.09);
   color: var(--accent);
   border-color: transparent;
 }

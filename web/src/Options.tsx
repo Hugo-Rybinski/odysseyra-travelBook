@@ -26,6 +26,10 @@ export interface OptionsProps {
   hasItinerary: boolean;
   mapsInRender: boolean;
   engineReady: boolean;
+  // The translated engine boot-stage label, shown while the engine isn't ready.
+  engineStageLabel: string;
+  // The name of the currently opened file, if any.
+  currentFile?: string;
   // Maps
   interactiveMaps: boolean;
   setInteractiveMaps: (v: boolean) => void;
@@ -69,6 +73,8 @@ export function Options(props: OptionsProps) {
     hasItinerary,
     mapsInRender,
     engineReady,
+    engineStageLabel,
+    currentFile,
     interactiveMaps,
     setInteractiveMaps,
     onRedraw,
@@ -106,9 +112,16 @@ export function Options(props: OptionsProps) {
       );
 
   return (
-    <div className="options" role="region" aria-label={t("Options")}>
+    <section className="options-page" role="region" aria-label={t("Options")}>
+      <h1 className="options-title">{t("Options")}</h1>
+      <p className={`engine ${engineReady ? "ok" : ""}`}>
+        {engineReady ? t("● Engine ready") : `◌ ${engineStageLabel}`}
+        {busy && t(" · working…")}
+      </p>
+      <div className="options">
       <section className="opt-group">
         <h2>{t("File")}</h2>
+        <p className="opt-desc">{t("Open an itinerary, reopen the last one, or load a bundled sample.")}</p>
         <div className="opt-row">
           <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
             <button className="btn" onClick={onOpen} disabled={busy}>
@@ -126,10 +139,16 @@ export function Options(props: OptionsProps) {
             </button>
           </Tip>
         </div>
+        {currentFile && (
+          <p className="opt-current-file">
+            {t("Current file opened:")} <span className="filename">{currentFile}</span>
+          </p>
+        )}
       </section>
 
       <section className="opt-group">
         <h2>{t("Language")}</h2>
+        <p className="opt-desc">{t("Set the language of the viewer and PDF exports.")}</p>
         <div className="opt-row">
           <div className="seg" role="group" aria-label={t("Language")}>
             {(["en", "fr"] as Lang[]).map((l) => (
@@ -148,6 +167,7 @@ export function Options(props: OptionsProps) {
 
       <section className="opt-group">
         <h2>{t("Maps")}</h2>
+        <p className="opt-desc">{t("Turn on interactive maps and rebuild this file's cached map images.")}</p>
         <div className="opt-row">
           <Tip
             text={
@@ -181,6 +201,7 @@ export function Options(props: OptionsProps) {
 
       <section className="opt-group">
         <h2>{t("PDF export")}</h2>
+        <p className="opt-desc">{t("Choose print options, then export the print-ready PDF.")}</p>
         <div className="opt-row">
           <Tip
             text={
@@ -232,6 +253,7 @@ export function Options(props: OptionsProps) {
 
       <section className="opt-group">
         <h2>{t("App")}</h2>
+        <p className="opt-desc">{t("Install Odysseyra on this device and check for updates.")}</p>
         <div className="opt-row">
           <Tip text={installReason || t("Install Odysseyra TravelBook as an app on this device")}>
             <button className="btn" onClick={install} disabled={!canInstall}>
@@ -249,6 +271,7 @@ export function Options(props: OptionsProps) {
           </Tip>
         </div>
       </section>
-    </div>
+      </div>
+    </section>
   );
 }

@@ -50,6 +50,17 @@ export const FR: Record<string, string> = {
   Maps: "Cartes",
   "PDF export": "Export PDF",
   App: "Application",
+  "Open an itinerary, reopen the last one, or load a bundled sample.":
+    "Ouvrez un itinéraire, rouvrez le dernier, ou chargez un exemple fourni.",
+  "Current file opened:": "Fichier actuellement ouvert :",
+  "Set the language of the viewer and PDF exports.":
+    "Choisissez la langue de la visionneuse et des exports PDF.",
+  "Turn on interactive maps and rebuild this file's cached map images.":
+    "Activez les cartes interactives et reconstruisez les images de carte en cache de ce fichier.",
+  "Choose print options, then export the print-ready PDF.":
+    "Choisissez les options d'impression, puis exportez le PDF prêt à imprimer.",
+  "Install Odysseyra on this device and check for updates.":
+    "Installez Odysseyra sur cet appareil et vérifiez les mises à jour.",
   "The engine is still starting…": "Le moteur est encore en cours de démarrage…",
   "No previously opened file to reopen": "Aucun fichier récemment ouvert à rouvrir",
   "This itinerary doesn't enable maps (include_maps_in_render is off)":

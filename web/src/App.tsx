@@ -117,9 +117,29 @@ export function App() {
   // Which top-level view is showing. Starts on "options" (so a first-run user
   // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
   const [view, setView] = useState<View>("options");
+  // The top-bar burger menu (holds the view switcher).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   // A restorable autosaved draft found at startup (P6), offered on the empty
   // state until the user restores or discards it.
   const [restorable, setRestorable] = useState<AutosaveRecord | null>(null);
+
+  // Close the burger menu on an outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   // Serialize the draft once per change; both the live validation and the
   // dirty/unsaved comparisons read it.
@@ -557,45 +577,18 @@ export function App() {
     <I18nProvider lang={lang}>
     <main className="shell">
       <PwaStatus />
-      <header className="topbar" style={{ background: itinerary?.cover_color }}>
+      <header className="topbar">
         <img className="logo" src="/img/odysseyra-white-no-bg.svg" alt="" aria-hidden="true" />
         <h1>{t("Odysseyra TravelBook")}</h1>
-        <div className="actions" role="tablist" aria-label={t("View")}>
+        <div className="menu" ref={menuRef}>
           <button
-            className={`btn ghost ${view === "options" ? "active" : ""}`}
-            onClick={() => setView("options")}
-            role="tab"
-            aria-selected={view === "options"}
+            className="btn ghost burger"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label={t("Menu")}
+            onClick={() => setMenuOpen((o) => !o)}
           >
-            {t("⚙️ Options")}
-          </button>
-          <button
-            className={`btn ghost ${view === "viewer" ? "active" : ""}`}
-            onClick={() => setView("viewer")}
-            role="tab"
-            aria-selected={view === "viewer"}
-          >
-            {t("📖 Travel viewer")}
-          </button>
-          <button
-            className={`btn ghost ${view === "findings" ? "active" : ""}`}
-            onClick={() => source && setView("findings")}
-            role="tab"
-            aria-selected={view === "findings"}
-            aria-disabled={!source}
-            data-tip={source ? undefined : t("Open an itinerary first")}
-          >
-            {t("🔎 Findings")}
-          </button>
-          <button
-            className={`btn ghost ${view === "edit" ? "active" : ""}`}
-            onClick={() => draft && setView("edit")}
-            role="tab"
-            aria-selected={view === "edit"}
-            aria-disabled={!draft}
-            data-tip={draft ? undefined : t("Open an itinerary first")}
-          >
-            {t("✏️ Edit")}
+            ☰
             {dirty && (
               <span className="dirty-dot" aria-label={t("unapplied edits")} title={t("Unapplied edits")}>
                 {" "}
@@ -603,13 +596,43 @@ export function App() {
               </span>
             )}
           </button>
+          {menuOpen && (
+            <div className="menu-list" role="menu" aria-label={t("View")}>
+              {[
+                { id: "viewer" as View, label: t("📖 Travel viewer"), disabled: false, dot: false },
+                { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false },
+                { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty },
+                { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  className={`menu-item ${view === item.id ? "active" : ""}`}
+                  role="menuitem"
+                  aria-current={view === item.id}
+                  disabled={item.disabled}
+                  data-tip={item.disabled ? t("Open an itinerary first") : undefined}
+                  onClick={() => {
+                    setView(item.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {item.label}
+                  {item.dot && (
+                    <span
+                      className="dirty-dot"
+                      aria-label={t("unapplied edits")}
+                      title={t("Unapplied edits")}
+                    >
+                      {" "}
+                      ●
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
-
-      <p className={`engine ${engineReady ? "ok" : ""}`}>
-        {engineReady ? t("● Engine ready") : `◌ ${t(STAGE_LABEL[progress.stage])}`}
-        {busy && t(" · working…")}
-      </p>
 
       {error && <p className="banner error">⚠️ {error}</p>}
 
@@ -625,6 +648,8 @@ export function App() {
           hasItinerary={!!itinerary}
           mapsInRender={!!itinerary?.maps.include_in_render}
           engineReady={engineReady}
+          engineStageLabel={t(STAGE_LABEL[progress.stage])}
+          currentFile={source?.name}
           interactiveMaps={interactiveMaps}
           setInteractiveMaps={setInteractiveMaps}
           onRedraw={onRedraw}
@@ -673,9 +698,6 @@ export function App() {
         />
       ) : itinerary ? (
         <section className="report">
-          <p className="report-caption">
-            {source?.name && <span className="filename">{source.name}</span>}
-          </p>
           <Book
             itinerary={itinerary}
             lang={lang}

@@ -41,7 +41,7 @@ export default defineConfig({
         short_name: "Odysseyra",
         description:
           "Open a local itinerary JSON and render the travel book, with PDF export on the side.",
-        theme_color: "#1f4e5f",
+        theme_color: "#122e4b",
         background_color: "#ffffff",
         display: "standalone",
         start_url: "./",
