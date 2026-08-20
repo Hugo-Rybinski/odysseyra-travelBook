@@ -29,7 +29,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
-import { Options } from "./Options";
+import { Options, FileGroup } from "./Options";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
 import {
@@ -119,9 +119,10 @@ export function App() {
   const [clampDescriptions, setClampDescriptions] = useState(true);
   // Which days start open in the viewer (see DayView). Default: current only.
   const [daysView, setDaysView] = useState<DayView>("current-only");
-  // Which top-level view is showing. Starts on "options" (so a first-run user
-  // can reach "Open JSON…") and switches to "viewer" once a file is loaded.
-  const [view, setView] = useState<View>("options");
+  // Which top-level view is showing. Starts on "viewer": with no file open its
+  // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
+  // first-run user can open a file without visiting Options.
+  const [view, setView] = useState<View>("viewer");
   // The top-bar burger menu (holds the view switcher).
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -763,11 +764,19 @@ export function App() {
             </div>
             <h2>{t("Open an itinerary")}</h2>
             <p>
-              {tx(
-                "Choose an Odysseyra TravelBook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.",
-                { options: <strong>{t("⚙️ Options")}</strong> },
+              {t(
+                "Choose an Odysseyra TravelBook JSON file to render the travel book and see its validation findings. Everything stays on your device.",
               )}
             </p>
+            <div className="empty-file">
+              <FileGroup
+                onOpen={onOpen}
+                onReopen={onReopen}
+                onOpenSample={onOpenSample}
+                canReopen={canReopen}
+                busy={busy}
+              />
+            </div>
             {restorable && (
               <div className="restore-banner" role="status">
                 <span>

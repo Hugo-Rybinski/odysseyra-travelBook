@@ -616,6 +616,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* the File box embedded in the empty state — constrained and left-aligned
+   (the surrounding empty state is centered) */
+.empty-file {
+  max-width: 340px;
+  margin: 20px auto 0;
+  text-align: left;
+}
+
 .section-empty {
   margin: 0;
   padding: 24px 4px;

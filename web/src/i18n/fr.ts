@@ -37,8 +37,8 @@ export const FR: Record<string, string> = {
     "Corrigez les erreurs dans {findings} ou {edit}, puis {apply} pour l'afficher ici.",
   "Apply changes": "Appliquer les modifications",
   "Open an itinerary": "Ouvrir un itinéraire",
-  "Choose an Odysseyra TravelBook JSON file in {options} to render the travel book and see its validation findings. Everything stays on your device.":
-    "Choisissez un fichier JSON Odysseyra TravelBook dans {options} pour afficher le carnet de voyage et voir ses diagnostics de validation. Tout reste sur votre appareil.",
+  "Choose an Odysseyra TravelBook JSON file to render the travel book and see its validation findings. Everything stays on your device.":
+    "Choisissez un fichier JSON Odysseyra TravelBook pour afficher le carnet de voyage et voir ses diagnostics de validation. Tout reste sur votre appareil.",
   "Unsaved edits from a previous session{name} were found.":
     "Des modifications non enregistrées d'une session précédente{name} ont été trouvées.",
   Restore: "Restaurer",

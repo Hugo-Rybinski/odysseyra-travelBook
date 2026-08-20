@@ -67,6 +67,56 @@ function Tip({ text, children }: { text: string; children: ReactNode }) {
   );
 }
 
+// The File group (Open / Reopen / Sample + current-file line). Extracted so it
+// can also stand alone on the empty state, letting a first-run user open a file
+// without going to Options.
+export function FileGroup({
+  onOpen,
+  onReopen,
+  onOpenSample,
+  canReopen,
+  busy,
+  currentFile,
+}: {
+  onOpen: () => void;
+  onReopen: () => void;
+  onOpenSample: () => void;
+  canReopen: boolean;
+  busy: boolean;
+  currentFile?: string;
+}) {
+  const t = useT();
+  const reopenReason = canReopen ? "" : t("No previously opened file to reopen");
+  return (
+    <section className="opt-group">
+      <h2>{t("File")}</h2>
+      <p className="opt-desc">{t("Open an itinerary, reopen the last one, or load a bundled sample.")}</p>
+      <div className="opt-row">
+        <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
+          <button className="btn" onClick={onOpen} disabled={busy}>
+            {t("Open JSON…")}
+          </button>
+        </Tip>
+        <Tip text={reopenReason || t("Reopen the last opened file")}>
+          <button className="btn subtle" onClick={onReopen} disabled={!canReopen || busy}>
+            {t("Reopen last")}
+          </button>
+        </Tip>
+        <Tip text={t("Load the bundled Pyrenees sample itinerary")}>
+          <button className="btn subtle" onClick={onOpenSample} disabled={busy}>
+            {t("Sample")}
+          </button>
+        </Tip>
+      </div>
+      {currentFile && (
+        <p className="opt-current-file">
+          {t("Current file opened:")} <span className="filename">{currentFile}</span>
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function Options(props: OptionsProps) {
   const {
     onOpen,
@@ -108,7 +158,6 @@ export function Options(props: OptionsProps) {
   // (busy / exporting / a check in flight) just disable without an explanation.
   const noFile = t("Open an itinerary first");
   const engineReason = engineReady ? "" : t("The engine is still starting…");
-  const reopenReason = canReopen ? "" : t("No previously opened file to reopen");
   const fileReason = hasItinerary ? "" : noFile;
   const mapsReason = !hasItinerary
     ? noFile
@@ -129,32 +178,14 @@ export function Options(props: OptionsProps) {
         {busy && t(" · working…")}
       </p>
       <div className="options">
-      <section className="opt-group">
-        <h2>{t("File")}</h2>
-        <p className="opt-desc">{t("Open an itinerary, reopen the last one, or load a bundled sample.")}</p>
-        <div className="opt-row">
-          <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
-            <button className="btn" onClick={onOpen} disabled={busy}>
-              {t("Open JSON…")}
-            </button>
-          </Tip>
-          <Tip text={reopenReason || t("Reopen the last opened file")}>
-            <button className="btn subtle" onClick={onReopen} disabled={!canReopen || busy}>
-              {t("Reopen last")}
-            </button>
-          </Tip>
-          <Tip text={t("Load the bundled Pyrenees sample itinerary")}>
-            <button className="btn subtle" onClick={onOpenSample} disabled={busy}>
-              {t("Sample")}
-            </button>
-          </Tip>
-        </div>
-        {currentFile && (
-          <p className="opt-current-file">
-            {t("Current file opened:")} <span className="filename">{currentFile}</span>
-          </p>
-        )}
-      </section>
+      <FileGroup
+        onOpen={onOpen}
+        onReopen={onReopen}
+        onOpenSample={onOpenSample}
+        canReopen={canReopen}
+        busy={busy}
+        currentFile={currentFile}
+      />
 
       <section className="opt-group">
         <h2>{t("Language")}</h2>
