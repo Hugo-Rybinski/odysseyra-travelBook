@@ -246,6 +246,8 @@ export const FR: Record<string, string> = {
   "Nested activities": "Activités imbriquées",
   Activities: "Activités",
   "Secondary currencies": "Devises secondaires",
+  "1 {new} = {x} {main} and 1 {main} = {y} {new}":
+    "1 {new} = {x} {main} et 1 {main} = {y} {new}",
   "Activity {n}": "Activité {n}",
   "Waypoint {n}": "Point de passage {n}",
   "Currency {n}": "Devise {n}",

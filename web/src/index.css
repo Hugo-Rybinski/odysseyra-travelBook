@@ -1566,6 +1566,13 @@ textarea.edit-input {
   letter-spacing: 0.04em;
   color: var(--muted);
 }
+/* Live two-way rate readout under a secondary currency's fields. */
+.currency-conversion {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 .array-editor {
   display: grid;
   gap: 8px;
