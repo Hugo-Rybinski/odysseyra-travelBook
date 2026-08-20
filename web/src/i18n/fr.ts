@@ -51,8 +51,12 @@ export const FR: Record<string, string> = {
   "PDF export": "Export PDF",
   App: "Application",
   Display: "Affichage",
-  "How the on-screen travel book shows long text.":
-    "Comment le carnet de voyage à l'écran affiche les textes longs.",
+  "How the on-screen travel book shows days and long text.":
+    "Comment le carnet de voyage à l'écran affiche les jours et les textes longs.",
+  Days: "Jours",
+  "Collapse all": "Tout replier",
+  "Collapse all but the current day": "Tout replier sauf le jour actuel",
+  "Expand all": "Tout déplier",
   "Truncate long descriptions": "Tronquer les descriptions longues",
   "Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full":
     "Tronquer les descriptions longues à quelques lignes avec un lien « Voir plus » ; désactivé pour tout afficher",

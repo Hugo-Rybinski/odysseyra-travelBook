@@ -268,6 +268,29 @@ body {
   color: #fff;
 }
 
+/* labelled dropdown on the light panel */
+.opt-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.opt-select select {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.opt-select select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
 /* labelled checkbox on the light panel */
 .opt-check {
   display: inline-flex;
