@@ -347,14 +347,19 @@ function ActivityRow({
         <ActivityDetails act={act} lang={lang} nav={nav} />
         {act.type === "road" && <RoadVia act={act} lang={lang} />}
         {act.type === "point_of_interest" && <Links lang={lang} website={act.website} />}
-        {act.activities && act.activities.length > 0 && (
-          <ol className="nested">
-            {act.activities.map((sub, i) => (
-              <ActivityRow key={i} act={sub} lang={lang} />
-            ))}
-          </ol>
-        )}
-        {(areaStatic || areaGeo) && (
+      </div>
+      {/* Nested sub-activities and the area map live outside .act-body so they
+          sit in the .act grid: in the content column on desktop, and full-width
+          below the badge on mobile (see the mobile block). */}
+      {act.activities && act.activities.length > 0 && (
+        <ol className="nested">
+          {act.activities.map((sub, i) => (
+            <ActivityRow key={i} act={sub} lang={lang} />
+          ))}
+        </ol>
+      )}
+      {(areaStatic || areaGeo) && (
+        <div className="act-map">
           <MapView
             geo={areaGeo}
             staticMap={areaStatic}
@@ -362,8 +367,8 @@ function ActivityRow({
             caption={areaCaption}
             lang={lang}
           />
-        )}
-      </div>
+        </div>
+      )}
     </li>
   );
 }

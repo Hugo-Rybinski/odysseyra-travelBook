@@ -894,8 +894,12 @@ body {
   border-radius: 8px;
   border: 1px solid var(--accent-soft);
 }
-/* an area detail map sits within an activity body — keep it snug */
-.act-body .day-map {
+/* an area detail map — a direct child of the .act grid, kept in the content
+   column on desktop (full-width below the badge on mobile, see mobile block) */
+.act-map {
+  grid-column: 2;
+}
+.act-map .day-map {
   margin: 8px 0 4px;
 }
 
@@ -1067,6 +1071,8 @@ body {
   border-left: 2px solid var(--accent-soft);
   display: grid;
   gap: 9px;
+  /* a direct child of the .act grid — stay in the content column on desktop */
+  grid-column: 2;
 }
 .act.buffer {
   padding-bottom: 0;
@@ -1863,5 +1869,13 @@ textarea.edit-input {
   }
   .overview td.sleep::before {
     content: "🛏️ ";
+  }
+
+  /* Nested sub-activities and the area map: instead of squeezing into the
+     content column, drop below the main activity's badge and span the full
+     width, so they get the whole screen width. */
+  .nested,
+  .act-map {
+    grid-column: 1 / -1;
   }
 }
