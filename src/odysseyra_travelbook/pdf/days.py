@@ -128,6 +128,8 @@ class DayMixin:
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
         # the bar by 6 mm.
+        if self.ink_saver:  # ink-saver drops every hyperlink
+            links, nav, addr_url = None, "", ""
         links = [(label, url) for label, url in (links or []) if url]
         bar_h, pad = (26 if links else 20), 4
         # The bar must sit whole on one page: if the day's content already
@@ -463,7 +465,8 @@ class DayMixin:
                 self.set_text_color(*FAINT)
                 mtext = "   " + "  ·  ".join(meta)
                 self.cell(self.get_string_width(mtext) + 1, 5, mtext)
-            url = maps_url(dest_coord, dest or "", provider=self.map_provider)
+            url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
+                                                     provider=self.map_provider)
             if url:
                 label2 = self.t("(Navigate)")
                 self.set_font(FONT, "", 8.5)
@@ -481,7 +484,7 @@ class DayMixin:
                             text_url=self._addr_url(act.coordinate, act.address))
         if act.description:
             self._para(x, w, act.description)
-        if act.website:
+        if act.website and not self.ink_saver:
             y = self.get_y()
             self._link_row(x, y, [(self.t("Website"), act.website)])
             self.set_y(y + 5)
@@ -580,7 +583,7 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(tw, 4.5, poi.description)
-        if poi.website:
+        if poi.website and not self.ink_saver:
             y = self.get_y()
             self._link_row(tx, y, [(self.t("Website"), poi.website)], size=8.5)
             self.set_y(y + 4.5)

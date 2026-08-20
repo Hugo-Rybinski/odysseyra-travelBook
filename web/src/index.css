@@ -55,6 +55,24 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+.topbar .logo-btn {
+  /* The logo doubles as a "go to Travel" button: strip the button chrome and
+     let it lay out like the bare image used to (start-aligned grid child). */
+  justify-self: start;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 6px;
+}
+
+.topbar .logo-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .topbar .logo {
   /* Fill the banner top-to-bottom: the logo defines the topbar height (the
      banner has no vertical padding), and the title/actions center against it. */
@@ -62,7 +80,6 @@ body {
   width: auto;
   flex: none;
   display: block;
-  justify-self: start;
 }
 
 .topbar h1 {

@@ -238,7 +238,10 @@ class _PDFBase(FPDF):
                      size: float = 9, h: float = 5, style: str = "") -> float:
         """The height :meth:`_line_with_nav` will consume for these arguments
         (so cards can reserve exactly the right space)."""
-        url = maps_url(coordinate, *query_parts, provider=self.map_provider)
+        # Mirror _line_with_nav: ink-saver draws no "(Navigate)", so no link
+        # width to reserve and never a dropped extra line.
+        url = "" if self.ink_saver else maps_url(coordinate, *query_parts,
+                                                 provider=self.map_provider)
         if not text:
             return h if url else 0
         lines, _, _, _, fits = self._nav_geom(text, w, size, style)
@@ -267,6 +270,10 @@ class _PDFBase(FPDF):
         makes the drawn ``text`` itself clickable — an address-based search that
         complements the coordinate Navigate link. Advances the cursor below."""
         url = maps_url(coordinate, *query_parts, provider=self.map_provider)
+        if self.ink_saver:
+            # Ink-saver drops every hyperlink: no "(Navigate)" and no clickable
+            # address — just the plain text (or nothing when there's no text).
+            url = text_url = ""
         y = self.get_y()
         if not text and not url:
             return
@@ -302,6 +309,8 @@ class _PDFBase(FPDF):
         separated by muted dots. ``links`` is a list of ``(label, url)`` pairs;
         pairs with an empty url are skipped. Returns the row height (0 when
         nothing was drawn)."""
+        if self.ink_saver:  # ink-saver drops all hyperlinks
+            return 0
         links = [(label, url) for label, url in links if url]
         if not links:
             return 0

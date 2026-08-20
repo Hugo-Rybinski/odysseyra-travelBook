@@ -82,7 +82,7 @@ class TransportMixin:
         booking = self._transport_booking(t)
         links = [(self.t("Website"), t.website),
                  (self.t("Reservation"), t.booking_link)]
-        has_links = any(url for _, url in links)
+        has_links = not self.ink_saver and any(url for _, url in links)
 
         h = pad * 2 + title_h
         if info:

@@ -3,7 +3,7 @@ import type { CarRental, Itinerary, Stamp, Transport } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
-import { Links, NavLink } from "./Links";
+import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, transportTimes, useMapProvider } from "./nav";
 
 const TYPE_ICON: Record<string, string> = {
@@ -195,18 +195,13 @@ function CarRentalCard({
   onToggle: () => void;
 }) {
   const provider = useMapProvider();
-  const pickup = [
-    `${tr(lang, "pickUp")}: ${c.pickup_location}`,
-    stampLine(c.pickup, lang),
-    c.pickup_duration_display,
-  ]
+  // Trailing bits after the location (stamp + duration), kept as plain text; the
+  // location itself is rendered as a clickable AddressLink (navigate-by-address),
+  // matching how accommodations and activities present their addresses.
+  const pickupRest = [stampLine(c.pickup, lang), c.pickup_duration_display]
     .filter(Boolean)
     .join(" — ");
-  const dropoff = [
-    `${tr(lang, "dropOff")}: ${c.dropoff_location}`,
-    stampLine(c.dropoff, lang),
-    c.dropoff_duration_display,
-  ]
+  const dropoffRest = [stampLine(c.dropoff, lang), c.dropoff_duration_display]
     .filter(Boolean)
     .join(" — ");
   const window = carWindow(c, lang);
@@ -229,11 +224,13 @@ function CarRentalCard({
           </div>
           <p className="card-meta">
             <span>
-              {pickup}{"  "}
+              {tr(lang, "pickUp")}: <AddressLink address={c.pickup_location} />
+              {pickupRest ? ` — ${pickupRest}` : ""}{"  "}
               <NavLink lang={lang} href={navUrl(provider, c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
             </span>
             <span>
-              {dropoff}{"  "}
+              {tr(lang, "dropOff")}: <AddressLink address={c.dropoff_location} />
+              {dropoffRest ? ` — ${dropoffRest}` : ""}{"  "}
               <NavLink lang={lang} href={navUrl(provider, c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
             </span>
             {window && <span>{window}</span>}

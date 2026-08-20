@@ -77,7 +77,7 @@ class CarRentalMixin:
         meta = self._cr_meta(cr)
         links = [(self.t("Website"), cr.website),
                  (self.t("Reservation"), cr.booking_link)]
-        has_links = any(url for _, url in links)
+        has_links = not self.ink_saver and any(url for _, url in links)
 
         # The pick-up / drop-off lines each carry an inline Navigate link to
         # their location; ``_nav_block_h`` covers the possible extra wrap line.

@@ -592,7 +592,16 @@ export function App() {
     <main className="shell">
       <PwaStatus />
       <header className="topbar">
-        <img className="logo" src="/img/odysseyra-white-no-bg.svg" alt="" aria-hidden="true" />
+        <button
+          className="logo-btn"
+          onClick={() => {
+            setView("viewer");
+            setMenuOpen(false);
+          }}
+          aria-label={t("🧭 Travel")}
+        >
+          <img className="logo" src="/img/odysseyra-white-no-bg.svg" alt="" aria-hidden="true" />
+        </button>
         <h1>{t("Odysseyra TravelBook")}</h1>
         <div className="menu" ref={menuRef}>
           <button
