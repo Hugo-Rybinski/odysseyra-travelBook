@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
-import type { Lang } from "./format";
+import { tr, type Lang } from "./format";
 import { paletteVars } from "./palette";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
@@ -48,6 +48,7 @@ export function Book({
   showMapLoaders = true,
   clampDescriptions = true,
   daysView = "current-only",
+  show = "travel",
 }: {
   itinerary: Itinerary;
   lang: Lang;
@@ -60,6 +61,9 @@ export function Book({
   clampDescriptions?: boolean;
   // Which days start open (see DayView).
   daysView?: DayView;
+  // Which section this render shows: the trip itself (cover + days), or one of
+  // the transport / accommodation summaries (their own pages in the app).
+  show?: "travel" | "transport" | "accommodations";
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
@@ -92,6 +96,31 @@ export function Book({
     });
   }, []);
 
+  if (show === "transport") {
+    const empty = !itinerary.transports.length && !itinerary.car_rentals.length;
+    return (
+      <div className="book" style={style}>
+        {empty ? (
+          <p className="section-empty">{tr(lang, "noTransport")}</p>
+        ) : (
+          <TransportList itinerary={itinerary} lang={lang} />
+        )}
+      </div>
+    );
+  }
+
+  if (show === "accommodations") {
+    return (
+      <div className="book" style={style}>
+        {itinerary.accommodations.length ? (
+          <AccommodationSummary itinerary={itinerary} lang={lang} />
+        ) : (
+          <p className="section-empty">{tr(lang, "noAccommodation")}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <ClampProvider value={clampDescriptions}>
     <div className="book" style={style}>
@@ -109,8 +138,6 @@ export function Book({
           />
         ))}
       </div>
-      <TransportList itinerary={itinerary} lang={lang} />
-      <AccommodationSummary itinerary={itinerary} lang={lang} />
     </div>
     </ClampProvider>
   );

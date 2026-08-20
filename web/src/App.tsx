@@ -64,7 +64,7 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
 };
 
 type Lang = "en" | "fr";
-type View = "options" | "viewer" | "findings" | "edit";
+type View = "options" | "viewer" | "transport" | "accommodations" | "findings" | "edit";
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -604,7 +604,9 @@ export function App() {
           {menuOpen && (
             <div className="menu-list" role="menu" aria-label={t("View")}>
               {[
-                { id: "viewer" as View, label: t("📖 Travel viewer"), disabled: false, dot: false },
+                { id: "viewer" as View, label: t("🧭 Travel"), disabled: false, dot: false },
+                { id: "transport" as View, label: t("✈️ Transports"), disabled: !itinerary, dot: false },
+                { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false },
                 { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false },
                 { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty },
                 { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false },
@@ -716,6 +718,14 @@ export function App() {
           onRevert={onRevert}
           geocode={{ geocode: onGeocode, ready: engineReady && online }}
         />
+      ) : view === "transport" && itinerary ? (
+        <section className="report">
+          <Book itinerary={itinerary} lang={lang} show="transport" />
+        </section>
+      ) : view === "accommodations" && itinerary ? (
+        <section className="report">
+          <Book itinerary={itinerary} lang={lang} show="accommodations" />
+        </section>
       ) : itinerary ? (
         <section className="report">
           <Book

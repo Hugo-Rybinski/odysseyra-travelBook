@@ -81,6 +81,8 @@ const LABELS = {
     dayMapCaption: "Day {index} overview",
     areaMapCaption: "Zoom — {area}",
     buildingMap: "Building map…",
+    noTransport: "No transport on file",
+    noAccommodation: "No accommodation on file",
   },
   fr: {
     day: "Jour",
@@ -132,6 +134,8 @@ const LABELS = {
     dayMapCaption: "Aperçu du jour {index}",
     areaMapCaption: "Zoom — {area}",
     buildingMap: "Génération de la carte…",
+    noTransport: "Aucun transport enregistré",
+    noAccommodation: "Aucun hébergement enregistré",
   },
 } as const;
 
