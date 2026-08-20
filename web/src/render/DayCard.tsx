@@ -159,12 +159,16 @@ export function DayCard({
         <span className="day-caret" aria-hidden>
           {collapsed ? "▸" : "▾"}
         </span>
-        <span className="day-num">
-          {tr(lang, "day")} {day.day_number}
+        <span className="day-band-body">
+          <span className="day-meta">
+            <span className="day-num">
+              {tr(lang, "day")} {day.day_number}
+            </span>
+            <span className="day-date">{fmtDate(day.date, lang, true)}</span>
+          </span>
+          <span className="day-title">{day.title}</span>
+          {day.city && <span className="day-city">{day.city}</span>}
         </span>
-        <span className="day-date">{fmtDate(day.date, lang, true)}</span>
-        <span className="day-title">{day.title}</span>
-        {day.city && <span className="day-city">{day.city}</span>}
       </header>
 
       {!collapsed && (

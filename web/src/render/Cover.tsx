@@ -57,7 +57,9 @@ export function Cover({
                   }
                 }}
               >
-                <td className="num">{d.day_number}</td>
+                <td className="num" data-label={tr(lang, "day")}>
+                  {d.day_number}
+                </td>
                 <td className="date">{fmtDate(d.date, lang)}</td>
                 <td>{highlightsOf(d, lang)}</td>
                 <td className="sleep">{sleepLabel(d, lang)}</td>

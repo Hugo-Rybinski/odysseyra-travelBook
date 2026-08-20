@@ -734,6 +734,14 @@ body {
   cursor: pointer;
   user-select: none;
 }
+/* On desktop the two grouping spans are transparent (display: contents), so the
+   band's flex row lays out exactly as if caret/num/date/title/city were direct
+   children. On mobile they become real boxes to stack the content (see the
+   mobile block). */
+.day-band-body,
+.day-meta {
+  display: contents;
+}
 .day-band:hover {
   filter: brightness(1.06);
 }
@@ -1758,5 +1766,88 @@ textarea.edit-input {
   /* a little less tall so the map + surrounding content fit a phone screen */
   .day-map-gl .gl-canvas {
     height: 300px;
+  }
+
+  /* Stack the day banner into one content column beside the caret, instead of a
+     wrapping row, so the title gets the full width. The <header> keeps its
+     click/keyboard handler, so collapse/expand is unaffected. */
+  .day-band {
+    flex-wrap: nowrap;
+  }
+  .day-band-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .day-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .day-title {
+    flex: none;
+  }
+
+  /* The 4-column overview table is too wide for a phone: collapse each day into
+     a single stacked card. The click/keyboard jump lives on the <tr>, so it
+     keeps working. The hidden header's info is carried inline (the "Day" label
+     via data-label, a bed before the overnight town). */
+  .overview table,
+  .overview tbody,
+  .overview tr,
+  .overview td {
+    display: block;
+  }
+  .overview thead {
+    display: none;
+  }
+  .overview tr.row-link {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .overview tr.row-link + tr.row-link {
+    margin-top: 8px;
+  }
+  .overview tr.row-link:hover {
+    background: var(--accent-soft);
+  }
+  .overview tr.row-link:hover td {
+    background: transparent;
+  }
+  .overview td {
+    padding: 0;
+    border: 0;
+  }
+  /* line 1: "Day N · date" */
+  .overview td.num {
+    display: inline;
+    width: auto;
+    font-size: 0.95rem;
+  }
+  .overview td.num::before {
+    content: attr(data-label) " ";
+  }
+  .overview td.date {
+    display: inline;
+    white-space: normal;
+  }
+  .overview td.date::before {
+    content: " · ";
+  }
+  /* line 2: the day's highlights (the main content, given the full width) */
+  .overview td:nth-child(3) {
+    margin-top: 4px;
+    color: var(--fg);
+  }
+  /* line 3: where you sleep, flagged with a bed */
+  .overview td.sleep {
+    margin-top: 4px;
+    color: var(--muted);
+  }
+  .overview td.sleep::before {
+    content: "🛏️ ";
   }
 }
