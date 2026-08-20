@@ -117,8 +117,11 @@ export function App() {
   // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
   // viewer; off shows them in full. Default on.
   const [clampDescriptions, setClampDescriptions] = useState(true);
-  // Which days start open in the viewer (see DayView). Default: current only.
-  const [daysView, setDaysView] = useState<DayView>("current-only");
+  // Which days / transport cards / accommodation cards start open (see DayView).
+  // Default: past ones collapsed.
+  const [daysView, setDaysView] = useState<DayView>("collapse-past");
+  const [transportView, setTransportView] = useState<DayView>("collapse-past");
+  const [accommodationView, setAccommodationView] = useState<DayView>("collapse-past");
   // Which top-level view is showing. Starts on "viewer": with no file open its
   // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
   // first-run user can open a file without visiting Options.
@@ -605,37 +608,39 @@ export function App() {
           {menuOpen && (
             <div className="menu-list" role="menu" aria-label={t("View")}>
               {[
-                { id: "viewer" as View, label: t("🧭 Travel"), disabled: false, dot: false },
-                { id: "transport" as View, label: t("✈️ Transports"), disabled: !itinerary, dot: false },
-                { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false },
-                { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false },
-                { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty },
-                { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false },
+                { id: "viewer" as View, label: t("🧭 Travel"), disabled: false, dot: false, divider: false },
+                { id: "transport" as View, label: t("✈️ Transports"), disabled: !itinerary, dot: false, divider: false },
+                { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false, divider: true },
+                { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false, divider: false },
+                { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty, divider: true },
+                { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false, divider: false },
               ].map((item) => (
-                <button
-                  key={item.id}
-                  className={`menu-item ${view === item.id ? "active" : ""}`}
-                  role="menuitem"
-                  aria-current={view === item.id}
-                  disabled={item.disabled}
-                  data-tip={item.disabled ? t("Open an itinerary first") : undefined}
-                  onClick={() => {
-                    setView(item.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  {item.label}
-                  {item.dot && (
-                    <span
-                      className="dirty-dot"
-                      aria-label={t("unapplied edits")}
-                      title={t("Unapplied edits")}
-                    >
-                      {" "}
-                      ●
-                    </span>
-                  )}
-                </button>
+                <Fragment key={item.id}>
+                  <button
+                    className={`menu-item ${view === item.id ? "active" : ""}`}
+                    role="menuitem"
+                    aria-current={view === item.id}
+                    disabled={item.disabled}
+                    data-tip={item.disabled ? t("Open an itinerary first") : undefined}
+                    onClick={() => {
+                      setView(item.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {item.label}
+                    {item.dot && (
+                      <span
+                        className="dirty-dot"
+                        aria-label={t("unapplied edits")}
+                        title={t("Unapplied edits")}
+                      >
+                        {" "}
+                        ●
+                      </span>
+                    )}
+                  </button>
+                  {item.divider && <span className="menu-sep" role="separator" aria-hidden />}
+                </Fragment>
               ))}
               <button
                 className="menu-item"
@@ -675,6 +680,10 @@ export function App() {
           setClampDescriptions={setClampDescriptions}
           daysView={daysView}
           setDaysView={setDaysView}
+          transportView={transportView}
+          setTransportView={setTransportView}
+          accommodationView={accommodationView}
+          setAccommodationView={setAccommodationView}
           onRedraw={onRedraw}
           redrawing={redrawing}
           inkSaver={inkSaver}
@@ -721,11 +730,16 @@ export function App() {
         />
       ) : view === "transport" && itinerary ? (
         <section className="report">
-          <Book itinerary={itinerary} lang={lang} show="transport" />
+          <Book itinerary={itinerary} lang={lang} show="transport" transportView={transportView} />
         </section>
       ) : view === "accommodations" && itinerary ? (
         <section className="report">
-          <Book itinerary={itinerary} lang={lang} show="accommodations" />
+          <Book
+            itinerary={itinerary}
+            lang={lang}
+            show="accommodations"
+            accommodationView={accommodationView}
+          />
         </section>
       ) : itinerary ? (
         <section className="report">

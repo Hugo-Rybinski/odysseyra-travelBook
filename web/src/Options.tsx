@@ -41,6 +41,10 @@ export interface OptionsProps {
   setClampDescriptions: (v: boolean) => void;
   daysView: DayView;
   setDaysView: (v: DayView) => void;
+  transportView: DayView;
+  setTransportView: (v: DayView) => void;
+  accommodationView: DayView;
+  setAccommodationView: (v: DayView) => void;
   // PDF export
   inkSaver: boolean;
   setInkSaver: (v: boolean) => void;
@@ -64,6 +68,31 @@ function Tip({ text, children }: { text: string; children: ReactNode }) {
     <span className="tip" data-tip={text}>
       {children}
     </span>
+  );
+}
+
+// A labelled dropdown choosing how a list (days / transports / accommodations)
+// starts collapsed. The outer label gives context, so the options stay generic.
+function CollapseSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: DayView;
+  onChange: (v: DayView) => void;
+}) {
+  const t = useT();
+  return (
+    <label className="opt-select">
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value as DayView)}>
+        <option value="collapse-past">{t("Collapse past")}</option>
+        <option value="collapse-all">{t("Collapse all")}</option>
+        <option value="current-only">{t("Collapse all but the current")}</option>
+        <option value="expand-all">{t("Expand all")}</option>
+      </select>
+    </label>
   );
 }
 
@@ -137,6 +166,10 @@ export function Options(props: OptionsProps) {
     setClampDescriptions,
     daysView,
     setDaysView,
+    transportView,
+    setTransportView,
+    accommodationView,
+    setAccommodationView,
     onRedraw,
     redrawing,
     inkSaver,
@@ -242,16 +275,19 @@ export function Options(props: OptionsProps) {
 
       <section className="opt-group">
         <h2>{t("Display")}</h2>
-        <p className="opt-desc">{t("How the on-screen travel book shows days and long text.")}</p>
+        <p className="opt-desc">{t("How the on-screen travel book collapses sections and shows long text.")}</p>
         <div className="opt-row">
-          <label className="opt-select">
-            {t("Days")}
-            <select value={daysView} onChange={(e) => setDaysView(e.target.value as DayView)}>
-              <option value="collapse-all">{t("Collapse all")}</option>
-              <option value="current-only">{t("Collapse all but the current day")}</option>
-              <option value="expand-all">{t("Expand all")}</option>
-            </select>
-          </label>
+          <CollapseSelect label={t("Days")} value={daysView} onChange={setDaysView} />
+        </div>
+        <div className="opt-row">
+          <CollapseSelect label={t("Transports")} value={transportView} onChange={setTransportView} />
+        </div>
+        <div className="opt-row">
+          <CollapseSelect
+            label={t("Accommodations")}
+            value={accommodationView}
+            onChange={setAccommodationView}
+          />
         </div>
         <div className="opt-row">
           <Tip

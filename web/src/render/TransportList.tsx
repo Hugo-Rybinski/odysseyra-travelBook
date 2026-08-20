@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import type { CarRental, Itinerary, Stamp, Transport } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
-import { Price, Status } from "./Parts";
+import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
+import { CardHead, Price, Status } from "./Parts";
 import { Links, NavLink } from "./Links";
 import { navUrl, transportTimes } from "./nav";
 
@@ -13,15 +15,46 @@ const TYPE_ICON: Record<string, string> = {
   other: "🚊",
 };
 
-// The transport section: travel legs plus rental-car bookings.
+// The transport section: travel legs plus rental-car bookings. Each card is
+// collapsible; `view` decides which start collapsed (same options as days).
 export function TransportList({
   itinerary,
   lang,
+  view = "collapse-past",
 }: {
   itinerary: Itinerary;
   lang: Lang;
+  view?: CollapseView;
 }) {
   const { transports, car_rentals } = itinerary;
+
+  const tSpans = useMemo<DateSpan[]>(
+    () => transports.map((t) => ({ start: t.start_date, end: t.end_date ?? t.start_date })),
+    [transports],
+  );
+  const cSpans = useMemo<DateSpan[]>(
+    () =>
+      car_rentals.map((c) => ({
+        start: c.booking_start?.date ?? null,
+        end: c.booking_end?.date ?? c.booking_start?.date ?? null,
+      })),
+    [car_rentals],
+  );
+
+  const [tOpen, setTOpen] = useState(() => collapsedForItems(view, tSpans));
+  const [cOpen, setCOpen] = useState(() => collapsedForItems(view, cSpans));
+  useEffect(() => setTOpen(collapsedForItems(view, tSpans)), [view, tSpans]);
+  useEffect(() => setCOpen(collapsedForItems(view, cSpans)), [view, cSpans]);
+
+  const toggle = (set: (fn: (p: Set<number>) => Set<number>) => void) => (i: number) =>
+    set((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+  const toggleT = toggle(setTOpen);
+  const toggleC = toggle(setCOpen);
+
   if (!transports.length && !car_rentals.length) return null;
 
   return (
@@ -30,7 +63,13 @@ export function TransportList({
 
       <div className="cards">
         {transports.map((t, i) => (
-          <TransportCard key={i} t={t} lang={lang} />
+          <TransportCard
+            key={i}
+            t={t}
+            lang={lang}
+            collapsed={tOpen.has(i)}
+            onToggle={() => toggleT(i)}
+          />
         ))}
       </div>
 
@@ -39,7 +78,13 @@ export function TransportList({
           <h3 className="sub">{tr(lang, "carRentals")}</h3>
           <div className="cards">
             {car_rentals.map((c, i) => (
-              <CarRentalCard key={i} c={c} lang={lang} />
+              <CarRentalCard
+                key={i}
+                c={c}
+                lang={lang}
+                collapsed={cOpen.has(i)}
+                onToggle={() => toggleC(i)}
+              />
             ))}
           </div>
         </>
@@ -59,33 +104,53 @@ function transportBooking(t: Transport, lang: Lang): string {
   return bits.join("  ·  ");
 }
 
-function TransportCard({ t, lang }: { t: Transport; lang: Lang }) {
+function TransportCard({
+  t,
+  lang,
+  collapsed,
+  onToggle,
+}: {
+  t: Transport;
+  lang: Lang;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const dateStr = t.start_date
     ? fmtDate(t.start_date, lang) +
       (t.end_date && t.end_date !== t.start_date ? ` → ${fmtDate(t.end_date, lang)}` : "")
     : "";
   const info = [dateStr, transportTimes(t)].filter(Boolean).join("  ·  ");
   const booking = transportBooking(t, lang);
+  const navHref = navUrl(t.start_coordinate ?? t.coordinate, t.start);
   return (
-    <div className="card">
-      <div className="card-head">
+    <div className={`card ${collapsed ? "collapsed" : ""}`}>
+      <CardHead collapsed={collapsed} onToggle={onToggle}>
         <span className="badge" aria-hidden>
           {TYPE_ICON[t.type] ?? TYPE_ICON.other}
         </span>
-        <span className="card-title">
-          {t.title} <NavLink lang={lang} href={navUrl(t.start_coordinate ?? t.coordinate, t.start)} />
-        </span>
-        {t.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
-        <Status status={t.status} lang={lang} />
-      </div>
-      {info && <p className="card-info">{info}</p>}
-      {booking && <p className="card-meta">{booking}</p>}
-      {t.price && (
-        <p className="card-price">
-          <Price price={t.price} lang={lang} />
-        </p>
+        <span className="card-title">{t.title}</span>
+      </CardHead>
+      {!collapsed && (
+        <>
+          <div className="card-pills">
+            {t.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
+            <Status status={t.status} lang={lang} />
+          </div>
+          {info && <p className="card-info">{info}</p>}
+          {navHref && (
+            <p className="card-nav">
+              <NavLink lang={lang} href={navHref} />
+            </p>
+          )}
+          {booking && <p className="card-meta">{booking}</p>}
+          {t.price && (
+            <p className="card-price">
+              <Price price={t.price} lang={lang} />
+            </p>
+          )}
+          <Links lang={lang} website={t.website} reservation={t.booking_link} />
+        </>
       )}
-      <Links lang={lang} website={t.website} reservation={t.booking_link} />
     </div>
   );
 }
@@ -117,7 +182,17 @@ function carWindow(c: CarRental, lang: Lang): string {
   return "";
 }
 
-function CarRentalCard({ c, lang }: { c: CarRental; lang: Lang }) {
+function CarRentalCard({
+  c,
+  lang,
+  collapsed,
+  onToggle,
+}: {
+  c: CarRental;
+  lang: Lang;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const pickup = [
     `${tr(lang, "pickUp")}: ${c.pickup_location}`,
     stampLine(c.pickup, lang),
@@ -135,8 +210,8 @@ function CarRentalCard({ c, lang }: { c: CarRental; lang: Lang }) {
   const window = carWindow(c, lang);
   const meta = carMeta(c, lang);
   return (
-    <div className="card">
-      <div className="card-head">
+    <div className={`card ${collapsed ? "collapsed" : ""}`}>
+      <CardHead collapsed={collapsed} onToggle={onToggle}>
         <span className="badge" aria-hidden>
           🚙
         </span>
@@ -144,26 +219,32 @@ function CarRentalCard({ c, lang }: { c: CarRental; lang: Lang }) {
           {c.title}
           {c.car_type_label ? ` · ${c.car_type_label}` : ""}
         </span>
-        <Status status={c.status} lang={lang} />
-      </div>
-      <p className="card-meta">
-        <span>
-          {pickup}{"  "}
-          <NavLink lang={lang} href={navUrl(c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
-        </span>
-        <span>
-          {dropoff}{"  "}
-          <NavLink lang={lang} href={navUrl(c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
-        </span>
-        {window && <span>{window}</span>}
-        {meta && <span>{meta}</span>}
-      </p>
-      {c.price && (
-        <p className="card-price">
-          <Price price={c.price} lang={lang} />
-        </p>
+      </CardHead>
+      {!collapsed && (
+        <>
+          <div className="card-pills">
+            <Status status={c.status} lang={lang} />
+          </div>
+          <p className="card-meta">
+            <span>
+              {pickup}{"  "}
+              <NavLink lang={lang} href={navUrl(c.pickup_coordinate ?? c.coordinate, c.pickup_location)} />
+            </span>
+            <span>
+              {dropoff}{"  "}
+              <NavLink lang={lang} href={navUrl(c.dropoff_coordinate ?? c.coordinate, c.dropoff_location)} />
+            </span>
+            {window && <span>{window}</span>}
+            {meta && <span>{meta}</span>}
+          </p>
+          {c.price && (
+            <p className="card-price">
+              <Price price={c.price} lang={lang} />
+            </p>
+          )}
+          <Links lang={lang} website={c.website} reservation={c.booking_link} />
+        </>
       )}
-      <Links lang={lang} website={c.website} reservation={c.booking_link} />
     </div>
   );
 }

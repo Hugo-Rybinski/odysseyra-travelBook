@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
 import { tr, type Lang } from "./format";
+import { todayISO, type CollapseView } from "./collapse";
 import { paletteVars } from "./palette";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
@@ -8,15 +9,9 @@ import { DayCard } from "./DayCard";
 import { TransportList } from "./TransportList";
 import { AccommodationSummary } from "./AccommodationSummary";
 
-// How days open on load (and when the option changes): all collapsed, only the
-// current day open (default), or all expanded.
-export type DayView = "collapse-all" | "current-only" | "expand-all";
-
-function todayISO(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
+// How days/sections open on load: all collapsed, only past collapsed (default),
+// only the current one open, or all expanded. Shared with transport/accommodation.
+export type DayView = CollapseView;
 
 // The "current" day: the one dated today; failing that (the trip isn't running
 // now) the first day, so "current only" always leaves something open.
@@ -31,6 +26,12 @@ function collapsedFor(view: DayView, itinerary: Itinerary): Set<number> {
   if (view === "expand-all") return new Set();
   const all = itinerary.days.map((d) => d.day_number);
   if (view === "collapse-all") return new Set(all);
+  if (view === "collapse-past") {
+    // collapse days dated strictly before today; keep today + future (and any
+    // undated day) open
+    const today = todayISO();
+    return new Set(itinerary.days.filter((d) => d.date && d.date < today).map((d) => d.day_number));
+  }
   const current = currentDayNumber(itinerary);
   return new Set(all.filter((n) => n !== current));
 }
@@ -47,7 +48,9 @@ export function Book({
   interactiveMaps = false,
   showMapLoaders = true,
   clampDescriptions = true,
-  daysView = "current-only",
+  daysView = "collapse-past",
+  transportView = "collapse-past",
+  accommodationView = "collapse-past",
   show = "travel",
 }: {
   itinerary: Itinerary;
@@ -61,6 +64,9 @@ export function Book({
   clampDescriptions?: boolean;
   // Which days start open (see DayView).
   daysView?: DayView;
+  // Which transport / accommodation cards start open (same options as days).
+  transportView?: DayView;
+  accommodationView?: DayView;
   // Which section this render shows: the trip itself (cover + days), or one of
   // the transport / accommodation summaries (their own pages in the app).
   show?: "travel" | "transport" | "accommodations";
@@ -103,7 +109,7 @@ export function Book({
         {empty ? (
           <p className="section-empty">{tr(lang, "noTransport")}</p>
         ) : (
-          <TransportList itinerary={itinerary} lang={lang} />
+          <TransportList itinerary={itinerary} lang={lang} view={transportView} />
         )}
       </div>
     );
@@ -113,7 +119,7 @@ export function Book({
     return (
       <div className="book" style={style}>
         {itinerary.accommodations.length ? (
-          <AccommodationSummary itinerary={itinerary} lang={lang} />
+          <AccommodationSummary itinerary={itinerary} lang={lang} view={accommodationView} />
         ) : (
           <p className="section-empty">{tr(lang, "noAccommodation")}</p>
         )}
