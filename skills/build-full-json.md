@@ -6,7 +6,8 @@ only to produce correct JSON. You do **not** run any commands.
 
 Use this skill when you want to turn a pile of source material (a trip brief,
 booking-confirmation emails, hotel/rental vouchers, screenshots, a day-by-day
-plan, a KML/KMZ track) **directly into one finished JSON file**.
+plan, a guidebook PDF, links to blog posts, a KML/KMZ track — e.g. one exported
+from a custom Google Map) **directly into one finished JSON file**.
 
 **This document is self-contained.** Everything you need — the top-level shape,
 every object's fields, the value formats, and all the rules — is here; you do

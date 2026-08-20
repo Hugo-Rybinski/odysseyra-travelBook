@@ -637,4 +637,47 @@ export const FR: Record<string, string> = {
   "Additional drivers": "Conducteurs supplémentaires",
   "Number of additional drivers. Defaults to 0.":
     "Nombre de conducteurs supplémentaires. Par défaut 0.",
+
+  // ---------------------------------------------------------- 🤖 LLM prompts
+  "🤖 LLM prompts": "🤖 Prompts IA",
+  "LLM prompts": "Prompts IA",
+  "Ready-made prompts that turn your raw trip material into itinerary JSON — or help you fill its gaps. Copy one, paste it into your favourite LLM (Claude, ChatGPT…), and add your own documents.":
+    "Des prompts prêts à l'emploi qui transforment vos documents de voyage en JSON d'itinéraire — ou vous aident à en combler les manques. Copiez-en un, collez-le dans votre IA préférée (Claude, ChatGPT…), puis ajoutez vos propres documents.",
+  "Give it": "À fournir",
+  "You get": "Résultat",
+  "📋 Copy prompt": "📋 Copier le prompt",
+  "✓ Copied": "✓ Copié",
+  "Couldn't load this prompt.": "Impossible de charger ce prompt.",
+  "Paste it into an LLM chat, then add your material.":
+    "Collez-le dans une IA, puis ajoutez vos documents.",
+
+  "Build the full itinerary JSON": "Construire le JSON complet de l'itinéraire",
+  "Turns raw trip material into one complete, ready-to-render itinerary JSON file. The prompt is self-contained: it carries every field, value format and rule the LLM needs to get the JSON right on the first pass.":
+    "Transforme vos documents de voyage en un fichier JSON d'itinéraire complet, prêt à être rendu. Le prompt est autonome : il contient tous les champs, formats de valeurs et règles dont l'IA a besoin pour produire un JSON correct du premier coup.",
+  "Your trip material — a brief, a day-by-day plan, booking-confirmation emails, hotel/rental vouchers, screenshots, a guidebook PDF, links to blog posts, or a KML/KMZ track (e.g. exported from a custom Google Map).":
+    "Vos documents de voyage — un brief, un programme jour par jour, des e-mails de confirmation, des bons d'hôtel/location, des captures d'écran, un PDF de guide, des liens vers des articles de blog, ou une trace KML/KMZ (par ex. exportée depuis une carte Google personnalisée).",
+  "The more concrete the sources, the fewer gaps the LLM has to leave blank.":
+    "Plus les sources sont concrètes, moins l'IA laisse de champs vides.",
+  "A single <title>.json you can open here (Options → Open JSON…), plus a report of the gaps and any conflicts it found between your sources.":
+    "Un seul fichier <titre>.json que vous pouvez ouvrir ici (Options → Ouvrir JSON…), ainsi qu'un rapport des manques et des éventuels conflits entre vos sources.",
+
+  "Build a Google My Maps KML from a guidebook PDF":
+    "Créer un KML Google My Maps à partir d'un PDF de guide",
+  "Turns a guidebook PDF into an importable KML map: one placemark per place, grouped into folders by region, color-coded by category, with page references, descriptions and hike stats. The result is a custom Google Map you can then export as KML/KMZ and feed to the itinerary-JSON prompt above.":
+    "Transforme un PDF de guide en une carte KML importable : un repère par lieu, regroupés en dossiers par région, avec un code couleur par catégorie, des références de pages, des descriptions et des données de randonnée. Le résultat est une carte Google personnalisée que vous pouvez ensuite exporter en KML/KMZ et fournir au prompt de JSON d'itinéraire ci-dessus.",
+  "A guidebook PDF — even a scanned, image-only one (the prompt reads pages visually rather than assuming selectable text).":
+    "Un PDF de guide — même scanné, en images seules (le prompt lit les pages visuellement plutôt que de supposer un texte sélectionnable).",
+  "Optionally, a list of nearby-city road distances / driving times to attach to city placemarks.":
+    "Éventuellement, une liste de distances routières / temps de trajet vers les villes voisines à joindre aux repères de villes.",
+  "A grouped, color-coded guidebook_places_grouped_colored.kml, ready to import into Google My Maps — plus the source CSVs and scripts to rebuild it.":
+    "Un fichier guidebook_places_grouped_colored.kml regroupé et coloré, prêt à importer dans Google My Maps — avec les CSV sources et les scripts pour le régénérer.",
+
+  "Fix missing durations & distances": "Compléter les durées et distances manquantes",
+  "Builds a fill-in-the-blank Markdown worksheet for the roads, hikes and activities that are missing a duration, distance or elevation — one entry per missing value, with Google Maps links for road distances and web-sourced estimates (tagged “to be checked”) for hikes.":
+    "Construit une fiche Markdown à compléter pour les routes, randonnées et activités auxquelles il manque une durée, une distance ou un dénivelé — une entrée par valeur manquante, avec des liens Google Maps pour les distances routières et des estimations issues du web (marquées « à vérifier ») pour les randonnées.",
+  "Your itinerary JSON.": "Votre JSON d'itinéraire.",
+  "The ⚠️ warnings about missing duration/distance/elevation — copy them from the 🔎 Findings tab (or the validator output).":
+    "Les avertissements ⚠️ concernant les durées/distances/dénivelés manquants — copiez-les depuis l'onglet 🔎 Diagnostics (ou la sortie du validateur).",
+  "A <title>-missing.md worksheet to complete by hand, then merge the figures back into your JSON.":
+    "Une fiche <titre>-missing.md à compléter à la main, puis à réintégrer dans votre JSON.",
 };

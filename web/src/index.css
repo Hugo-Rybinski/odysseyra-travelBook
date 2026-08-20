@@ -258,6 +258,48 @@ body {
   border-color: transparent;
 }
 
+/* ---- 🤖 LLM prompts tab ------------------------------------------------- */
+.prompts-intro {
+  max-width: 60ch;
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+}
+.prompt-card h2 {
+  font-size: 1rem;
+}
+.prompt-inputs {
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.prompt-inputs-label,
+.prompt-output-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+.prompt-inputs ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+}
+.prompt-output {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.prompt-actions {
+  margin-top: 4px;
+}
+.prompt-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.prompt-hint-error {
+  color: #b3261e;
+}
+
 /* segmented control (language), light-panel variant of the old .lang */
 .seg {
   display: inline-flex;

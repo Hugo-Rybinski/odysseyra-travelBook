@@ -26,9 +26,14 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    // Copy the example itineraries in as bundled samples to open.
+    // Copy the example itineraries in as bundled samples to open, and the
+    // LLM-facing skill prompts (skills/*.md) so the "🤖 LLM prompts" tab can
+    // fetch + copy them (offline too — they're precached by workbox below).
     viteStaticCopy({
-      targets: [{ src: "../examples/*.json", dest: "samples" }],
+      targets: [
+        { src: "../examples/*.json", dest: "samples" },
+        { src: "../skills/*.md", dest: "skills" },
+      ],
     }),
     VitePWA({
       // "prompt" so the app controls the update lifecycle (see PwaProvider): it
@@ -88,7 +93,7 @@ export default defineConfig({
         // with the correct MIME from cache and works offline — rather than being
         // fetched at runtime, which risked the navigation fallback returning
         // index.html for it (a "non-JavaScript MIME type" module error).
-        globPatterns: ["**/*.{js,css,html,svg,json,whl}"],
+        globPatterns: ["**/*.{js,css,html,svg,json,whl,md}"],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         // Never serve the SPA fallback (index.html) for asset URLs — a missing
         // hashed chunk should 404 cleanly (and trigger a reload, see main.tsx),

@@ -31,6 +31,7 @@ import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
 import { MapProviderContext, type MapProvider } from "./render/nav";
 import { Options, FileGroup } from "./Options";
+import { PromptsPanel } from "./prompts/PromptsPanel";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
 import {
@@ -65,7 +66,7 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
 };
 
 type Lang = "en" | "fr";
-type View = "options" | "viewer" | "transport" | "accommodations" | "findings" | "edit";
+type View = "options" | "viewer" | "transport" | "accommodations" | "findings" | "edit" | "prompts";
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -617,6 +618,7 @@ export function App() {
                 { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false, divider: true },
                 { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false, divider: false },
                 { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty, divider: true },
+                { id: "prompts" as View, label: t("🤖 LLM prompts"), disabled: false, dot: false, divider: false },
                 { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false, divider: false },
               ].map((item) => (
                 <Fragment key={item.id}>
@@ -664,7 +666,9 @@ export function App() {
 
       {error && <p className="banner error">⚠️ {error}</p>}
 
-      {view === "options" ? (
+      {view === "prompts" ? (
+        <PromptsPanel />
+      ) : view === "options" ? (
         <Options
           onOpen={onOpen}
           onReopen={onReopen}
