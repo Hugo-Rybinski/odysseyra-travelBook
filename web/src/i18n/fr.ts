@@ -645,6 +645,188 @@ export const FR: Record<string, string> = {
   "LLM prompts": "Prompts IA",
   "Ready-made prompts that turn your raw trip material into itinerary JSON — or help you fill its gaps. Copy one, paste it into your favourite LLM (Claude, ChatGPT…), and add your own documents.":
     "Des prompts prêts à l'emploi qui transforment vos documents de voyage en JSON d'itinéraire — ou vous aident à en combler les manques. Copiez-en un, collez-le dans votre IA préférée (Claude, ChatGPT…), puis ajoutez vos propres documents.",
+  "New to this? Start with the": "Nouveau ici ? Commencez par le",
+  "📘 Usage guide": "📘 Guide d'utilisation",
+  "Usage guide": "Guide d'utilisation",
+  "From a pile of trip material to a finished, printable travel book — the steps, what each one takes in and produces, and how to do the manual parts.":
+    "D'un tas de documents de voyage à un carnet imprimable — les étapes, ce que chacune prend en entrée et produit, et comment réaliser les parties manuelles.",
+  "Open this prompt →": "Ouvrir ce prompt →",
+  "How the pieces fit together": "Comment les pièces s'assemblent",
+  "The pipeline that turns your raw trip material into an itinerary JSON — then a PDF. Each step spells out what to do (and how, for the manual parts); every prompt links to its full text in the 🤖 LLM prompts tab.":
+    "Le pipeline qui transforme vos documents de voyage en JSON d'itinéraire — puis en PDF. Chaque étape détaille quoi faire (et comment, pour les parties manuelles) ; chaque prompt renvoie à son texte complet dans l'onglet 🤖 Prompts IA.",
+  // stage headings
+  "Prepare your source material": "Préparez vos documents sources",
+  "First, gather the raw documents the prompts will read. Collect only what fits your trip — you don't need everything.":
+    "D'abord, réunissez les documents bruts que les prompts vont lire. Ne rassemblez que ce qui correspond à votre voyage — inutile de tout avoir.",
+  "Preprocess your source material": "Prétraitez vos documents sources",
+  "Now run these prompts to turn the raw documents into a few clean files. They're independent — do only the ones you need.":
+    "Lancez maintenant ces prompts pour transformer les documents bruts en quelques fichiers propres. Ils sont indépendants — ne faites que ceux dont vous avez besoin.",
+  "Assemble the itinerary JSON": "Assemblez le JSON d'itinéraire",
+  "Hand the prepared files to a single prompt that reconciles them into one JSON.":
+    "Confiez les fichiers préparés à un seul prompt qui les réconcilie en un unique JSON.",
+  "Fill the gaps — if needed": "Comblez les manques — si besoin",
+  "Only when the validator flags missing distances, durations or elevations.":
+    "Seulement quand le validateur signale des distances, durées ou dénivelés manquants.",
+  "Use it in the app": "Utilisez-le dans l'app",
+  "Open the JSON here to finish it, then export and back it up.":
+    "Ouvrez le JSON ici pour le finaliser, puis exportez-le et sauvegardez-le.",
+  // chips + card affordances
+  "Prompt": "Prompt",
+  "In the app": "Dans l'app",
+  "Gather": "À réunir",
+  "Step by step": "Pas à pas",
+  "Jump to this prompt ↓": "Aller à ce prompt ↓",
+  // stage 1 — gather (input) cards
+  "Gather your booking confirmations": "Réunir vos confirmations de réservation",
+  "Gmail, inbox, photos": "Gmail, boîte mail, photos",
+  ".mbox, emails, screenshots": ".mbox, e-mails, captures d'écran",
+  "Round up every hotel, transport and activity booking you've made.":
+    "Rassemblez toutes vos réservations d'hôtel, de transport et d'activité.",
+  "Find every confirmation for the trip — hotels, flights or trains, car rental, tours and tickets.":
+    "Retrouvez chaque confirmation du voyage — hôtels, vols ou trains, location de voiture, visites et billets.",
+  "If you use Gmail, the quickest way is to give them all one label (a label is just a folder/tag — [how to create one](https://support.google.com/mail/answer/118708)), then download that label with [Google Takeout](https://takeout.google.com/), Google's official data-export tool: choose Mail, tick only that label, and you get a single “.mbox” file (one file holding those emails).":
+    "Sous Gmail, le plus rapide est de leur donner à toutes un même libellé (un libellé, c'est juste un dossier/une étiquette — [comment en créer un](https://support.google.com/mail/answer/118708)), puis de télécharger ce libellé avec [Google Takeout](https://takeout.google.com/), l'outil officiel d'export de données de Google : choisissez Mail, cochez seulement ce libellé, et vous obtenez un seul fichier « .mbox » (un fichier contenant ces e-mails).",
+  "You can freely mix source types — there's no either/or. Alongside (or instead of) the .mbox, paste individual confirmation emails and add screenshots or photos of any booking, including ones that only exist as a web page. The more you provide, the more complete the result.":
+    "Vous pouvez librement mélanger les types de sources — pas de choix exclusif. En plus (ou à la place) du .mbox, collez des e-mails de confirmation individuels et ajoutez des captures d'écran ou photos de n'importe quelle réservation, y compris celles qui n'existent que sous forme de page web. Plus vous en fournissez, plus le résultat est complet.",
+  "Collect your guidebook & reading": "Rassembler votre guide et vos lectures",
+  "guidebook, web": "guide, web",
+  "Gather the travel content you want your itinerary drawn from.":
+    "Réunissez le contenu de voyage dont votre itinéraire s'inspirera.",
+  "Get your guidebook as a PDF. A scan or clear photos of the pages work fine — the prompts can read images, so the text doesn't need to be selectable.":
+    "Obtenez votre guide en PDF. Un scan ou des photos nettes des pages conviennent — les prompts lisent les images, le texte n'a donc pas besoin d'être sélectionnable.",
+  "Save the links (or copy the text) of any blog posts or articles about the places you'll visit.":
+    "Enregistrez les liens (ou copiez le texte) des articles de blog ou publications sur les lieux que vous visiterez.",
+  "Sketch a rough day-by-day plan": "Esquisser un plan sommaire jour par jour",
+  "you": "vous",
+  "rough plan": "plan sommaire",
+  "Decide the shape of the trip — mainly where you sleep each night.":
+    "Décidez la forme du voyage — surtout où vous dormez chaque nuit.",
+  "Write one line per day with its main destination — for example: “Day 1 → Paris, Day 2 → Mont-Saint-Michel, Day 3 → Saint-Malo”. No times or details needed; the prompts fill those in.":
+    "Écrivez une ligne par jour avec sa destination principale — par exemple : « Jour 1 → Paris, Jour 2 → Mont-Saint-Michel, Jour 3 → Saint-Malo ». Aucun horaire ni détail nécessaire ; les prompts s'en chargent.",
+  "Optionally, add anything you already know to steer the result — real dates, a rough theme for a day (“museums”, “beach day”), a must-do stop, or where you're sleeping. Every hint helps the LLM, but all are optional.":
+    "Éventuellement, ajoutez ce que vous savez déjà pour orienter le résultat — des dates réelles, un thème approximatif pour une journée (« musées », « journée plage »), une visite incontournable, ou l'endroit où vous dormez. Chaque indice aide l'IA, mais tous sont facultatifs.",
+  "Build your own map (optional)": "Créer votre propre carte (facultatif)",
+  "KML file": "Fichier KML",
+  "Prefer to plan the route yourself? Make a custom map by hand and export it.":
+    "Vous préférez tracer l'itinéraire vous-même ? Créez une carte personnalisée à la main et exportez-la.",
+  "Search for each place you want and add it as a pin; you can group related pins into layers if you like.":
+    "Recherchez chaque lieu voulu et ajoutez-le comme repère ; vous pouvez regrouper les repères associés en calques si vous le souhaitez.",
+  "If you'll be driving, add driving directions between your stops ([how to draw directions](https://support.google.com/mymaps/answer/3067635)) so the real road route is saved on the map.":
+    "Si vous conduisez, ajoutez les itinéraires routiers entre vos étapes ([comment tracer un itinéraire](https://support.google.com/mymaps/answer/3067635)) pour enregistrer le vrai tracé sur la carte.",
+  "Export the finished map to a KML file: open the map's menu (the three dots ⋮) and choose “Export to KML/KMZ”. Keep that file — it's a source for the next steps.":
+    "Exportez la carte terminée en fichier KML : ouvrez le menu de la carte (les trois points ⋮) et choisissez « Exporter au format KML/KMZ ». Conservez ce fichier — c'est une source pour les étapes suivantes.",
+  "Don't want to start from a blank page? The next section's “Map the guidebook” prompt builds a starter map from your guidebook that you then refine here instead.":
+    "Vous ne voulez pas partir d'une page blanche ? Le prompt « Cartographier le guide » de la section suivante crée une carte de départ à partir de votre guide, que vous affinez ensuite ici.",
+  // card A1 — extract bookings
+  "Extract your bookings": "Extraire vos réservations",
+  "Consolidate every booking confirmation into one attributed file.":
+    "Rassembler chaque confirmation de réservation en un fichier sourcé.",
+  "This prompt reads the confirmations you gathered and writes every detail into one neat file — so you never copy dates and reference numbers by hand.":
+    "Ce prompt lit les confirmations que vous avez réunies et reporte chaque détail dans un seul fichier propre — vous ne recopiez plus jamais les dates et numéros de référence à la main.",
+  "Open the prompt (in the 🤖 LLM prompts tab), copy it into an AI chat such as [Claude](https://claude.ai) or [ChatGPT](https://chatgpt.com), and attach your “.mbox” file, pasted emails and/or screenshots.":
+    "Ouvrez le prompt (dans l'onglet 🤖 Prompts IA), copiez-le dans une IA comme [Claude](https://claude.ai) ou [ChatGPT](https://chatgpt.com), et joignez votre fichier « .mbox », vos e-mails collés et/ou vos captures d'écran.",
+  "Double-check the file and correct it by hand if needed — it's plain text, so it opens in any text editor.":
+    "Revérifiez le fichier et corrigez-le à la main si besoin — c'est du texte brut, il s'ouvre dans n'importe quel éditeur de texte.",
+  "a bookings .md file": "un fichier .md de réservations",
+  "It replies with a bookings `.md` file (a plain-text file) — one entry per booking, each noting where it came from, so nothing is made up.":
+    "Elle répond avec un fichier `.md` de réservations (un fichier texte) — une entrée par réservation, chacune indiquant d'où elle vient, pour que rien ne soit inventé.",
+  "This prompt reads your booking confirmations and writes every detail into one neat file — so you never copy dates and reference numbers by hand.":
+    "Ce prompt lit vos confirmations de réservation et reporte chaque détail dans un seul fichier propre — vous ne recopiez plus jamais les dates et numéros de référence à la main.",
+  "If you use Gmail: put all the trip's confirmation emails under one label (a label is just a folder/tag — [how to create one](https://support.google.com/mail/answer/118708)). Then download that label as a file with Google Takeout ([takeout.google.com](https://takeout.google.com/)), Google's official tool for exporting your own data: choose Mail, tick only that one label, and you'll receive a “.mbox” file (a single file holding those emails).":
+    "Si vous utilisez Gmail : regroupez tous les e-mails de confirmation du voyage sous un même libellé (un libellé, c'est simplement un dossier/une étiquette — [comment en créer un](https://support.google.com/mail/answer/118708)). Téléchargez ensuite ce libellé sous forme de fichier avec Google Takeout ([takeout.google.com](https://takeout.google.com/)), l'outil officiel de Google pour exporter vos propres données : choisissez Mail, cochez seulement ce libellé, et vous recevrez un fichier « .mbox » (un seul fichier contenant ces e-mails).",
+  "Not using Gmail? No problem — just copy-paste the text of each confirmation email, and/or add photos or screenshots of your hotel, transport and activity bookings.":
+    "Pas de Gmail ? Aucun souci — copiez-collez simplement le texte de chaque e-mail de confirmation, et/ou ajoutez des photos ou captures d'écran de vos réservations d'hôtel, de transport et d'activités.",
+  "Open the prompt (in the 🤖 LLM prompts tab), copy it into an AI chat such as [Claude](https://claude.ai) or [ChatGPT](https://chatgpt.com), and attach those files. It replies with a file called Bookings.md.":
+    "Ouvrez le prompt (dans l'onglet 🤖 Prompts IA), copiez-le dans une IA comme [Claude](https://claude.ai) ou [ChatGPT](https://chatgpt.com), et joignez ces fichiers. Elle répond avec un fichier nommé Bookings.md.",
+  "Bookings.md is a plain-text file that lists every booking with its details, and notes where each one came from — so nothing is made up.":
+    "Bookings.md est un fichier texte qui liste chaque réservation avec ses détails, et indique d'où vient chacune — ainsi rien n'est inventé.",
+  // card A2 — guidebook KML
+  "Map the guidebook": "Cartographier le guide",
+  "Guidebook PDF, blog posts": "PDF du guide, articles de blog",
+  "Guidebook PDF, blog posts, rough plan": "PDF du guide, articles de blog, plan sommaire",
+  "Turn a guidebook into a map of places you then refine by hand.":
+    "Transformer un guide en une carte de lieux que vous affinez ensuite à la main.",
+  "This step is optional — do it only if you want a real map of the places in your guidebook. It works best when you plan to drive.":
+    "Cette étape est facultative — faites-la seulement si vous voulez une vraie carte des lieux de votre guide. Elle est surtout utile si vous prévoyez de conduire.",
+  "Copy the prompt into an AI chat (Claude or ChatGPT) with your guidebook. It returns a “KML” file — a standard map file that simply lists places by name and location.":
+    "Copiez le prompt dans une IA (Claude ou ChatGPT) avec votre guide. Elle renvoie un fichier « KML » — un fichier de carte standard qui liste simplement des lieux par nom et position.",
+  "Go to [Google My Maps](https://www.google.com/mymaps) (a free Google tool for building your own maps) and click “Create a new map”.":
+    "Allez sur [Google My Maps](https://www.google.com/mymaps) (un outil Google gratuit pour créer vos propres cartes) et cliquez sur « Créer une carte ».",
+  "Import the KML file into that map (in the map, click Import and choose the file — [how to import](https://support.google.com/mymaps/answer/3024836)). Every place from your guidebook shows up as a pin.":
+    "Importez le fichier KML dans cette carte (dans la carte, cliquez sur Importer et choisissez le fichier — [comment importer](https://support.google.com/mymaps/answer/3024836)). Chaque lieu de votre guide apparaît sous forme de repère.",
+  "Check the pins: drag any that landed in the wrong place, and add any spots the guide mentions that are missing.":
+    "Vérifiez les repères : déplacez ceux qui sont mal placés, et ajoutez les lieux que le guide mentionne mais qui manquent.",
+  "If you'll be driving, add driving directions between the stops you'll drive between ([how to draw directions](https://support.google.com/mymaps/answer/3067635)) — this saves the real road route on the map.":
+    "Si vous conduisez, ajoutez les itinéraires routiers entre les étapes que vous relierez en voiture ([comment tracer un itinéraire](https://support.google.com/mymaps/answer/3067635)) — cela enregistre le vrai tracé sur la carte.",
+  "When you're happy, export the map back to a KML file: open the map's menu (the three dots ⋮) and choose “Export to KML/KMZ”. Keep that exported file for the next steps.":
+    "Quand tout est bon, réexportez la carte en fichier KML : ouvrez le menu de la carte (les trois points ⋮) et choisissez « Exporter au format KML/KMZ ». Conservez ce fichier exporté pour les étapes suivantes.",
+  // card A3 — itinerary from guidebook
+  "Draft the day-by-day": "Rédiger le jour par jour",
+  "Expand a one-line-per-day outline into a detailed, sourced itinerary.":
+    "Développer un canevas d'une ligne par jour en un itinéraire détaillé et sourcé.",
+  "This prompt turns your rough plan into a full day-by-day itinerary, using your guidebook as the source of ideas.":
+    "Ce prompt transforme votre plan sommaire en un itinéraire complet jour par jour, en s'appuyant sur votre guide comme source d'idées.",
+  "Copy the prompt into an AI chat (Claude or ChatGPT), then add your rough plan, the guidebook and any blog posts.":
+    "Copiez le prompt dans une IA (Claude ou ChatGPT), puis ajoutez votre plan sommaire, le guide et d'éventuels articles de blog.",
+  "an itinerary .md file": "un fichier .md d'itinéraire",
+  "You get back an itinerary `.md` file: each day filled out with things to see and do, walks and hikes, and the guidebook page numbers it drew from — so you can double-check anything.":
+    "Vous obtenez un fichier `.md` d'itinéraire : chaque journée étoffée de choses à voir et à faire, de marches et randonnées, et des numéros de page du guide utilisés — pour tout revérifier.",
+  // card B1 — build full json
+  "Assemble the full JSON": "Assembler le JSON complet",
+  "bookings .md, itinerary .md, KML": "réservations .md, itinéraire .md, KML",
+  "a travel .json file": "un fichier .json de voyage",
+  "Merge the prepared files (plus any extra material) into one complete itinerary JSON.":
+    "Fusionner les fichiers préparés (et tout autre document) en un JSON d'itinéraire complet.",
+  "This is the main step: it combines everything above into one file this app can open — an “itinerary JSON” (JSON is just a structured text format that apps read).":
+    "C'est l'étape principale : elle combine tout ce qui précède en un seul fichier que cette app peut ouvrir — un « JSON d'itinéraire » (le JSON est simplement un format de texte structuré que les applis lisent).",
+  "Copy the prompt into an AI chat (Claude or ChatGPT), then attach the files you made: the bookings `.md`, the exported KML, and the itinerary `.md`. You don't need all three — use whichever you have.":
+    "Copiez le prompt dans une IA (Claude ou ChatGPT), puis joignez les fichiers que vous avez créés : le `.md` de réservations, le KML exporté et le `.md` d'itinéraire. Les trois ne sont pas obligatoires — utilisez ceux que vous avez.",
+  "It merges them into one itinerary. If two sources disagree — say two different check-in times — it points that out so you can decide which is right.":
+    "Elle les fusionne en un seul itinéraire. Si deux sources se contredisent — par exemple deux heures d'arrivée différentes — elle le signale pour que vous tranchiez.",
+  "You get one file named after your trip, ending in “.json”. That's what you open in the app in the next step.":
+    "Vous obtenez un fichier au nom de votre voyage, se terminant par « .json ». C'est lui que vous ouvrez dans l'app à l'étape suivante.",
+  // card C1 — fix missing
+  "Fill the missing figures": "Compléter les valeurs manquantes",
+  "a travel .json file, ⚠️ warnings": "un fichier .json de voyage, avertissements ⚠️",
+  "an updated travel .json file": "un fichier .json de voyage mis à jour",
+  "Turn the validator's warnings into a fill-in-the-blank worksheet.":
+    "Transformer les avertissements du validateur en une fiche à compléter.",
+  "Sometimes the itinerary is missing a distance, a duration, or the elevation of a drive or hike. This optional prompt helps you fill those in.":
+    "Il manque parfois une distance, une durée ou le dénivelé d'un trajet ou d'une randonnée. Ce prompt facultatif vous aide à les compléter.",
+  "Open your JSON file in this app (menu → Options → Open JSON…). Go to the 🔎 Findings tab and copy the ⚠️ warning lines it shows — these list exactly what's missing.":
+    "Ouvrez votre fichier JSON dans cette app (menu → Options → Ouvrir un JSON…). Allez dans l'onglet 🔎 Diagnostics et copiez les lignes d'avertissement ⚠️ affichées — elles listent exactement ce qui manque.",
+  "Copy the prompt into an AI chat (Claude or ChatGPT) with your JSON file and those warning lines.":
+    "Copiez le prompt dans une IA (Claude ou ChatGPT) avec votre fichier JSON et ces lignes d'avertissement.",
+  "It replies with a worksheet — a simple checklist of the blanks. For road distances it adds a [Google Maps](https://www.google.com/maps) link so you can read the number off the map; for hikes it pre-fills a best guess from the web, marked “to check” so you confirm it.":
+    "Elle répond avec une fiche — une simple liste des cases à remplir. Pour les distances routières, elle ajoute un lien [Google Maps](https://www.google.com/maps) pour lire la valeur sur la carte ; pour les randonnées, elle pré-remplit une estimation issue du web, marquée « à vérifier ».",
+  "Fill in the blanks, then either give the worksheet back to the prompt, or type the values straight into the ✏️ Edit tab of the app.":
+    "Remplissez les cases, puis soit vous redonnez la fiche au prompt, soit vous saisissez les valeurs directement dans l'onglet ✏️ Édition de l'app.",
+  // card D1 — open & fix
+  "Open & fix it in the app": "Ouvrir et corriger dans l'app",
+  "the travel .json file": "le fichier .json de voyage",
+  "Import the JSON, then resolve anything the sources didn't cover.":
+    "Importer le JSON, puis régler ce que les sources n'ont pas couvert.",
+  "Everything so far happened in an AI chat. From here you work inside this app to finish your travel book.":
+    "Jusqu'ici tout se passait dans une IA. À partir de maintenant, vous travaillez dans cette app pour finaliser votre carnet de voyage.",
+  "Open the menu (☰, top-right) and choose Options → Open JSON…, then pick the “.json” file you made.":
+    "Ouvrez le menu (☰, en haut à droite) et choisissez Options → Ouvrir un JSON…, puis sélectionnez le fichier « .json » que vous avez créé.",
+  "Open the 🔎 Findings tab. It lists anything that's wrong (❌ errors) or worth checking (⚠️ warnings) in plain language, and points to the exact spot.":
+    "Ouvrez l'onglet 🔎 Diagnostics. Il liste ce qui ne va pas (❌ erreurs) ou ce qui mérite vérification (⚠️ avertissements) en langage clair, et indique l'endroit exact.",
+  "Open the ✏️ Edit tab to fix those and add anything missing, then press “Apply changes” to refresh the preview.":
+    "Ouvrez l'onglet ✏️ Édition pour corriger cela et ajouter ce qui manque, puis appuyez sur « Appliquer les modifications » pour rafraîchir l'aperçu.",
+  "When it looks right, save it from the Edit tab — that's your final travel `.json` file.":
+    "Quand tout est bon, enregistrez depuis l'onglet Édition — c'est votre fichier `.json` de voyage final.",
+  "the final travel .json file": "le fichier .json de voyage final",
+  // card D2 — export & back up
+  "Export & back it up": "Exporter et sauvegarder",
+  "PDF, offline app, print": "PDF, app hors ligne, impression",
+  "Take the finished travel book with you.": "Emportez le carnet de voyage terminé.",
+  "Install this app on your phone (in your browser's menu, tap “Add to Home Screen” or “Install app”) and open your file there — the travel book then works even with no internet.":
+    "Installez cette app sur votre téléphone (dans le menu de votre navigateur, touchez « Ajouter à l'écran d'accueil » ou « Installer l'application ») et ouvrez-y votre fichier — le carnet fonctionne alors même sans connexion internet.",
+  "Make a printable PDF: menu → Options → Export, then “Generate PDF”.":
+    "Créez un PDF imprimable : menu → Options → Exporter, puis « Générer le PDF ».",
+  "Print that PDF and keep it in your bag as a paper backup — handy if your phone runs out of battery.":
+    "Imprimez ce PDF et gardez-le dans votre sac comme sauvegarde papier — pratique si votre téléphone tombe en panne de batterie.",
   "Give it": "À fournir",
   "You get": "Résultat",
   "📋 Copy prompt": "📋 Copier le prompt",
@@ -653,13 +835,13 @@ export const FR: Record<string, string> = {
   "Paste it into an LLM chat, then add your material.":
     "Collez-le dans une IA, puis ajoutez vos documents.",
 
-  "Extract bookings into a dossier": "Extraire les réservations dans un dossier",
-  "Gathers every booking scattered across your confirmations into one tidy Markdown dossier — transport, accommodation, car rentals and booked activities, one entry each, with every fact attributed to its source and gaps and contradictions flagged. It only transcribes what the sources say; it never invents or guesses. Feed the result to the itinerary-JSON prompt below.":
-    "Rassemble toutes les réservations éparpillées dans vos confirmations en un seul dossier Markdown clair — transports, hébergements, locations de voiture et activités réservées, une entrée chacune, chaque information rattachée à sa source, avec les manques et les contradictions signalés. Il ne fait que transcrire ce que disent les sources ; il n'invente ni ne devine jamais. Fournissez le résultat au prompt de JSON d'itinéraire ci-dessous.",
+  "Extract bookings into a file": "Extraire les réservations dans un fichier",
+  "Gathers every booking scattered across your confirmations into one tidy Markdown file — transport, accommodation, car rentals and booked activities, one entry each, with every fact attributed to its source and gaps and contradictions flagged. It only transcribes what the sources say; it never invents or guesses. Feed the result to the itinerary-JSON prompt below.":
+    "Rassemble toutes les réservations éparpillées dans vos confirmations en un seul fichier Markdown clair — transports, hébergements, locations de voiture et activités réservées, une entrée chacune, chaque information rattachée à sa source, avec les manques et les contradictions signalés. Il ne fait que transcrire ce que disent les sources ; il n'invente ni ne devine jamais. Fournissez le résultat au prompt de JSON d'itinéraire ci-dessous.",
   "Your booking confirmations, in any mix — screenshots or photos, an MBOX export (e.g. a Gmail label via Google Takeout), copy-pasted email text, or voucher PDFs. Overlaps and different languages are fine.":
     "Vos confirmations de réservation, dans n'importe quel mélange — captures d'écran ou photos, un export MBOX (par ex. un libellé Gmail via Google Takeout), du texte d'e-mail copié-collé, ou des bons en PDF. Les doublons et les langues différentes ne posent pas de problème.",
-  "A single timestamped bookings_<trip>_<date>.md dossier — one entry per booking with its source noted, plus lists of conflicts and anything left uncertain.":
-    "Un seul dossier horodaté bookings_<voyage>_<date>.md — une entrée par réservation avec sa source indiquée, plus la liste des conflits et de tout ce qui reste incertain.",
+  "A single timestamped bookings_<trip>_<date>.md file — one entry per booking with its source noted, plus lists of conflicts and anything left uncertain.":
+    "Un seul fichier horodaté bookings_<voyage>_<date>.md — une entrée par réservation avec sa source indiquée, plus la liste des conflits et de tout ce qui reste incertain.",
 
   "Build the full itinerary JSON": "Construire le JSON complet de l'itinéraire",
   "Turns raw trip material into one complete, ready-to-render itinerary JSON file. The prompt is self-contained: it carries every field, value format and rule the LLM needs to get the JSON right on the first pass.":

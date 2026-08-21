@@ -277,9 +277,20 @@ body {
 
 /* ---- 🤖 LLM prompts tab ------------------------------------------------- */
 .prompts-intro {
-  max-width: 60ch;
   margin: 0 0 16px;
   font-size: 0.9rem;
+}
+
+/* An inline text button that reads like a link (used in body copy). */
+.textlink-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
 }
 .prompt-card h2 {
   font-size: 1rem;
@@ -315,6 +326,197 @@ body {
 }
 .prompt-hint-error {
   color: #b3261e;
+}
+
+/* --- pipeline flow (top of the LLM-prompts tab) ---------------------- */
+.prompt-flow-section {
+  margin: 4px 0 22px;
+}
+.prompt-flow-title {
+  font-size: 1rem;
+  margin: 0 0 4px;
+}
+.prompt-flow-caption {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+}
+.flow2 {
+  display: flex;
+  flex-direction: column;
+}
+.flow-stage-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 3px;
+  font-size: 0.95rem;
+}
+.flow-stage-num {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex: none;
+}
+.flow-stage-desc {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.flow-cards {
+  display: grid;
+  gap: 8px;
+}
+.flow-parallel {
+  grid-template-columns: 1fr;
+}
+.flow-arrow-down {
+  text-align: center;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  margin: 7px 0;
+}
+.flow-card {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--card);
+}
+.fc-head {
+  padding: 11px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fc-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fc-chip {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex: none;
+}
+.fc-title {
+  font-weight: 650;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+.fc-io {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.fc-io code {
+  font-size: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--fg);
+}
+.fc-arrow {
+  opacity: 0.7;
+}
+.fc-body {
+  padding: 8px 12px 12px;
+  font-size: 0.82rem;
+}
+.fc-desc {
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+.fc-detail-label {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.fc-detail ol,
+.fc-detail ul {
+  margin: 5px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+}
+.fc-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.fc-link:hover {
+  text-decoration: underline;
+}
+.fc-inline-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.fc-detail code {
+  font-size: 0.9em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+/* Brief highlight on a prompt card jumped to from the Usage guide. */
+@keyframes prompt-card-flash {
+  from {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+.prompt-card-flash {
+  animation: prompt-card-flash 1.6s ease-out;
+}
+.kind-input {
+  border-left-color: #9aa4b2;
+}
+.kind-input .fc-chip {
+  background: #e7ebf0;
+  color: #3a4452;
+}
+.kind-skill {
+  border-left-color: #5b9bd5;
+}
+.kind-skill .fc-chip {
+  background: #cfe3fb;
+  color: #10314f;
+}
+.kind-app {
+  border-left-color: #e08a97;
+}
+.kind-app .fc-chip {
+  background: #f8d3da;
+  color: #4a1f27;
 }
 
 /* segmented control (language), light-panel variant of the old .lang */

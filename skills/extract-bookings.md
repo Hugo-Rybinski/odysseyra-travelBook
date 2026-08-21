@@ -6,14 +6,14 @@ selectable), an MBOX export of confirmation emails (e.g. a Gmail label saved via
 Google Takeout), copy-pasted email/booking text, PDFs of vouchers, or plain
 notes. Sources may be in any language and may overlap or contradict each other.
 
-**Output:** a single Markdown file — a **booking dossier** — that gathers every
-booking found across the sources into one structured, human-readable document,
+**Output:** a single Markdown **file** that gathers every booking found across
+the sources into one structured, human-readable document,
 one entry per booking, grouped by kind (transport / accommodation / car rental).
 It is a faithful transcription of what the sources say, with each fact attributed
 to its source and every gap and contradiction called out. Suggested filename —
 include the moment it was generated (`<YYYY-MM-DD_HHhMM>`, the current date and
 time): `bookings_<trip>_<YYYY-MM-DD_HHhMM>.md` (e.g.
-`bookings_france-june2026_2026-05-03_12h34.md`). This dossier is meant to be fed
+`bookings_france-june2026_2026-05-03_12h34.md`). This file is meant to be fed
 next to the **build full json** skill as clean, consolidated source material.
 
 **This document is self-contained.** It defines the absolute no-invention rule,
@@ -30,7 +30,7 @@ supplied sources, it does not exist for this task.
 
 ## Absolute rule — never invent or infer
 
-Transcribe; do not create. Every value in the dossier must be **explicitly
+Transcribe; do not create. Every value in the file must be **explicitly
 present in the provided sources**.
 
 - Do **not** invent, infer, estimate, complete, "correct", or silently
@@ -126,7 +126,7 @@ converted figure. The two are not a conflict.
 
 For each booking, capture every field below **that the sources state**; mark the
 rest `— not in sources`. Field names mirror the `build full json` schema so the
-dossier maps cleanly downstream.
+file maps cleanly downstream.
 
 ### Transport (per leg)
 
@@ -310,9 +310,9 @@ conflict list can reference them.
 
 ## Before you deliver — checklist (internal — do NOT put in the file)
 
-Run this check on yourself before returning the dossier. It is for your own
+Run this check on yourself before returning the file. It is for your own
 verification only: **do not include this checklist (or any task/tick list) in the
-generated `.md`** — the dossier ends at the *Uncertain / needs confirmation*
+generated `.md`** — the file ends at the *Uncertain / needs confirmation*
 section. Perform every check; just don't write it out.
 
 - [ ] Every value is present in the sources; nothing was invented, inferred, or

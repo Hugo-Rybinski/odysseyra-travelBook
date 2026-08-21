@@ -30,10 +30,10 @@ const SKILLS: Skill[] = [
   {
     file: "extract-bookings.md",
     emoji: "🎟️",
-    title: "Extract bookings into a dossier",
+    title: "Extract bookings into a file",
     what:
       "Gathers every booking scattered across your confirmations into one tidy " +
-      "Markdown dossier — transport, accommodation, car rentals and booked " +
+      "Markdown file — transport, accommodation, car rentals and booked " +
       "activities, one entry each, with every fact attributed to its source and " +
       "gaps and contradictions flagged. It only transcribes what the sources say; " +
       "it never invents or guesses. Feed the result to the itinerary-JSON prompt below.",
@@ -43,7 +43,7 @@ const SKILLS: Skill[] = [
         "or voucher PDFs. Overlaps and different languages are fine.",
     ],
     output:
-      "A single timestamped bookings_<trip>_<date>.md dossier — one entry per " +
+      "A single timestamped bookings_<trip>_<date>.md file — one entry per " +
       "booking with its source noted, plus lists of conflicts and anything left uncertain.",
   },
   {
@@ -165,7 +165,7 @@ function SkillCard({ skill }: { skill: Skill }) {
   }, [text]);
 
   return (
-    <section className="opt-group prompt-card">
+    <section className="opt-group prompt-card" id={`prompt-${skill.file}`}>
       <h2>
         <span aria-hidden>{skill.emoji} </span>
         {t(skill.title)}
@@ -198,15 +198,44 @@ function SkillCard({ skill }: { skill: Skill }) {
   );
 }
 
-export function PromptsPanel(): ReactNode {
+export function PromptsPanel({
+  scrollTo,
+  onScrolled,
+  onOpenGuide,
+}: {
+  scrollTo?: string | null;
+  onScrolled?: () => void;
+  onOpenGuide?: () => void;
+}): ReactNode {
   const t = useT();
+
+  // When arriving from a Usage-guide "Open this prompt" link, scroll the matching
+  // card into view and briefly highlight it, then clear the request.
+  useEffect(() => {
+    if (!scrollTo) return;
+    const el = document.getElementById(`prompt-${scrollTo}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("prompt-card-flash");
+      const timer = window.setTimeout(() => el.classList.remove("prompt-card-flash"), 1600);
+      onScrolled?.();
+      return () => window.clearTimeout(timer);
+    }
+    onScrolled?.();
+  }, [scrollTo, onScrolled]);
+
   return (
     <section className="options-page" role="region" aria-label={t("🤖 LLM prompts")}>
       <h1 className="options-title">{t("LLM prompts")}</h1>
       <p className="opt-desc prompts-intro">
         {t(
           "Ready-made prompts that turn your raw trip material into itinerary JSON — or help you fill its gaps. Copy one, paste it into your favourite LLM (Claude, ChatGPT…), and add your own documents.",
-        )}
+        )}{" "}
+        {t("New to this? Start with the")}{" "}
+        <button type="button" className="textlink-btn" onClick={onOpenGuide}>
+          {t("📘 Usage guide")}
+        </button>
+        .
       </p>
       <div className="options">
         {SKILLS.map((s) => (

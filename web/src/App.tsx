@@ -32,6 +32,7 @@ import { Book, type DayView } from "./render/Book";
 import { MapProviderContext, type MapProvider } from "./render/nav";
 import { Options, FileGroup } from "./Options";
 import { PromptsPanel } from "./prompts/PromptsPanel";
+import { GuidePanel } from "./prompts/GuidePanel";
 import { EditPanel } from "./edit/EditPanel";
 import { jsonToDraft, serializeForSave, serializeWithPaths } from "./edit/serialize";
 import {
@@ -66,7 +67,15 @@ const STAGE_LABEL: Record<BootProgress["stage"], string> = {
 };
 
 type Lang = "en" | "fr";
-type View = "options" | "viewer" | "transport" | "accommodations" | "findings" | "edit" | "prompts";
+type View =
+  | "options"
+  | "viewer"
+  | "transport"
+  | "accommodations"
+  | "findings"
+  | "edit"
+  | "guide"
+  | "prompts";
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -130,6 +139,9 @@ export function App() {
   // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
   // first-run user can open a file without visiting Options.
   const [view, setView] = useState<View>("viewer");
+  // A prompt card the LLM-prompts tab should scroll to on open (set when a
+  // Usage-guide "Open this prompt" link is followed). Cleared once handled.
+  const [promptAnchor, setPromptAnchor] = useState<string | null>(null);
   // The top-bar burger menu (holds the view switcher).
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -573,6 +585,14 @@ export function App() {
     [draft, lang, itinerary, buildDayMaps],
   );
 
+  // Follow a Usage-guide "Open this prompt" link: switch to the LLM-prompts tab
+  // and remember which card to scroll to (PromptsPanel does the scrolling).
+  const openPrompt = useCallback((file: string) => {
+    setPromptAnchor(file);
+    setView("prompts");
+    setMenuOpen(false);
+  }, []);
+
   // Re-validate (in the chosen language) when the language changes.
   const onToggleLang = useCallback(
     async (next: Lang) => {
@@ -627,6 +647,7 @@ export function App() {
                 { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false, divider: true },
                 { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false, divider: false },
                 { id: "edit" as View, label: t("✏️ Edit"), disabled: !draft, dot: dirty, divider: true },
+                { id: "guide" as View, label: t("📘 Usage guide"), disabled: false, dot: false, divider: false },
                 { id: "prompts" as View, label: t("🤖 LLM prompts"), disabled: false, dot: false, divider: false },
                 { id: "options" as View, label: t("⚙️ Options"), disabled: false, dot: false, divider: false },
               ].map((item) => (
@@ -675,8 +696,14 @@ export function App() {
 
       {error && <p className="banner error">⚠️ {error}</p>}
 
-      {view === "prompts" ? (
-        <PromptsPanel />
+      {view === "guide" ? (
+        <GuidePanel onOpenPrompt={openPrompt} />
+      ) : view === "prompts" ? (
+        <PromptsPanel
+          scrollTo={promptAnchor}
+          onScrolled={() => setPromptAnchor(null)}
+          onOpenGuide={() => setView("guide")}
+        />
       ) : view === "options" ? (
         <Options
           onOpen={onOpen}
