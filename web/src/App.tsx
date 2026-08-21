@@ -732,7 +732,7 @@ export function App() {
                   setMenuOpen(false);
                 }}
               >
-                {updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update")}
+                {updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update app")}
               </button>
             </div>
           )}

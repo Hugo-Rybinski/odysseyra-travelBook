@@ -142,7 +142,7 @@ export const FR: Record<string, string> = {
   "Updating…": "Mise à jour…",
   "Checking…": "Vérification…",
   "Check for updates": "Rechercher des mises à jour",
-  "🔄 Update": "🔄 Mettre à jour",
+  "🔄 Update app": "🔄 Mettre à jour l'appli",
   "🔄 Checking…": "🔄 Vérification…",
   "🔄 Updating…": "🔄 Mise à jour…",
 

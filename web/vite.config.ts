@@ -11,6 +11,9 @@ export default defineConfig({
   // Allow the production preview to be reached over a Tailscale HTTPS hostname
   // (needed so a phone can install the PWA + test offline over a secure origin).
   preview: { host: true, allowedHosts: [".ts.net"] },
+  // Same for the dev server, so `make dev HOST=<tailnet-ip>` can be opened via
+  // the machine's *.ts.net MagicDNS name (not just the raw 100.x IP).
+  server: { allowedHosts: [".ts.net"] },
   build: {
     // MapLibre is a deliberately large, lazily-loaded chunk — don't warn on it.
     chunkSizeWarningLimit: 1100,
