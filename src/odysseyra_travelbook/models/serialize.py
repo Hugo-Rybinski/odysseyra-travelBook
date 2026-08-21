@@ -273,6 +273,12 @@ def _car_event(itin: Itinerary, ev) -> dict:
     """A car pick-up / drop-off woven into a day's timeline. Carries the timeline
     fields plus the identifying bits of its owning rental."""
     rental = ev.rental
+    # The event's own coordinate: pick-up / drop-off point, else the rental's
+    # fallback — mirrors the PDF's inline "(Navigate)" target (pdf/days.py).
+    coord = None
+    if rental is not None:
+        coord = (rental.pickup_coordinate if ev.kind == "car_pickup"
+                 else rental.dropoff_coordinate) or rental.coordinate
     return {
         "kind": ev.kind,  # "car_pickup" | "car_dropoff"
         "date": _date(ev.date),
@@ -281,6 +287,8 @@ def _car_event(itin: Itinerary, ev) -> dict:
         "company": rental.company if rental else "",
         "car_model": rental.car_model if rental else "",
         "car_type_label": rental.car_type_label if rental else "",
+        "booking_number": rental.booking_number if rental else "",
+        "coordinate": _coord(coord),
         **_sched(ev, itin.default_timezone),
     }
 

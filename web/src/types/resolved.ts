@@ -181,6 +181,8 @@ export interface CarEvent extends Scheduled {
   company: string;
   car_model: string;
   car_type_label: string;
+  booking_number: string;
+  coordinate: Coordinate | null;
 }
 
 export interface CarRental {

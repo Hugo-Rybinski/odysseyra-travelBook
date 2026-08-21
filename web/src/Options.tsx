@@ -54,6 +54,10 @@ export interface OptionsProps {
   setInkSaver: (v: boolean) => void;
   mapsExport: boolean;
   setMapsExport: (v: boolean) => void;
+  inferCoords: boolean;
+  setInferCoords: (v: boolean) => void;
+  mapCountry: string;
+  setMapCountry: (v: string) => void;
   onExport: () => void;
   exporting: boolean;
   // App
@@ -195,6 +199,10 @@ export function Options(props: OptionsProps) {
     setInkSaver,
     mapsExport,
     setMapsExport,
+    inferCoords,
+    setInferCoords,
+    mapCountry,
+    setMapCountry,
     onExport,
     exporting,
     checkForUpdate,
@@ -383,6 +391,45 @@ export function Options(props: OptionsProps) {
                 onChange={(e) => setMapsExport(e.target.checked)}
               />
               {t("Include maps")}
+            </label>
+          </Tip>
+          {/* Address-inference options only bite when maps are embedded. */}
+          <Tip
+            text={
+              fileReason ||
+              (!mapsExport
+                ? t("Turn on “Include maps” to use this")
+                : t("Geocode activities that have an address but no coordinate so they appear on the maps"))
+            }
+          >
+            <label className={`opt-check ${fileReason || !mapsExport ? "disabled" : ""}`}>
+              <input
+                type="checkbox"
+                checked={inferCoords}
+                disabled={!!fileReason || !mapsExport}
+                onChange={(e) => setInferCoords(e.target.checked)}
+              />
+              {t("Infer coordinates from address")}
+            </label>
+          </Tip>
+          <Tip
+            text={
+              fileReason ||
+              (!mapsExport
+                ? t("Turn on “Include maps” to use this")
+                : t("Restrict address geocoding to these countries (2-letter ISO codes, comma-separated)"))
+            }
+          >
+            <label className={`opt-field ${fileReason || !mapsExport ? "disabled" : ""}`}>
+              {t("Map countries")}
+              <input
+                type="text"
+                className="opt-input"
+                value={mapCountry}
+                placeholder={t("e.g. FR, ES")}
+                disabled={!!fileReason || !mapsExport}
+                onChange={(e) => setMapCountry(e.target.value)}
+              />
             </label>
           </Tip>
           <Tip

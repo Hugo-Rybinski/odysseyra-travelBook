@@ -521,26 +521,37 @@ function TransportRow({ t, lang }: { t: Transport; lang: Lang }) {
 
 function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
   const provider = useMapProvider();
-  const label = event.kind === "car_pickup" ? tr(lang, "pickUp") : tr(lang, "dropOff");
-  const who = [event.company, event.car_model].filter(Boolean).join(" · ");
+  const pickup = event.kind === "car_pickup";
+  // Descriptor "company · car_model (Type)", mirroring the PDF's _car_descriptor.
+  let who = [event.company, event.car_model].filter(Boolean).join("  ·  ");
+  if (event.car_type_label) who = who ? `${who} (${event.car_type_label})` : event.car_type_label;
+  const bits = [
+    event.location,
+    event.duration_display,
+    who,
+    event.booking_number ? fill(tr(lang, "ref"), { ref: event.booking_number }) : "",
+  ].filter(Boolean);
+  const nav = navUrl(provider, event.coordinate, event.location);
   return (
     <li className="act car">
       <Gutter
-        label="CAR"
+        label={pickup ? tr(lang, "pickUp") : tr(lang, "dropOff")}
         start={event.start_time}
         end={event.end_time}
         startTz={event.start_tz_label}
         endTz={event.end_tz_label}
       />
       <div className="act-body">
-        <div className="act-title">
-          {label}
-          {who ? ` — ${who}` : ""}
-        </div>
-        {event.location && (
+        <div className="act-title">{tr(lang, pickup ? "pickUpCar" : "dropOffCar")}</div>
+        {(bits.length > 0 || nav) && (
           <p className="chips-line">
-            {event.location}{"  "}
-            <NavLink lang={lang} href={navUrl(provider, null, event.location)} />
+            {bits.join("  ·  ")}
+            {nav ? (
+              <>
+                {bits.length ? "  ·  " : ""}
+                <NavLink lang={lang} href={nav} />
+              </>
+            ) : null}
           </p>
         )}
       </div>

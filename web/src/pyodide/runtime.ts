@@ -181,7 +181,14 @@ export async function geocode(
  * for download. */
 export async function buildPdf(
   text: string,
-  opts: { lang?: string; inkSaver?: boolean; maps?: boolean; mapProvider?: string } = {},
+  opts: {
+    lang?: string;
+    inkSaver?: boolean;
+    maps?: boolean;
+    mapProvider?: string;
+    mapCountry?: string;
+    inferCoords?: boolean;
+  } = {},
 ): Promise<Uint8Array> {
   const result = bridge().build(
     text,
@@ -189,6 +196,8 @@ export async function buildPdf(
     opts.inkSaver ?? false,
     opts.maps ?? null,
     opts.mapProvider ?? "google",
+    opts.mapCountry ?? "",
+    opts.inferCoords ?? null,
   );
   // Python `bytes` usually comes back as a PyProxy (needs .toJs()); guard in case
   // a future Pyodide auto-converts it to a Uint8Array.

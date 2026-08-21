@@ -143,6 +143,8 @@ export function App() {
   const [canReopen, setCanReopen] = useState(false);
   const [inkSaver, setInkSaver] = useState(false);
   const [mapsExport, setMapsExport] = useState(false);
+  const [inferCoords, setInferCoords] = useState(false);
+  const [mapCountry, setMapCountry] = useState("");
   const [exporting, setExporting] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
@@ -286,9 +288,13 @@ export function App() {
     };
   }, []);
 
-  // Default the PDF's map toggle to whatever the opened file asks for.
+  // Default the PDF's map toggles to whatever the opened file asks for.
   useEffect(() => {
-    if (itinerary) setMapsExport(itinerary.maps.include_in_render);
+    if (itinerary) {
+      setMapsExport(itinerary.maps.include_in_render);
+      setInferCoords(itinerary.maps.infer_from_address);
+      setMapCountry(itinerary.maps.inference_countries.join(", "));
+    }
   }, [itinerary]);
 
   // Live-validate the draft (debounced): serialize with a line→path map, run the
@@ -448,7 +454,15 @@ export function App() {
     setExporting(true);
     setError(null);
     try {
-      const bytes = await buildPdf(source.text, { lang, inkSaver, maps: mapsExport, mapProvider });
+      const bytes = await buildPdf(source.text, {
+        lang,
+        inkSaver,
+        maps: mapsExport,
+        mapProvider,
+        // The country scope / address-inference only bite when maps are on.
+        mapCountry: mapsExport ? mapCountry : "",
+        inferCoords: mapsExport ? inferCoords : undefined,
+      });
       const base = itinerary?.title || source.name || "odysseyra";
       downloadBytes(bytes, `${slugify(base)}.pdf`);
     } catch (e) {
@@ -456,7 +470,7 @@ export function App() {
     } finally {
       setExporting(false);
     }
-  }, [source, lang, inkSaver, mapsExport, mapProvider, itinerary]);
+  }, [source, lang, inkSaver, mapsExport, inferCoords, mapCountry, mapProvider, itinerary]);
 
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.
@@ -768,6 +782,10 @@ export function App() {
           setInkSaver={setInkSaver}
           mapsExport={mapsExport}
           setMapsExport={setMapsExport}
+          inferCoords={inferCoords}
+          setInferCoords={setInferCoords}
+          mapCountry={mapCountry}
+          setMapCountry={setMapCountry}
           onExport={onExport}
           exporting={exporting}
           checkForUpdate={checkForUpdate}

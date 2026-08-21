@@ -581,6 +581,36 @@ body {
   color: var(--muted);
   cursor: help;
 }
+.opt-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.opt-field.disabled {
+  color: var(--muted);
+  cursor: help;
+}
+.opt-input {
+  width: 6.5rem;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.opt-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.opt-input:disabled {
+  background: var(--bg);
+  color: var(--muted);
+  cursor: help;
+}
 
 /* ---------------------------------------------------- custom hover tooltips */
 /* A styled bubble drawn from `data-tip`, used instead of the native `title`
