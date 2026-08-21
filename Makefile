@@ -36,7 +36,7 @@ help: ## Show this help
 	@echo ""
 	@echo "Examples:"
 	@echo "  make install"
-	@echo "  make pdf FILE=examples/pyrenees.json OUT=out.pdf"
+	@echo "  make pdf FILE=examples/france.json OUT=out.pdf"
 	@echo "  make preview HOST=0.0.0.0 PORT=4173"
 
 # --------------------------------------------------- dependency install

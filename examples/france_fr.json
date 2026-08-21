@@ -1,0 +1,792 @@
+{
+  "travel_description": {
+    "title": "Grand tour de France",
+    "subtitle": "Paris, les châteaux de la Loire, le Périgord et les hautes Pyrénées",
+    "cover_color": "#2f5d8c",
+    "summary": "Une semaine à travers la France : les musées et les boulevards de Paris, les châteaux Renaissance de la Loire, le Périgord médiéval et une vraie randonnée dans les hautes Pyrénées — arrivée en avion à Paris, départ de Toulouse, en TGV et en voiture de location."
+  },
+  "defaults": {
+    "start_time": "08:30",
+    "end_time": "21:00",
+    "buffer": "15 min",
+    "timezone": "+02:00",
+    "breakfast_until": "10:00",
+    "lunch_until": "15:00",
+    "meal_duration": "1h",
+    "currency": "EUR",
+    "secondary_currencies": [
+      {
+        "currency": "USD",
+        "change_rate": 1.08
+      },
+      {
+        "currency": "GBP",
+        "change_rate": 0.85
+      }
+    ],
+    "include_maps_in_render": true,
+    "infer_coordinates_from_address": true,
+    "inference_countries": [
+      "FR"
+    ]
+  },
+  "days": [
+    {
+      "date": "2026-09-05",
+      "city": "Paris",
+      "title": "Arrivée à Paris",
+      "description": "À la descente du vol de nuit à Roissy, on dépose les bagages dans le 2e arrondissement, puis on entre en douceur dans la ville avec le Louvre et un premier vrai dîner.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Aéroport Paris-Charles de Gaulle",
+          "distance_km": 32,
+          "start_time": "12:30",
+          "duration": "50 min",
+          "off_road": false,
+          "coordinate": {
+            "lat": 49.0097,
+            "long": 2.5479
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 48.8713, "long": 2.3436 },
+              "location": "Hôtel des Grands Boulevards"
+            }
+          ]
+        },
+        {
+          "type": "meal",
+          "meal_type": "lunch",
+          "restaurant": "Bistrot Vivienne",
+          "address": "4 Rue des Petits Champs, 75002 Paris",
+          "start_time": "14:00",
+          "coordinate": {
+            "lat": 48.8668,
+            "long": 2.3383
+          }
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Musée du Louvre",
+          "category": "museum",
+          "address": "Rue de Rivoli, 75001 Paris",
+          "start_time": "15:30",
+          "duration": "2h30",
+          "description": "Le musée le plus visité au monde — choisissez une aile (Denon pour les peintures italiennes) plutôt que de tout vouloir voir.",
+          "website": "https://www.louvre.fr",
+          "price": 22,
+          "coordinate": {
+            "lat": 48.8606,
+            "long": 2.3376
+          }
+        },
+        {
+          "type": "meal",
+          "meal_type": "dinner",
+          "restaurant": "Le Grand Colbert",
+          "address": "2 Rue Vivienne, 75002 Paris",
+          "coordinate": {
+            "lat": 48.8663,
+            "long": 2.3399
+          }
+        }
+      ]
+    },
+    {
+      "date": "2026-09-06",
+      "city": "Paris",
+      "title": "De l'Île de la Cité au Quartier latin",
+      "description": "Une journée entière à pied : la cathédrale et la Sainte-Chapelle le matin, le Quartier latin l'après-midi, et la tour Eiffel au crépuscule.",
+      "activities": [
+        {
+          "type": "point_of_interest",
+          "name": "Cathédrale Notre-Dame de Paris",
+          "category": "church",
+          "address": "6 Parvis Notre-Dame, 75004 Paris",
+          "start_time": "08:30",
+          "duration": "1h",
+          "description": "Rouverte après l'incendie de 2019 — arrivez tôt pour éviter la file.",
+          "website": "https://www.notredamedeparis.fr",
+          "coordinate": {
+            "lat": 48.853,
+            "long": 2.3499
+          }
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Sainte-Chapelle",
+          "category": "church",
+          "address": "10 Bd du Palais, 75001 Paris",
+          "duration": "45 min",
+          "description": "Un écrin de vitraux du XIIIe siècle sur l'Île de la Cité.",
+          "coordinate": {
+            "lat": 48.8554,
+            "long": 2.345
+          }
+        },
+        {
+          "type": "meal",
+          "meal_type": "lunch",
+          "restaurant": "Les Deux Palais",
+          "address": "3 Bd du Palais, 75004 Paris",
+          "start_time": "12:30",
+          "coordinate": {
+            "lat": 48.8558,
+            "long": 2.3456
+          }
+        },
+        {
+          "type": "place",
+          "name": "Le Quartier latin",
+          "start_time": "14:00",
+          "duration": "3h",
+          "description": "Le quartier étudiant de la rive gauche — le départ fixé à 14:00 laisse un court battement après le déjeuner, visible sur la frise.",
+          "coordinate": {
+            "lat": 48.8462,
+            "long": 2.3464
+          },
+          "activities": [
+            {
+              "type": "point_of_interest",
+              "name": "Panthéon",
+              "category": "building",
+              "duration": "45 min",
+              "description": "Mausolée néoclassique des grandes figures de la République, avec un pendule de Foucault sous la coupole.",
+              "website": "https://www.paris-pantheon.fr",
+              "coordinate": {
+                "lat": 48.8462,
+                "long": 2.3464
+              }
+            },
+            {
+              "type": "point_of_interest",
+              "name": "Arènes de Lutèce",
+              "category": "ruins",
+              "description": "Un amphithéâtre gallo-romain du Ier siècle, caché derrière les immeubles près de la rue Monge.",
+              "coordinate": {
+                "lat": 48.8456,
+                "long": 2.3524
+              }
+            },
+            {
+              "type": "point_of_interest",
+              "name": "Jardin du Luxembourg",
+              "category": "other",
+              "coordinate": {
+                "lat": 48.8462,
+                "long": 2.3372
+              }
+            },
+            {
+              "type": "point_of_interest",
+              "name": "Rue Mouffetard",
+              "category": "street",
+              "description": "Une rue de marché en pente, fromageries, boulangeries et cafés.",
+              "coordinate": {
+                "lat": 48.842,
+                "long": 2.3496
+              }
+            },
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "restaurant": "Café de la Sorbonne",
+              "address": "Place de la Sorbonne, 75005 Paris",
+              "coordinate": {
+                "lat": 48.8489,
+                "long": 2.343
+              }
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Tour Eiffel",
+          "category": "viewpoint",
+          "address": "Champ de Mars, 75007 Paris",
+          "start_time": "18:00",
+          "duration": "1h30",
+          "description": "Réservez le sommet à l'avance — la vue est plus belle dans la dernière heure de jour.",
+          "website": "https://www.toureiffel.paris",
+          "price": 29.4,
+          "coordinate": {
+            "lat": 48.8584,
+            "long": 2.2945
+          }
+        },
+        {
+          "type": "meal",
+          "meal_type": "dinner",
+          "restaurant": "Bouillon Chartier",
+          "address": "7 Rue du Faubourg Montmartre, 75009 Paris",
+          "coordinate": {
+            "lat": 48.8719,
+            "long": 2.343
+          }
+        }
+      ]
+    },
+    {
+      "date": "2026-09-07",
+      "city": "Paris → Amboise",
+      "title": "Châteaux de la Renaissance",
+      "description": "TGV du matin pour Tours, on prend la voiture de location et on passe la journée parmi les châteaux de la Loire — la silhouette de Chambord et la dernière demeure de Léonard à Amboise.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Tours",
+          "distance_km": 72,
+          "start_time": "11:00",
+          "duration": "1h",
+          "off_road": false,
+          "coordinate": {
+            "lat": 47.39,
+            "long": 0.6942
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 47.6161, "long": 1.5169 },
+              "location": "Château de Chambord"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Château de Chambord",
+          "category": "castle",
+          "address": "41250 Chambord",
+          "duration": "2h",
+          "description": "Le vaste pavillon de chasse de François Ier, célèbre pour son escalier à double révolution attribué à Léonard de Vinci.",
+          "website": "https://www.chambord.org",
+          "price": 16,
+          "coordinate": {
+            "lat": 47.6161,
+            "long": 1.5169
+          }
+        },
+        {
+          "type": "meal",
+          "meal_type": "lunch",
+          "restaurant": "Le Grand Saint-Michel",
+          "address": "103 Place Saint-Louis, 41250 Chambord",
+          "coordinate": {
+            "lat": 47.614,
+            "long": 1.5157
+          }
+        },
+        {
+          "type": "road",
+          "start": "Chambord",
+          "distance_km": 60,
+          "duration": "1h05",
+          "off_road": false,
+          "coordinate": {
+            "lat": 47.6161,
+            "long": 1.5169
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 47.4103, "long": 0.9906 },
+              "location": "Amboise"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Château du Clos Lucé",
+          "category": "building",
+          "address": "2 Rue du Clos Lucé, 37400 Amboise",
+          "duration": "1h30",
+          "description": "La dernière demeure de Léonard de Vinci, avec des machines reconstituées d'après ses manuscrits dans les jardins.",
+          "website": "https://www.vinci-closluce.com",
+          "price": 18,
+          "coordinate": {
+            "lat": 47.4103,
+            "long": 0.9906
+          }
+        }
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "city": "Amboise → Sarlat-la-Canéda",
+      "title": "Cap au sud vers le Périgord",
+      "description": "Une longue journée de route à travers le centre de la France, pour arriver dans la ville de pierre dorée de Sarlat à temps pour son vieux quartier et le dîner.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Amboise",
+          "distance_km": 345,
+          "start_time": "08:30",
+          "duration": "4h",
+          "off_road": false,
+          "coordinate": {
+            "lat": 47.4132,
+            "long": 0.9857
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 46.5802, "long": 0.3404 },
+              "location": "Poitiers",
+              "duration": "1h20",
+              "distance_km": 120
+            },
+            {
+              "coordinate": { "lat": 45.8336, "long": 1.2611 },
+              "location": "Limoges",
+              "duration": "1h15",
+              "distance_km": 125
+            },
+            {
+              "coordinate": { "lat": 44.889, "long": 1.216 },
+              "location": "Sarlat-la-Canéda",
+              "duration": "1h25",
+              "distance_km": 100
+            }
+          ]
+        },
+        {
+          "type": "meal",
+          "meal_type": "picnic",
+          "area": "une aire près de Limoges"
+        },
+        {
+          "type": "place",
+          "name": "Le vieux Sarlat",
+          "start_time": "16:30",
+          "duration": "2h30",
+          "description": "L'un des centres médiévaux les mieux conservés de France — façades de grès, marché couvert et ruelles éclairées aux lanternes.",
+          "coordinate": {
+            "lat": 44.889,
+            "long": 1.216
+          },
+          "activities": [
+            {
+              "type": "point_of_interest",
+              "name": "Rue de la République",
+              "category": "street",
+              "description": "La « Traverse » qui coupe la vieille ville, bordée de boutiques.",
+              "coordinate": {
+                "lat": 44.8905,
+                "long": 1.2155
+              }
+            },
+            {
+              "type": "point_of_interest",
+              "name": "Cathédrale Saint-Sacerdos",
+              "category": "church",
+              "duration": "30 min",
+              "coordinate": {
+                "lat": 44.8895,
+                "long": 1.217
+              }
+            },
+            {
+              "type": "meal",
+              "meal_type": "dinner",
+              "restaurant": "Le Bistrot de l'Octroi",
+              "address": "111 Av. de Selves, 24200 Sarlat-la-Canéda",
+              "coordinate": {
+                "lat": 44.893,
+                "long": 1.218
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-09",
+      "city": "Sarlat-la-Canéda",
+      "title": "Châteaux et grottes",
+      "description": "Une journée dans la vallée de la Vézère : un château perché, les grottes peintes de Lascaux et une balade tranquille au bord de la rivière pour revenir à la voiture.",
+      "activities": [
+        {
+          "type": "point_of_interest",
+          "name": "Château de Beynac",
+          "category": "castle",
+          "address": "24220 Beynac-et-Cazenac",
+          "start_time": "09:30",
+          "duration": "1h30",
+          "description": "Une forteresse du XIIe siècle sur une falaise calcaire au-dessus de la Dordogne, tenue par Richard Cœur de Lion.",
+          "website": "https://www.chateau-beynac.com",
+          "price": 10,
+          "coordinate": {
+            "lat": 44.8397,
+            "long": 1.1456
+          }
+        },
+        {
+          "type": "road",
+          "start": "Beynac-et-Cazenac",
+          "distance_km": 55,
+          "duration": "1h",
+          "off_road": false,
+          "coordinate": {
+            "lat": 44.8397,
+            "long": 1.1456
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 45.053, "long": 1.166 },
+              "location": "Montignac"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Lascaux IV",
+          "category": "museum",
+          "address": "Av. de Lascaux, 24290 Montignac",
+          "duration": "2h",
+          "description": "Un fac-similé intégral de la grotte peinte paléolithique, avec un solide musée de la préhistoire — l'originale est fermée au public.",
+          "website": "https://www.lascaux.fr",
+          "price": 22,
+          "coordinate": {
+            "lat": 45.053,
+            "long": 1.166
+          }
+        },
+        {
+          "type": "meal",
+          "meal_type": "lunch",
+          "restaurant": "Le Tourony",
+          "address": "Le Bourg, 24290 Thonac",
+          "coordinate": {
+            "lat": 45.064,
+            "long": 1.156
+          }
+        },
+        {
+          "type": "hike",
+          "name": "Sentier au bord de la Vézère",
+          "start": "Montignac",
+          "end": "Thonac",
+          "distance_km": 5,
+          "elevation_m": 40,
+          "route": "one_way",
+          "duration": "1h30",
+          "description": "Un chemin de halage facile et presque plat le long de la Vézère — un aller simple avec un court retour en taxi.",
+          "coordinate": {
+            "lat": 45.064,
+            "long": 1.156
+          }
+        },
+        {
+          "type": "buffer",
+          "duration": "30 min"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "city": "Sarlat → Cauterets",
+      "title": "Dans les hautes Pyrénées",
+      "description": "La longue étape vers le sud-ouest et les montagnes, puis la montée à pied dans la vallée du Marcadau jusqu'au lac glaciaire de Gaube.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Sarlat-la-Canéda",
+          "distance_km": 350,
+          "start_time": "07:30",
+          "duration": "4h30",
+          "off_road": false,
+          "coordinate": {
+            "lat": 44.889,
+            "long": 1.216
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 43.2951, "long": -0.3708 },
+              "location": "Pau",
+              "duration": "3h",
+              "distance_km": 250
+            },
+            {
+              "coordinate": { "lat": 42.8897, "long": -0.1128 },
+              "location": "Cauterets",
+              "duration": "1h30",
+              "distance_km": 100
+            }
+          ]
+        },
+        {
+          "type": "meal",
+          "meal_type": "picnic",
+          "area": "un arrêt au bord d'un lac près de Pau"
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Pont d'Espagne",
+          "category": "waterfall",
+          "duration": "30 min",
+          "description": "Une confluence tonitruante de cascades au départ du sentier, accessible par une courte télécabine.",
+          "coordinate": {
+            "lat": 42.7897,
+            "long": -0.1417
+          }
+        },
+        {
+          "type": "hike",
+          "name": "Lac de Gaube",
+          "start": "Pont d'Espagne",
+          "distance_km": 6,
+          "elevation_m": 350,
+          "route": "back_and_forth",
+          "duration": "3h",
+          "description": "Une montée régulière à travers la forêt de pins jusqu'à un lac glaciaire au pied du Vignemale, plus haut sommet des Pyrénées françaises.",
+          "coordinate": {
+            "lat": 42.7686,
+            "long": -0.1444
+          },
+          "activities": [
+            {
+              "type": "meal",
+              "meal_type": "snack",
+              "area": "les rives du lac de Gaube"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "city": "Cauterets → Toulouse",
+      "title": "Retour depuis Toulouse",
+      "description": "On redescend la vallée avec un arrêt au sanctuaire de Lourdes, on rend la voiture à l'aéroport de Toulouse, puis le vol du soir pour rentrer.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Cauterets",
+          "distance_km": 50,
+          "start_time": "09:00",
+          "duration": "55 min",
+          "off_road": false,
+          "coordinate": {
+            "lat": 42.8897,
+            "long": -0.1128
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 43.0974, "long": -0.0583 },
+              "location": "Lourdes"
+            }
+          ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Sanctuaire Notre-Dame de Lourdes",
+          "category": "church",
+          "address": "1 Av. Mgr Théas, 65100 Lourdes",
+          "duration": "45 min",
+          "description": "Le grand lieu de pèlerinage marial au bord du Gave de Pau, sur le chemin du retour dans la vallée.",
+          "website": "https://www.lourdes-france.org",
+          "coordinate": {
+            "lat": 43.0974,
+            "long": -0.0583
+          }
+        },
+        {
+          "type": "road",
+          "start": "Lourdes",
+          "distance_km": 165,
+          "duration": "2h",
+          "off_road": false,
+          "coordinate": {
+            "lat": 43.0974,
+            "long": -0.0583
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 43.2328, "long": 0.0783 },
+              "location": "Tarbes",
+              "duration": "25 min",
+              "distance_km": 20
+            },
+            {
+              "coordinate": { "lat": 43.6293, "long": 1.3638 },
+              "location": "Aéroport de Toulouse-Blagnac",
+              "duration": "1h35",
+              "distance_km": 145
+            }
+          ]
+        },
+        {
+          "type": "meal",
+          "meal_type": "lunch",
+          "restaurant": "Le Comptoir du Terminal",
+          "address": "Aéroport de Toulouse-Blagnac",
+          "coordinate": {
+            "lat": 43.6293,
+            "long": 1.3638
+          }
+        }
+      ]
+    }
+  ],
+  "transport": [
+    {
+      "type": "plane",
+      "start": "New York JFK",
+      "end": "Paris CDG",
+      "start_date": "2026-09-04",
+      "end_date": "2026-09-05",
+      "start_time": "22:10",
+      "start_tz": "-04:00",
+      "end_time": "11:45",
+      "end_tz": "+02:00",
+      "flight_number": "AF23",
+      "booking_number": "AF77-QWLM",
+      "booking_source": "site Air France",
+      "website": "https://www.airfrance.com",
+      "booking_link": "https://wwws.airfrance.com/mmb/AF77-QWLM",
+      "status": "confirmed",
+      "price": 720,
+      "currency": "USD",
+      "paid": "paid"
+    },
+    {
+      "type": "train",
+      "start": "Paris Montparnasse",
+      "end": "Tours",
+      "start_date": "2026-09-07",
+      "start_time": "08:52",
+      "duration": "1h15",
+      "train_number": "TGV inOui 8341",
+      "booking_number": "SNCF-3KQ9F2",
+      "booking_source": "SNCF Connect",
+      "status": "booked",
+      "price": 45,
+      "paid": "to pay"
+    },
+    {
+      "type": "plane",
+      "start": "Toulouse-Blagnac",
+      "end": "New York JFK",
+      "start_date": "2026-09-11",
+      "end_date": "2026-09-12",
+      "start_time": "18:30",
+      "start_tz": "+02:00",
+      "end_time": "22:05",
+      "end_tz": "-04:00",
+      "flight_number": "AF7590 / AF6",
+      "booking_number": "AF77-QWLM",
+      "booking_source": "site Air France (retour, via CDG)",
+      "website": "https://www.airfrance.com",
+      "status": "confirmed",
+      "price": 690,
+      "currency": "USD"
+    }
+  ],
+  "accommodations": [
+    {
+      "name": "Hôtel des Grands Boulevards",
+      "arrival": "2026-09-05",
+      "departure": "2026-09-07",
+      "city": "Paris",
+      "type": "hotel",
+      "address": "17 Bd Poissonnière, 75002 Paris",
+      "contact": "+33 1 85 73 33 33",
+      "booking_source": "Booking.com",
+      "website": "https://grandsboulevardshotel.com",
+      "booking_link": "https://secure.booking.com/myreservations/GB-40218",
+      "status": "confirmed",
+      "price": 340,
+      "paid": true,
+      "breakfast_included": true,
+      "coordinate": {
+        "lat": 48.8713,
+        "long": 2.3436
+      }
+    },
+    {
+      "name": "La Maison de Loire",
+      "arrival": "2026-09-07",
+      "departure": "2026-09-08",
+      "city": "Amboise",
+      "type": "b&b",
+      "address": "12 Rue Rabelais, 37400 Amboise",
+      "contact": "+33 2 47 57 62 04",
+      "booking_source": "Gîtes de France",
+      "status": "confirmed",
+      "price": 110,
+      "paid": "to pay",
+      "breakfast_included": true,
+      "coordinate": {
+        "lat": 47.413,
+        "long": 0.984
+      }
+    },
+    {
+      "name": "Gîte du Périgord",
+      "arrival": "2026-09-08",
+      "departure": "2026-09-10",
+      "city": "Sarlat-la-Canéda",
+      "type": "other",
+      "address": "8 Rue du Siège, 24200 Sarlat-la-Canéda",
+      "contact": "host@gite-perigord.example",
+      "booking_source": "Airbnb",
+      "status": "booked",
+      "price": 180,
+      "breakfast_included": false,
+      "coordinate": {
+        "lat": 44.888,
+        "long": 1.214
+      }
+    },
+    {
+      "name": "Camping du Mamelon Vert",
+      "arrival": "2026-09-10",
+      "departure": "2026-09-11",
+      "city": "Cauterets",
+      "type": "camping",
+      "address": "Av. du Mamelon Vert, 65110 Cauterets",
+      "contact": "+33 5 62 92 51 56",
+      "booking_source": "site du camping",
+      "status": "booked",
+      "price": 34,
+      "paid": false,
+      "breakfast_included": false,
+      "coordinate": {
+        "lat": 42.893,
+        "long": -0.115
+      }
+    }
+  ],
+  "car_rentals": [
+    {
+      "company": "Hertz",
+      "car_type": "SUV",
+      "car_model": "Peugeot 5008",
+      "booking_start_date": "2026-09-07",
+      "booking_start_time": "10:00",
+      "booking_end_date": "2026-09-11",
+      "booking_end_time": "15:00",
+      "pickup_date": "2026-09-07",
+      "pickup_time": "10:15",
+      "pickup_location": "Gare de Tours",
+      "pickup_duration": "30 min",
+      "pickup_coordinate": {
+        "lat": 47.39,
+        "long": 0.6942
+      },
+      "dropoff_date": "2026-09-11",
+      "dropoff_time": "14:00",
+      "dropoff_location": "Aéroport de Toulouse-Blagnac",
+      "dropoff_duration": "20 min",
+      "dropoff_coordinate": {
+        "lat": 43.6293,
+        "long": 1.3638
+      },
+      "booking_number": "HZ-90412",
+      "website": "https://www.hertz.fr",
+      "booking_link": "https://www.hertz.fr/rentacar/reservation/HZ-90412",
+      "status": "confirmed",
+      "price": 415,
+      "paid": "paid",
+      "additional_drivers": 1,
+      "contact": "+33 5 61 30 40 50"
+    }
+  ]
+}

@@ -183,24 +183,28 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - The model raises `ItineraryError` on bad data; the validator instead reports it
   (it does its own parsing and never calls a mutating path except a guarded
   `Itinerary.from_dict` for the end-of-day check).
-- **Examples are kept in sync and tested.** `examples/pyrenees.json` (valid,
-  English), `examples/pyrenees_pieces/` (the same trip split into per-file
-  fragments for `stitch` — a test asserts it reassembles `pyrenees.json`
-  exactly, so keep the two in sync), `examples/pyrenees_fr.json` (same trip in
-  French — build with `--lang fr`), `examples/kyrgyzstan.json` (maps-on, explicit
-  coordinates, sparse OSM region — some sights intentionally unpinned; a test
-  asserts it validates clean), `examples/broken.json` (exercises every
-  validator rule).
+- **Examples are kept in sync and tested.** `examples/france.json` (the flagship:
+  a valid, feature-rich France tour, maps on — also the web viewer's **Demo**) and
+  `examples/france_fr.json` (same trip in French — build with `--lang fr`);
+  `examples/pyrenees.json` (valid, English), `examples/pyrenees_pieces/` (the same
+  trip split into per-file fragments for `stitch` — a test asserts it reassembles
+  `pyrenees.json` exactly, so keep the two in sync), `examples/pyrenees_fr.json`
+  (same trip in French — build with `--lang fr`), `examples/kyrgyzstan.json`
+  (maps-on, explicit coordinates, sparse OSM region — some sights intentionally
+  unpinned; a test asserts it validates clean), `examples/broken.json` (exercises
+  every validator rule).
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it
   with `UPDATE_SNAPSHOTS=1 pytest`.
 - **Re-render the example PDFs after every code change.** The rendered PDFs are
   the primary way changes get reviewed, so keep them current — they are
-  gitignored (`*.pdf`) and untracked, so nothing else updates them. Rebuild all
-  four (the last is maps-on — `kyrgyzstan.json` sets `include_maps_in_render`,
-  so it needs network for tiles/routes unless the cache is warm, but the build
+  gitignored (`*.pdf`) and untracked, so nothing else updates them. Rebuild them
+  all (`france.json` and `kyrgyzstan.json` are maps-on via `include_maps_in_render`,
+  so they need network for tiles/routes unless the cache is warm, but the build
   degrades gracefully offline):
   ```bash
+  .venv/bin/odysseyra-travelBook build examples/france.json -o examples/france.pdf
+  .venv/bin/odysseyra-travelBook build examples/france_fr.json --lang fr -o examples/france_fr.pdf
   .venv/bin/odysseyra-travelBook build examples/pyrenees.json -o examples/pyrenees.pdf
   .venv/bin/odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
   .venv/bin/odysseyra-travelBook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf

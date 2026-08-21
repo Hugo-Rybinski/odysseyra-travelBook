@@ -87,10 +87,10 @@ installed entry point, use `python -m odysseyra_travelbook.cli <command> …`.
 ### `build` — render the PDF
 
 ```bash
-odysseyra-travelBook build examples/pyrenees.json -o pyrenees.pdf
-odysseyra-travelBook examples/pyrenees.json                    # implies build; writes <input>.pdf
-odysseyra-travelBook build examples/pyrenees.json --ink-saver -o pyrenees.pdf
-odysseyra-travelBook build examples/pyrenees.json --maps --map-country FR -o pyrenees.pdf
+odysseyra-travelBook build examples/france.json -o france.pdf
+odysseyra-travelBook examples/france.json                      # implies build; writes <input>.pdf
+odysseyra-travelBook build examples/france.json --ink-saver -o france.pdf
+odysseyra-travelBook build examples/france.json --maps --map-country FR -o france.pdf
 ```
 
 Validation runs first (errors are printed to stderr), then it builds regardless.
@@ -118,9 +118,9 @@ outlined badges and thin rules — ideal for a home printer.
 ### `validate` — check the JSON
 
 ```bash
-odysseyra-travelBook validate examples/pyrenees.json           # errors + warnings (default)
-odysseyra-travelBook validate examples/pyrenees.json -v 3      # also the ℹ️ info notes
-odysseyra-travelBook validate examples/pyrenees_fr.json --lang fr
+odysseyra-travelBook validate examples/france.json             # errors + warnings (default)
+odysseyra-travelBook validate examples/france.json -v 3        # also the ℹ️ info notes
+odysseyra-travelBook validate examples/france_fr.json --lang fr
 ```
 
 Prints findings, each with the line it concerns, at three levels selected by
@@ -146,7 +146,7 @@ missing translation falls back to English).
 ### `geocode` — bake in coordinates
 
 ```bash
-odysseyra-travelBook geocode examples/pyrenees.json --country FR
+odysseyra-travelBook geocode examples/france.json --country FR
 ```
 
 Geocodes the objects that lack an explicit `coordinate` (from their name /
@@ -190,8 +190,8 @@ found errors.
 ```python
 from odysseyra_travelbook import Itinerary, build_pdf
 
-itinerary = Itinerary.from_json_file("examples/pyrenees.json")
-build_pdf(itinerary, "pyrenees.pdf", ink_saver=True)
+itinerary = Itinerary.from_json_file("examples/france.json")
+build_pdf(itinerary, "france.pdf", ink_saver=True)
 ```
 
 ## Browser viewer (the PWA)
@@ -250,14 +250,14 @@ The top-level object has two config groups and three content arrays:
 ```json
 {
   "travel_description": {
-    "title": "Pyrenees Road Trip",
-    "subtitle": "A week in the mountains",
-    "cover_color": "#2f6b4f",
+    "title": "Grand Tour of France",
+    "subtitle": "Paris, the Loire, the Dordogne and the Pyrenees",
+    "cover_color": "#2f5d8c",
     "summary": "A short paragraph shown on the cover."
   },
   "defaults": {
-    "start_time": "09:00",
-    "end_time": "19:00",
+    "start_time": "08:30",
+    "end_time": "21:00",
     "buffer": "15 min",
     "timezone": "+02:00"
   },
@@ -486,8 +486,8 @@ inferred** — set them explicitly.
 If a meal gives no `duration`/`end_time`, it uses `defaults.meal_duration` (0 —
 instant — unless you set one).
 
-The head shows the restaurant when named (**Lunch at Le Magret**); otherwise it
-falls back to `area` (**Lunch near Lourdes**), or just the meal type. Setting
+The head shows the restaurant when named (**Lunch at Les Deux Palais**); otherwise it
+falls back to `area` (**Picnic near Limoges**), or just the meal type. Setting
 both `restaurant` and `area` triggers a validation warning — `area` is ignored
 when a restaurant is named.
 
@@ -626,9 +626,11 @@ The browser viewer is a separate Vite/React app under `web/` (see its README).
 
 ### Example files
 
-- `examples/pyrenees.json` — a full, valid itinerary.
-- `examples/pyrenees_pieces/` — the same trip split into per-file fragments for `stitch` (a test asserts it reassembles `pyrenees.json` exactly).
-- `examples/pyrenees_fr.json` — the same trip authored in French (build with `--lang fr`).
+- `examples/france.json` — the flagship: a full, valid France tour (Paris → the Loire → the Dordogne → the Pyrenees) exercising most features, maps on. Also the in-browser **Demo**.
+- `examples/france_fr.json` — the same France tour authored in French (build with `--lang fr`).
+- `examples/pyrenees.json` — another full, valid itinerary.
+- `examples/pyrenees_pieces/` — that trip split into per-file fragments for `stitch` (a test asserts it reassembles `pyrenees.json` exactly).
+- `examples/pyrenees_fr.json` — the Pyrenees trip authored in French (build with `--lang fr`).
 - `examples/kyrgyzstan.json` — a maps-on itinerary with explicit coordinates in a region with sparser OSM coverage (a few sights deliberately have no coordinate, so aren't pinned).
 - `examples/broken.json` + `examples/broken_validator_output.txt` — an intentionally broken itinerary and the expected `validate` output (checked by a snapshot test).
 

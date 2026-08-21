@@ -151,7 +151,7 @@ export function FileGroup({
             {t("Reopen last")}
           </button>
         </Tip>
-        <Tip text={t("Load the bundled Pyrenees sample itinerary")}>
+        <Tip text={t("Load the bundled France sample itinerary")}>
           <button className="btn subtle" onClick={onOpenSample} disabled={busy}>
             {t("Sample")}
           </button>

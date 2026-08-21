@@ -55,7 +55,7 @@ import { I18nProvider, translate } from "./i18n";
 import type { Day, Finding, Itinerary } from "./types/resolved";
 import type { SrcItinerary } from "./types/source";
 
-const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
+const SAMPLE = `${import.meta.env.BASE_URL}samples/france.json`;
 
 // A minimal, valid starting point for "Create new blank itinerary": a titled
 // trip with one placeholder day, so the viewer renders something the moment it
@@ -420,7 +420,7 @@ export function App() {
   const onOpenSample = useCallback(async () => {
     try {
       const text = await (await fetch(SAMPLE)).text();
-      await analyze({ name: "pyrenees.json", text, handle: null });
+      await analyze({ name: "france.json", text, handle: null });
     } catch (e) {
       setError(String(e));
     }

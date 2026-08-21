@@ -103,7 +103,7 @@ export const FR: Record<string, string> = {
   "Open JSON…": "Ouvrir un JSON…",
   "Reopen the last opened file": "Rouvrir le dernier fichier ouvert",
   "Reopen last": "Rouvrir le dernier",
-  "Load the bundled Pyrenees sample itinerary": "Charger l'itinéraire d'exemple des Pyrénées",
+  "Load the bundled France sample itinerary": "Charger l'itinéraire d'exemple de France",
   Sample: "Exemple",
   "Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load":
     "Cartes interactives (déplacement/zoom) ; la zone de chaque jour est préchargée pour un usage hors ligne, avec repli sur l'image statique en cas d'échec du chargement",

@@ -156,9 +156,9 @@ list of **activities**.
 
 | Field | Required | Format | Default | Notes |
 |---|---|---|---|---|
-| `title` | **yes** | text | — | The day's headline (e.g. "The Sanctuary & Old Town"). |
+| `title` | **yes** | text | — | The day's headline (e.g. "Renaissance châteaux"). |
 | `date` | no | date `YYYY-MM-DD` | trip start + this day's index | Set it if the source states the date; otherwise it's inferred from position. |
-| `city` | no | text | none | City/region label (e.g. "Lourdes", or "Paris → Lourdes"). |
+| `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda"). |
 | `description` | no | text | none | An intro paragraph for the day. |
 | `activities` | **yes** | array (non-empty) | — | The ordered timeline — see below. |
 
@@ -278,8 +278,8 @@ or clearly in one town) — there's no leg to draw within a single place.
 
 **Group co-located stops under a `place`.** When several activities happen in the
 same city, town, or national park, don't list them flat in the day — create a
-`place` named for that shared zone (e.g. `"Lourdes old town"`,
-`"Ordesa National Park"`) and nest the individual sights, hikes and meals inside
+`place` named for that shared zone (e.g. `"The Latin Quarter"`,
+`"Sarlat old town"`) and nest the individual sights, hikes and meals inside
 its `activities`. Reserve the top-level list for the day's distinct legs (a
 drive, a different town). When maps are on, the area gets a single pin plus a
 second map zoomed to its nested points. You don't need to give the area its own
@@ -501,72 +501,84 @@ a conflict.
 
 ## Full worked example
 
-A three-day Pyrenees trip: one flight in, a hire car, two nights in one hotel,
-plus a drive with a multi-stop route. (Shows the shape — real values come from
-your sources.)
+A short slice of a France trip: one flight in, a hire car picked up off the
+train, a nested `place`, a multi-stop drive, one hotel and a car rental. (Shows
+the shape — real values come from your sources. The full version lives at
+`examples/france.json`.)
 
 ```json
 {
   "travel_description": {
-    "title": "Pyrenees Road Trip",
-    "subtitle": "A week of mountains, monasteries and long drives",
-    "cover_color": "#2f6b4f",
-    "summary": "Crossing the Pyrenees from the Atlantic side toward the high peaks."
+    "title": "Grand Tour of France",
+    "subtitle": "Paris, the Loire châteaux, the Dordogne and the high Pyrenees",
+    "cover_color": "#2f5d8c",
+    "summary": "A week across France: Paris, the Loire châteaux, the medieval Dordogne, and a hike in the high Pyrenees."
   },
   "defaults": {
-    "start_time": "09:00",
+    "start_time": "08:30",
     "timezone": "+02:00",
     "meal_duration": "1h",
     "currency": "EUR",
     "secondary_currencies": [
-      { "currency": "USD", "change_rate": 1.09 }
+      { "currency": "USD", "change_rate": 1.08 }
     ]
   },
   "days": [
     {
-      "date": "2026-06-08",
-      "city": "Paris → Lourdes",
-      "title": "Arrival & transfer",
-      "description": "Land at CDG, pick up the car, drive south.",
+      "date": "2026-09-05",
+      "city": "Paris",
+      "title": "Landing in Paris",
+      "description": "Off the overnight flight at CDG, drop the bags, then the Louvre.",
       "activities": [
         {
           "type": "road",
-          "start": "Pau Airport",
-          "distance_km": 45,
+          "start": "Paris-Charles de Gaulle Airport",
+          "distance_km": 32,
+          "start_time": "12:30",
+          "duration": "50 min",
           "waypoints": [
-            { "location": "Lourdes", "coordinate": { "lat": 43.0974, "long": -0.0583 } }
+            { "location": "Hôtel des Grands Boulevards", "coordinate": { "lat": 48.8713, "long": 2.3436 } }
           ]
+        },
+        {
+          "type": "point_of_interest",
+          "name": "Musée du Louvre",
+          "category": "museum",
+          "address": "Rue de Rivoli, 75001 Paris",
+          "start_time": "15:30",
+          "duration": "2h30",
+          "website": "https://www.louvre.fr"
         }
       ]
     },
     {
-      "date": "2026-06-09",
-      "city": "Lourdes",
-      "title": "The Sanctuary & Old Town",
+      "date": "2026-09-06",
+      "city": "Paris",
+      "title": "Île de la Cité to the Latin Quarter",
       "activities": [
         {
           "type": "point_of_interest",
-          "name": "Sanctuary of Our Lady of Lourdes",
+          "name": "Cathédrale Notre-Dame de Paris",
           "category": "church",
-          "address": "1 Av. Mgr Théas, Lourdes",
+          "address": "6 Parvis Notre-Dame, 75004 Paris",
           "end_time": "12:30"
         },
         {
           "type": "meal",
-          "restaurant": "Le Magret",
-          "address": "10 Rue de la Grotte, Lourdes",
+          "restaurant": "Les Deux Palais",
+          "address": "3 Bd du Palais, 75004 Paris",
           "start_time": "12:30"
         },
         {
           "type": "place",
-          "name": "Lourdes old town",
-          "start_time": "13:30",
-          "duration": "1h30",
+          "name": "The Latin Quarter",
+          "start_time": "14:00",
+          "duration": "3h",
           "activities": [
             {
               "type": "point_of_interest",
-              "name": "Château fort de Lourdes",
-              "category": "castle",
+              "name": "Panthéon",
+              "category": "building",
               "duration": "45 min"
             }
           ]
@@ -574,17 +586,17 @@ your sources.)
       ]
     },
     {
-      "date": "2026-06-10",
-      "city": "Lourdes → Saint-Bertrand",
-      "title": "Over the passes",
+      "date": "2026-09-08",
+      "city": "Amboise → Sarlat-la-Canéda",
+      "title": "South to the Dordogne",
       "activities": [
         {
           "type": "road",
-          "start": "Lourdes",
+          "start": "Amboise",
           "waypoints": [
-            { "location": "Luz-Saint-Sauveur", "coordinate": { "lat": 42.8722, "long": -0.0000 }, "duration": "40 min" },
-            { "location": "Arreau", "coordinate": { "lat": 42.9017, "long": 0.3600 }, "duration": "50 min" },
-            { "location": "Saint-Bertrand-de-Comminges", "coordinate": { "lat": 43.0269, "long": 0.5686 }, "duration": "45 min" }
+            { "location": "Poitiers", "coordinate": { "lat": 46.5802, "long": 0.3404 }, "duration": "1h20" },
+            { "location": "Limoges", "coordinate": { "lat": 45.8336, "long": 1.2611 }, "duration": "1h15" },
+            { "location": "Sarlat-la-Canéda", "coordinate": { "lat": 44.8890, "long": 1.2160 }, "duration": "1h25" }
           ]
         }
       ]
@@ -595,53 +607,53 @@ your sources.)
       "type": "plane",
       "start": "New York JFK",
       "end": "Paris CDG",
-      "start_date": "2026-06-07",
-      "end_date": "2026-06-08",
-      "start_time": "22:30",
+      "start_date": "2026-09-04",
+      "end_date": "2026-09-05",
+      "start_time": "22:10",
       "start_tz": "-04:00",
       "end_time": "11:45",
       "end_tz": "+02:00",
-      "flight_number": "AF9",
-      "booking_number": "AF1234-XY",
+      "flight_number": "AF23",
+      "booking_number": "AF77-QWLM",
       "status": "confirmed",
-      "price": 667,
+      "price": 720,
       "currency": "USD",
       "paid": "paid"
     }
   ],
   "accommodations": [
     {
-      "name": "Hôtel Gallia & Londres",
-      "arrival": "2026-06-08",
-      "departure": "2026-06-10",
-      "city": "Lourdes",
+      "name": "Hôtel des Grands Boulevards",
+      "arrival": "2026-09-05",
+      "departure": "2026-09-07",
+      "city": "Paris",
       "type": "hotel",
-      "address": "26 Av. Bernadette Soubirous, 65100 Lourdes",
+      "address": "17 Bd Poissonnière, 75002 Paris",
       "booking_source": "Booking.com",
       "status": "confirmed",
-      "price": 256,
+      "price": 340,
       "paid": true,
       "breakfast_included": true
     }
   ],
   "car_rentals": [
     {
-      "company": "Europcar",
+      "company": "Hertz",
       "car_type": "suv",
-      "car_model": "Dacia Duster",
-      "booking_start_date": "2026-06-08",
-      "booking_start_time": "18:00",
-      "booking_end_date": "2026-06-11",
-      "booking_end_time": "20:00",
-      "pickup_date": "2026-06-08",
-      "pickup_time": "18:15",
-      "pickup_location": "Pau Airport",
-      "dropoff_date": "2026-06-11",
-      "dropoff_time": "19:30",
-      "dropoff_location": "Montréjeau station",
-      "booking_number": "EC-55231",
+      "car_model": "Peugeot 5008",
+      "booking_start_date": "2026-09-07",
+      "booking_start_time": "10:00",
+      "booking_end_date": "2026-09-11",
+      "booking_end_time": "15:00",
+      "pickup_date": "2026-09-07",
+      "pickup_time": "10:15",
+      "pickup_location": "Tours railway station",
+      "dropoff_date": "2026-09-11",
+      "dropoff_time": "14:00",
+      "dropoff_location": "Toulouse-Blagnac Airport",
+      "booking_number": "HZ-90412",
       "status": "confirmed",
-      "price": 228,
+      "price": 415,
       "paid": "paid",
       "additional_drivers": 1
     }
