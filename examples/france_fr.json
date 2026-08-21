@@ -32,6 +32,32 @@
   },
   "days": [
     {
+      "date": "2026-09-04",
+      "city": "New York",
+      "title": "Jour du départ",
+      "description": "Un dernier après-midi à New York, puis direction JFK pour le vol de nuit Air France vers Paris — la première nuit se passe à bord.",
+      "activities": [
+        {
+          "type": "road",
+          "start": "Manhattan",
+          "distance_km": 26,
+          "start_time": "19:30",
+          "duration": "1h",
+          "off_road": false,
+          "coordinate": {
+            "lat": 40.758,
+            "long": -73.9855
+          },
+          "waypoints": [
+            {
+              "coordinate": { "lat": 40.6413, "long": -73.7781 },
+              "location": "Aéroport JFK de New York"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "date": "2026-09-05",
       "city": "Paris",
       "title": "Arrivée à Paris",
