@@ -899,12 +899,36 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* the File box embedded in the empty state — constrained and left-aligned
-   (the surrounding empty state is centered) */
-.empty-file {
-  max-width: 340px;
-  margin: 20px auto 0;
-  text-align: left;
+/* the empty-state call to action: one prompt line, then a row of three buttons
+   (open / guide / demo) below it. */
+.empty-actions {
+  max-width: 460px;
+  margin: 24px auto 0;
+}
+.empty-actions-text {
+  margin: 0 0 16px;
+  max-width: none;
+  color: var(--fg);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.empty-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+/* all three empty-state buttons get a soft gray fill (overriding the base white
+   .btn) so they read as a set of equal-weight CTAs. */
+.empty-action-buttons .btn {
+  flex: none;
+  white-space: nowrap;
+  background: #e7ebf0;
+  color: var(--accent);
+  border-color: #e7ebf0;
+}
+.empty-action-buttons .btn:hover:not(:disabled) {
+  filter: brightness(0.96);
 }
 
 .section-empty {

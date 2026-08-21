@@ -30,7 +30,7 @@ import {
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
 import { MapProviderContext, type MapProvider } from "./render/nav";
-import { Options, FileGroup } from "./Options";
+import { Options } from "./Options";
 import { PromptsPanel } from "./prompts/PromptsPanel";
 import { GuidePanel } from "./prompts/GuidePanel";
 import { EditPanel } from "./edit/EditPanel";
@@ -839,17 +839,32 @@ export function App() {
             <h2>{t("Open an itinerary")}</h2>
             <p>
               {t(
-                "Choose an Odysseyra TravelBook JSON file to render the travel book and see its validation findings. Everything stays on your device.",
+                "Render your travel book and see its validation findings. Everything stays on your device.",
               )}
             </p>
-            <div className="empty-file">
-              <FileGroup
-                onOpen={onOpen}
-                onReopen={onReopen}
-                onOpenSample={onOpenSample}
-                canReopen={canReopen}
-                busy={busy}
-              />
+            <div className="empty-actions">
+              <p className="empty-actions-text">
+                {t(
+                  "Open your JSON itinerary file, learn how to build your own if you're new, or just try the app with our demo itinerary.",
+                )}
+              </p>
+              <div className="empty-action-buttons">
+                <button className="btn" onClick={onOpen} disabled={busy}>
+                  {t("Open JSON…")}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setView("guide");
+                    setMenuOpen(false);
+                  }}
+                >
+                  {t("📘 Usage guide")}
+                </button>
+                <button className="btn" onClick={onOpenSample} disabled={busy}>
+                  {t("Demo")}
+                </button>
+              </div>
             </div>
             {restorable && (
               <div className="restore-banner" role="status">
