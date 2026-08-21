@@ -17,6 +17,11 @@ not need any other file, the source code, or any tool. Follow the field tables
 and rules exactly, because you cannot run the validator to catch mistakes: the
 JSON you emit must be correct on the first pass.
 
+**Start from a blank slate.** Work only from this skill and the documents
+provided in this conversation — do not draw on past memory, earlier
+conversations, or prior assumptions. If a fact is not in this skill or the
+supplied sources, it does not exist for this task.
+
 ---
 
 ## The workflow
@@ -478,6 +483,19 @@ entry the PDF simply prints that amount as-is (no conversion), and `validate`
 flags the currency as one to resolve — neither blocks the build. Add a
 `{currency, change_rate}` entry later, once the rate is known, to turn
 conversion on.
+
+**Tiny price differences aren't a conflict.** If two sources give prices for the
+same booking that differ by **1 unit or less** in the same currency (e.g. 256 vs
+256.50, or 256 vs 257 — rounding, fees), treat them as equal: use either value
+and do **not** list it in the inconsistency report. Only report a price conflict
+when the gap exceeds 1 (or the currencies differ).
+
+**Ignore a source's own conversion — keep only the charged amount.** When a
+source states a price with a parenthetical/approximate conversion into another
+currency (e.g. `$100 (≈ €98.54)` or `100 USD, about 98.54 EUR`), record **only
+the original charged amount and its currency** as the `price`/`currency`
+(`price: 100`, `currency: "USD"`) and drop the converted figure. The two are not
+a conflict.
 
 ---
 

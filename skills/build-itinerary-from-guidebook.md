@@ -6,7 +6,8 @@ sequence of days → destinations (e.g. `Day 1 → Paris`, `Day 2 → Mont
 Saint-Michel`, …). The outline need not carry any timings or activities.
 
 **Output:** a single Markdown file
-(`<destination>_<dates>_detailed_itinerary.md`) that expands each day of the
+(`itinerary_<destination>-<dates>_<YYYY-MM-DD_HHhMM>.md`, timestamped with when
+it was generated) that expands each day of the
 outline into a detailed, chronological, guidebook-sourced program — activities
 with a few descriptive lines, clearly-labelled walks/hikes with whatever metrics
 the guide gives, explicit **"Route from X to Y"** entries between localities, and
@@ -17,6 +18,11 @@ redesign the trip.
 research method (page numbering, destination index, route corridors), the
 per-activity detail level, the Markdown structure, and a full quality-control
 checklist — you need no other file, no source code, and no tool.
+
+**Start from a blank slate.** Work only from this skill and the documents
+provided in this conversation — do not draw on past memory, earlier
+conversations, or prior assumptions. If a fact is not in this skill or the
+supplied sources, it does not exist for this task.
 
 ---
 
@@ -160,16 +166,17 @@ Do not require the input to contain detailed timings or activities.
 
 Produce one Markdown file.
 
-Recommended filename:
+Recommended filename — include the moment it was generated
+(`<YYYY-MM-DD_HHhMM>`, the current date and time):
 
 ```text
-<destination>_<dates>_detailed_itinerary.md
+itinerary_<destination>-<dates>_<YYYY-MM-DD_HHhMM>.md
 ```
 
 Example:
 
 ```text
-france_10-14_may_2027_detailed_itinerary.md
+itinerary_france-10-14may2027_2026-05-03_12h34.md
 ```
 
 The file should be:
@@ -1342,7 +1349,7 @@ INPUT:
       route transitions
 
 OUTPUT:
-  detailed_itinerary.md
+  itinerary_<destination>-<dates>_<YYYY-MM-DD_HHhMM>.md
 ```
 
 ---

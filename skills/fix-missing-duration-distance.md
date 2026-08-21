@@ -18,6 +18,11 @@ it (and confirms the `[to be checked]` values), then it gets merged back.
 This document is self-contained: everything you need to read the JSON and build
 the worksheet is here — no source code, no other file, no tool.
 
+**Start from a blank slate.** Work only from this skill and the documents
+provided in this conversation — do not draw on past memory, earlier
+conversations, or prior assumptions. If a fact is not in this skill or the
+supplied sources, it does not exist for this task.
+
 ---
 
 ## The warnings you handle

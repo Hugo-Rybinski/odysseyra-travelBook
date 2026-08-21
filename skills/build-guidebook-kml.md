@@ -19,6 +19,11 @@ method, quality checks, KML structure, style system, and the two scripts needed
 to build the file — you need no other file, no source code, and no tool beyond
 Python's standard library.
 
+**Start from a blank slate.** Work only from this skill and the documents
+provided in this conversation — do not draw on past memory, earlier
+conversations, or prior assumptions. If a fact is not in this skill or the
+supplied sources, it does not exist for this task.
+
 ---
 
 ## 1. What the final map should contain
@@ -38,11 +43,18 @@ Each placemark should include:
 - A color-coded icon based on the category.
 - A folder matching the guidebook's major geographic section.
 
-A good output filename is:
+The two scripts below write fixed working filenames
+(`guidebook_places_grouped_colored.kml`, then
+`guidebook_places_grouped_colored_distances.kml`) — keep those as-is so the
+second script can read the first. **Rename the final file you deliver** to
+include the trip and the moment it was generated:
 
 ```text
-guidebook_places_grouped_colored.kml
+guidebook-kml_<trip>_<YYYY-MM-DD_HHhMM>.kml
 ```
+
+for example `guidebook-kml_france-june2026_2026-05-03_12h34.kml` (use the current
+date and time when you produce it).
 
 ---
 
@@ -918,4 +930,6 @@ The reproducible process is:
 11. Optionally add city driving-distance blocks with `add_city_distances.py`.
 12. Import into Google My Maps.
 13. Visually verify folders, colors, coordinates, descriptions, and exclusions.
-14. Deliver the final `.kml` file and the source CSV files if future editing is needed.
+14. Deliver the final `.kml` file — renamed
+    `guidebook-kml_<trip>_<YYYY-MM-DD_HHhMM>.kml` with the current date/time — and
+    the source CSV files if future editing is needed.

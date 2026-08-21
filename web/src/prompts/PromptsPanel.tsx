@@ -28,6 +28,25 @@ interface Skill {
 // their content here, only summarise them.
 const SKILLS: Skill[] = [
   {
+    file: "extract-bookings.md",
+    emoji: "🎟️",
+    title: "Extract bookings into a dossier",
+    what:
+      "Gathers every booking scattered across your confirmations into one tidy " +
+      "Markdown dossier — transport, accommodation, car rentals and booked " +
+      "activities, one entry each, with every fact attributed to its source and " +
+      "gaps and contradictions flagged. It only transcribes what the sources say; " +
+      "it never invents or guesses. Feed the result to the itinerary-JSON prompt below.",
+    inputs: [
+      "Your booking confirmations, in any mix — screenshots or photos, an MBOX " +
+        "export (e.g. a Gmail label via Google Takeout), copy-pasted email text, " +
+        "or voucher PDFs. Overlaps and different languages are fine.",
+    ],
+    output:
+      "A single timestamped bookings_<trip>_<date>.md dossier — one entry per " +
+      "booking with its source noted, plus lists of conflicts and anything left uncertain.",
+  },
+  {
     file: "build-full-json.md",
     emoji: "🗂️",
     title: "Build the full itinerary JSON",
@@ -83,8 +102,8 @@ const SKILLS: Skill[] = [
         "(e.g. “Day 1 → Paris, Day 2 → Mont Saint-Michel…”). No timings needed.",
     ],
     output:
-      "A <destination>_<dates>_detailed_itinerary.md you can then feed to the " +
-      "itinerary-JSON prompt above (or edit by hand first).",
+      "A timestamped itinerary_<destination>-<dates>_<date>.md you can then feed " +
+      "to the itinerary-JSON prompt above (or edit by hand first).",
   },
   {
     file: "fix-missing-duration-distance.md",

@@ -653,6 +653,14 @@ export const FR: Record<string, string> = {
   "Paste it into an LLM chat, then add your material.":
     "Collez-le dans une IA, puis ajoutez vos documents.",
 
+  "Extract bookings into a dossier": "Extraire les réservations dans un dossier",
+  "Gathers every booking scattered across your confirmations into one tidy Markdown dossier — transport, accommodation, car rentals and booked activities, one entry each, with every fact attributed to its source and gaps and contradictions flagged. It only transcribes what the sources say; it never invents or guesses. Feed the result to the itinerary-JSON prompt below.":
+    "Rassemble toutes les réservations éparpillées dans vos confirmations en un seul dossier Markdown clair — transports, hébergements, locations de voiture et activités réservées, une entrée chacune, chaque information rattachée à sa source, avec les manques et les contradictions signalés. Il ne fait que transcrire ce que disent les sources ; il n'invente ni ne devine jamais. Fournissez le résultat au prompt de JSON d'itinéraire ci-dessous.",
+  "Your booking confirmations, in any mix — screenshots or photos, an MBOX export (e.g. a Gmail label via Google Takeout), copy-pasted email text, or voucher PDFs. Overlaps and different languages are fine.":
+    "Vos confirmations de réservation, dans n'importe quel mélange — captures d'écran ou photos, un export MBOX (par ex. un libellé Gmail via Google Takeout), du texte d'e-mail copié-collé, ou des bons en PDF. Les doublons et les langues différentes ne posent pas de problème.",
+  "A single timestamped bookings_<trip>_<date>.md dossier — one entry per booking with its source noted, plus lists of conflicts and anything left uncertain.":
+    "Un seul dossier horodaté bookings_<voyage>_<date>.md — une entrée par réservation avec sa source indiquée, plus la liste des conflits et de tout ce qui reste incertain.",
+
   "Build the full itinerary JSON": "Construire le JSON complet de l'itinéraire",
   "Turns raw trip material into one complete, ready-to-render itinerary JSON file. The prompt is self-contained: it carries every field, value format and rule the LLM needs to get the JSON right on the first pass.":
     "Transforme vos documents de voyage en un fichier JSON d'itinéraire complet, prêt à être rendu. Le prompt est autonome : il contient tous les champs, formats de valeurs et règles dont l'IA a besoin pour produire un JSON correct du premier coup.",
@@ -682,8 +690,8 @@ export const FR: Record<string, string> = {
     "Un PDF de guide pour la région — même scanné, en images seules (le prompt lit les pages visuellement plutôt que de supposer un texte sélectionnable).",
   "A very brief trip outline: one line per day with its destination (e.g. “Day 1 → Paris, Day 2 → Mont Saint-Michel…”). No timings needed.":
     "Un canevas de voyage très bref : une ligne par jour avec sa destination (par ex. « Jour 1 → Paris, Jour 2 → Mont Saint-Michel… »). Aucun horaire nécessaire.",
-  "A <destination>_<dates>_detailed_itinerary.md you can then feed to the itinerary-JSON prompt above (or edit by hand first).":
-    "Un fichier <destination>_<dates>_detailed_itinerary.md que vous pouvez ensuite fournir au prompt de JSON d'itinéraire ci-dessus (ou modifier à la main d'abord).",
+  "A timestamped itinerary_<destination>-<dates>_<date>.md you can then feed to the itinerary-JSON prompt above (or edit by hand first).":
+    "Un fichier horodaté itinerary_<destination>-<dates>_<date>.md que vous pouvez ensuite fournir au prompt de JSON d'itinéraire ci-dessus (ou modifier à la main d'abord).",
 
   "Fix missing durations & distances": "Compléter les durées et distances manquantes",
   "Builds a fill-in-the-blank Markdown worksheet for the roads, hikes and activities that are missing a duration, distance or elevation — one entry per missing value, with Google Maps links for road distances and web-sourced estimates (tagged “to be checked”) for hikes.":
