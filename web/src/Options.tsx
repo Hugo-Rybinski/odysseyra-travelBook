@@ -19,6 +19,7 @@ export interface OptionsProps {
   onOpen: () => void;
   onReopen: () => void;
   onOpenSample: () => void;
+  onCreateBlank: () => void;
   canReopen: boolean;
   busy: boolean;
   // Language
@@ -111,6 +112,7 @@ export function FileGroup({
   onOpen,
   onReopen,
   onOpenSample,
+  onCreateBlank,
   canReopen,
   busy,
   currentFile,
@@ -118,6 +120,7 @@ export function FileGroup({
   onOpen: () => void;
   onReopen: () => void;
   onOpenSample: () => void;
+  onCreateBlank: () => void;
   canReopen: boolean;
   busy: boolean;
   currentFile?: string;
@@ -127,8 +130,13 @@ export function FileGroup({
   return (
     <section className="opt-group">
       <h2>{t("File")}</h2>
-      <p className="opt-desc">{t("Open an itinerary, reopen the last one, or load a bundled sample.")}</p>
+      <p className="opt-desc">{t("Create a new itinerary, open one, reopen the last one, or load a bundled sample.")}</p>
       <div className="opt-row">
+        <Tip text={t("Start a new blank itinerary and edit it from scratch")}>
+          <button className="btn" onClick={onCreateBlank} disabled={busy}>
+            {t("➕ Create blank")}
+          </button>
+        </Tip>
         <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
           <button className="btn" onClick={onOpen} disabled={busy}>
             {t("Open JSON…")}
@@ -159,6 +167,7 @@ export function Options(props: OptionsProps) {
     onOpen,
     onReopen,
     onOpenSample,
+    onCreateBlank,
     canReopen,
     busy,
     lang,
@@ -236,6 +245,7 @@ export function Options(props: OptionsProps) {
         onOpen={onOpen}
         onReopen={onReopen}
         onOpenSample={onOpenSample}
+        onCreateBlank={onCreateBlank}
         canReopen={canReopen}
         busy={busy}
         currentFile={currentFile}

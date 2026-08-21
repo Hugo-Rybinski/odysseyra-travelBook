@@ -57,6 +57,27 @@ import type { SrcItinerary } from "./types/source";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/pyrenees.json`;
 
+// A minimal, valid starting point for "Create new blank itinerary": a titled
+// trip with one placeholder day, so the viewer renders something the moment it
+// opens (rather than a blank page). It lands in the Edit tab for the user to
+// replace the placeholders and build the trip from scratch.
+const BLANK_ITINERARY = JSON.stringify(
+  {
+    travel_description: { title: "My trip" },
+    days: [
+      {
+        title: "Your first day",
+        description: "Your first day description",
+        activities: [
+          { type: "place", name: "Your first place", description: "Your first place description" },
+        ],
+      },
+    ],
+  },
+  null,
+  2,
+);
+
 const STAGE_LABEL: Record<BootProgress["stage"], string> = {
   idle: "Starting…",
   "loading-runtime": "Loading Python runtime…",
@@ -399,6 +420,16 @@ export function App() {
     }
   }, [analyze]);
 
+  // Start a brand-new itinerary from a blank scaffold, landing in the Edit tab.
+  const onCreateBlank = useCallback(async () => {
+    try {
+      await analyze({ name: "new-itinerary.json", text: BLANK_ITINERARY, handle: null });
+      setView("edit");
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [analyze]);
+
   const onReopen = useCallback(async () => {
     try {
       const h = await loadLastHandle();
@@ -709,6 +740,7 @@ export function App() {
           onOpen={onOpen}
           onReopen={onReopen}
           onOpenSample={onOpenSample}
+          onCreateBlank={onCreateBlank}
           canReopen={canReopen}
           busy={busy}
           lang={lang}
@@ -845,10 +877,13 @@ export function App() {
             <div className="empty-actions">
               <p className="empty-actions-text">
                 {t(
-                  "Open your JSON itinerary file, learn how to build your own if you're new, or just try the app with our demo itinerary.",
+                  "Create a blank itinerary, open an existing JSON file, or just try the app with our demo — and if you're new, check the usage guide.",
                 )}
               </p>
               <div className="empty-action-buttons">
+                <button className="btn" onClick={onCreateBlank} disabled={busy}>
+                  {t("➕ Create blank")}
+                </button>
                 <button className="btn" onClick={onOpen} disabled={busy}>
                   {t("Open JSON…")}
                 </button>

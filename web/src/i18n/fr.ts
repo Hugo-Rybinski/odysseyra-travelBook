@@ -42,8 +42,9 @@ export const FR: Record<string, string> = {
   "Open an itinerary": "Ouvrir un itinéraire",
   "Render your travel book and see its validation findings. Everything stays on your device.":
     "Affichez votre carnet de voyage et consultez ses diagnostics de validation. Tout reste sur votre appareil.",
-  "Open your JSON itinerary file, learn how to build your own if you're new, or just try the app with our demo itinerary.":
-    "Ouvrez votre fichier d'itinéraire JSON, apprenez à créer le vôtre si vous débutez, ou essayez simplement l'application avec notre itinéraire de démonstration.",
+  "Create a blank itinerary, open an existing JSON file, or just try the app with our demo — and if you're new, check the usage guide.":
+    "Créez un itinéraire vierge, ouvrez un fichier JSON existant, ou essayez simplement l'application avec notre démo — et si vous débutez, consultez le guide d'utilisation.",
+  "➕ Create blank": "➕ Créer un vierge",
   "Demo": "Démo",
   "Unsaved edits from a previous session{name} were found.":
     "Des modifications non enregistrées d'une session précédente{name} ont été trouvées.",
@@ -75,6 +76,10 @@ export const FR: Record<string, string> = {
   "Show less": "Voir moins",
   "Open an itinerary, reopen the last one, or load a bundled sample.":
     "Ouvrez un itinéraire, rouvrez le dernier, ou chargez un exemple fourni.",
+  "Create a new itinerary, open one, reopen the last one, or load a bundled sample.":
+    "Créez un nouvel itinéraire, ouvrez-en un, rouvrez le dernier, ou chargez un exemple fourni.",
+  "Start a new blank itinerary and edit it from scratch":
+    "Démarrer un nouvel itinéraire vierge et le composer de zéro",
   "Current file opened:": "Fichier actuellement ouvert :",
   "Set the language of the viewer and PDF exports.":
     "Choisissez la langue de la visionneuse et des exports PDF.",
