@@ -13,6 +13,8 @@
     "breakfast_until": "10:00",
     "lunch_until": "15:00",
     "meal_duration": "1h",
+    "accommodation_start_time": "22:00",
+    "accommodation_end_time": "07:00",
     "currency": "EUR",
     "secondary_currencies": [
       {

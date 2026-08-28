@@ -77,8 +77,8 @@ remove build artifacts / the venv + `node_modules`.
 
 ## Command-line tool
 
-`odysseyra-travelBook <command> [options]`, with five commands: `build`, `validate`,
-`geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
+`odysseyra-travelBook <command> [options]`, with six commands: `build`, `validate`,
+`ics`, `geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
 (`en` default, or `fr`) picks the language of *generated* text and diagnostics
 (never your JSON content), and `-v` / `--verbose` sets validation verbosity.
 Running `odysseyra-travelBook <file.json>` with no command implies `build`. Without the
@@ -142,6 +142,34 @@ are any errors (warnings alone exit zero).
 The PDF labels and validation messages are localized (`--lang en|fr`); all
 translatable strings live in `src/odysseyra_travelbook/lang/` (English is the source, so a
 missing translation falls back to English).
+
+### `ics` — export to a calendar
+
+```bash
+odysseyra-travelBook ics examples/france.json                  # → examples/france.ics
+odysseyra-travelBook ics examples/france.json -o trip.ics
+odysseyra-travelBook ics examples/france_fr.json --lang fr
+```
+
+Writes an [iCalendar](https://en.wikipedia.org/wiki/ICalendar) (`.ics`) file you
+can import into Google Calendar (or Apple/Outlook). One event is emitted per:
+
+- **day activity** — except **buffers** (free time isn't an event);
+- **transport leg** — timezone-aware, so a flight that departs in one zone and
+  arrives in another keeps *both* wall-clock times;
+- **car-rental** pick-up and drop-off;
+- each **night** of an accommodation booking — from that evening at
+  `defaults.accommodation_start_time` (default `22:00`) to the next morning at
+  `defaults.accommodation_end_time` (default `07:00`).
+
+Every event carries as much of the object's detail as it has (address, booking
+reference, price, nested activities…) in its description, localized with
+`--lang`. Times are written as local wall time tagged with a self-contained
+fixed-offset time zone (from each item's `start_tz`/`end_tz`, falling back to
+`defaults.timezone`), so events land at the correct instant *and* display in the
+local time of the place. Like `build`, it prints validation errors first but
+exports anyway. The browser viewer offers the same export under **Options →
+Calendar export**.
 
 ### `geocode` — bake in coordinates
 
@@ -302,6 +330,8 @@ override and validation cross-checks the itinerary against them.
 | `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
 | `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
 | `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
+| `accommodation_start_time` |  | Clock time an accommodation booking starts on the calendar (`ics` export) | string | `HH:MM` | `"22:00"` |
+| `accommodation_end_time` |  | Clock time an accommodation booking ends on the calendar (`ics` export), on the departure day | string | `HH:MM` | `"07:00"` |
 | `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
 | `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
 | `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |

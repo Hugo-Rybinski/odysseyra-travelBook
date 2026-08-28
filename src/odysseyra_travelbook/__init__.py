@@ -20,6 +20,7 @@ from .models import (
     schedule_activities,
     to_dict,
 )
+from .ics import build_ics
 from .pdf import build_pdf
 from .validate import Finding, format_findings, validate_text
 
@@ -46,6 +47,7 @@ __all__ = [
     "schedule_activities",
     "to_dict",
     "build_pdf",
+    "build_ics",
     "validate_text",
     "format_findings",
 ]

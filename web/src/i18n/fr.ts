@@ -130,6 +130,12 @@ export const FR: Record<string, string> = {
   "Maps are omitted from the PDF": "Les cartes sont exclues du PDF",
   "Exporting…": "Export…",
   "Export PDF": "Exporter en PDF",
+  "Calendar export": "Export calendrier",
+  "Export the trip as an .ics calendar file you can import into Google Calendar (activities, transport, car rentals and accommodation — timezone-aware).":
+    "Exportez le voyage en fichier calendrier .ics importable dans Google Agenda (activités, transports, locations de voiture et hébergements — avec fuseaux horaires).",
+  "Download an .ics file with one event per activity, transport leg, car pick-up/drop-off and accommodation booking":
+    "Télécharger un fichier .ics avec un événement par activité, trajet, prise/restitution de voiture et réservation d'hébergement",
+  "Export ICS (calendar)": "Exporter en ICS (calendrier)",
   "Install Odysseyra TravelBook as an app on this device":
     "Installer Odysseyra TravelBook comme application sur cet appareil",
   "Install as an app": "Installer comme application",
@@ -386,6 +392,12 @@ export const FR: Record<string, string> = {
   "0 (instant)": "0 (instantané)",
   "Default length of a meal with no duration/end time. Defaults to 0 (instant).":
     "Durée par défaut d'un repas sans durée/heure de fin. Par défaut 0 (instantané).",
+  "Accommodation start time": "Heure de début d'hébergement",
+  "Clock time an accommodation booking starts on the calendar (ICS export). Defaults to 22:00.":
+    "Heure à laquelle une réservation d'hébergement commence dans le calendrier (export ICS). Par défaut 22:00.",
+  "Accommodation end time": "Heure de fin d'hébergement",
+  "Clock time an accommodation booking ends on the calendar (ICS export), on the departure day. Defaults to 07:00.":
+    "Heure à laquelle une réservation d'hébergement se termine dans le calendrier (export ICS), le jour du départ. Par défaut 07:00.",
   Currency: "Devise",
   "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR.":
     "La devise de tous les prix, sauf mention contraire. Code ISO à 3 lettres. Par défaut EUR.",

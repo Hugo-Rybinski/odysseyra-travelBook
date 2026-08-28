@@ -344,6 +344,8 @@ def to_dict(itinerary: Itinerary) -> dict:
         ],
         "timezone": itinerary.default_timezone,
         "timezone_label": _format_tz(itinerary.default_timezone),
+        "accommodation_start_time": _time(itinerary.default_accommodation_start_time),
+        "accommodation_end_time": _time(itinerary.default_accommodation_end_time),
         "maps": {
             "include_in_render": itinerary.include_maps_in_render,
             "infer_from_address": itinerary.infer_coordinates_from_address,

@@ -1,0 +1,156 @@
+"""Tests for the iCalendar (.ics) export (`odysseyra_travelbook.build_ics`)."""
+
+from __future__ import annotations
+
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+
+from odysseyra_travelbook import Itinerary, build_ics
+from odysseyra_travelbook.cli import main
+
+EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
+NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def _ics(name: str, lang: str = "en") -> str:
+    return build_ics(Itinerary.from_json_file(EXAMPLES / name), lang=lang, now=NOW)
+
+
+def _events(ics: str) -> list[str]:
+    return re.findall(r"BEGIN:VEVENT.*?END:VEVENT", ics, re.S)
+
+
+def _unfold(text: str) -> str:
+    """Reverse RFC 5545 line folding (CRLF + leading space) for substring checks."""
+    return text.replace("\r\n ", "")
+
+
+def test_well_formed_calendar():
+    ics = _ics("france.json")
+    assert ics.startswith("BEGIN:VCALENDAR\r\n")
+    assert ics.rstrip("\r\n").endswith("END:VCALENDAR")
+    assert "\r\n" in ics and "PRODID:" in ics and "VERSION:2.0" in ics
+    events = _events(ics)
+    assert events, "the flagship trip yields events"
+    for e in events:
+        for prop in ("UID:", "DTSTAMP:", "DTSTART", "DTEND", "SUMMARY:"):
+            assert prop in e, f"every VEVENT carries {prop}"
+
+
+def test_buffers_are_excluded():
+    # France uses defaults.buffer, so the resolved timeline has buffers; none of
+    # them should become calendar events.
+    ics = _ics("france.json")
+    assert "SUMMARY:Buffer" not in ics
+
+
+def test_every_content_line_is_folded_to_75_octets():
+    ics = _ics("france.json")  # has long descriptions / accented text
+    for line in ics.split("\r\n"):
+        assert len(line.encode("utf-8")) <= 75, repr(line)
+
+
+def test_uids_are_unique():
+    ics = _ics("france.json")
+    uids = re.findall(r"UID:(.+)", ics)
+    assert uids and len(uids) == len(set(uids))
+
+
+def test_cross_timezone_transport_keeps_both_offsets():
+    # The NY→Paris flight departs UTC-4 and arrives UTC+2.
+    ics = _ics("france.json")
+    flight = next(e for e in _events(ics) if "New York JFK → Paris CDG" in e)
+    assert "DTSTART;TZID=GMT-0400:" in flight
+    assert "DTEND;TZID=GMT+0200:" in flight
+    # both offsets get a self-contained VTIMEZONE block
+    assert "TZID:GMT-0400" in ics and "TZID:GMT+0200" in ics
+
+
+def _stay_events(ics: str, name: str) -> list[str]:
+    # A booking's own events — their SUMMARY is the accommodation name (not the
+    # drive that merely ends there).
+    return [e for e in _events(ics) if f"SUMMARY:{name}" in _unfold(e)]
+
+
+def test_accommodation_emits_one_event_per_night():
+    # The Paris stay covers 2 nights (arrival Sep 5, departure Sep 7): each night
+    # runs 22:00 → 07:00 the next morning.
+    nights = _stay_events(_ics("france.json"), "Hôtel des Grands Boulevards")
+    assert len(nights) == 2
+    starts = sorted(re.search(r"DTSTART[^:]*:(\S+)", e).group(1) for e in nights)
+    ends = sorted(re.search(r"DTEND[^:]*:(\S+)", e).group(1) for e in nights)
+    assert starts == ["20260905T220000", "20260906T220000"]
+    assert ends == ["20260906T070000", "20260907T070000"]
+    assert all("TZID=GMT+0200" in e for e in nights)
+
+
+def test_accommodation_window_is_customizable():
+    data = {
+        "travel_description": {"title": "T"},
+        "defaults": {
+            "timezone": "Z",
+            "accommodation_start_time": "18:30",
+            "accommodation_end_time": "09:15",
+        },
+        "days": [{"title": "D1", "date": "2026-05-01"}],
+        "accommodations": [
+            {"name": "Inn", "arrival": "2026-05-01", "departure": "2026-05-02",
+             "city": "Town"}
+        ],
+    }
+    ics = build_ics(Itinerary.from_dict(data), now=NOW)
+    nights = _stay_events(ics, "Inn")
+    assert len(nights) == 1  # a single-night stay is one event
+    assert "DTSTART;TZID=GMT:20260501T183000" in nights[0]
+    assert "DTEND;TZID=GMT:20260502T091500" in nights[0]
+
+
+def test_descriptions_carry_detail():
+    nights = [_unfold(e) for e in
+              _stay_events(_ics("france.json"), "Hôtel des Grands Boulevards")]
+    assert all("Night: " in e for e in nights)  # "Night: 1/2", "Night: 2/2"
+    assert any("Night: 1/2" in e for e in nights)
+    assert all("Breakfast included: Yes" in e for e in nights)
+    assert all("Price: " in e for e in nights)
+
+
+def test_french_localizes_labels():
+    ics = _ics("france_fr.json", lang="fr")
+    flight = _unfold(next(e for e in _events(ics) if "Avion:" in e))
+    assert "Départ:" in flight and "Arrivée:" in flight
+    assert "Numéro de vol:" in flight
+
+
+def test_text_values_are_escaped():
+    # Addresses contain commas, which must be backslash-escaped in ICS text.
+    ics = _unfold(_ics("france.json"))
+    assert "\\, 75002 Paris" in ics
+
+
+def test_cli_writes_ics(tmp_path):
+    out = tmp_path / "trip.ics"
+    rc = main(["ics", str(EXAMPLES / "france.json"), "-o", str(out)])
+    assert rc == 0
+    text = out.read_text(encoding="utf-8")
+    assert text.startswith("BEGIN:VCALENDAR")
+    assert "BEGIN:VEVENT" in text
+
+
+def test_cli_default_output_path(tmp_path):
+    src = tmp_path / "mini.json"
+    src.write_text(
+        '{"travel_description":{"title":"Mini"},'
+        '"days":[{"title":"D1","date":"2026-05-01",'
+        '"activities":[{"type":"place","name":"Somewhere"}]}]}',
+        encoding="utf-8",
+    )
+    rc = main(["ics", str(src)])
+    assert rc == 0
+    assert (tmp_path / "mini.ics").exists()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(pytest.main([__file__, "-q"]))

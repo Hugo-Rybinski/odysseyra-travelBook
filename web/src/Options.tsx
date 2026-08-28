@@ -60,6 +60,9 @@ export interface OptionsProps {
   setMapCountry: (v: string) => void;
   onExport: () => void;
   exporting: boolean;
+  // Calendar (ICS) export
+  onExportIcs: () => void;
+  exportingIcs: boolean;
   // App
   checkForUpdate: () => void;
   checking: boolean;
@@ -205,6 +208,8 @@ export function Options(props: OptionsProps) {
     setMapCountry,
     onExport,
     exporting,
+    onExportIcs,
+    exportingIcs,
     checkForUpdate,
     checking,
     updating,
@@ -445,6 +450,28 @@ export function Options(props: OptionsProps) {
               disabled={!!fileReason || exporting || !engineReady}
             >
               {exporting ? t("Exporting…") : t("Export PDF")}
+            </button>
+          </Tip>
+        </div>
+      </section>
+
+      <section className="opt-group">
+        <h2>{t("Calendar export")}</h2>
+        <p className="opt-desc">{t("Export the trip as an .ics calendar file you can import into Google Calendar (activities, transport, car rentals and accommodation — timezone-aware).")}</p>
+        <div className="opt-row">
+          <Tip
+            text={
+              fileReason ||
+              engineReason ||
+              t("Download an .ics file with one event per activity, transport leg, car pick-up/drop-off and accommodation booking")
+            }
+          >
+            <button
+              className="btn"
+              onClick={onExportIcs}
+              disabled={!!fileReason || exportingIcs || !engineReady}
+            >
+              {exportingIcs ? t("Exporting…") : t("Export ICS (calendar)")}
             </button>
           </Tip>
         </div>

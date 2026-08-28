@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   boot,
+  buildIcs,
   buildPdf,
   geocode,
   renderDayMap,
@@ -146,6 +147,7 @@ export function App() {
   const [inferCoords, setInferCoords] = useState(false);
   const [mapCountry, setMapCountry] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportingIcs, setExportingIcs] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
   // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
@@ -472,6 +474,23 @@ export function App() {
     }
   }, [source, lang, inkSaver, mapsExport, inferCoords, mapCountry, mapProvider, itinerary]);
 
+  // Export an iCalendar (.ics) of the trip and download it. Pure transform (no
+  // maps / no network), so it never touches the export map options.
+  const onExportIcs = useCallback(async () => {
+    if (!source) return;
+    setExportingIcs(true);
+    setError(null);
+    try {
+      const text = await buildIcs(source.text, lang);
+      const base = itinerary?.title || source.name || "odysseyra";
+      downloadText(text, `${slugify(base)}.ics`, "text/calendar");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setExportingIcs(false);
+    }
+  }, [source, lang, itinerary]);
+
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.
   const onRedraw = useCallback(async () => {
@@ -793,6 +812,8 @@ export function App() {
           setMapCountry={setMapCountry}
           onExport={onExport}
           exporting={exporting}
+          onExportIcs={onExportIcs}
+          exportingIcs={exportingIcs}
           checkForUpdate={checkForUpdate}
           checking={checking}
           updating={updating}

@@ -18,6 +18,7 @@ odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
 odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
 odysseyra-travelBook build examples/pyrenees.json --maps --map-country FR -o out.pdf   # per-day maps
 odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
+odysseyra-travelBook ics examples/pyrenees.json -o trip.ics        # export a calendar (.ics) for Google Calendar
 
 # validate (-v 1 errors, 2 +warnings [default], 3 +info; -l/--lang en|fr)
 odysseyra-travelBook validate examples/pyrenees.json
@@ -99,6 +100,16 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
+- **`ics.py`** — `build_ics(itinerary, output=None, lang, now=None)` exports a
+  resolved itinerary to an iCalendar (`.ics`) string (CLI `ics`, and the viewer's
+  **Options → Calendar export**). One `VEVENT` per day activity (buffers excluded),
+  transport leg, car pick-up/drop-off and accommodation **night**. Times are emitted
+  as local wall time tagged with a self-contained fixed-offset `VTIMEZONE` (from
+  each item's `start_tz`/`end_tz`, falling back to `defaults.timezone`), so events
+  land at the right instant and show local time; each night runs from that evening
+  at `defaults.accommodation_start_time` to the next morning at `accommodation_end_time`.
+  Descriptions are packed with each object's detail, localized via `lang.tr`.
+  Pure stdlib (RFC 5545 line-folding + text escaping), no dependencies.
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
   dict from a fragment directory (`travel_description.json`, `defaults.json`, and
   `days/` `transports/` `accommodations/` `car-rentals/` folders — one array
@@ -106,7 +117,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
   scaffolds the reverse — an empty fragment dir (`SKELETON_DIRS` sub-folders +
   a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
-- `cli.py` — argparse CLI (`build` / `validate` / `stitch` / `geocode` /
+- `cli.py` — argparse CLI (`build` / `validate` / `ics` / `stitch` / `geocode` /
   `create-skeleton`, `--lang`, `--verbose`). `build` also takes `--maps/--no-maps`,
   `--map-country`, `--cache-dir`; `geocode` fills coordinates and writes them back.
 
@@ -116,9 +127,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
   `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
-  `secondary_currencies`, the maps switches `include_maps_in_render` false /
-  `infer_coordinates_from_address` false / `inference_countries` [], and
-  `show_moon_phase` false) — plus
+  `secondary_currencies`, the accommodation calendar-event times
+  `accommodation_start_time` 22:00 / `accommodation_end_time` 07:00, the maps
+  switches `include_maps_in_render` false / `infer_coordinates_from_address`
+  false / `inference_countries` [], and `show_moon_phase` false) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/

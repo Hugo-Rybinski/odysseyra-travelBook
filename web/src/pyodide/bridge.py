@@ -37,7 +37,13 @@ for _name in (
     if not hasattr(_urllib_request, _name):
         setattr(_urllib_request, _name, type(_name, (), {}))
 
-from odysseyra_travelbook import Itinerary, build_pdf, to_dict, validate_text
+from odysseyra_travelbook import (
+    Itinerary,
+    build_ics,
+    build_pdf,
+    to_dict,
+    validate_text,
+)
 
 
 # --- browser network seam for maps -----------------------------------------
@@ -244,6 +250,17 @@ def geocode(text_query, countrycodes=""):
         if result is None:
             return json.dumps({"coordinate": None})
         return json.dumps({"coordinate": {"lat": result[0], "long": result[1]}})
+    except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
+        return json.dumps({"error": str(exc)})
+
+
+def ics(text, lang="en"):
+    """Export the itinerary to iCalendar (.ics) text. No network, no maps —
+    a pure transform of the resolved model. Returns ``{"error": ...}`` on a bad
+    parse; the JS wrapper surfaces it."""
+    try:
+        itinerary = Itinerary.from_dict(json.loads(text))
+        return json.dumps({"ics": build_ics(itinerary, lang=lang)})
     except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
         return json.dumps({"error": str(exc)})
 

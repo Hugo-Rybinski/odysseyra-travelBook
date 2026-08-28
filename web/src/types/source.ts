@@ -37,6 +37,8 @@ export interface SrcDefaults {
   breakfast_until?: string; // HH:MM
   lunch_until?: string;
   meal_duration?: string; // duration
+  accommodation_start_time?: string; // HH:MM — ICS booking event start
+  accommodation_end_time?: string; // HH:MM — ICS booking event end
   currency?: string; // 3-letter ISO
   secondary_currencies?: SrcSecondaryCurrency[];
   include_maps_in_render?: boolean;

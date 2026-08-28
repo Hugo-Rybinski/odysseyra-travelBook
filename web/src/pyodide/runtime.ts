@@ -176,6 +176,16 @@ export async function geocode(
   return parsed.coordinate ?? null;
 }
 
+/** Export the itinerary to iCalendar (.ics) text (no network / no maps).
+ * Throws on a bridge error. */
+export async function buildIcs(text: string, lang = "en"): Promise<string> {
+  const raw = bridge().ics(text, lang) as string;
+  const parsed = JSON.parse(raw) as { ics?: string; error?: string };
+  if (parsed.error) throw new Error(parsed.error);
+  if (parsed.ics == null) throw new Error("ics() returned no calendar");
+  return parsed.ics;
+}
+
 /** Build the PDF. `maps` overrides the file's `include_maps_in_render` for this
  * export (undefined leaves the file's own setting in force). Returns the bytes
  * for download. */

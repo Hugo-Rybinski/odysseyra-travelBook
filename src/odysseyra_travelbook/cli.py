@@ -15,6 +15,7 @@ import json
 import sys
 from pathlib import Path
 
+from .ics import build_ics
 from .lang import DEFAULT_LANGUAGE, LANGUAGES, tr
 from .models import DEFAULT_MAP_PROVIDER, MAP_PROVIDERS, Itinerary, ItineraryError
 from .pdf import build_pdf
@@ -80,6 +81,30 @@ def _run_geocode(input_path: Path, output: Path | None, country: str | None,
                    encoding="utf-8")
     print(tr("Geocoded {filled} coordinate(s), {missed} not found → {path}",
              lang).format(filled=filled, missed=missed, path=out))
+    return 0
+
+
+def _run_ics(input_path: Path, output: Path | None, lang: str) -> int:
+    """Export the itinerary to an iCalendar (.ics) file for Google Calendar."""
+    output = output or input_path.with_suffix(".ics")
+
+    # Surface validation errors (errors only) before exporting, like `build`.
+    try:
+        findings = validate_text(Path(input_path).read_text(encoding="utf-8"), lang)
+    except OSError:
+        findings = []
+    if any(f.level == "error" for f in findings):
+        print(tr("Validation errors (exporting anyway):", lang), file=sys.stderr)
+        print(format_findings(findings, verbose=1, lang=lang), file=sys.stderr)
+
+    try:
+        itinerary = Itinerary.from_json_file(input_path)
+        build_ics(itinerary, output, lang)
+    except ItineraryError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(tr("Wrote {path}  ({days} days)", lang).format(
+        path=output, days=len(itinerary.days)))
     return 0
 
 
@@ -203,6 +228,13 @@ def main(argv: list[str] | None = None) -> int:
                    help="where to cache map tiles / geocode / route results")
     _add_lang(b)
 
+    i = sub.add_parser("ics", help="export the itinerary to an iCalendar (.ics) "
+                       "file you can import into Google Calendar")
+    i.add_argument("input", type=Path, help="path to the itinerary JSON")
+    i.add_argument("-o", "--output", type=Path, default=None,
+                   help="output .ics path (default: <input>.ics)")
+    _add_lang(i)
+
     v = sub.add_parser("validate", help="validate a travel JSON and report problems")
     v.add_argument("input", type=Path, help="path to the itinerary JSON")
     v.add_argument("-v", "--verbose", type=int, choices=(1, 2, 3), default=2,
@@ -237,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="parent directory in which to create the skeleton")
     c.add_argument("name", help="name of the skeleton directory to create")
 
-    _commands = ("build", "validate", "stitch", "create-skeleton", "geocode")
+    _commands = ("build", "validate", "stitch", "create-skeleton", "geocode", "ics")
     # Backward-compat: `odysseyra-travelBook trip.json ...` implies `build`.
     if argv and argv[0] not in _commands + ("-h", "--help"):
         argv = ["build"] + argv
@@ -251,6 +283,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_create_skeleton(args.path, args.name)
     if args.command == "geocode":
         return _run_geocode(args.input, args.output, args.country, args.lang)
+    if args.command == "ics":
+        return _run_ics(args.input, args.output, args.lang)
     if args.command == "build":
         return _run_build(args.input, args.output, args.lang, args.ink_saver,
                           maps=args.maps, map_country=args.map_country,
