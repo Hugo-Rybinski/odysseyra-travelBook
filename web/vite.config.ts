@@ -8,6 +8,11 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 // so the app works offline after first load). The local wheel and the bundled
 // example itineraries are copied into the build and precached.
 export default defineConfig({
+  // Served from the repo root in dev/preview, but under a subpath on GitHub
+  // Pages (https://<user>.github.io/odysseyra-travelBook/). The Pages workflow
+  // sets VITE_BASE=/odysseyra-travelBook/; everything routes assets through
+  // import.meta.env.BASE_URL, so this is the only knob.
+  base: process.env.VITE_BASE || "/",
   // Allow the production preview to be reached over a Tailscale HTTPS hostname
   // (needed so a phone can install the PWA + test offline over a secure origin).
   preview: { host: true, allowedHosts: [".ts.net"] },
@@ -101,7 +106,7 @@ export default defineConfig({
         // Never serve the SPA fallback (index.html) for asset URLs — a missing
         // hashed chunk should 404 cleanly (and trigger a reload, see main.tsx),
         // not masquerade as HTML.
-        navigateFallbackDenylist: [/^\/assets\//],
+        navigateFallbackDenylist: [/\/assets\//],
         runtimeCaching: [
           {
             // Pyodide runtime + core packages (wasm, stdlib, Pillow, …).
