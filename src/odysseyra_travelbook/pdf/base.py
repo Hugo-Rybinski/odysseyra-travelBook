@@ -18,6 +18,10 @@ from ..models import (
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 FONT = "DejaVu"  # bundled Unicode font: handles accents, CJK-latin, arrows, …
+# A tiny bundled subset of Noto Emoji (monochrome) holding only the eight
+# moon-phase glyphs (U+1F311..U+1F318), which DejaVu lacks — registered as a
+# fallback so the "tonight" moon-phase emoji render instead of tofu.
+EMOJI_FONT = "NotoEmojiMoon"
 
 INK = (33, 37, 41)
 MUTED = (108, 117, 125)
@@ -47,6 +51,10 @@ class _PDFBase(FPDF):
         self.add_font(FONT, "", FONT_DIR / "DejaVuSans.ttf")
         self.add_font(FONT, "B", FONT_DIR / "DejaVuSans-Bold.ttf")
         self.add_font(FONT, "I", FONT_DIR / "DejaVuSans-Oblique.ttf")
+        # Emoji fallback for the moon-phase glyphs (see EMOJI_FONT); fpdf2 uses
+        # it only for codepoints DejaVu can't draw, so normal text is unaffected.
+        self.add_font(EMOJI_FONT, "", FONT_DIR / "NotoEmojiMoon.ttf")
+        self.set_fallback_fonts([EMOJI_FONT])
         self.itinerary = itinerary
         self.lang = lang
         # Ink-saving mode: skip large solid accent fills (cover banner, page

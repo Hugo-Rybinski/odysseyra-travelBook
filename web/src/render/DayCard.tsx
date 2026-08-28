@@ -8,7 +8,7 @@ import type {
   RenderedMap,
   Transport,
 } from "../types/resolved";
-import { fill, fmtDate, tr, type Lang } from "./format";
+import { fill, fmtDate, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
@@ -561,6 +561,14 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
 
 function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   const provider = useMapProvider();
+  // The night's moon phase (opt-in via defaults.show_moon_phase), shown as just
+  // the emoji before "Tonight:", with the phase name on hover — via the app's
+  // CSS `data-tip` bubble (the native `title` proved unreliable, see Options).
+  const moon = day.moon ? (
+    <span className="moon-phase" data-tip={tr(lang, day.moon.key as LabelKey)}>
+      {day.moon.emoji}
+    </span>
+  ) : null;
   if (day.stay) {
     const s = day.stay;
     const total = s.nights;
@@ -585,6 +593,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
       <footer className="stay-bar">
         <div className="stay-line">
           <span>
+            {moon}
             <strong className="tonight">{tr(lang, "tonight")}:</strong> <PinDisc label={s.map_pin} />
             <strong>{s.name}</strong>
             {s.city ? ` (${s.city})` : ""}
@@ -611,7 +620,8 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
       <footer className="stay-bar aboard">
         <div className="stay-line">
           <span>
-            🌙 <strong className="tonight">{tr(lang, "tonight")}:</strong> {tr(lang, "aboard")}{" "}
+            {moon}
+            <strong className="tonight">{tr(lang, "tonight")}:</strong> {tr(lang, "aboard")}{" "}
             <strong>{leg.title}</strong>
           </span>
           <span className="stay-progress">{tr(lang, "onBoard")}</span>
@@ -623,6 +633,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   }
   return (
     <footer className="stay-bar none">
+      {moon}
       <strong className="tonight">{tr(lang, "tonight")}:</strong> {tr(lang, "nowhere")}
     </footer>
   );

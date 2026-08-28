@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import time
 
-from ..models import Day, _format_duration, maps_url
+from ..models import Day, _format_duration, maps_url, moon_phase
 from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 
 
@@ -98,6 +98,8 @@ class DayMixin:
     def _day_stay(self, day) -> None:
         """A compact bar at the bottom of the day's page for that night — an
         accommodation, or an overnight transport leg if you sleep aboard one."""
+        # The night's moon phase, when opted in (defaults.show_moon_phase).
+        moon = moon_phase(day.date) if self.itinerary.show_moon_phase and day.date else None
         acc = self.itinerary.stay_for(day.date)
         if acc is not None:
             total, night = acc.nights, acc.night_of(day.date)
@@ -108,7 +110,7 @@ class DayMixin:
             links = [(self.t("Website"), acc.website),
                      (self.t("Reservation"), acc.booking_link)]
             self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
-                             links=links,
+                             links=links, moon=moon,
                              nav=maps_url(acc.coordinate, acc.address, where,
                                           provider=self.map_provider),
                              addr_url=self._addr_url(acc.coordinate, acc.address))
@@ -120,10 +122,10 @@ class DayMixin:
             links = [(self.t("Website"), leg.website),
                      (self.t("Reservation"), leg.booking_link)]
             self._bottom_bar(self._overnight_name(leg), sub, self.t("on board"),
-                             links=links)
+                             links=links, moon=moon)
 
     def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
-                    links=None, nav: str = "", addr_url: str = "") -> None:
+                    links=None, nav: str = "", addr_url: str = "", moon=None) -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
@@ -145,7 +147,16 @@ class DayMixin:
         self.set_xy(cx, y + pad - 1)
         self.set_font(FONT, "B", 7)
         self.set_text_color(*self.accent)
-        self.cell(0, 4, self.t("TONIGHT'S STAY"))
+        kicker = self.t("TONIGHT'S STAY")
+        self.cell(self.get_string_width(kicker) + 1, 4, kicker)
+        if moon is not None:
+            # Moon phase inline after the kicker: the emoji (fallback font) a
+            # touch larger than the muted phase name beside it.
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*MUTED)
+            self.cell(self.get_string_width("  " + moon.emoji) + 1, 4, "  " + moon.emoji)
+            self.set_font(FONT, "", 7)
+            self.cell(0, 4, " " + self.t(moon.name))
         if right:
             self.set_xy(self.l_margin, y + pad - 1)
             self.set_font(FONT, "B", 8)

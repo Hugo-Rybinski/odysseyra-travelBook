@@ -67,6 +67,7 @@ class Itinerary:
     include_maps_in_render: bool = False  # draw a per-day map (opt-in)
     infer_coordinates_from_address: bool = False  # geocode missing coordinates
     inference_countries: list[str] = field(default_factory=list)  # ISO codes; [] = any
+    show_moon_phase: bool = False  # show the night's moon phase in "tonight" (opt-in)
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -105,6 +106,7 @@ class Itinerary:
         )
         include_maps = _parse_bool(defaults.get("include_maps_in_render", False))
         infer_coords = _parse_bool(defaults.get("infer_coordinates_from_address", False))
+        show_moon = _parse_bool(defaults.get("show_moon_phase", False))
         inference_countries = cls._parse_inference_countries(
             defaults.get("inference_countries")
         )
@@ -126,6 +128,7 @@ class Itinerary:
             include_maps_in_render=include_maps,
             infer_coordinates_from_address=infer_coords,
             inference_countries=inference_countries,
+            show_moon_phase=show_moon,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],

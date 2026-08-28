@@ -40,6 +40,7 @@ from .activities import (
     schedule_activities,
 )
 from .itinerary import Day, Itinerary
+from .moon import MoonPhase, moon_phase
 from .serialize import to_dict
 from .scheduling import Scheduled, Stamp
 from .parsers import (
@@ -80,6 +81,8 @@ __all__ = [
     "ItineraryError",
     "Meal",
     "MEAL_TYPES",
+    "MoonPhase",
+    "moon_phase",
     "NESTED_ACTIVITY_TYPES",
     "Place",
     "POI_CATEGORIES",

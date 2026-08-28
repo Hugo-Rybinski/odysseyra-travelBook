@@ -85,6 +85,15 @@ const LABELS = {
     buildingMap: "Building map…",
     noTransport: "No transport on file",
     noAccommodation: "No accommodation on file",
+    // Moon phases (keys shared with the Python model's moon.py).
+    moonNew: "New moon",
+    moonWaxingCrescent: "Waxing crescent",
+    moonFirstQuarter: "First quarter",
+    moonWaxingGibbous: "Waxing gibbous",
+    moonFull: "Full moon",
+    moonWaningGibbous: "Waning gibbous",
+    moonLastQuarter: "Last quarter",
+    moonWaningCrescent: "Waning crescent",
   },
   fr: {
     day: "Jour",
@@ -140,6 +149,14 @@ const LABELS = {
     buildingMap: "Génération de la carte…",
     noTransport: "Aucun transport enregistré",
     noAccommodation: "Aucun hébergement enregistré",
+    moonNew: "Nouvelle lune",
+    moonWaxingCrescent: "Premier croissant",
+    moonFirstQuarter: "Premier quartier",
+    moonWaxingGibbous: "Lune gibbeuse croissante",
+    moonFull: "Pleine lune",
+    moonWaningGibbous: "Lune gibbeuse décroissante",
+    moonLastQuarter: "Dernier quartier",
+    moonWaningCrescent: "Dernier croissant",
   },
 } as const;
 

@@ -307,6 +307,7 @@ override and validation cross-checks the itinerary against them.
 | `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |
 | `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
 | `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
+| `show_moon_phase` |  | Show the night's moon phase (emoji + name) in each day's "tonight" section | boolean | `true`/`false` | `false` (hidden) |
 
 Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
 <number>}`, where `change_rate` is **units of that currency per one unit of the

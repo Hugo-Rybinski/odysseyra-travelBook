@@ -1470,6 +1470,14 @@ body {
   color: var(--accent);
   white-space: nowrap;
 }
+/* The night's moon phase — just the emoji before "Tonight:", the phase name on
+   hover (via the `data-tip` bubble). */
+.moon-phase {
+  display: inline-block;
+  margin-right: 0.35em;
+  font-size: 0.95rem;
+  cursor: help;
+}
 .stay-sub {
   margin: 4px 0 0;
   font-size: 0.82rem;

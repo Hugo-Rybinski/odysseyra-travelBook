@@ -42,6 +42,7 @@ export interface SrcDefaults {
   include_maps_in_render?: boolean;
   infer_coordinates_from_address?: boolean;
   inference_countries?: string[]; // 2-letter ISO codes
+  show_moon_phase?: boolean;
 }
 
 // Scheduling fields shared by every activity except `buffer`.

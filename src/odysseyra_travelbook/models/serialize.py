@@ -26,6 +26,7 @@ from __future__ import annotations
 from datetime import date, time
 
 from .itinerary import Itinerary
+from .moon import moon_phase
 from .parsers import _format_tz
 
 __all__ = ["to_dict"]
@@ -300,6 +301,9 @@ def _day(itin: Itinerary, index: int, day) -> dict:
     that night — the stay's city, else the day's own city."""
     stay = itin.stay_for(day.date)
     night = itin.night_transport(day.date)
+    # The night's moon phase, only when opted in (defaults.show_moon_phase). The
+    # ``key`` is localized by the viewer; ``name`` is the English fallback.
+    moon = moon_phase(day.date) if itin.show_moon_phase and day.date else None
     return {
         "day_number": index + 1,
         "title": day.title,
@@ -314,6 +318,7 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "stay_night": stay.night_of(day.date) if stay else None,
         "night_transport": _transport(itin, night) if night else None,
         "sleep_city": (stay.city if stay else "") or day.city,
+        "moon": {"key": moon.key, "emoji": moon.emoji, "name": moon.name} if moon else None,
     }
 
 

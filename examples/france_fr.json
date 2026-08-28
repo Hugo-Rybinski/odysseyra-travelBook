@@ -25,6 +25,7 @@
       }
     ],
     "include_maps_in_render": true,
+    "show_moon_phase": true,
     "infer_coordinates_from_address": true,
     "inference_countries": [
       "FR"

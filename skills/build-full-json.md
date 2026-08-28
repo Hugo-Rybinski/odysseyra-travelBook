@@ -139,6 +139,7 @@ setting (e.g. "all times are local Paris time (UTC+2)" or "we start at 9am").
 | `include_maps_in_render` | no | boolean | `false` | Draw a per-day OpenStreetMap with a pin for each located activity. |
 | `infer_coordinates_from_address` | no | boolean | `false` | Geocode activities that have no explicit `coordinate`. When false, only activities with a `coordinate` appear on the map. |
 | `inference_countries` | no | array of 2-letter ISO codes | `[]` (any) | Restrict geocoding to these countries, e.g. `["FR"]`. Only used when inference is on. |
+| `show_moon_phase` | no | boolean | `false` | Show the night's moon phase (emoji + name) in each day's "tonight" section. |
 
 **`secondary_currencies`.** Each entry is `{"currency": "<ISO code>",
 "change_rate": <number>}`. The `change_rate` is **units of that currency per one

@@ -125,6 +125,7 @@ export const DEFAULTS_FIELDS: FieldSpec[] = [
   { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
   { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
   { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
+  { key: "show_moon_phase", label: "Show moon phase", kind: "bool", help: "Show the night's moon phase in each day's “tonight” section. Defaults to off." },
 ];
 
 export const SECONDARY_CURRENCY_FIELDS: FieldSpec[] = [

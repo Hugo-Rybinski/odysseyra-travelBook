@@ -188,6 +188,9 @@ DEFAULTS = [
     Spec("inference_countries", False,
          "ISO country codes to restrict geocoding to (when inferring coordinates)",
          "an array of 2-letter ISO codes like ['FR']", "[] (any country)"),
+    Spec("show_moon_phase", False,
+         "whether to show the night's moon phase in each day's 'tonight' section",
+         "true or false", "false (no moon phase shown)", V_BOOL),
 ]
 
 # Activity scheduling fields (shared by every non-buffer activity)

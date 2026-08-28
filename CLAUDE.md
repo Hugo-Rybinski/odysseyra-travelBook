@@ -116,8 +116,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
   `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
-  `secondary_currencies`, and the maps switches `include_maps_in_render` false /
-  `infer_coordinates_from_address` false / `inference_countries` []) — plus
+  `secondary_currencies`, the maps switches `include_maps_in_render` false /
+  `infer_coordinates_from_address` false / `inference_countries` [], and
+  `show_moon_phase` false) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/
@@ -180,6 +181,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 
 - Text is drawn with the bundled **DejaVu** TTF (`src/odysseyra_travelbook/fonts/`) so any
   Unicode (accents, arrows `→`, `✓`) renders. Do not switch to core fonts.
+  DejaVu has **no emoji**, so the moon-phase glyphs (`show_moon_phase`) come
+  from a tiny bundled Noto Emoji subset (`NotoEmojiMoon.ttf`, 8 glyphs
+  U+1F311–U+1F318) registered as an fpdf2 fallback in `pdf/base.py`. Phase
+  computation is in `models/moon.py` (`moon_phase(date)`), used by both the PDF
+  and `serialize.py`; the phase name is localized (English source in
+  `translations.py`, and the shared label key in the viewer's `render/format.ts`).
 - The model raises `ItineraryError` on bad data; the validator instead reports it
   (it does its own parsing and never calls a mutating path except a guarded
   `Itinerary.from_dict` for the end-of-day check).
