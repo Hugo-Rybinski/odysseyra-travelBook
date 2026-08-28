@@ -943,11 +943,13 @@ body {
 }
 .empty-action-buttons {
   display: flex;
-  flex-wrap: nowrap;
+  /* Keep all four CTAs on one line when the screen is wide enough; wrap onto
+     more lines when it isn't (each button keeps its own width — see below). */
+  flex-wrap: wrap;
   justify-content: center;
   gap: 16px;
 }
-/* all three empty-state buttons get a soft gray fill (overriding the base white
+/* all four empty-state buttons get a soft gray fill (overriding the base white
    .btn) so they read as a set of equal-weight CTAs. */
 .empty-action-buttons .btn {
   flex: none;
