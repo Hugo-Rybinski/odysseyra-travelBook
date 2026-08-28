@@ -665,7 +665,12 @@ export function App() {
           }}
           aria-label={t("🧭 Travel")}
         >
-          <img className="logo" src="/img/odysseyra-white-no-bg.svg" alt="" aria-hidden="true" />
+          <img
+            className="logo"
+            src={`${import.meta.env.BASE_URL}img/odysseyra-white-no-bg.svg`}
+            alt=""
+            aria-hidden="true"
+          />
         </button>
         <h1>{t("Odysseyra TravelBook")}</h1>
         <div className="menu" ref={menuRef}>
