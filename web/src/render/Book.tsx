@@ -78,6 +78,13 @@ export function Book({
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
 
+  // The whole day-by-day list collapses under one header. It starts open on
+  // desktop but collapsed on mobile (narrow viewports), so the phone lands on
+  // the cover rather than a long scroll of day cards.
+  const [daysOpen, setDaysOpen] = useState<boolean>(
+    () => !(typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches),
+  );
+
   // Re-apply the day-view preset when it changes or a different itinerary loads.
   // Manual per-day toggles (below) live in `collapsed` and persist until then.
   useEffect(() => {
@@ -93,6 +100,7 @@ export function Book({
   }, []);
 
   const jump = useCallback((n: number) => {
+    setDaysOpen(true); // the day list may be collapsed (e.g. on mobile) — open it
     setCollapsed((prev) => {
       if (!prev.has(n)) return prev;
       const next = new Set(prev);
@@ -140,19 +148,44 @@ export function Book({
     <ClampProvider value={clampDescriptions}>
     <div className="book" style={style}>
       <Cover itinerary={itinerary} lang={lang} onJump={jump} />
-      <div className="days">
-        {itinerary.days.map((day) => (
-          <DayCard
-            key={day.day_number}
-            day={day}
-            lang={lang}
-            collapsed={collapsed.has(day.day_number)}
-            onToggle={toggle}
-            mapExpected={itinerary.maps.include_in_render && showMapLoaders}
-            interactive={interactiveMaps}
-          />
-        ))}
-      </div>
+      <section className="days-section">
+        <header
+          className={`days-toggle ${daysOpen ? "" : "collapsed"}`}
+          role="button"
+          tabIndex={0}
+          aria-expanded={daysOpen}
+          onClick={() => setDaysOpen((o) => !o)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setDaysOpen((o) => !o);
+            }
+          }}
+        >
+          <span className="days-caret" aria-hidden>
+            {daysOpen ? "▾" : "▸"}
+          </span>
+          <span className="days-toggle-title">{tr(lang, "overview")}</span>
+          <span className="days-toggle-count">
+            {itinerary.days.length} {tr(lang, "days")}
+          </span>
+        </header>
+        {daysOpen && (
+          <div className="days">
+            {itinerary.days.map((day) => (
+              <DayCard
+                key={day.day_number}
+                day={day}
+                lang={lang}
+                collapsed={collapsed.has(day.day_number)}
+                onToggle={toggle}
+                mapExpected={itinerary.maps.include_in_render && showMapLoaders}
+                interactive={interactiveMaps}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
     </ClampProvider>
     </MapProviderContext.Provider>

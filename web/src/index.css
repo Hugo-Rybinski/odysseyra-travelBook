@@ -1067,6 +1067,45 @@ body {
 }
 
 /* days */
+/* Master collapse for the whole day-by-day list (one header over all day
+   cards). Sits between the cover and the days; open on desktop, collapsed by
+   default on mobile. */
+.days-section {
+  display: grid;
+  gap: 18px;
+}
+.days-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 2px solid var(--border);
+}
+.days-toggle:hover {
+  border-bottom-color: var(--accent);
+}
+.days-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.days-caret {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--accent);
+}
+.days-toggle-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.days-toggle-count {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
 .days {
   display: grid;
   gap: 18px;
