@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Day, Itinerary, Transport } from "../types/resolved";
 import { fill, fmtDate, fmtDateRange, tr, type Lang } from "./format";
 import { Clamp } from "./Clamp";
@@ -16,6 +17,13 @@ export function Cover({
 }) {
   const range = fmtDateRange(itinerary.start_date, itinerary.end_date, lang);
 
+  // The day-by-day overview collapses under its heading. Open on desktop but
+  // collapsed by default on mobile (narrow viewports), so the phone lands on
+  // the title + summary rather than a full-height table.
+  const [overviewOpen, setOverviewOpen] = useState<boolean>(
+    () => !(typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches),
+  );
+
   return (
     <section className="cover" aria-label="Cover">
       <div className="cover-band">
@@ -31,8 +39,26 @@ export function Cover({
 
       {itinerary.summary && <Clamp className="cover-summary" text={itinerary.summary} />}
 
-      <div className="overview">
-        <h2>{tr(lang, "overview")}</h2>
+      <div className={`overview ${overviewOpen ? "" : "collapsed"}`}>
+        <h2
+          className="overview-toggle"
+          role="button"
+          tabIndex={0}
+          aria-expanded={overviewOpen}
+          onClick={() => setOverviewOpen((o) => !o)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setOverviewOpen((o) => !o);
+            }
+          }}
+        >
+          <span className="overview-caret" aria-hidden>
+            {overviewOpen ? "▾" : "▸"}
+          </span>
+          {tr(lang, "overview")}
+        </h2>
+        {overviewOpen && (
         <table>
           <thead>
             <tr>
@@ -67,6 +93,7 @@ export function Cover({
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </section>
   );

@@ -1024,6 +1024,26 @@ body {
   margin: 0 0 12px;
   font-size: 1rem;
 }
+/* The overview heading doubles as a collapse toggle for its table. */
+.overview h2.overview-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.overview.collapsed h2.overview-toggle {
+  margin-bottom: 0;
+}
+.overview h2.overview-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.overview-caret {
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--accent);
+}
 .overview table {
   width: 100%;
   border-collapse: collapse;
