@@ -108,10 +108,11 @@ def _stamp_pins(dm, day, day_out, itinerary) -> None:
 
 def _day_geo(itinerary, day, cache):
     """Structured geo for an interactive (MapLibre) day map: numbered points, the
-    OSRM route polylines, per-area detail points, the accent colour and a bounds
-    box. Mirrors render_day_maps' numbering (activities 1..N, the night's stay
-    '*', area points A/B/C…). ``None`` when the day has nothing locatable."""
-    from odysseyra_travelbook.maps.build import STAY_PIN, _within, resolve_day
+    OSRM route polylines, the dotted transport legs, per-area detail points, the
+    accent colour and a bounds box. Mirrors render_day_maps' numbering
+    (activities 1..N, the night's stay '*', area points A/B/C…) and its framing.
+    ``None`` when the day has nothing locatable."""
+    from odysseyra_travelbook.maps.build import STAY_PIN, day_legs, resolve_day
 
     main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
     points = [{"lat": p.lat, "long": p.long, "label": str(i), "title": p.label}
@@ -128,9 +129,9 @@ def _day_geo(itinerary, day, cache):
         coords = [(p.lat, p.long) for p in pts]
         apoints = [{"lat": p.lat, "long": p.long, "label": chr(ord("A") + j), "title": p.label}
                    for j, p in enumerate(pts)]
-        # the night's-stay ★, but only when it already sits inside this area's
-        # extent (mirrors the static area map — never widens the zoom).
-        if stay_coord is not None and _within(stay_coord[0], stay_coord[1], coords):
+        # that night's stay ★ — a pin only, never part of `bounds` below, so it
+        # can't widen the zoom (mirrors the static area map).
+        if stay_coord is not None:
             apoints.append({"lat": stay_coord[0], "long": stay_coord[1],
                             "label": STAY_PIN, "title": stay.name})
         alats = [c[0] for c in coords]
@@ -138,12 +139,17 @@ def _day_geo(itinerary, day, cache):
         areas.append({
             "title": title,
             "points": apoints,
-            # bounds from the area's own points only, so the ★ (when inside)
-            # doesn't widen the fitted extent.
+            # bounds from the area's own points only, so the ★ never widens the
+            # fitted extent — it just sits wherever it falls.
             "bounds": [[min(alats), min(alons)], [max(alats), max(alons)]],
         })
+    legs = day_legs(day, itinerary)
     coords = ([(p["lat"], p["long"]) for p in points]
               + [(lat, lon) for line in routes for lat, lon in line])
+    # As in the static map, legs don't widen the fitted extent (a transatlantic
+    # flight would zoom the day out to the ocean) — unless they're all there is.
+    if not coords:
+        coords = [c for line in legs for c in line]
     if not coords:
         return None
     lats = [c[0] for c in coords]
@@ -152,6 +158,7 @@ def _day_geo(itinerary, day, cache):
         "points": points,
         "routes": [[[lat, lon] for lat, lon in line] for line in routes],
         "route_nodes": [[lat, lon] for line in route_nodes for lat, lon in line],
+        "legs": [[[lat, lon] for lat, lon in line] for line in legs],
         "areas": areas,
         "accent": itinerary.cover_color,
         "bounds": [[min(lats), min(lons)], [max(lats), max(lons)]],

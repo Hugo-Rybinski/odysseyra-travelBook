@@ -100,6 +100,36 @@ def pin_angles(px, head_r: float) -> list[float]:
     return angles
 
 
+def dashes(line, dash: float, gap: float):
+    """Split a projected polyline into dash pieces — ``[((x1, y1), (x2, y2)), …]``.
+
+    Walks the whole line so the dash rhythm carries across its corners (a
+    transport leg is a single straight segment, but this keeps it general).
+    Pillow has no dash support, hence doing it by hand.
+    """
+    out = []
+    if dash <= 0 or gap < 0:
+        return out
+    period = dash + gap
+    phase = 0.0            # distance already consumed inside the current period
+    for (x1, y1), (x2, y2) in zip(line, line[1:]):
+        seg = math.hypot(x2 - x1, y2 - y1)
+        if seg <= 0:
+            continue
+        ux, uy = (x2 - x1) / seg, (y2 - y1) / seg
+        pos = 0.0
+        while pos < seg:
+            if phase < dash:                       # inside a dash
+                take = min(dash - phase, seg - pos)
+                out.append(((x1 + ux * pos, y1 + uy * pos),
+                            (x1 + ux * (pos + take), y1 + uy * (pos + take))))
+            else:                                  # inside a gap
+                take = min(period - phase, seg - pos)
+            pos += take
+            phase = (phase + take) % period
+    return out
+
+
 def _teardrop(d, hc, tip, R, fill):
     hcx, hcy = hc
     tx, ty = tip
@@ -128,11 +158,15 @@ def _pin(d, x, y, R, number, font, accent, angle):
 # ---------------------------------------------------------------- top level ---
 def render_map(all_coords, routes, points, accent, tiles_dir,
                map_w=900, map_h=620, ink_saver=False, labels=None,
-               route_nodes=None) -> Image.Image:
+               route_nodes=None, legs=None) -> Image.Image:
     """Render an RGB map image fitting every ``(lat, long)`` in ``all_coords``.
 
     * ``routes`` — list of ``[(lat, long), …]`` polylines (drives), drawn as a
       translucent accent line.
+    * ``legs`` — list of ``[(lat, long), (lat, long)]`` transport endpoint pairs,
+      drawn as thin dotted straight lines under the routes. They are not
+      expected to be inside ``all_coords``: a leg heading far away is simply
+      clipped at the edge (see ``build.render_day_maps``).
     * ``points`` — ordered ``[(lat, long), …]``; each gets a pin.
     * ``labels`` — pin text per point (defaults to ``1..N``); e.g. letters for an
       area map or ``*`` for the night's stay.
@@ -168,6 +202,20 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
     img = boost_contrast(stitch(BASE_URL, "nolabels"),
                          contrast=1.15 if ink_saver else 1.4,
                          saturation=0.4 if ink_saver else 0.7)
+
+    # transport legs: thin dotted straight lines, drawn first so a drive's solid
+    # geometry sits on top of them where the two overlap.
+    leg_lines = [[project(*c) for c in line] for line in (legs or []) if len(line) >= 2]
+    if leg_lines:
+        def paint_legs(d, ss):
+            w = round((2 if ink_saver else 3) * SCALE * ss)
+            dash, gap = 8 * SCALE * ss, 7 * SCALE * ss
+            for line in leg_lines:
+                for a, b in dashes([(x * ss, y * ss) for x, y in line], dash, gap):
+                    d.line([a, b], fill=accent + (255,), width=w)
+        layer = _ss_layer(img.size, paint_legs)
+        img.alpha_composite(Image.blend(
+            Image.new("RGBA", img.size, (0, 0, 0, 0)), layer, 0.75))
 
     # routes: supersampled, translucent, theme color (no casing)
     route_lines = [[project(*c) for c in line] for line in routes if len(line) >= 2]

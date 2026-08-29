@@ -148,6 +148,9 @@ export interface MapGeo {
   points: MapPoint[];
   routes: [number, number][][]; // [lat, long] polylines (drives)
   route_nodes: [number, number][]; // [lat, long] named stops on the routes
+  // [origin, destination] pairs for transport legs, drawn as dotted straight
+  // lines. Optional: a day map cached in IndexedDB before legs existed has none.
+  legs?: [number, number][][];
   areas: {
     title: string;
     points: MapPoint[];

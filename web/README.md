@@ -154,10 +154,11 @@ can't load, an error boundary + timeout fall back to the static PNG.
 
 ## Current status — v1 complete
 
-The full v1 flow works in the browser, offline after first load. The header
-switches between views — **⚙️ Options**, **📖 Travel viewer**, **🔎 Findings**
-(the validation findings), and **✏️ Edit** (a structured form editor over the
-input JSON) — showing one at a time. Every control lives in the
+The full v1 flow works in the browser, offline after first load. The header's
+burger menu switches between views — **⚙️ Options**, **📖 Travel viewer**,
+**🗺️ Overview** (the trip's description + day-by-day table + a whole-trip map),
+**🔎 Findings** (the validation findings), and **✏️ Edit** (a structured form
+editor over the input JSON) — showing one at a time. Every control lives in the
 **Options** view (`src/Options.tsx`), grouped by theme — *File* (open / reopen /
 sample), *Language*, *Maps* (interactive toggle + redraw), *PDF export* (ink-saver
 / include-maps / export) and *App* (install as an app / check for updates).
@@ -185,7 +186,8 @@ by the Python engine (`validate(text, lang)`).
   opts into maps (`include_maps_in_render`), the text renders first and each day's
   Python-rendered overview map (pixel-identical to the PDF) then fills in — a
   per-day loader shows while it builds — with numbered pin discs next to activity
-  titles, plus zoomed area maps. Rendered maps are cached in IndexedDB for 30
+  titles, a dotted straight line per transport leg (both days of an overnight
+  one), plus zoomed area maps. Rendered maps are cached in IndexedDB for 30
   days (keyed by a hash of the JSON), so a relaunched app hydrates them instantly
   instead of redrawing; a **Redraw maps** button discards this file's cached
   images and rebuilds them. An **Interactive** toggle swaps the static images
@@ -198,6 +200,35 @@ by the Python engine (`validate(text, lang)`).
   static PNG automatically if it can't load. MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
+- **Overview** tab (`render/TripMap.tsx` + `render/tripGeo.ts`) reuses the book's
+  cover — trip title / dates / summary and the day-by-day table, always expanded,
+  with each row jumping into that day in the Travel view (the app carries the day
+  over as `Book`'s `jumpTo`, which expands and scrolls to it) — and adds a single
+  **whole-trip map**: `tripGeo` merges every day into one `MapGeo`, labeling each
+  pin with its **day number** and moving the point's own identity into the popup.
+  Per day it prefers the rendered day map's `geo` (its points *and* the real OSRM
+  drive geometry) and otherwise falls back to the coordinates the resolved model
+  carries, so the map works with maps off — or before the per-day renders stream
+  in. **Transport legs** are drawn on top of that as one dotted straight line per
+  leg (`DayMapGL`'s optional `legs` prop → a dashed line layer), from the trip's
+  own `transports` list so an overnight leg is drawn once rather than on both of
+  its days; a leg appears only when its JSON gives both a `start_coordinate` and
+  an `end_coordinate` with `show_on_map` (nothing infers them, and Python's day
+  maps don't map transport at all). It's interactive-only (there's no pre-rendered PNG of the whole trip to
+  fall back to), so a tiles/style failure shows a note instead.
+  **Outlier clusters are kept out of the initial view** so a "Manhattan → JFK"
+  departure day can't squash a France tour into a corner: geometry stops driving
+  the bounds once it sits both >6× the median distance from the trip's median
+  center *and* >400 km out. The anchors weighed are every pin **plus every drive
+  as a single unit** (a drive counts as far off only when it lies *entirely*
+  beyond the cut-off) — with maps on, that departure day is a route and no pin at
+  all, so a pin-only rule would let it drag the view back across the Atlantic.
+  Trimming is capped at a third of the anchors (beyond that it's a real second
+  cluster and both stay in view) and off entirely below four. The center/scale
+  statistics come from the pins only — route vertices are hundreds per drive and
+  would drag the center toward whichever day drove furthest. Trimmed geometry is
+  still drawn, with a note under the map naming the farthest thing it left out
+  (a pin's title, or "Day N · Road" for a drive).
 - **Warnings** tab lists every validation ❌/⚠️/ℹ️ finding with line numbers and a
   level filter; **EN/FR** (in Options) toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
@@ -289,6 +320,8 @@ src/
   pwa/PwaProvider.tsx      single SW registration; auto-applies updates
   maps/mapCache.ts         IndexedDB cache of rendered day maps (30-day TTL)
   render/DayMapGL.tsx      interactive MapLibre day map (lazy-loaded, online)
+  render/tripGeo.ts        merge every day into one whole-trip MapGeo
+  render/TripMap.tsx       the Overview tab's whole-trip map (reuses DayMapGL)
 scripts/check-wheel.mjs    prebuild guard: fail if the wheel is older than src/
   types/resolved.ts        TS mirror of the resolved-model dict (to_dict)
 scripts/build-wheel.sh     wheel builder used by `npm run wheel`

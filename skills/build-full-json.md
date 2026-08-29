@@ -364,7 +364,7 @@ One inter-city leg: a flight, train, bus, taxi, or ferry.
 | `price` | no | number | none | Amount only, e.g. `89` (no symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | Set only if this price is in a different currency. |
 | `paid` | no | `paid` / `to pay` | none | Payment state. |
-| `start_coordinate` / `end_coordinate` | no | `{ "lat": .., "long": .. }` | none | For maps; the route is drawn between them. |
+| `start_coordinate` / `end_coordinate` | no | `{ "lat": .., "long": .. }` | none | For maps; a dotted straight line is drawn between them on each day map the leg is in progress on (both days of an overnight leg) and on the whole-trip map. |
 
 **Notes:**
 

@@ -659,6 +659,14 @@
       "type": "plane",
       "start": "New York JFK",
       "end": "Paris CDG",
+      "start_coordinate": {
+        "lat": 40.6413,
+        "long": -73.7781
+      },
+      "end_coordinate": {
+        "lat": 49.0097,
+        "long": 2.5479
+      },
       "start_date": "2026-09-04",
       "end_date": "2026-09-05",
       "start_time": "22:10",
@@ -679,6 +687,14 @@
       "type": "train",
       "start": "Paris Montparnasse",
       "end": "Tours",
+      "start_coordinate": {
+        "lat": 48.8414,
+        "long": 2.3209
+      },
+      "end_coordinate": {
+        "lat": 47.3894,
+        "long": 0.6866
+      },
       "start_date": "2026-09-07",
       "start_time": "08:52",
       "duration": "1h15",
@@ -693,6 +709,14 @@
       "type": "plane",
       "start": "Toulouse-Blagnac",
       "end": "New York JFK",
+      "start_coordinate": {
+        "lat": 43.6293,
+        "long": 1.3638
+      },
+      "end_coordinate": {
+        "lat": 40.6413,
+        "long": -73.7781
+      },
       "start_date": "2026-09-11",
       "end_date": "2026-09-11",
       "start_time": "18:30",

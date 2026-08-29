@@ -12,6 +12,7 @@ export const FR: Record<string, string> = {
   View: "Vue",
   "⚙️ Options": "⚙️ Options",
   "🧭 Travel": "🧭 Voyage",
+  "🗺️ Overview": "🗺️ Aperçu",
   "✈️ Transports": "✈️ Transports",
   "🏠 Accommodations": "🏠 Hébergements",
   "🔎 Findings": "🔎 Diagnostics",

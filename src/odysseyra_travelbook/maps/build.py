@@ -44,15 +44,6 @@ def _route_through(points, cache):
     return line
 
 
-def _within(lat: float, lon: float, coords) -> bool:
-    """True if ``(lat, lon)`` lies within the bounding box of ``coords``
-    (a list of ``(lat, long)``). Used to decide whether the night's-stay ★
-    belongs on an area's zoomed map (only when it's already inside its extent)."""
-    lats = [c[0] for c in coords]
-    lons = [c[1] for c in coords]
-    return min(lats) <= lat <= max(lats) and min(lons) <= lon <= max(lons)
-
-
 def _anchor_city(city: str) -> str:
     for arrow in ("→", "->"):
         if arrow in city:
@@ -114,6 +105,40 @@ class _Resolver:
         if coord is not None:
             return (coord.lat, coord.long)
         return self._geo(f"{name}, {city}" if city else name)
+
+
+def _leg_coord(coord):
+    """``(lat, long)`` for a transport endpoint, honoring ``show_on_map``."""
+    if coord is None or not coord.show_on_map:
+        return None
+    return (coord.lat, coord.long)
+
+
+def day_legs(day, itinerary):
+    """``[[(lat, long), (lat, long)], …]`` — one straight origin→destination pair
+    per transport leg touching ``day``, drawn as a dotted line (the real path
+    isn't known, and for a flight isn't a path on the ground at all).
+
+    A leg touches every day it is *in progress* on: the day it departs, the day
+    it arrives, and any day in between. So an **overnight** leg appears on both
+    of its day maps — leaving on the departure day's map, arriving on the next
+    day's. Only legs whose JSON gives both endpoint coordinates (with
+    ``show_on_map``) are drawn; endpoints are never geocoded, so the same legs
+    appear whatever ``infer_coordinates_from_address`` says.
+    """
+    d = getattr(day, "date", None)
+    if d is None:
+        return []
+    legs = []
+    for t in itinerary.transports:
+        if t.start_date is None:
+            continue
+        if not (t.start_date <= d <= (t.end_date or t.start_date)):
+            continue
+        a, b = _leg_coord(t.start_coordinate), _leg_coord(t.end_coordinate)
+        if a and b:
+            legs.append([a, b])
+    return legs
 
 
 def resolve_day(day, itinerary, cache):
@@ -202,10 +227,18 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
                 result.numbers[id(p.act)] = chr(ord("A") + j)
 
     nodes = [c for line in route_nodes for c in line]
+    legs = day_legs(day, itinerary)
     all_coords = list(main_points) + [c for line in routes for c in line]
+    # Legs do NOT widen the extent: a transatlantic flight would zoom a day map
+    # out to the ocean. It stays framed on the day's own pins and drives, with
+    # the leg's dotted line running off the edge toward where it goes. Only a
+    # day with nothing else locatable (a pure travel day) is framed on its legs.
+    if not all_coords:
+        all_coords = [c for line in legs for c in line]
     if all_coords:
         img = render_map(all_coords, routes, main_points, accent, cache.tiles,
-                         ink_saver=ink_saver, labels=main_labels, route_nodes=nodes)
+                         ink_saver=ink_saver, labels=main_labels, route_nodes=nodes,
+                         legs=legs)
         result.main = RenderedMap(img, [p.label for p in main_pts])
 
     stay_coord = None
@@ -215,12 +248,14 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
     for title, pts in area_details:
         coords = [(p.lat, p.long) for p in pts]
         letters = [chr(ord("A") + j) for j in range(len(pts))]
-        # The extent is fixed by the area's own points (first arg); pins are the
-        # lettered points, plus the night's stay ★ — but only when it already
-        # falls inside that extent, so it's never dragged in from off-map (which
-        # would force the zoom to widen and defeat the "zoom" of the detail map).
+        # The extent is fixed by the area's own points (the first argument);
+        # pins are the lettered points plus that night's stay ★. Passing the ★ as
+        # a *pin only* — never in the extent — is what keeps the detail map's zoom
+        # and centering exactly as they'd be without it: a hotel just outside the
+        # area's box still shows in the surrounding margin, and one further out
+        # simply falls off the canvas instead of widening the shot.
         points, labels = list(coords), list(letters)
-        if stay_coord is not None and _within(stay_coord[0], stay_coord[1], coords):
+        if stay_coord is not None:
             points.append(stay_coord)
             labels.append(STAY_PIN)
         img = render_map(coords, [], points, accent, cache.tiles,

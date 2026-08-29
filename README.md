@@ -20,8 +20,9 @@ One itinerary file gets you:
 - **Precise validation** — line-numbered, localized diagnostics at three levels
   (errors / warnings / info): missing fields, bad values, and whole-trip
   incoherences (overlaps, nowhere-to-sleep nights, reversed date ranges…).
-- **Per-day maps** — optional OpenStreetMap maps with numbered pins and drawn
-  driving routes, in both the PDF and the browser (interactive pan/zoom there).
+- **Per-day maps** — optional OpenStreetMap maps with numbered pins, drawn
+  driving routes and dotted transport legs, in both the PDF and the browser
+  (interactive pan/zoom there), plus a whole-trip map in the viewer.
 - **Smart inference** — trip dates, each day's date, activity schedules and
   durations are inferred, so you only write what's interesting.
 - **English & French** output, an **ink-saver** print mode, and a **stitch** mode
@@ -111,8 +112,9 @@ day-by-day overview table), one page per day (a colored header band, the day's
 intro, the merged time-ordered timeline of typed activity cards — including any
 car pick-up/drop-off — and a bottom "tonight's stay" bar), then a transport page
 and an accommodation summary. The whole palette is derived from `cover_color`.
-With maps on, each day page also carries an OpenStreetMap with numbered pins and
-drawn routes. `--ink-saver` keeps the layout but swaps the big solid accent
+With maps on, each day page also carries an OpenStreetMap with numbered pins,
+drawn driving routes and a dotted straight line per transport leg.
+`--ink-saver` keeps the layout but swaps the big solid accent
 areas (cover banner, header bands, card backgrounds) for accent-colored text,
 outlined badges and thin rules — ideal for a home printer.
 
@@ -230,7 +232,7 @@ real Odysseyra TravelBook engine locally through Pyodide — **everything stays 
 device**, it works fully offline once loaded, and it's installable as an app.
 Start it with `make dev` or `make preview` (see [Setup](#setup)).
 
-The header switches between four views:
+The header's burger menu switches between views:
 
 - **⚙️ Options** — open a local JSON file (or reopen the last, or load the bundled
   sample); toggle the language (**EN / FR**, which localizes the whole UI, dates
@@ -240,8 +242,24 @@ The header switches between four views:
 - **📖 Travel viewer** — the rendered book (cover, day-by-day, transport,
   accommodation), prices with faded secondary-currency conversions. With maps on,
   each day's Python-rendered overview map fills in — numbered pin discs next to
-  activity titles, plus zoomed area maps — and an **Interactive** toggle swaps
-  them for pan/zoom MapLibre maps that keep working offline after one online view.
+  activity titles, dotted transport legs, plus zoomed area maps — and an
+  **Interactive** toggle swaps them for pan/zoom MapLibre maps that keep working
+  offline after one online view.
+- **🗺️ Overview** — the trip at a glance: its title / date range / summary, the
+  day-by-day table (clicking a row jumps into that day in the Travel view), and
+  a single **whole-trip map** — every day's located points pinned with their day
+  number, the real driving geometry of the days whose map has been rendered, and
+  a **dotted straight line per transport leg** (flights, trains, ferries) between
+  its `start_coordinate` and `end_coordinate`, dotted because the real path isn't
+  known — and for a flight isn't a path on the ground at all.
+  It falls back to the coordinates in the file when maps are off, so the map
+  works either way; it's always the interactive (MapLibre) map, since there's no
+  pre-rendered image of the whole trip to fall back to. A stray far-off cluster
+  (an intercontinental departure airport, or the drive to it) doesn't get to
+  squash the trip into a corner: the initial view is fitted to the trip's main
+  cluster and a note under the map names what it left out — the pins and routes
+  are still there, one zoom out away. Two genuinely distant clusters both stay
+  in view.
 - **🔎 Findings** — every validation ❌ / ⚠️ / ℹ️ finding with its line number and a
   level filter (the same engine as `odysseyra-travelBook validate`).
 - **✏️ Edit** — a structured form editor over the input JSON. Every field is
@@ -356,9 +374,12 @@ OpenStreetMap with a numbered pin for every located activity and the day's drive
 drawn as routes. The night's accommodation, if it has a coordinate, is pinned with
 a `*`. A place (an `area`) is shown as a single pin, and — when it has two or more
 located sub-activities — a second map zoomed to those points is drawn right after
-it, with those pins lettered **A, B, C…**. Each pin's label (number, `*`, or area
-letter) also appears as a small disc next to that activity's title in the
-itinerary, so there's no separate map key.
+it, with those pins lettered **A, B, C…** plus that night's `*`. The zoom map's
+framing comes from the area's own points alone, so adding the `*` never shifts or
+widens it — which does mean a hotel that falls outside the rendered frame isn't
+visible there. Each pin's label (number, `*`, or area letter) also appears as a
+small disc next to that activity's title in the itinerary, so there's no separate
+map key.
 
 **Every locatable object may carry a `coordinate`:**
 
@@ -374,9 +395,17 @@ itinerary, so there's no separate map key.
 
 Segment objects that go from A→B carry endpoint coordinates: `transport`
 accepts `start_coordinate` / `end_coordinate`, and `car_rentals` accept
-`pickup_coordinate` / `dropoff_coordinate`; the route is drawn between the
-endpoints. A `road` instead uses its own `coordinate` as the departure point and
-its `waypoints` as the ordered stops through to the arrival (see below).
+`pickup_coordinate` / `dropoff_coordinate`. Give a transport leg both endpoints
+and it's drawn as a **dotted straight line** between them — on the per-day maps
+(PDF and viewer alike) and on the viewer's whole-trip 🗺️ **Overview** map. It's
+dotted because the real path isn't known, and for a flight isn't a path on the
+ground at all. A leg is drawn on every day map it's *in progress* on, so an
+**overnight** leg appears on both its departure and its arrival day. Legs never
+widen a day map's extent — a transatlantic flight would zoom the day out to the
+ocean — so the line simply runs off the edge toward where it goes; only a day
+with nothing else locatable is framed on its legs. A `road` instead uses its
+own `coordinate` as the departure point and its `waypoints` as the ordered stops
+through to the arrival (see below).
 
 With `infer_coordinates_from_address` off (the default) only objects with an
 explicit `coordinate` appear on the map, so builds stay deterministic and offline.
@@ -694,13 +723,11 @@ they reuse of what's already here.
   PDF summary page and in the viewer.
 - **Contacts / emergency info** — an optional section for embassy, insurance,
   host and per-country emergency numbers, rendered as its own page.
-- **Weather / climate note per day** — using each day's coordinates and date,
-  an offline seasonal-average line (or an online forecast when networked),
-  shown in the day header.
 - **Elevation profile for hikes** — an elevation chart per `hike`, built from
   the routing geometry, alongside the existing distance/duration figures.
-- **Overview / whole-trip map** — a single map of the entire route across all
-  days, complementing the current per-day maps.
+- **Whole-trip map in the PDF** — the viewer's 🗺️ Overview tab already draws one
+  (every day's points plus the rendered drive routes, in one map); the printed
+  book still only carries the per-day maps.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.

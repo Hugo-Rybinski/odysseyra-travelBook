@@ -82,7 +82,12 @@ const LABELS = {
     overnightType: "Overnight {type}",
     dayMapCaption: "Day {index} overview",
     areaMapCaption: "Zoom — {area}",
+    tripMapCaption: "Whole trip",
     buildingMap: "Building map…",
+    noTripMap: "No coordinates on file — add coordinates (or turn maps on) to map the trip.",
+    tripMapUnavailable: "The trip map couldn't be loaded.",
+    tripMapOutlier: "Not in view: {example}. Zoom out to see it.",
+    tripMapOutliers: "Not in view: {example} and {n} other far-off places. Zoom out to see them.",
     noTransport: "No transport on file",
     noAccommodation: "No accommodation on file",
     // Moon phases (keys shared with the Python model's moon.py).
@@ -161,7 +166,14 @@ const LABELS = {
     overnightType: "{type} de nuit",
     dayMapCaption: "Aperçu du jour {index}",
     areaMapCaption: "Zoom — {area}",
+    tripMapCaption: "L'ensemble du voyage",
     buildingMap: "Génération de la carte…",
+    noTripMap:
+      "Aucune coordonnée enregistrée — ajoutez des coordonnées (ou activez les cartes) pour cartographier le voyage.",
+    tripMapUnavailable: "La carte du voyage n'a pas pu être chargée.",
+    tripMapOutlier: "Hors du cadre : {example}. Dézoomez pour l'afficher.",
+    tripMapOutliers:
+      "Hors du cadre : {example} et {n} autres lieux éloignés. Dézoomez pour les afficher.",
     noTransport: "Aucun transport enregistré",
     noAccommodation: "Aucun hébergement enregistré",
     moonNew: "Nouvelle lune",

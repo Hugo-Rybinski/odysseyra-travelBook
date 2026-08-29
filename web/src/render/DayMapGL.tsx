@@ -98,6 +98,39 @@ export function DayMapGL({
         { padding: 40, duration: 0, maxZoom: 15 },
       );
 
+      // Transport legs first, so a drive's solid geometry draws over them.
+      // Dotted and thin: the real path isn't known (a flight has none on the
+      // ground), so the line only claims "this leg connects these two points".
+      const legs = geo.legs ?? [];
+      if (legs.length) {
+        m.addSource("tb-legs", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: legs.map((line) => ({
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "LineString",
+                coordinates: line.map(([lat, lng]) => [lng, lat]),
+              },
+            })),
+          },
+        });
+        m.addLayer({
+          id: "tb-legs",
+          type: "line",
+          source: "tb-legs",
+          layout: { "line-cap": "butt", "line-join": "round" },
+          paint: {
+            "line-color": geo.accent,
+            "line-width": 2,
+            "line-opacity": 0.85,
+            "line-dasharray": [1.5, 2],
+          },
+        });
+      }
+
       if (geo.routes.length) {
         m.addSource("tb-routes", {
           type: "geojson",

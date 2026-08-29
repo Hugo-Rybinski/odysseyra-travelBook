@@ -92,6 +92,7 @@ type Lang = "en" | "fr";
 type View =
   | "options"
   | "viewer"
+  | "overview"
   | "transport"
   | "accommodations"
   | "findings"
@@ -169,6 +170,9 @@ export function App() {
   // A prompt card the LLM-prompts tab should scroll to on open (set when a
   // Usage-guide "Open this prompt" link is followed). Cleared once handled.
   const [promptAnchor, setPromptAnchor] = useState<string | null>(null);
+  // A day the Travel view should expand and scroll to on arrival (set when an
+  // Overview day-by-day row is clicked). Cleared once the book has jumped.
+  const [dayAnchor, setDayAnchor] = useState<number | null>(null);
   // The top-bar burger menu (holds the view switcher).
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -651,6 +655,14 @@ export function App() {
     [draft, lang, itinerary, buildDayMaps],
   );
 
+  // Follow an Overview day-by-day row into the book: switch to the Travel view,
+  // which expands and scrolls to that day (see Book's `jumpTo`).
+  const onJumpDay = useCallback((dayNumber: number) => {
+    setDayAnchor(dayNumber);
+    setView("viewer");
+  }, []);
+  const onJumpedDay = useCallback(() => setDayAnchor(null), []);
+
   // Follow a Usage-guide "Open this prompt" link: switch to the LLM-prompts tab
   // and remember which card to scroll to (PromptsPanel does the scrolling).
   const openPrompt = useCallback((file: string) => {
@@ -714,6 +726,7 @@ export function App() {
             <div className="menu-list" role="menu" aria-label={t("View")}>
               {[
                 { id: "viewer" as View, label: t("🧭 Travel"), disabled: false, dot: false, divider: false },
+                { id: "overview" as View, label: t("🗺️ Overview"), disabled: !itinerary, dot: false, divider: false },
                 { id: "transport" as View, label: t("✈️ Transports"), disabled: !itinerary, dot: false, divider: false },
                 { id: "accommodations" as View, label: t("🏠 Accommodations"), disabled: !itinerary, dot: false, divider: true },
                 { id: "findings" as View, label: t("🔎 Findings"), disabled: !source, dot: false, divider: false },
@@ -860,6 +873,17 @@ export function App() {
           geocode={{ geocode: onGeocode, ready: engineReady && online }}
         />
         </MapProviderContext.Provider>
+      ) : view === "overview" && itinerary ? (
+        <section className="report">
+          <Book
+            itinerary={itinerary}
+            lang={lang}
+            show="overview"
+            clampDescriptions={clampDescriptions}
+            mapProvider={mapProvider}
+            onJumpDay={onJumpDay}
+          />
+        </section>
       ) : view === "transport" && itinerary ? (
         <section className="report">
           <Book
@@ -891,6 +915,8 @@ export function App() {
             showForecast={showForecast}
             daysView={daysView}
             mapProvider={mapProvider}
+            jumpTo={dayAnchor}
+            onJumped={onJumpedDay}
           />
         </section>
       ) : source ? (

@@ -9,6 +9,7 @@ import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
 import { ForecastProvider, useActivityForecasts } from "./forecast";
 import { TransportList } from "./TransportList";
+import { TripMap } from "./TripMap";
 import { AccommodationSummary } from "./AccommodationSummary";
 
 // How days/sections open on load: all collapsed, only past collapsed (default),
@@ -56,6 +57,9 @@ export function Book({
   mapProvider = "google",
   show = "travel",
   showForecast = true,
+  onJumpDay,
+  jumpTo = null,
+  onJumped,
 }: {
   itinerary: Itinerary;
   lang: Lang;
@@ -73,12 +77,21 @@ export function Book({
   accommodationView?: DayView;
   // Which mapping app the "Navigate" links open.
   mapProvider?: MapProvider;
-  // Which section this render shows: the trip itself (cover + days), or one of
-  // the transport / accommodation summaries (their own pages in the app).
-  show?: "travel" | "transport" | "accommodations";
+  // Which section this render shows: the trip itself (cover + days), the
+  // overview (cover + whole-trip map), or one of the transport / accommodation
+  // summaries — each its own page in the app.
+  show?: "travel" | "overview" | "transport" | "accommodations";
   // Fetch and show a weather forecast per activity (near-term days only). Only
   // meaningful for the travel view; networked and opt-in.
   showForecast?: boolean;
+  // Overview mode: where a day-by-day row click goes. The days aren't rendered
+  // here, so the app switches to the travel view and hands the day back via
+  // `jumpTo` (below) instead of scrolling in place.
+  onJumpDay?: (dayNumber: number) => void;
+  // Travel mode: a day to expand and scroll to on arrival (from the Overview
+  // tab). `onJumped` fires once it's been handled, so the app can clear it.
+  jumpTo?: number | null;
+  onJumped?: () => void;
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
@@ -113,6 +126,31 @@ export function Book({
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, []);
+
+  // Land on the day the Overview tab asked for, once the days are on screen.
+  useEffect(() => {
+    if (jumpTo == null || show !== "travel") return;
+    jump(jumpTo);
+    onJumped?.();
+  }, [jumpTo, show, jump, onJumped]);
+
+  if (show === "overview") {
+    return (
+      <MapProviderContext.Provider value={mapProvider}>
+        <ClampProvider value={clampDescriptions}>
+          <div className="book" style={style}>
+            <Cover
+              itinerary={itinerary}
+              lang={lang}
+              onJump={onJumpDay ?? jump}
+              startOverviewOpen
+            />
+            <TripMap itinerary={itinerary} lang={lang} />
+          </div>
+        </ClampProvider>
+      </MapProviderContext.Provider>
+    );
+  }
 
   if (show === "transport") {
     const empty = !itinerary.transports.length && !itinerary.car_rentals.length;

@@ -272,10 +272,10 @@ def test_geocode_uses_http_get_seam(monkeypatch):
 
 
 # -- area detail map: the night's-stay ★ only when inside the extent ---------
-def test_area_map_includes_stay_star_only_when_inside(monkeypatch, tmp_path):
-    """The zoomed area map shows the night's-stay ★ pin only when the hotel
-    falls within the area's own extent — never dragged in from off-map (which
-    would widen the zoom)."""
+def test_area_map_always_pins_the_stay_without_moving_the_zoom(monkeypatch, tmp_path):
+    """The zoomed area map always carries that night's stay ★ — but as a pin
+    only, so the extent (and hence the zoom/centering) stays the area's own
+    points whether the hotel is inside them or far away."""
     from odysseyra_travelbook.maps import Cache
     from odysseyra_travelbook.maps import build as buildmod
 
@@ -283,7 +283,7 @@ def test_area_map_includes_stay_star_only_when_inside(monkeypatch, tmp_path):
     captured = []
 
     def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
-        captured.append(list(kw.get("labels") or []))
+        captured.append((list(kw.get("labels") or []), list(all_coords)))
         return Image.new("RGB", (10, 10))
 
     monkeypatch.setattr(buildmod, "render_map", fake_render_map)
@@ -304,13 +304,114 @@ def test_area_map_includes_stay_star_only_when_inside(monkeypatch, tmp_path):
         return Itinerary.from_dict(doc)
 
     cache = Cache.open(tmp_path)
-    # area bbox is lat[43.0, 43.2] x lon[0.0, 0.4]
-    for coord, expect_star in (
-        ({"lat": 43.1, "long": 0.2}, True),   # inside → ★ on the area map
-        ({"lat": 50.0, "long": 50.0}, False),  # far away → not on the area map
-    ):
+    area_pts = [(43.0, 0.0), (43.2, 0.4)]  # the area's own two points
+    for coord in ({"lat": 43.1, "long": 0.2},    # hotel inside the area's box
+                  {"lat": 50.0, "long": 50.0}):  # …and far outside it
         captured.clear()
         it = make(coord)
         render_day_maps(it.days[0], it, cache, ink_saver=False)
-        area_labels = next(lbls for lbls in captured if "A" in lbls)
-        assert ("★" in area_labels) is expect_star
+        labels, extent = next((l, e) for l, e in captured if "A" in l)
+        assert "★" in labels          # pinned either way
+        assert extent == area_pts     # but never part of the framing
+
+
+# -- transport legs (dotted origin -> destination lines) ---------------------
+def _trip_with_leg(**leg):
+    """A 3-day trip whose single transport leg carries both endpoints."""
+    doc = {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [
+            {"title": f"d{n}", "date": f"2026-06-0{n}", "city": "X",
+             "activities": [{"type": "point_of_interest", "name": f"P{n}",
+                             "coordinate": {"lat": 43.0 + n / 10, "long": 0.1 * n}}]}
+            for n in (1, 2, 3)
+        ],
+        "transport": [{
+            "type": "plane", "start": "A", "end": "B", "start_time": "22:10",
+            "start_coordinate": {"lat": 40.0, "long": -70.0},
+            "end_coordinate": {"lat": 49.0, "long": 2.5},
+            **leg,
+        }],
+    }
+    return Itinerary.from_dict(doc)
+
+
+def test_day_legs_same_day_only_on_that_day():
+    from odysseyra_travelbook.maps.build import day_legs
+    it = _trip_with_leg(start_date="2026-06-02")
+    assert day_legs(it.days[0], it) == []
+    assert day_legs(it.days[1], it) == [[(40.0, -70.0), (49.0, 2.5)]]
+    assert day_legs(it.days[2], it) == []
+
+
+def test_day_legs_overnight_leg_is_on_both_day_maps():
+    """An overnight leg belongs to the day it leaves *and* the day it lands."""
+    from odysseyra_travelbook.maps.build import day_legs
+    it = _trip_with_leg(start_date="2026-06-01", end_date="2026-06-02")
+    leg = [(40.0, -70.0), (49.0, 2.5)]
+    assert day_legs(it.days[0], it) == [leg]   # departure day
+    assert day_legs(it.days[1], it) == [leg]   # arrival day
+    assert day_legs(it.days[2], it) == []
+
+
+def test_day_legs_needs_both_endpoints_and_respects_show_on_map():
+    from odysseyra_travelbook.maps.build import day_legs
+    for leg in ({"end_coordinate": None},
+                {"start_coordinate": {"lat": 40.0, "long": -70.0, "show_on_map": False}}):
+        it = _trip_with_leg(start_date="2026-06-01", **leg)
+        assert day_legs(it.days[0], it) == []
+
+
+def test_legs_do_not_widen_the_day_extent(monkeypatch, tmp_path):
+    """A far-off leg is drawn but must not zoom the day map out to reach it: the
+    extent stays the day's own pins/drives, and the dotted line is clipped."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps import build as buildmod
+
+    seen = {}
+
+    def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
+        seen["extent"] = list(all_coords)
+        seen["legs"] = list(kw.get("legs") or [])
+        return Image.new("RGB", (10, 10))
+
+    monkeypatch.setattr(buildmod, "render_map", fake_render_map)
+    it = _trip_with_leg(start_date="2026-06-01", end_date="2026-06-02")
+    render_day_maps(it.days[0], it, Cache.open(tmp_path), ink_saver=False)
+
+    assert seen["legs"] == [[(40.0, -70.0), (49.0, 2.5)]]   # drawn
+    assert seen["extent"] == [(43.1, 0.1)]                   # but not framed for
+
+
+def test_legs_frame_a_day_with_nothing_else_locatable(monkeypatch, tmp_path):
+    """A pure travel day (no located activities) is framed on its legs, where it
+    would otherwise get no map at all."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps import build as buildmod
+
+    seen = {}
+
+    def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
+        seen["extent"] = list(all_coords)
+        return Image.new("RGB", (10, 10))
+
+    monkeypatch.setattr(buildmod, "render_map", fake_render_map)
+    it = _trip_with_leg(start_date="2026-06-01")
+    it.days[0].activities = [a for a in it.days[0].activities if a.kind == "buffer"]
+    maps = render_day_maps(it.days[0], it, Cache.open(tmp_path), ink_saver=False)
+
+    assert seen["extent"] == [(40.0, -70.0), (49.0, 2.5)]
+    assert maps.main is not None
+
+
+def test_dashes_splits_a_line_into_alternating_pieces():
+    from odysseyra_travelbook.maps.render import dashes
+    pieces = dashes([(0.0, 0.0), (100.0, 0.0)], dash=10, gap=10)
+    assert pieces[0] == ((0.0, 0.0), (10.0, 0.0))       # dash
+    assert pieces[1] == ((20.0, 0.0), (30.0, 0.0))      # after the gap
+    assert len(pieces) == 5
+    # the rhythm carries across a corner rather than restarting
+    assert dashes([(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)], dash=10, gap=10)[0] == (
+        (0.0, 0.0), (5.0, 0.0))
+    assert dashes([(0.0, 0.0)], dash=10, gap=10) == []  # nothing to walk

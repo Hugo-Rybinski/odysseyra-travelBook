@@ -1311,6 +1311,30 @@ body {
   border: 1px solid var(--accent-soft);
   overflow: hidden;
 }
+/* the whole-trip map (Overview tab): a card of its own, and taller/wider than a
+   day map since it's the page's content rather than an inline figure */
+.trip-map {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.trip-map .day-map-gl {
+  margin: 0;
+}
+.trip-map .day-map-gl .gl-canvas {
+  max-width: none;
+  height: 62vh;
+  min-height: 420px;
+}
+/* discloses the pins left outside the initial view (see render/tripGeo.ts) */
+.trip-map-note {
+  margin: 10px 2px 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 /* numbered pin marker on the interactive map (mirrors the static pins/discs) */
 .map-marker {
   display: flex;
@@ -2260,6 +2284,13 @@ textarea.edit-input {
   /* a little less tall so the map + surrounding content fit a phone screen */
   .day-map-gl .gl-canvas {
     height: 300px;
+  }
+  .trip-map {
+    padding: 12px;
+  }
+  .trip-map .day-map-gl .gl-canvas {
+    height: 60vh;
+    min-height: 320px;
   }
 
   /* Stack the day banner into one content column beside the caret, instead of a

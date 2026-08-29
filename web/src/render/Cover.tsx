@@ -10,10 +10,14 @@ export function Cover({
   itinerary,
   lang,
   onJump,
+  startOverviewOpen = false,
 }: {
   itinerary: Itinerary;
   lang: Lang;
   onJump: (dayNumber: number) => void;
+  // Force the day-by-day table open on first render (the Overview tab, where
+  // the table is the point), overriding the mobile default below.
+  startOverviewOpen?: boolean;
 }) {
   const range = fmtDateRange(itinerary.start_date, itinerary.end_date, lang);
 
@@ -21,7 +25,9 @@ export function Cover({
   // collapsed by default on mobile (narrow viewports), so the phone lands on
   // the title + summary rather than a full-height table.
   const [overviewOpen, setOverviewOpen] = useState<boolean>(
-    () => !(typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches),
+    () =>
+      startOverviewOpen ||
+      !(typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches),
   );
 
   return (

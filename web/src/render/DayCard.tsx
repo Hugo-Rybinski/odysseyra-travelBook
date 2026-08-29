@@ -86,7 +86,10 @@ function MapView({
 
   const staticFigure = staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
   const canInteractive =
-    interactive && !glFailed && !!geo && (geo.points.length > 0 || geo.routes.length > 0);
+    interactive &&
+    !glFailed &&
+    !!geo &&
+    (geo.points.length > 0 || geo.routes.length > 0 || (geo.legs?.length ?? 0) > 0);
 
   if (canInteractive && geo) {
     return (

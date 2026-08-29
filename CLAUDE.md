@@ -92,10 +92,13 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   map inline after it; it degrades gracefully (a map failure never breaks the build).
 - **`maps/`** — per-day map rendering, imported only when maps are on. `geocode.py`
   (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
-  cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → translucent
-  theme-colored route → rotated numbered teardrop pins → label sandwich; pure
-  Pillow), `build.py` (`resolve_day` → points/routes/area-details, `render_day_maps`
-  → PIL images), `writeback.py` (`fill_coordinates` for the `geocode` command),
+  cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → dotted
+  transport legs → translucent theme-colored route → rotated numbered teardrop
+  pins → label sandwich; pure Pillow, with `dashes()` splitting a polyline into
+  dash pieces), `build.py` (`resolve_day` → points/routes/area-details,
+  `day_legs` → a day's transport legs as straight endpoint pairs,
+  `render_day_maps` → PIL images), `writeback.py` (`fill_coordinates` for the
+  `geocode` command),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
   `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
@@ -141,13 +144,23 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   segments use `start_/end_coordinate` (road, transport) or
   `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
   per-day OSM map with a pin per located activity + drives as routes; areas get a
-  single pin plus a second zoomed map of their nested points.
+  single pin plus a second zoomed map of their nested points. A transport leg
+  with both endpoints mapped is drawn as a **dotted straight line** (its real
+  path is unknown; a flight has none on the ground) on every day map it's in
+  progress on — so an overnight leg appears on both its departure and arrival
+  day — and on the viewer's whole-trip Overview map. Leg endpoints are never
+  geocoded, and legs never widen a day map's extent (a transatlantic flight would
+  zoom it out to the ocean): the line is clipped at the edge, and only a day with
+  nothing else locatable is framed on its legs.
   `infer_coordinates_from_address` (default off → deterministic/offline, only
   explicit coordinates are mapped) geocodes the rest, restricted to
   `inference_countries` (2-letter ISO codes). Main-map pins are numbered, the
   night's accommodation is pinned with `*`, and area detail-map pins are lettered
   A/B/C…; each pin's label is shown as a small accent disc next to that activity's
-  title in the itinerary (no separate legend).
+  title in the itinerary (no separate legend). That night's `*` is also pinned on
+  the day's **zoom (area) maps** — as a pin only, never part of their extent,
+  which is fixed by the area's own points, so the zoom/centering is identical
+  with or without it (a stay outside the rendered frame simply isn't visible).
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).
