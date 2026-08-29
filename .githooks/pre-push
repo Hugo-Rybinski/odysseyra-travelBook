@@ -1,0 +1,22 @@
+#!/bin/sh
+# Stamp web/.commit-info.json with the commit being pushed to main, so a local
+# `make preview` shows the same "Current version" the deployed app will. The
+# GitHub Pages workflow derives the same value from git on its fresh checkout,
+# so the deployed version is always the pushed commit either way. The stamp file
+# is gitignored and never committed.
+#
+# Enable once per clone with:  git config core.hooksPath .githooks   (or `make hooks`)
+
+root=$(git rev-parse --show-toplevel)
+zero=0000000000000000000000000000000000000000
+
+# pre-push feeds "<local ref> <local sha> <remote ref> <remote sha>" on stdin.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" = "$zero" ] && continue  # branch deletion — nothing to stamp
+  hash=$(git rev-parse --short "$local_sha")
+  date=$(git show -s --format=%cI "$local_sha")
+  printf '{"hash":"%s","date":"%s"}\n' "$hash" "$date" > "$root/web/.commit-info.json"
+done
+
+exit 0

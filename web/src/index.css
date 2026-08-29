@@ -669,10 +669,22 @@ body {
   pointer-events: none;
 }
 
+/* Engine / connectivity / build-version line: a single row when wide enough,
+   wrapping to stacked lines on a narrow screen. The separator dots only show
+   between items that sit on the same line (siblings after a wrap start a line). */
+.options-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  margin: 0 0 16px;
+}
+.options-status > p {
+  margin: 0;
+}
 .engine {
   font-size: 0.78rem;
   color: var(--muted);
-  margin: 0 0 2px;
 }
 .engine.ok {
   color: #1c7c4a;
@@ -680,7 +692,19 @@ body {
 .net-status {
   font-size: 0.78rem;
   color: var(--muted);
-  margin: 0 0 16px;
+}
+.app-version {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.app-version .version-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.app-version .version-link:hover,
+.app-version .version-link:focus-visible {
+  text-decoration: underline;
 }
 .net-status.online {
   color: #1c7c4a;

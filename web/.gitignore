@@ -8,3 +8,6 @@ dev-dist
 # Built Python wheel + its manifest (regenerate with `npm run wheel`)
 public/py/*.whl
 public/py/wheel.json
+
+# Build-version stamp written by the pre-push hook (see .githooks/pre-push)
+.commit-info.json

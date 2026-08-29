@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import type { Lang } from "./render/format";
 import type { DayView } from "./render/Book";
 import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
-import { useT } from "./i18n";
+import { COMMIT_HASH, commitDateLabel, commitUrl } from "./version";
+import { useT, useTx } from "./i18n";
 
 // The options panel: every control that used to live in the top bar, moved into
 // one place and grouped by theme (File / Language / Maps / PDF export / App).
@@ -222,6 +223,7 @@ export function Options(props: OptionsProps) {
   } = props;
 
   const t = useT();
+  const tx = useTx();
 
   // Why a control is unavailable (empty string = available). Transient states
   // (busy / exporting / a check in flight) just disable without an explanation.
@@ -239,20 +241,50 @@ export function Options(props: OptionsProps) {
         "Your browser hasn't offered to install the app (it may already be installed, or your browser doesn't support this)",
       );
 
+  const versionDate = commitDateLabel();
+  // Link the commit hash to its GitHub page when we know the repo URL; otherwise
+  // it's plain text. The rich `tx` swaps the {hash} token for the link node.
+  const versionHref = commitUrl();
+  const hashNode = versionHref ? {
+    hash: (
+      <a
+        className="version-link"
+        href={versionHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={t("View this commit on GitHub")}
+      >
+        {COMMIT_HASH}
+      </a>
+    ),
+  } : {};
+  const versionTemplate = versionDate
+    ? "Current version: {hash} ({date})"
+    : "Current version: {hash}";
+  const versionLine = tx(versionTemplate, hashNode, {
+    hash: COMMIT_HASH,
+    date: versionDate,
+  });
+
   return (
     <section className="options-page" role="region" aria-label={t("Options")}>
       <h1 className="options-title">{t("Options")}</h1>
-      <p className={`engine ${engineReady ? "ok" : ""}`}>
-        {engineReady ? t("● Engine ready") : `◌ ${engineStageLabel}`}
-        {busy && t(" · working…")}
-      </p>
-      <p className={`net-status ${online ? "online" : "offline"}`}>
-        {online
-          ? t("● Online")
-          : offlineReady
-            ? t("⚡ Offline — the app still works.")
-            : t("⚡ Offline")}
-      </p>
+      {/* Engine / connectivity / build version — one row when there's room,
+          wrapping to stacked lines on a narrow screen. */}
+      <div className="options-status">
+        <p className={`engine ${engineReady ? "ok" : ""}`}>
+          {engineReady ? t("● Engine ready") : `◌ ${engineStageLabel}`}
+          {busy && t(" · working…")}
+        </p>
+        <p className={`net-status ${online ? "online" : "offline"}`}>
+          {online
+            ? t("● Online")
+            : offlineReady
+              ? t("⚡ Offline — the app still works.")
+              : t("⚡ Offline")}
+        </p>
+        <p className="app-version">{versionLine}</p>
+      </div>
       <div className="options">
       <FileGroup
         onOpen={onOpen}

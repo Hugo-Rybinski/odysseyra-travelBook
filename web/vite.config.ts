@@ -1,7 +1,58 @@
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+
+// The commit identity baked into the build for the Options "Current version"
+// line. Priority: explicit env → the pre-push hook's stamp (web/.commit-info.json)
+// → live git → "dev". The GitHub Pages workflow rebuilds on every push to main
+// from a fresh checkout of the pushed commit, so the deployed value always
+// matches what's live; the local hook keeps `make preview` in sync (see
+// .githooks/pre-push).
+function commitInfo(): { hash: string; date: string } {
+  const env = process.env;
+  if (env.VITE_COMMIT_HASH) {
+    return { hash: env.VITE_COMMIT_HASH, date: env.VITE_COMMIT_DATE || "" };
+  }
+  try {
+    const raw = readFileSync(new URL("./.commit-info.json", import.meta.url), "utf8");
+    const j = JSON.parse(raw) as { hash?: string; date?: string };
+    if (j.hash) return { hash: String(j.hash), date: String(j.date ?? "") };
+  } catch {
+    /* no stamp file — fall through to live git */
+  }
+  try {
+    const hash = execSync("git rev-parse --short HEAD").toString().trim();
+    const date = execSync("git log -1 --format=%cI").toString().trim();
+    return { hash, date };
+  } catch {
+    return { hash: "dev", date: "" };
+  }
+}
+const COMMIT = commitInfo();
+
+// The repository's GitHub URL, so the Options "Current version" hash can link to
+// the matching commit page. Derived from the `origin` remote (normalized: SSH →
+// HTTPS, embedded CI credentials and a trailing `.git` stripped), overridable
+// with VITE_REPO_URL. Empty when there's no usable remote (then the hash isn't
+// linked).
+function repoUrl(): string {
+  if (process.env.VITE_REPO_URL) return process.env.VITE_REPO_URL.replace(/\/+$/, "");
+  try {
+    let url = execSync("git remote get-url origin").toString().trim();
+    const scp = url.match(/^git@([^:]+):(.+)$/); // git@github.com:Owner/Repo.git
+    if (scp) url = `https://${scp[1]}/${scp[2]}`;
+    url = url.replace(/^(https?:\/\/)[^@/]+@/, "$1"); // strip user:token@ (CI)
+    url = url.replace(/\.git$/, "").replace(/\/+$/, "");
+    if (/^https?:\/\//.test(url)) return url;
+  } catch {
+    /* no remote configured */
+  }
+  return "";
+}
+const REPO = repoUrl();
 
 // The travel-book viewer runs the Python `odysseyra_travelbook` package in the browser via
 // Pyodide (loaded from a version-pinned CDN, then cached by the service worker
@@ -13,6 +64,12 @@ export default defineConfig({
   // sets VITE_BASE=/odysseyra-travelBook/; everything routes assets through
   // import.meta.env.BASE_URL, so this is the only knob.
   base: process.env.VITE_BASE || "/",
+  // Commit identity for the Options "Current version" line (see commitInfo()).
+  define: {
+    __COMMIT_HASH__: JSON.stringify(COMMIT.hash),
+    __COMMIT_DATE__: JSON.stringify(COMMIT.date),
+    __REPO_URL__: JSON.stringify(REPO),
+  },
   // Allow the production preview to be reached over a Tailscale HTTPS hostname
   // (needed so a phone can install the PWA + test offline over a secure origin).
   preview: { host: true, allowedHosts: [".ts.net"] },

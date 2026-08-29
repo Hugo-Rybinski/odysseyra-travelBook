@@ -24,6 +24,9 @@ export const FR: Record<string, string> = {
   "⚡ Offline — the app still works.": "⚡ Hors ligne — l'application fonctionne quand même.",
   "⚡ Offline": "⚡ Hors ligne",
   " · working…": " · en cours…",
+  "Current version: {hash} ({date})": "Version actuelle : {hash} ({date})",
+  "Current version: {hash}": "Version actuelle : {hash}",
+  "View this commit on GitHub": "Voir ce commit sur GitHub",
 
   // Boot stages
   "Starting…": "Démarrage…",

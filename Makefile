@@ -68,6 +68,12 @@ cli: $(VENV_STAMP) ## Install & verify the odysseyra-travelBook CLI
 	@$(BIN)/odysseyra-travelBook --help >/dev/null
 	@echo "✓ CLI ready. Run: $(BIN)/odysseyra-travelBook <cmd>   (or: source $(VENV)/bin/activate)"
 
+.PHONY: hooks
+hooks: ## Enable the repo git hooks (stamps the build version on push to main)
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/* 2>/dev/null || true
+	@echo "✓ git hooks enabled (core.hooksPath = .githooks)"
+
 .PHONY: wheel-dist
 wheel-dist: $(VENV_STAMP) ## Build a distributable odysseyra_travelbook wheel into dist/
 	$(PIP) wheel . --no-deps -w dist
