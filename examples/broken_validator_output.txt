@@ -45,7 +45,7 @@
 ❌  line 39: field 'category' is invalid ('alien') — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other (must be one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other).
 ❌  line 39: field 'website' is invalid ('ftp://nope') — a link to the venue's website. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
 ❌  line 39: start time, end time and duration are incompatible — the three don't agree. Provide only two of start_time / end_time / duration, or make them consistent.
-❌  line 39: this overlaps the previous item on the day's timeline — their start/end times collide.
+❌  line 39: this overlaps an earlier item on the day's timeline — their start/end times collide.
 ℹ️  line 39: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
 ℹ️  line 39: optional field 'description' is missing — a description. Expected any text. Defaulting to "".
 ℹ️  line 39: optional field 'activities' is missing — nested points of interest, hikes and meals. Expected an array of point_of_interest, hike or meal objects, each with a 'type'. Defaulting to [] (none nested).

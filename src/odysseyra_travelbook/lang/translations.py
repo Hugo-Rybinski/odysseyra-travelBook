@@ -347,10 +347,10 @@ _FR = {
     "({acc_city}).":
         "la ville du jour ({day_city}) ne correspond pas à la ville de "
         "l'hébergement ({acc_city}).",
-    "this overlaps the previous item on the day's timeline — their start/end "
+    "this overlaps an earlier item on the day's timeline — their start/end "
     "times collide.":
-        "cet élément chevauche le précédent dans la journée — leurs heures de "
-        "début/fin se croisent.",
+        "cet élément chevauche un élément précédent dans la journée — leurs "
+        "heures de début/fin se croisent.",
     "the day's activities run past midnight — the schedule doesn't fit in a "
     "single day.":
         "les activités du jour dépassent minuit — le programme ne tient pas "

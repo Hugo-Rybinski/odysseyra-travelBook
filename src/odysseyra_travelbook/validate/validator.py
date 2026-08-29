@@ -1056,11 +1056,18 @@ class _Validator:
                         sp = _span(t)
                         if sp:
                             spans.append((sp[0], sp[1], ("transport", tj)))
-            spans.sort()
-            for k in range(1, len(spans)):
-                if spans[k][0] < spans[k - 1][1]:
-                    self.add("error", spans[k][2], "this overlaps the previous item "
-                             "on the day's timeline — their start/end times collide.")
+            # A sweep over the start-ordered spans, tracking the furthest end
+            # seen so far: any span starting before that end overlaps an earlier
+            # item (not necessarily the immediately preceding one — a long item
+            # can straddle a later, non-adjacent one).
+            spans.sort(key=lambda s: (s[0], s[1]))
+            max_end = None
+            for start, end, path in spans:
+                if max_end is not None and start < max_end:
+                    self.add("error", path, "this overlaps an earlier item on the "
+                             "day's timeline — their start/end times collide.")
+                if max_end is None or end > max_end:
+                    max_end = end
 
             # a car pick-up / drop-off clashing with an activity or transport
             # is a soft conflict (warning), not a hard overlap error

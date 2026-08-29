@@ -109,7 +109,23 @@ def test_overlapping_activities_is_error():
             {"type": "point_of_interest", "name": "A", "start_time": "09:00", "end_time": "11:00"},
             {"type": "point_of_interest", "name": "B", "start_time": "10:30", "end_time": "12:00"}]}],
     })
-    assert "overlaps the previous" in _messages(_errors(validate_text(text)))
+    assert "overlaps an earlier item" in _messages(_errors(validate_text(text)))
+
+
+def test_overlap_detects_a_non_adjacent_straddling_item():
+    # A long item (A, 09:00-18:00) straddles a later, non-adjacent one (C,
+    # 17:00-19:00) with a short item (B) sorted between them. A naive
+    # compare-to-previous check would miss the A/C collision.
+    text = json.dumps({
+        "travel_description": {"title": "T"},
+        "days": [{"title": "d", "activities": [
+            {"type": "point_of_interest", "name": "A", "start_time": "09:00", "end_time": "18:00"},
+            {"type": "point_of_interest", "name": "B", "start_time": "09:30", "end_time": "10:00"},
+            {"type": "point_of_interest", "name": "C", "start_time": "17:00", "end_time": "19:00"}]}],
+    })
+    msgs = _messages(_errors(validate_text(text)))
+    # C overlaps A even though B (which doesn't overlap C) sits between them.
+    assert "overlaps an earlier item" in msgs
 
 
 def test_overlapping_accommodations_is_error():
@@ -506,7 +522,7 @@ def test_transport_overlaps_activity_is_error():
         "transport": [{"type": "train", "start_date": "2026-06-08",
                        "start_time": "11:00", "end_time": "13:00"}],
     }
-    assert "overlaps the previous item" in _messages(_errors(validate_text(json.dumps(doc))))
+    assert "overlaps an earlier item" in _messages(_errors(validate_text(json.dumps(doc))))
 
 
 def test_day_past_midnight_is_error():
