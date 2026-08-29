@@ -1555,6 +1555,9 @@ body {
   white-space: nowrap;
   cursor: help;
 }
+.wx-chip .wx-precip {
+  color: var(--muted);
+}
 
 /* transport + accommodation sections */
 .section {

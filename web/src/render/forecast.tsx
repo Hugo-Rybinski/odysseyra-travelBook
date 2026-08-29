@@ -67,9 +67,14 @@ export function ForecastChip({ act, lang }: { act: Activity; lang: Lang }) {
   const tip = [tr(lang, key as LabelKey), `${fc.tempC}°C`];
   if (fc.precipProb != null) tip.push(fill(tr(lang, "wxPrecip"), { p: fc.precipProb }));
   if (fc.windKph != null) tip.push(fill(tr(lang, "wxWind"), { v: fc.windKph }));
+  // Show the rain chance in the badge itself once it's worth noting (>5%).
+  const precip = fc.precipProb != null && fc.precipProb > 5 ? fc.precipProb : null;
   return (
     <span className="wx-chip" data-tip={tip.join(" · ")}>
       {emoji} {fc.tempC}°
+      {precip != null && (
+        <span className="wx-precip">{fill(tr(lang, "wxPrecip"), { p: precip })}</span>
+      )}
     </span>
   );
 }

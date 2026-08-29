@@ -19,14 +19,13 @@ export interface Forecast {
   windKph: number | null;
 }
 
-// Only these activity types get a forecast — roads, buffers, transport, car
-// rentals and accommodation are excluded (they're movement/logistics, not a
-// place you spend time at a known hour).
+// Only these activity types get a forecast. Roads, buffers, transport, car
+// rentals and accommodation are excluded (movement/logistics, not a place you
+// spend time outdoors at a known hour); meals are excluded too (usually indoors).
 const FORECAST_TYPES = new Set<ActivityType>([
   "point_of_interest",
   "place",
   "hike",
-  "meal",
 ]);
 
 // A forecast is only shown for days within this many days of today (Open-Meteo's
