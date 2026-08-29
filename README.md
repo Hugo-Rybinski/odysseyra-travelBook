@@ -37,6 +37,7 @@ One itinerary file gets you:
 - [Browser viewer (the PWA)](#browser-viewer-the-pwa)
 - [JSON format](#json-format)
 - [Development](#development)
+- [Future improvements](#future-improvements)
 
 ## Setup
 
@@ -670,3 +671,36 @@ Whenever the JSON format or a validator message changes, regenerate the snapshot
 ```bash
 UPDATE_SNAPSHOTS=1 pytest tests/test_validate.py
 ```
+
+## Future improvements
+
+Ideas that fit the existing architecture but aren't built yet. None are
+committed to — this is a backlog of directions, roughly ordered by how much
+they reuse of what's already here.
+
+- **GPX / KML export** — a new CLI sub-command (sibling to `ics`) emitting the
+  trip as GPX tracks/waypoints or KML, for Garmin, Komoot, OsmAnd and other
+  offline-GPS apps. The geocoding and OSRM routing pipeline (`maps/`) already
+  produces the points and route geometry it would serialize.
+- **PDF cover photo / per-day hero images** — let `travel_description` carry a
+  cover image and each day an optional hero image, rendered behind the cover
+  banner and day header. Today the layout is typography + maps only.
+- **Markdown / plain-text export** — a lightweight, shareable trip summary
+  (also handy as LLM round-trip input), rendered from the resolved model like
+  the PDF and ICS outputs.
+- **Budget / cost totals** — aggregate the per-item `price`/`currency` data the
+  model already carries into trip, per-day and per-category (transport vs.
+  lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
+  PDF summary page and in the viewer.
+- **Contacts / emergency info** — an optional section for embassy, insurance,
+  host and per-country emergency numbers, rendered as its own page.
+- **Weather / climate note per day** — using each day's coordinates and date,
+  an offline seasonal-average line (or an online forecast when networked),
+  shown in the day header.
+- **Elevation profile for hikes** — an elevation chart per `hike`, built from
+  the routing geometry, alongside the existing distance/duration figures.
+- **Overview / whole-trip map** — a single map of the entire route across all
+  days, complementing the current per-day maps.
+- **More languages** — the i18n scaffold (English source strings → per-language
+  tables in `lang/translations.py` and the viewer's `i18n/`) already supports
+  this; adding Spanish, German, Italian, etc. is mostly translation tables.
