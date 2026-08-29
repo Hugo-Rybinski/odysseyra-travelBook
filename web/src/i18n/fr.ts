@@ -45,7 +45,7 @@ export const FR: Record<string, string> = {
   "Create a blank itinerary, open an existing JSON file, or just try the app with our demo — and if you're new, check the usage guide.":
     "Créez un itinéraire vierge, ouvrez un fichier JSON existant, ou essayez simplement l'application avec notre démo — et si vous débutez, consultez le guide d'utilisation.",
   "➕ Create blank": "➕ Créer un vierge",
-  "Demo": "Démo",
+  "🚀 Demo": "🚀 Démo",
   "Unsaved edits from a previous session{name} were found.":
     "Des modifications non enregistrées d'une session précédente{name} ont été trouvées.",
   Restore: "Restaurer",
@@ -100,7 +100,7 @@ export const FR: Record<string, string> = {
     "Votre navigateur n'a pas proposé d'installer l'application (elle est peut-être déjà installée, ou votre navigateur ne le prend pas en charge)",
   "Open an Odysseyra TravelBook JSON file from your device":
     "Ouvrir un fichier JSON Odysseyra TravelBook depuis votre appareil",
-  "Open JSON…": "Ouvrir un JSON…",
+  "📂 Open JSON…": "📂 Ouvrir un JSON…",
   "Reopen the last opened file": "Rouvrir le dernier fichier ouvert",
   "Reopen last": "Rouvrir le dernier",
   "Load the bundled France sample itinerary": "Charger l'itinéraire d'exemple de France",

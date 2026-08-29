@@ -146,7 +146,7 @@ export function FileGroup({
         </Tip>
         <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
           <button className="btn" onClick={onOpen} disabled={busy}>
-            {t("Open JSON…")}
+            {t("📂 Open JSON…")}
           </button>
         </Tip>
         <Tip text={reopenReason || t("Reopen the last opened file")}>

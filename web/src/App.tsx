@@ -929,7 +929,7 @@ export function App() {
                   {t("➕ Create blank")}
                 </button>
                 <button className="btn" onClick={onOpen} disabled={busy}>
-                  {t("Open JSON…")}
+                  {t("📂 Open JSON…")}
                 </button>
                 <button
                   className="btn"
@@ -941,7 +941,7 @@ export function App() {
                   {t("📘 Usage guide")}
                 </button>
                 <button className="btn" onClick={onOpenSample} disabled={busy}>
-                  {t("Demo")}
+                  {t("🚀 Demo")}
                 </button>
               </div>
             </div>
