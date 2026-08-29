@@ -75,6 +75,9 @@ export const FR: Record<string, string> = {
   "Truncate long descriptions": "Tronquer les descriptions longues",
   "Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full":
     "Tronquer les descriptions longues à quelques lignes avec un lien « Voir plus » ; désactivé pour tout afficher",
+  "Show weather forecast": "Afficher la météo",
+  "Fetch a weather forecast (from Open-Meteo) for each located activity in the next 7 days, shown as a small chip on its title; needs a connection":
+    "Récupérer la météo (via Open-Meteo) pour chaque activité localisée dans les 7 prochains jours, affichée en petite pastille sur son titre ; nécessite une connexion",
   "Show more": "Voir plus",
   "Show less": "Voir moins",
   "Open an itinerary, reopen the last one, or load a bundled sample.":

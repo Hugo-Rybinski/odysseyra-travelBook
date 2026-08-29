@@ -42,6 +42,8 @@ export interface OptionsProps {
   // Display
   clampDescriptions: boolean;
   setClampDescriptions: (v: boolean) => void;
+  showForecast: boolean;
+  setShowForecast: (v: boolean) => void;
   daysView: DayView;
   setDaysView: (v: DayView) => void;
   transportView: DayView;
@@ -189,6 +191,8 @@ export function Options(props: OptionsProps) {
     setInteractiveMaps,
     clampDescriptions,
     setClampDescriptions,
+    showForecast,
+    setShowForecast,
     daysView,
     setDaysView,
     transportView,
@@ -391,6 +395,22 @@ export function Options(props: OptionsProps) {
                 onChange={(e) => setClampDescriptions(e.target.checked)}
               />
               {t("Truncate long descriptions")}
+            </label>
+          </Tip>
+        </div>
+        <div className="opt-row">
+          <Tip
+            text={t(
+              "Fetch a weather forecast (from Open-Meteo) for each located activity in the next 7 days, shown as a small chip on its title; needs a connection",
+            )}
+          >
+            <label className="opt-check">
+              <input
+                type="checkbox"
+                checked={showForecast}
+                onChange={(e) => setShowForecast(e.target.checked)}
+              />
+              {t("Show weather forecast")}
             </label>
           </Tip>
         </div>

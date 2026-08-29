@@ -153,6 +153,8 @@ export function App() {
   // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
   // viewer; off shows them in full. Default on.
   const [clampDescriptions, setClampDescriptions] = useState(true);
+  // Fetch and show a per-activity weather forecast for near-term days (opt-out).
+  const [showForecast, setShowForecast] = useState(true);
   // Which days / transport cards / accommodation cards start open (see DayView).
   // Default: past ones collapsed.
   const [daysView, setDaysView] = useState<DayView>("collapse-past");
@@ -792,6 +794,8 @@ export function App() {
           setInteractiveMaps={setInteractiveMaps}
           clampDescriptions={clampDescriptions}
           setClampDescriptions={setClampDescriptions}
+          showForecast={showForecast}
+          setShowForecast={setShowForecast}
           daysView={daysView}
           setDaysView={setDaysView}
           transportView={transportView}
@@ -884,6 +888,7 @@ export function App() {
             interactiveMaps={interactiveMaps}
             showMapLoaders={!mapsStale}
             clampDescriptions={clampDescriptions}
+            showForecast={showForecast}
             daysView={daysView}
             mapProvider={mapProvider}
           />

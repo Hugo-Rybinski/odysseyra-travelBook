@@ -1537,6 +1537,24 @@ body {
   margin-left: 8px;
   vertical-align: middle;
 }
+/* Weather-forecast chip on an activity title: a soft accent pill, icon + temp,
+   with the full condition/precip/wind in the data-tip bubble on hover/focus. */
+.wx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--accent-soft, #e9eff1);
+  color: var(--fg);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: help;
+}
 
 /* transport + accommodation sections */
 .section {

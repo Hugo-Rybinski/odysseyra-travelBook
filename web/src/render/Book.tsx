@@ -7,6 +7,7 @@ import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
+import { ForecastProvider, useActivityForecasts } from "./forecast";
 import { TransportList } from "./TransportList";
 import { AccommodationSummary } from "./AccommodationSummary";
 
@@ -54,6 +55,7 @@ export function Book({
   accommodationView = "collapse-past",
   mapProvider = "google",
   show = "travel",
+  showForecast = true,
 }: {
   itinerary: Itinerary;
   lang: Lang;
@@ -74,9 +76,15 @@ export function Book({
   // Which section this render shows: the trip itself (cover + days), or one of
   // the transport / accommodation summaries (their own pages in the app).
   show?: "travel" | "transport" | "accommodations";
+  // Fetch and show a weather forecast per activity (near-term days only). Only
+  // meaningful for the travel view; networked and opt-in.
+  showForecast?: boolean;
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
+  // Called unconditionally (before the early returns below) to keep hook order
+  // stable; disabled for the transport/accommodation views so they do no work.
+  const forecasts = useActivityForecasts(itinerary.days, showForecast && show === "travel");
 
   // Re-apply the day-view preset when it changes or a different itinerary loads.
   // Manual per-day toggles (below) live in `collapsed` and persist until then.
@@ -138,6 +146,7 @@ export function Book({
   return (
     <MapProviderContext.Provider value={mapProvider}>
     <ClampProvider value={clampDescriptions}>
+    <ForecastProvider value={forecasts}>
     <div className="book" style={style}>
       <Cover itinerary={itinerary} lang={lang} onJump={jump} />
       <div className="days">
@@ -154,6 +163,7 @@ export function Book({
         ))}
       </div>
     </div>
+    </ForecastProvider>
     </ClampProvider>
     </MapProviderContext.Provider>
   );

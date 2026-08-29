@@ -10,6 +10,7 @@ import type {
 } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
+import { ForecastChip } from "./forecast";
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import {
@@ -351,6 +352,7 @@ function ActivityRow({
           {act.type === "hike" && act.route_label && (
             <span className="chip outline">{act.route_label}</span>
           )}
+          <ForecastChip act={act} lang={lang} />
         </div>
         <ActivityDetails act={act} lang={lang} nav={nav} />
         {act.type === "road" && <RoadVia act={act} lang={lang} />}

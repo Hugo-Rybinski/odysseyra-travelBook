@@ -208,6 +208,18 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Open-Meteo weather forecasts (opt-in per-activity chips). Revalidate
+            // when online so a fresh forecast wins, but a cached one still shows
+            // offline. Short-lived — a forecast goes stale within a day or two.
+            urlPattern: /^https:\/\/api\.open-meteo\.com\/.*/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "weather",
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 2 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
       devOptions: { enabled: false },
