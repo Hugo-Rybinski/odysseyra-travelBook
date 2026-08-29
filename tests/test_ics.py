@@ -59,6 +59,35 @@ def test_uids_are_unique():
     assert uids and len(uids) == len(set(uids))
 
 
+def test_summaries_are_prefixed_with_type_emoji():
+    summaries = _unfold("\n".join(_events(_ics("france.json"))))
+    # roads, planes, trains, hikes, meals and accommodation each get a glyph.
+    assert "SUMMARY:🚗 " in summaries       # a road/drive
+    assert "SUMMARY:✈️ Plane:" in summaries  # a flight
+    assert "SUMMARY:🚆 Train:" in summaries  # a train
+    assert "SUMMARY:🥾 " in summaries       # a hike
+    assert "SUMMARY:🍽️ " in summaries       # a meal
+    assert "SUMMARY:🛏️ " in summaries       # an accommodation night
+
+
+def test_transport_emoji_covers_all_types():
+    data = {
+        "travel_description": {"title": "T"},
+        "defaults": {"timezone": "Z"},
+        "days": [{"title": "D1", "date": "2026-05-01"}],
+        "transport": [
+            {"type": t, "start": "A", "end": "B", "start_date": "2026-05-01",
+             "start_time": "08:00", "duration": "1h"}
+            for t in ("bus", "taxi", "ferry", "other")
+        ],
+    }
+    u = _unfold(build_ics(Itinerary.from_dict(data), now=NOW))
+    assert "SUMMARY:🚌 Bus:" in u
+    assert "SUMMARY:🚕 Taxi:" in u
+    assert "SUMMARY:⛴️ Ferry:" in u
+    assert "SUMMARY:Other: A → B" in u  # 'other' stays unprefixed
+
+
 def test_cross_timezone_transport_keeps_both_offsets():
     # The NY→Paris flight departs UTC-4 and arrives UTC+2.
     ics = _ics("france.json")
@@ -69,10 +98,21 @@ def test_cross_timezone_transport_keeps_both_offsets():
     assert "TZID:GMT-0400" in ics and "TZID:GMT+0200" in ics
 
 
+def test_return_flight_stays_a_timed_same_day_event():
+    # Regression: the Toulouse→JFK leg departs 18:30 (+02) and lands 22:05 (−04)
+    # the same day; both ends must fall on 2026-09-11 (not a ~33h multi-day band).
+    ics = _ics("france.json")
+    leg = _unfold(next(e for e in _events(ics)
+                       if "Toulouse-Blagnac → New York JFK" in _unfold(e)))
+    start = re.search(r"DTSTART[^:]*:(\d{8})T", leg).group(1)
+    end = re.search(r"DTEND[^:]*:(\d{8})T", leg).group(1)
+    assert start == "20260911" and end == "20260911"
+
+
 def _stay_events(ics: str, name: str) -> list[str]:
-    # A booking's own events — their SUMMARY is the accommodation name (not the
-    # drive that merely ends there).
-    return [e for e in _events(ics) if f"SUMMARY:{name}" in _unfold(e)]
+    # A booking's own events — their SUMMARY is the bed glyph + the accommodation
+    # name (not the drive that merely ends there).
+    return [e for e in _events(ics) if f"SUMMARY:🛏️ {name}" in _unfold(e)]
 
 
 def test_accommodation_emits_one_event_per_night():
@@ -83,7 +123,8 @@ def test_accommodation_emits_one_event_per_night():
     starts = sorted(re.search(r"DTSTART[^:]*:(\S+)", e).group(1) for e in nights)
     ends = sorted(re.search(r"DTEND[^:]*:(\S+)", e).group(1) for e in nights)
     assert starts == ["20260905T220000", "20260906T220000"]
-    assert ends == ["20260906T070000", "20260907T070000"]
+    # default accommodation_end_time is midnight → each night ends 00:00 next day
+    assert ends == ["20260906T000000", "20260907T000000"]
     assert all("TZID=GMT+0200" in e for e in nights)
 
 

@@ -135,7 +135,7 @@ setting (e.g. "all times are local Paris time (UTC+2)" or "we start at 9am").
 | `lunch_until` | no | time `HH:MM` | `"16:00"` | A meal starting after breakfast and at/before this is **lunch**; later is **dinner**. |
 | `meal_duration` | no | duration (`"1h"`) | `0` | Default length of a meal that gives neither a duration nor an end time. |
 | `accommodation_start_time` | no | time `HH:MM` | `"22:00"` | Evening clock time each accommodation night starts on the calendar (`ics` export only). |
-| `accommodation_end_time` | no | time `HH:MM` | `"07:00"` | Next-morning clock time each accommodation night ends on the calendar (`ics` export only). |
+| `accommodation_end_time` | no | time `HH:MM` | `"00:00"` | Clock time each accommodation night ends on the calendar (`ics` export only); midnight by default. |
 | `currency` | no | 3-letter ISO code | `"EUR"` | The currency every price is in unless the price sets its own `currency`. |
 | `secondary_currencies` | no | array of `{currency, change_rate}` | `[]` | Extra currencies each price is *also* shown in on the PDF (converted from the default). |
 | `include_maps_in_render` | no | boolean | `false` | Draw a per-day OpenStreetMap with a pin for each located activity. |

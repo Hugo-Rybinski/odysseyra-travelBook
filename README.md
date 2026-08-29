@@ -159,8 +159,8 @@ can import into Google Calendar (or Apple/Outlook). One event is emitted per:
   arrives in another keeps *both* wall-clock times;
 - **car-rental** pick-up and drop-off;
 - each **night** of an accommodation booking — from that evening at
-  `defaults.accommodation_start_time` (default `22:00`) to the next morning at
-  `defaults.accommodation_end_time` (default `07:00`).
+  `defaults.accommodation_start_time` (default `22:00`) to
+  `defaults.accommodation_end_time` (default `00:00`, i.e. midnight).
 
 Every event carries as much of the object's detail as it has (address, booking
 reference, price, nested activities…) in its description, localized with
@@ -330,8 +330,8 @@ override and validation cross-checks the itinerary against them.
 | `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
 | `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
 | `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
-| `accommodation_start_time` |  | Clock time an accommodation booking starts on the calendar (`ics` export) | string | `HH:MM` | `"22:00"` |
-| `accommodation_end_time` |  | Clock time an accommodation booking ends on the calendar (`ics` export), on the departure day | string | `HH:MM` | `"07:00"` |
+| `accommodation_start_time` |  | Evening clock time each accommodation night starts on the calendar (`ics` export) | string | `HH:MM` | `"22:00"` |
+| `accommodation_end_time` |  | Clock time each accommodation night ends on the calendar (`ics` export) | string | `HH:MM` | `"00:00"` (midnight) |
 | `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
 | `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
 | `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |

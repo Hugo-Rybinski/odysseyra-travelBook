@@ -107,7 +107,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   as local wall time tagged with a self-contained fixed-offset `VTIMEZONE` (from
   each item's `start_tz`/`end_tz`, falling back to `defaults.timezone`), so events
   land at the right instant and show local time; each night runs from that evening
-  at `defaults.accommodation_start_time` to the next morning at `accommodation_end_time`.
+  at `defaults.accommodation_start_time` to `accommodation_end_time` (midnight by default).
   Descriptions are packed with each object's detail, localized via `lang.tr`.
   Pure stdlib (RFC 5545 line-folding + text escaping), no dependencies.
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
@@ -128,7 +128,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
   `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
   `secondary_currencies`, the accommodation calendar-event times
-  `accommodation_start_time` 22:00 / `accommodation_end_time` 07:00, the maps
+  `accommodation_start_time` 22:00 / `accommodation_end_time` 00:00 (midnight), the maps
   switches `include_maps_in_render` false / `infer_coordinates_from_address`
   false / `inference_countries` [], and `show_moon_phase` false) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.

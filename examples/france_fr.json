@@ -14,7 +14,7 @@
     "lunch_until": "15:00",
     "meal_duration": "1h",
     "accommodation_start_time": "22:00",
-    "accommodation_end_time": "07:00",
+    "accommodation_end_time": "00:00",
     "currency": "EUR",
     "secondary_currencies": [
       {
@@ -694,7 +694,7 @@
       "start": "Toulouse-Blagnac",
       "end": "New York JFK",
       "start_date": "2026-09-11",
-      "end_date": "2026-09-12",
+      "end_date": "2026-09-11",
       "start_time": "18:30",
       "start_tz": "+02:00",
       "end_time": "22:05",

@@ -122,7 +122,7 @@ export const DEFAULTS_FIELDS: FieldSpec[] = [
   { key: "lunch_until", label: "Lunch until", kind: "time", placeholder: "16:00", help: "A meal up to this (after breakfast) is lunch; later is dinner. Defaults to 16:00." },
   { key: "meal_duration", label: "Meal duration", kind: "duration", placeholder: "0 (instant)", help: "Default length of a meal with no duration/end time. Defaults to 0 (instant)." },
   { key: "accommodation_start_time", label: "Accommodation start time", kind: "time", placeholder: "22:00", help: "Clock time an accommodation booking starts on the calendar (ICS export). Defaults to 22:00." },
-  { key: "accommodation_end_time", label: "Accommodation end time", kind: "time", placeholder: "07:00", help: "Clock time an accommodation booking ends on the calendar (ICS export), on the departure day. Defaults to 07:00." },
+  { key: "accommodation_end_time", label: "Accommodation end time", kind: "time", placeholder: "00:00", help: "Clock time each accommodation night ends on the calendar (ICS export). Defaults to 00:00 (midnight)." },
   { key: "currency", label: "Currency", kind: "text", placeholder: "EUR", help: "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR." },
   { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
   { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },

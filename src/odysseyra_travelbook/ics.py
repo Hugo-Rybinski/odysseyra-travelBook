@@ -7,8 +7,8 @@ One ``VEVENT`` is emitted per timed thing in the trip:
 * every transport leg,
 * every car-rental pick-up and drop-off,
 * every **night** of each accommodation booking — a night runs from that evening
-  at ``defaults.accommodation_start_time`` (22:00) to the next morning at
-  ``defaults.accommodation_end_time`` (07:00).
+  at ``defaults.accommodation_start_time`` (22:00) to
+  ``defaults.accommodation_end_time`` (00:00, i.e. midnight).
 
 **Time zones.** Everything in the model is a wall-clock time plus a fixed UTC
 offset (``start_tz`` / ``end_tz``, falling back to the trip's ``timezone``). We
@@ -37,6 +37,18 @@ __all__ = ["build_ics"]
 # this many minutes so it shows as a visible block rather than an instant.
 _MIN_EVENT_MIN = 15
 _CAR_EVENT_MIN = 30
+
+# A leading glyph on each event summary, by activity kind / transport type, so
+# the calendar is scannable at a glance. Kinds/types not listed get none.
+_ACTIVITY_EMOJI = {"road": "🚗", "hike": "🥾", "meal": "🍽️"}
+_TRANSPORT_EMOJI = {
+    "plane": "✈️", "train": "🚆", "bus": "🚌", "taxi": "🚕", "ferry": "⛴️",
+}  # "other" is intentionally left unprefixed
+_ACCOMMODATION_EMOJI = "🛏️"
+
+
+def _with_emoji(emoji: str, text: str) -> str:
+    return f"{emoji} {text}" if emoji else text
 
 
 # --- low-level iCalendar text helpers --------------------------------------
@@ -198,8 +210,9 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
         _detail(lines, "Duration", act.duration_display, lang)
 
         counter[0] += 1
+        summary = _with_emoji(_ACTIVITY_EMOJI.get(act.kind, ""), act.title)
         events.append(_Event(
-            f"{uid_base}-{counter[0]}@odysseyra", act.title,
+            f"{uid_base}-{counter[0]}@odysseyra", summary,
             sdt, start_off, edt, end_off, location, _trim(lines)))
     return events
 
@@ -220,7 +233,8 @@ def _transport_events(itin: Itinerary, uid_base: str, lang: str,
             edt = sdt + timedelta(minutes=_MIN_EVENT_MIN)
 
         type_label = t.type.title() if t.type else tr("Transport", lang)
-        summary = f"{tr(type_label, lang)}: {t.title}"
+        summary = _with_emoji(_TRANSPORT_EMOJI.get(t.type, ""),
+                              f"{tr(type_label, lang)}: {t.title}")
         lines = [
             f"{tr('Departure', lang)}: {t.start} — "
             f"{fmt_date(t.start_date, 'wd_md', lang)} {t.start_time:%H:%M}",
@@ -287,7 +301,8 @@ def _accommodation_events(itin: Itinerary, uid_base: str, lang: str,
                           counter: list[int]) -> list[_Event]:
     """One event **per night** of each booking: every night from arrival up to
     (not including) departure runs from that evening's
-    ``accommodation_start_time`` to the next morning's ``accommodation_end_time``."""
+    ``accommodation_start_time`` to ``accommodation_end_time`` the next day
+    (midnight by default)."""
     events: list[_Event] = []
     off = itin.default_timezone
     start_t = itin.default_accommodation_start_time
@@ -322,7 +337,8 @@ def _accommodation_events(itin: Itinerary, uid_base: str, lang: str,
 
             counter[0] += 1
             events.append(_Event(
-                f"{uid_base}-{counter[0]}@odysseyra", acc.name,
+                f"{uid_base}-{counter[0]}@odysseyra",
+                _with_emoji(_ACCOMMODATION_EMOJI, acc.name),
                 sdt, off, edt, off, acc.address or acc.city, _trim(lines)))
     return events
 

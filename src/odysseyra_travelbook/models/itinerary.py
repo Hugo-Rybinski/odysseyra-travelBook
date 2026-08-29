@@ -62,11 +62,11 @@ class Itinerary:
     default_meal_breakfast_until: time = time(10, 0)
     default_meal_lunch_until: time = time(16, 0)
     default_meal_duration_min: int = 0
-    # Clock times used to place an accommodation on a calendar (ICS export): a
-    # booking's event runs from its arrival at ``accommodation_start_time`` to its
-    # departure at ``accommodation_end_time`` (typically 07:00 the morning after).
+    # Clock times used to place an accommodation on a calendar (ICS export): each
+    # night runs from ``accommodation_start_time`` that evening to
+    # ``accommodation_end_time`` (midnight by default — the end of that night).
     default_accommodation_start_time: time = time(22, 0)
-    default_accommodation_end_time: time = time(7, 0)
+    default_accommodation_end_time: time = time(0, 0)
     default_currency: str = "EUR"  # all prices are in this unless they say otherwise
     secondary_currencies: list[SecondaryCurrency] = field(default_factory=list)
     include_maps_in_render: bool = False  # draw a per-day map (opt-in)
@@ -107,8 +107,9 @@ class Itinerary:
         meal_duration = _parse_duration(defaults.get("meal_duration")) or 0
         accommodation_start = (_parse_time(defaults.get("accommodation_start_time"))
                                or time(22, 0))
-        accommodation_end = (_parse_time(defaults.get("accommodation_end_time"))
-                             or time(7, 0))
+        accommodation_end = _parse_time(defaults.get("accommodation_end_time"))
+        if accommodation_end is None:
+            accommodation_end = time(0, 0)
         default_currency = str(defaults.get("currency", "EUR")).strip().upper() or "EUR"
         secondary_currencies = cls._parse_secondary_currencies(
             defaults.get("secondary_currencies")

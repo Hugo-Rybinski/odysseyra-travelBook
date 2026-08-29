@@ -399,8 +399,8 @@ export const FR: Record<string, string> = {
   "Clock time an accommodation booking starts on the calendar (ICS export). Defaults to 22:00.":
     "Heure à laquelle une réservation d'hébergement commence dans le calendrier (export ICS). Par défaut 22:00.",
   "Accommodation end time": "Heure de fin d'hébergement",
-  "Clock time an accommodation booking ends on the calendar (ICS export), on the departure day. Defaults to 07:00.":
-    "Heure à laquelle une réservation d'hébergement se termine dans le calendrier (export ICS), le jour du départ. Par défaut 07:00.",
+  "Clock time each accommodation night ends on the calendar (ICS export). Defaults to 00:00 (midnight).":
+    "Heure à laquelle chaque nuit d'hébergement se termine dans le calendrier (export ICS). Par défaut 00:00 (minuit).",
   Currency: "Devise",
   "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR.":
     "La devise de tous les prix, sauf mention contraire. Code ISO à 3 lettres. Par défaut EUR.",

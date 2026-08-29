@@ -8,7 +8,7 @@
 ℹ️  line 8: optional field 'lunch_until' is missing — meals starting up to this (after breakfast) are lunch, later ones dinner. Expected a time HH:MM. Defaulting to "16:00".
 ℹ️  line 8: optional field 'meal_duration' is missing — the default length of a meal that gives no duration or end time. Expected a duration like '1h'. Defaulting to 0 (instant).
 ℹ️  line 8: optional field 'accommodation_start_time' is missing — the clock time an accommodation booking starts on the calendar (ICS export). Expected a time HH:MM. Defaulting to "22:00".
-ℹ️  line 8: optional field 'accommodation_end_time' is missing — the clock time an accommodation booking ends on the calendar (ICS export). Expected a time HH:MM. Defaulting to "07:00".
+ℹ️  line 8: optional field 'accommodation_end_time' is missing — the clock time an accommodation night ends on the calendar (ICS export). Expected a time HH:MM. Defaulting to "00:00" (midnight).
 ℹ️  line 8: optional field 'infer_coordinates_from_address' is missing — whether to geocode activities that lack an explicit coordinate. Expected true or false. Defaulting to false (only activities with an explicit coordinate are mapped).
 ℹ️  line 8: optional field 'show_moon_phase' is missing — whether to show the night's moon phase in each day's 'tonight' section. Expected true or false. Defaulting to false (no moon phase shown).
 ❌  line 9: field 'start_time' is invalid ('9am') — the day's default start time (first activity). Expected a time HH:MM (Invalid time '9am', expected HH:MM).
