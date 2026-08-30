@@ -417,6 +417,12 @@ export const FR: Record<string, string> = {
   "Inference countries": "Pays d'inférence",
   "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country.":
     "Limiter le géocodage à ces codes ISO à 2 lettres (ex. FR, ES). Par défaut, tous les pays.",
+  "Show moon phase": "Afficher la phase de lune",
+  "Show the night's moon phase in each day's “tonight” section. Defaults to off.":
+    "Afficher la phase de lune de la nuit dans la section « cette nuit » de chaque jour. Désactivé par défaut.",
+  "Show sunrise/sunset": "Afficher lever/coucher du soleil",
+  "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — un-tick to hide them.":
+    "Afficher le lever et le coucher du soleil de chaque jour dans son en-tête, calculés à l'hébergement de la nuit. Activé par défaut — décochez pour les masquer.",
 
   // Secondary currency
   USD: "USD",

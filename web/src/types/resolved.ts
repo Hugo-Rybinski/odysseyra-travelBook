@@ -232,6 +232,13 @@ export interface Day {
   // The night's moon phase, present only when defaults.show_moon_phase is on.
   // `key` is a format.ts label key; `name` is the English fallback.
   moon: { key: string; emoji: string; name: string } | null;
+  // The day's sunrise/sunset, present unless defaults.show_sun_times is off (it
+  // defaults on) or there's no coordinate to compute them for. Just the clock
+  // times: the display string is built from the localized `sunTimes` template
+  // (render/format.ts), mirroring the PDF's. The sunrise is computed where you
+  // woke, the sunset where you'll sleep — see the README.
+  // Optional: a doc resolved before sun times existed has none.
+  sun?: { sunrise: string; sunset: string } | null;
   map?: DayMap; // inlined when the itinerary opts into maps
 }
 

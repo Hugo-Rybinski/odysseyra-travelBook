@@ -3,14 +3,28 @@
 // relaunched app doesn't have to redraw them — it hydrates instantly from here
 // and only renders days that are missing or stale.
 //
-// Keyed by `<hash of the itinerary JSON>:<day index>` and kept for 30 days, in
-// its own IndexedDB database (so it needn't share the file-handle DB's version).
+// Keyed by `v<schema>:<hash of the itinerary JSON>:<day index>` and kept for 30
+// days, in its own IndexedDB database (so it needn't share the file-handle DB's
+// version).
 // Everything is best-effort: any failure resolves to a cache miss, never throws.
 import type { Day } from "../types/resolved";
 
 const DB_NAME = "odysseyra-maps";
 const STORE = "days";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// BUMP THIS whenever the resolved `Day` gains a field OR changes how one is
+// computed. An entry holds the *whole* day — pin labels and all, not just the
+// images — and App.tsx swaps it in wholesale on a hit, so an entry written by an
+// older build masks the new value. The itinerary's hash can't catch it: the JSON
+// is byte-identical, only our code moved (this is exactly how `sun` first went
+// missing in the viewer, and then how its old one-reference times would have
+// lingered). The version is part of the key, so a mismatch reads as a miss and
+// the dead entries are swept up on the next `purgeExpired`.
+// v2: `sun` added. v3: sunrise re-referenced to the previous night's stay.
+// v4: each end got its own fallback chain (sunset → the day's last located stop,
+// sunrise → its first). v5: `sun.display` dropped — the viewer localizes it now.
+const SCHEMA_VERSION = 5;
 
 interface Entry {
   day: Day;
@@ -31,7 +45,8 @@ export async function docHash(text: string): Promise<string> {
   }
 }
 
-const keyFor = (hash: string, index: number) => `${hash}:${index}`;
+const keyPrefix = (hash: string) => `v${SCHEMA_VERSION}:${hash}:`;
+const keyFor = (hash: string, index: number) => `${keyPrefix(hash)}${index}`;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -85,8 +100,10 @@ export async function invalidateDoc(hash: string): Promise<void> {
     const db = await openDb();
     await new Promise<void>((resolve) => {
       const t = db.transaction(STORE, "readwrite");
-      // Cover every `<hash>:<index>` key (￿ sorts after any real suffix).
-      const range = IDBKeyRange.bound(`${hash}:`, `${hash}:￿`);
+      // Cover every `v<schema>:<hash>:<index>` key (￿ sorts after any real
+      // suffix). Older-schema entries are already unreachable; purgeExpired
+      // drops them.
+      const range = IDBKeyRange.bound(keyPrefix(hash), `${keyPrefix(hash)}￿`);
       const cur = t.objectStore(STORE).openCursor(range);
       cur.onsuccess = () => {
         const c = cur.result;
@@ -106,7 +123,8 @@ export async function invalidateDoc(hash: string): Promise<void> {
   }
 }
 
-/** Evict entries older than the 30-day TTL. Called once at startup. */
+/** Evict entries older than the 30-day TTL, plus any left over from an earlier
+ * `SCHEMA_VERSION` (unreachable, so pure dead weight). Called once at startup. */
 export async function purgeExpired(): Promise<void> {
   try {
     const db = await openDb();
@@ -118,7 +136,8 @@ export async function purgeExpired(): Promise<void> {
         const c = cur.result;
         if (!c) return;
         const e = c.value as Entry | undefined;
-        if (!e || e.ts < cutoff) c.delete();
+        const current = String(c.key).startsWith(`v${SCHEMA_VERSION}:`);
+        if (!e || e.ts < cutoff || !current) c.delete();
         c.continue();
       };
       t.oncomplete = () => {

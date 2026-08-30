@@ -184,6 +184,8 @@ export function DayCard({
 
       {!collapsed && (
         <>
+          <SunTimes day={day} lang={lang} />
+
           {day.description && <Clamp className="day-intro" text={day.description} />}
 
           {day.map ? (
@@ -561,6 +563,19 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
         )}
       </div>
     </li>
+  );
+}
+
+// The day's sun times, opening the day's body above the intro (on unless
+// defaults.show_sun_times is off, and absent when there's no coordinate to
+// compute them for). The `sunTimes` template is the same one the PDF localizes,
+// so both read alike; it spells the labels out, so it needs no tooltip.
+function SunTimes({ day, lang }: { day: Day; lang: Lang }) {
+  if (!day.sun) return null;
+  return (
+    <p className="day-sun">
+      {fill(tr(lang, "sunTimes"), { sunrise: day.sun.sunrise, sunset: day.sun.sunset })}
+    </p>
   );
 }
 

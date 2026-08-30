@@ -25,7 +25,52 @@ from .parsers import (
     _parse_time,
     _parse_tz,
 )
+from .sun import SunTimes, sun_times
 from .transport import Transport, resolve_transport
+
+
+# How far a sun-times reference point may sit from the clock the day is read in.
+# A civil time zone can legitimately run a couple of hours off local solar time
+# (Spain, western China), so allow three. Beyond that the reference isn't in the
+# day's clock at all — a New York morning printed on Paris time — and any figure
+# we showed would mislead, so we show none.
+_MAX_CLOCK_GAP_MIN = 3 * 60
+
+
+def _first_coordinate(activities):
+    """The day's opening position: the first coordinate among ``activities``,
+    descending into nested ones. Within one activity the candidates run earliest
+    first — its own coordinate (a road's is its departure), then anything nested
+    inside it, then its waypoints."""
+    for act in activities:
+        coord = getattr(act, "coordinate", None)
+        if coord is not None:
+            return coord
+        nested = _first_coordinate(getattr(act, "activities", None) or [])
+        if nested is not None:
+            return nested
+        for wp in getattr(act, "waypoints", None) or []:
+            if wp.coordinate is not None:
+                return wp.coordinate
+    return None
+
+
+def _last_coordinate(activities):
+    """The day's closing position — the mirror of :func:`_first_coordinate`:
+    activities walked last to first, and within one activity the candidates run
+    latest first (its final waypoint, which is where a drive ends up, then
+    anything nested inside it, then its own coordinate)."""
+    for act in reversed(list(activities)):
+        for wp in reversed(list(getattr(act, "waypoints", None) or [])):
+            if wp.coordinate is not None:
+                return wp.coordinate
+        nested = _last_coordinate(getattr(act, "activities", None) or [])
+        if nested is not None:
+            return nested
+        coord = getattr(act, "coordinate", None)
+        if coord is not None:
+            return coord
+    return None
 
 
 @dataclass
@@ -73,6 +118,7 @@ class Itinerary:
     infer_coordinates_from_address: bool = False  # geocode missing coordinates
     inference_countries: list[str] = field(default_factory=list)  # ISO codes; [] = any
     show_moon_phase: bool = False  # show the night's moon phase in "tonight" (opt-in)
+    show_sun_times: bool = True  # show each day's sunrise/sunset (opt-out)
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -117,6 +163,7 @@ class Itinerary:
         include_maps = _parse_bool(defaults.get("include_maps_in_render", False))
         infer_coords = _parse_bool(defaults.get("infer_coordinates_from_address", False))
         show_moon = _parse_bool(defaults.get("show_moon_phase", False))
+        show_sun = _parse_bool(defaults.get("show_sun_times", True))
         inference_countries = cls._parse_inference_countries(
             defaults.get("inference_countries")
         )
@@ -141,6 +188,7 @@ class Itinerary:
             infer_coordinates_from_address=infer_coords,
             inference_countries=inference_countries,
             show_moon_phase=show_moon,
+            show_sun_times=show_sun,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],
@@ -281,6 +329,107 @@ class Itinerary:
             if acc.covers(day):
                 return acc
         return None
+
+    def sun_reference(self, when: date | None, day: "Day | None" = None):
+        """Where the day's **sunset** is computed, in order:
+
+        1. that night's accommodation — where you'll watch the sun go down
+           (``show_on_map`` is ignored: it hides a pin, it doesn't move where
+           you are);
+        2. the day's own *last* located activity, when no stay covers the night
+           (you're aboard an overnight leg, or it simply isn't listed) — where
+           the day ends up beats a hotel two countries away;
+        3. the nearest dated located stay, for a day with nothing located at all.
+
+        See ``wake_reference`` for the morning's mirror of this.
+
+        An accommodation with only an address carries no coordinate; run the
+        ``geocode`` command to fill them in and the times follow."""
+        stay = self.stay_for(when)
+        if stay is not None and stay.coordinate is not None:
+            return stay.coordinate
+        if day is not None:
+            own = _last_coordinate(day.activities)
+            if own is not None:
+                return own
+        return self._nearest_located_stay(when)
+
+    def _nearest_located_stay(self, when: date | None):
+        """The coordinate of the dated stay closest to ``when`` — the last resort
+        of both reference chains, for a day with nothing located of its own."""
+        located = [a for a in self.accommodations if a.coordinate is not None]
+        if not located:
+            return None
+        dated = [a for a in located if a.arrival is not None]
+        if when is None or not dated:
+            return located[0].coordinate
+        return min(dated, key=lambda a: abs((a.arrival - when).days)).coordinate
+
+    def day_timezone(self, day: "Day | None") -> int:
+        """The wall clock a day is read in: its first activity's start zone when
+        one is set explicitly, else the trip default."""
+        if day is not None:
+            for act in day.activities:
+                if act.start_tz is not None:
+                    return act.start_tz
+        return self.default_timezone
+
+    def wake_reference(self, when: date | None, day: "Day | None" = None):
+        """Where the day's **sunrise** is computed — the mirror of
+        ``sun_reference``, in order:
+
+        1. the stay covering the *previous* night, i.e. where you woke;
+        2. the day's own *first* located activity, when there's no such stay (the
+           trip's first morning, or a night spent travelling) — where the day
+           starts out;
+        3. the nearest dated located stay.
+        """
+        if when is None:
+            return None
+        stay = self.stay_for(when - timedelta(days=1))
+        if stay is not None and stay.coordinate is not None:
+            return stay.coordinate
+        if day is not None:
+            own = _first_coordinate(day.activities)
+            if own is not None:
+                return own
+        return self._nearest_located_stay(when)
+
+    def _sun_at(self, coord, when: date, tz: int) -> SunTimes | None:
+        """Sun times at ``coord`` read on the ``tz`` clock, or None when there is
+        no coordinate, it doesn't belong to that clock, or the sun doesn't cross
+        the horizon there."""
+        if coord is None:
+            return None
+        # Longitude × 4 minutes is the reference's mean solar offset from UTC.
+        if abs(coord.long * 4 - tz) > _MAX_CLOCK_GAP_MIN:
+            return None
+        return sun_times(when, coord.lat, coord.long, tz)
+
+    def sun_for(self, day: "Day | None", when: date | None = None) -> SunTimes | None:
+        """This day's sunrise/sunset on the day's own clock.
+
+        The two ends are located separately, because on a day you change town
+        they happen in different places: the **sunset** via ``sun_reference``
+        (that night's stay → the day's last located activity → nearest stay) and
+        the **sunrise** via ``wake_reference`` (the previous night's stay → the
+        day's first located activity → nearest stay). Should the morning's chain
+        yield nothing usable — outside the day's clock, or polar night — it
+        settles for the evening's reference rather than dropping the line.
+
+        ``None`` when the times are switched off (``defaults.show_sun_times``),
+        the day has no date, or the evening reference itself is unusable."""
+        if not self.show_sun_times:
+            return None
+        when = when if when is not None else getattr(day, "date", None)
+        if when is None:
+            return None
+        tz = self.day_timezone(day)
+        evening = self._sun_at(self.sun_reference(when, day), when, tz)
+        if evening is None:
+            return None
+        morning = self._sun_at(self.wake_reference(when, day), when, tz) or evening
+        return SunTimes(morning.sunrise, evening.sunset)
 
     def transports_on(self, day: date | None) -> list[Transport]:
         """Transport legs departing on ``day``."""

@@ -43,6 +43,7 @@ from .itinerary import Day, Itinerary
 from .moon import MoonPhase, moon_phase
 from .serialize import to_dict
 from .scheduling import Scheduled, Stamp
+from .sun import SunTimes, sun_times
 from .parsers import (
     ItineraryError,
     _format_duration,
@@ -90,6 +91,8 @@ __all__ = [
     "Road",
     "Scheduled",
     "Stamp",
+    "SunTimes",
+    "sun_times",
     "to_dict",
     "Waypoint",
     "Transport",

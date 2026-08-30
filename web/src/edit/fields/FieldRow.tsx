@@ -54,14 +54,21 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
 
   // Checkboxes read best with the label to the right of the box.
   if (spec.kind === "bool") {
+    // A default-on flag is ON while its key is absent, so the box reflects
+    // "anything but an explicit false". Either way the key is cleared when the
+    // box matches the field's default, keeping the saved JSON free of no-ops.
+    const on = spec.defaultOn ? value !== false : value === true;
     return (
       <div className={`edit-field-wrap ${levelClass}`}>
         <label className="edit-field edit-field-bool" htmlFor={id}>
           <input
             id={id}
             type="checkbox"
-            checked={value === true}
-            onChange={(e) => onChange(e.target.checked ? true : undefined)}
+            checked={on}
+            onChange={(e) => {
+              const next = e.target.checked;
+              onChange(next === !!spec.defaultOn ? undefined : next);
+            }}
           />
           {label}
         </label>

@@ -46,6 +46,10 @@ export interface FieldSpec {
   // the live draft defaults (see EditDefaultsContext).
   inheritsFrom?: string;
   required?: boolean;
+  // `bool` only: this flag is ON when the key is absent (e.g. show_sun_times).
+  // The box then starts ticked and un-ticking writes an explicit `false` —
+  // whereas a default-off box writes `true` and clears the key when un-ticked.
+  defaultOn?: boolean;
 }
 
 // ---------------------------------------------------------------- enum tables
@@ -128,6 +132,7 @@ export const DEFAULTS_FIELDS: FieldSpec[] = [
   { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
   { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
   { key: "show_moon_phase", label: "Show moon phase", kind: "bool", help: "Show the night's moon phase in each day's “tonight” section. Defaults to off." },
+  { key: "show_sun_times", label: "Show sunrise/sunset", kind: "bool", defaultOn: true, help: "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — un-tick to hide them." },
 ];
 
 export const SECONDARY_CURRENCY_FIELDS: FieldSpec[] = [

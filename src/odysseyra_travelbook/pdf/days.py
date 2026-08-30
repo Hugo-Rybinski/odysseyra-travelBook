@@ -52,7 +52,18 @@ class DayMixin:
         link = getattr(self, "day_links", {}).get(index)
         if link is not None:
             self.set_link(link, page=self.page_no())
-        meta_bits = [b for b in (day.city, self.d(day.date, "wd_full_md")) if b]
+        # City, date, and the day's sun times (on unless defaults.show_sun_times
+        # is off), right-aligned in the header band. French uses shorter labels:
+        # the full "Lever du soleil"/"Coucher du soleil" leaves barely a
+        # millimetre before the kicker on the longest day.
+        sun = self.itinerary.sun_for(day)
+        sun_text = ""
+        if sun is not None:
+            sunrise, sunset = sun.hhmm
+            sun_text = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}").format(
+                sunrise=sunrise, sunset=sunset)
+        meta_bits = [b for b in (day.city, self.d(day.date, "wd_full_md"),
+                                 sun_text) if b]
         kicker = self.t("DAY {index}").format(index=index)
         self._band_header(kicker, day.title, "   ".join(meta_bits))
 

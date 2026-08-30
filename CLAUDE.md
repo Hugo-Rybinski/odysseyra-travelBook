@@ -45,7 +45,8 @@ convenience layer over the raw commands above — both still work.
 ## What it produces
 
 A PDF with: a **cover** (title, inferred date range, day count, summary, and a
-day-by-day overview table), one **page per day** (colored header band, intro,
+day-by-day overview table), one **page per day** (colored header band with the
+city / date / sunrise→sunset, intro,
 a merged time-ordered itinerary, and a bottom "tonight's stay" bar), a
 **transport** page, and an **accommodation** summary page. The whole palette is
 derived from one `cover_color`.
@@ -64,6 +65,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     (`start_/end_time`, `duration_min`, `start_/end_tz`, `duration_display`)
     inherited by `Activity`, `Transport` and `CarRentalEvent`; plus `Stamp`
     (a `date`+`time`+`tz` triple used for the car rental's four datetimes).
+  - `sun.py` — `sun_times(date, lat, long, tz_minutes)` → `SunTimes`
+    (`sunrise`/`sunset` + a `display` of `☀ 06:12 → 21:34`), the NOAA sunrise
+    equation, pure/offline, `None` on polar day/night. Driven from
+    `Itinerary.sun_for(day)` / `sun_reference(date)` / `day_timezone(day)` and
+    used by both `pdf/days.py` (the header band) and `serialize.py`.
   - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
     optional map location attached to activities, transport, accommodation and
     car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
@@ -133,7 +139,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `secondary_currencies`, the accommodation calendar-event times
   `accommodation_start_time` 22:00 / `accommodation_end_time` 00:00 (midnight), the maps
   switches `include_maps_in_render` false / `infer_coordinates_from_address`
-  false / `inference_countries` [], and `show_moon_phase` false) — plus
+  false / `inference_countries` [], `show_moon_phase` false and
+  `show_sun_times` **true**) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/
@@ -212,6 +219,31 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   computation is in `models/moon.py` (`moon_phase(date)`), used by both the PDF
   and `serialize.py`; the phase name is localized (English source in
   `translations.py`, and the shared label key in the viewer's `render/format.ts`).
+  Sunrise/sunset (`show_sun_times`, **on** by default) needs no emoji font
+  either: `☀️ Sunrise: 06:12, Sunset: 21:34` uses DejaVu's own U+2600 + U+FE0F,
+  so the browser shows a colour emoji and the PDF a text sun, with no
+  missing-glyph box. The labels are words, so the string is language-dependent:
+  `models.SunTimes` carries only the two times (+ `.hhmm`) and each renderer
+  fills the **same English template** — `pdf/days.py` via `translations.py`,
+  the viewer via `render/format.ts`'s `sunTimes` key. French deliberately
+  shortens to `Lever`/`Coucher`: the full `Lever du soleil`/`Coucher du soleil`
+  leaves ~1 mm before the band's kicker on the longest example day.
+  Placement differs on purpose: the PDF closes the day's header band with it,
+  the viewer opens the day's body with it (`.day-sun`, above `.day-intro`), so
+  in the viewer it's hidden while the day is collapsed.
+  The two ends are located separately by `sun_for` via mirrored chains, so a day
+  you change town gets both right: the **sunset** at `sun_reference` (that
+  night's accommodation → the day's own **last** located stop → the nearest dated
+  located stay) and the **sunrise** at `wake_reference` (the **previous** night's
+  stay → the day's own **first** located stop → the nearest dated located stay).
+  `_first_coordinate`/`_last_coordinate` walk nested activities and a road's
+  `waypoints` (its `coordinate` is the departure, its last waypoint the
+  arrival). An unusable morning reference falls back to the evening's. The
+  clock is `day_timezone(day)` (a day's first explicit `start_tz`, else
+  `defaults.timezone`), and `_sun_at` drops a reference sitting more than
+  `_MAX_CLOCK_GAP_MIN` (3 h) of solar time from it — a New York day printed on
+  Paris time would read as a bug — which is why `france.json` day 1 shows none
+  and day 2's sunrise comes from Paris, not the Atlantic crossing.
 - The model raises `ItineraryError` on bad data; the validator instead reports it
   (it does its own parsing and never calls a mutating path except a guarded
   `Itinerary.from_dict` for the end-of-day check).
@@ -248,6 +280,19 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   JSONs, the README tables, the French `translations.py`, **`skills/build-full-json.md`**
   (the field tables/examples an LLM uses to extract JSON),
   regenerate the snapshot, and re-render the example PDFs.
+- **Changing the resolved `Day` — a new field, or a new way of computing an
+  existing one — must bump `SCHEMA_VERSION` in `web/src/maps/mapCache.ts`.**
+  That IndexedDB cache stores the *whole* resolved
+  day (pin labels included, not just the map images) keyed by the itinerary's
+  hash, and `App.tsx`'s `buildDayMaps` swaps a hit in wholesale — so for an
+  **unchanged** itinerary (the Demo!) a day cached by an older build silently
+  masks the new value, in the browser only. The hash can't catch it: the JSON is
+  byte-identical, only our code moved. The version is part of the cache key,
+  so bumping it turns those entries into misses; `purgeExpired` then sweeps them.
+  Symptom to recognise: the CLI/PDF and a fresh `to_dict` show the field, the
+  viewer doesn't, and a hard reload doesn't help (the data is in IndexedDB, not
+  the HTTP cache). This is also why Python changes need `npm run wheel` — the
+  browser runs the wheel, not `src/`.
 - **`skills/`** holds LLM-facing docs:
   - `build-full-json.md` — a self-contained guide (it duplicates every field
     table, value format and rule) that turns raw text/screenshots into the

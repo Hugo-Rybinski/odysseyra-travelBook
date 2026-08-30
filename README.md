@@ -108,7 +108,8 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 | `-l`, `--lang en\|fr` | Language of the generated PDF (default `en`) |
 
 The PDF has a colored cover (title, inferred date range, day count, summary and a
-day-by-day overview table), one page per day (a colored header band, the day's
+day-by-day overview table), one page per day (a colored header band carrying the
+city, date and the day's sunrise/sunset, the day's
 intro, the merged time-ordered timeline of typed activity cards — including any
 car pick-up/drop-off — and a bottom "tonight's stay" bar), then a transport page
 and an accommodation summary. The whole palette is derived from `cover_color`.
@@ -357,6 +358,7 @@ override and validation cross-checks the itinerary against them.
 | `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
 | `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
 | `show_moon_phase` |  | Show the night's moon phase (emoji + name) in each day's "tonight" section | boolean | `true`/`false` | `false` (hidden) |
+| `show_sun_times` |  | Show each day's sunrise/sunset (`☀ 06:12 → 21:34`) in its header, computed at that night's accommodation | boolean | `true`/`false` | `true` (shown) |
 
 Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
 <number>}`, where `change_rate` is **units of that currency per one unit of the
@@ -411,6 +413,47 @@ With `infer_coordinates_from_address` off (the default) only objects with an
 explicit `coordinate` appear on the map, so builds stay deterministic and offline.
 Turn it on to geocode the rest from their `name`/`address` at build time
 (restricted to `inference_countries` when set).
+
+#### Sunrise & sunset
+
+Every day carries `☀️ Sunrise: 06:12, Sunset: 21:34` (in French,
+`☀️ Lever : 06:12, Coucher : 21:34`). The PDF closes the day's header band with
+it; the viewer opens the day's body with it, just above the intro. It's on by
+default; set `defaults.show_sun_times` to `false` to hide it.
+
+The two ends are located **separately**, because on a day you change town they
+happen in different places — the sunset where you'll sleep, the sunrise where you
+woke. Each has its own chain, mirroring the other:
+
+| | **Sunrise** (start of day) | **Sunset** (end of day) |
+| --- | --- | --- |
+| 1 | the stay covering the **previous** night — where you woke | **that** night's accommodation `coordinate` — where you'll watch it go down |
+| 2 | the day's own **first** located activity | the day's own **last** located activity |
+| 3 | the nearest dated located stay | the nearest dated located stay |
+
+`show_on_map` is ignored throughout: it hides a pin, it doesn't move where you
+are. Step 2 covers a night with no stay listed — aboard an overnight leg, or a
+day you fly out — and reads a drive's `coordinate` as its departure and its final
+`waypoint` as its arrival, so a day's opening and closing positions are both
+real. It's why arriving from another continent doesn't print a sunrise from the
+far side of it: France day 2 wakes at Roissy, where the flight lands, not in
+New York. If the sunrise chain yields nothing usable it settles for the sunset's
+reference rather than dropping the line.
+
+Times are read in the day's wall clock — the `start_tz` of its first activity
+when one is set explicitly, otherwise `defaults.timezone` — so set `timezone` to
+the trip's actual offset (a trip in France left on the `GMT` default reads two
+hours early in summer). If the reference point turns out to be more than three
+hours of solar time from that clock, **nothing is shown**: a New York morning
+printed on Paris time would be honest (`☀ 12:57 → 01:33`) but read as a bug, so
+it's left out. Tag that day's activities with their real `start_tz` and the times
+come back. That's why day 1 of `examples/france.json` — an afternoon in New York
+before the night flight — carries no sun times while every later day does.
+
+Nothing is shown either when the trip has no dates, no coordinate is reachable,
+or the sun never crosses the horizon there that day (polar day / night). An
+accommodation with only an `address` has no coordinate to compute from; run
+[`geocode`](#geocode--bake-in-coordinates) to fill them in and the times appear.
 
 **Navigation links.** Every locatable object gets a clickable **(Navigate)**
 link (labelled *(S'y rendre)* in French) right next to its address / location

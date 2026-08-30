@@ -197,6 +197,10 @@ DEFAULTS = [
     Spec("show_moon_phase", False,
          "whether to show the night's moon phase in each day's 'tonight' section",
          "true or false", "false (no moon phase shown)", V_BOOL),
+    Spec("show_sun_times", False,
+         "whether to show each day's sunrise/sunset, computed at that night's "
+         "accommodation",
+         "true or false", "true (sunrise/sunset shown)", V_BOOL),
 ]
 
 # Activity scheduling fields (shared by every non-buffer activity)

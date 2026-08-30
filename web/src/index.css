@@ -1171,6 +1171,17 @@ body {
   font-size: 0.8rem;
   opacity: 0.85;
 }
+/* The day's "☀ 06:12 → 21:34", opening the day's body above the intro. Padded
+   to the body's gutter and kept on one line — it's never worth wrapping. */
+.day-sun {
+  margin: 0;
+  padding: 12px 18px 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .day-intro {
   margin: 0;
   padding: 14px 18px 4px;
@@ -2314,7 +2325,6 @@ textarea.edit-input {
   .day-title {
     flex: none;
   }
-
   /* Tonight box: stack the stay line into one column (name over the night
      progress) instead of two, so a long stay name gets the full width. */
   .stay-bar {

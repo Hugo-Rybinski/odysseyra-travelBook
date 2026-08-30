@@ -11,6 +11,7 @@
 ℹ️  line 8: optional field 'accommodation_end_time' is missing — the clock time an accommodation night ends on the calendar (ICS export). Expected a time HH:MM. Defaulting to "00:00" (midnight).
 ℹ️  line 8: optional field 'infer_coordinates_from_address' is missing — whether to geocode activities that lack an explicit coordinate. Expected true or false. Defaulting to false (only activities with an explicit coordinate are mapped).
 ℹ️  line 8: optional field 'show_moon_phase' is missing — whether to show the night's moon phase in each day's 'tonight' section. Expected true or false. Defaulting to false (no moon phase shown).
+ℹ️  line 8: optional field 'show_sun_times' is missing — whether to show each day's sunrise/sunset, computed at that night's accommodation. Expected true or false. Defaulting to true (sunrise/sunset shown).
 ❌  line 9: field 'start_time' is invalid ('9am') — the day's default start time (first activity). Expected a time HH:MM (Invalid time '9am', expected HH:MM).
 ❌  line 10: field 'timezone' is invalid ('Mars') — the default UTC offset for all times. Expected an offset like '+02:00', 'UTC-3' or 'Z' (Invalid timezone 'Mars', expected e.g. '+02:00' or 'UTC-3').
 ❌  line 11: field 'currency' is invalid ('EU') — the default currency all prices are given in. Expected a 3-letter ISO code like 'EUR' (must be a 3-letter currency code like 'EUR').
@@ -228,4 +229,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-63 error(s), 18 warning(s), 148 info.
+63 error(s), 18 warning(s), 149 info.

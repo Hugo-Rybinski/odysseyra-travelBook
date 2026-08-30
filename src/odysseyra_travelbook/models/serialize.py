@@ -304,6 +304,9 @@ def _day(itin: Itinerary, index: int, day) -> dict:
     # The night's moon phase, only when opted in (defaults.show_moon_phase). The
     # ``key`` is localized by the viewer; ``name`` is the English fallback.
     moon = moon_phase(day.date) if itin.show_moon_phase and day.date else None
+    # The day's sunrise/sunset at the night's accommodation, unless switched off
+    # (defaults.show_sun_times) or there's no coordinate to compute them for.
+    sun = itin.sun_for(day)
     return {
         "day_number": index + 1,
         "title": day.title,
@@ -319,6 +322,10 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "night_transport": _transport(itin, night) if night else None,
         "sleep_city": (stay.city if stay else "") or day.city,
         "moon": {"key": moon.key, "emoji": moon.emoji, "name": moon.name} if moon else None,
+        # Just the two clock times: the viewer builds the display string from
+        # its own localized template (render/format.ts), as the PDF does.
+        "sun": ({"sunrise": sun.sunrise.strftime("%H:%M"),
+                 "sunset": sun.sunset.strftime("%H:%M")} if sun else None),
     }
 
 

@@ -99,6 +99,9 @@ const LABELS = {
     moonWaningGibbous: "Waning gibbous",
     moonLastQuarter: "Last quarter",
     moonWaningCrescent: "Waning crescent",
+    // The day's sun-times line. Same template the PDF localizes via
+    // translations.py; the times themselves come resolved from the Python model.
+    sunTimes: "☀️ Sunrise: {sunrise}, Sunset: {sunset}",
     // Weather-forecast condition labels (WMO codes → text; see weather.ts wmo()).
     wxClear: "Clear sky",
     wxMainlyClear: "Mainly clear",
@@ -184,6 +187,7 @@ const LABELS = {
     moonWaningGibbous: "Lune gibbeuse décroissante",
     moonLastQuarter: "Dernier quartier",
     moonWaningCrescent: "Dernier croissant",
+    sunTimes: "☀️ Lever : {sunrise}, Coucher : {sunset}",
     wxClear: "Ciel dégagé",
     wxMainlyClear: "Plutôt dégagé",
     wxPartlyCloudy: "Partiellement nuageux",

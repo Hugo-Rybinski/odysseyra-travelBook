@@ -85,6 +85,10 @@ _FR = {
     "TONIGHT'S STAY": "CETTE NUIT",
     "Night {night}/{total} here": "Nuit {night}/{total} ici",
     "on board": "à bord",
+    # The day header band's sun times (show_sun_times). French keeps the labels
+    # short — the full "Lever du soleil / Coucher du soleil" all but touches the
+    # kicker on the longest day.
+    "☀️ Sunrise: {sunrise}, Sunset: {sunset}": "☀️ Lever : {sunrise}, Coucher : {sunset}",
     # Moon phases (shown in the "tonight" section when show_moon_phase is on).
     "New moon": "Nouvelle lune",
     "Waxing crescent": "Premier croissant",
