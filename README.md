@@ -766,8 +766,18 @@ they reuse of what's already here.
   PDF summary page and in the viewer.
 - **Contacts / emergency info** — an optional section for embassy, insurance,
   host and per-country emergency numbers, rendered as its own page.
+- **Hike maps from a GPX track** — let a `hike` carry a GPX track and draw its
+  real route on the day map, plus its own zoomed map, instead of the single pin
+  it gets today. `maps/render.py` already paints polylines over tiles (the
+  translucent route overlay, `dashes()`), so most of the drawing exists; the new
+  parts are a JSON field pointing at the track, a small GPX parser and track
+  simplification. Note that GPX is today only *source material an LLM reads*
+  (`skills/build-full-json.md` takes a hike's figures from it) — nothing in the
+  tool itself ingests a track.
 - **Elevation profile for hikes** — an elevation chart per `hike`, built from
-  the routing geometry, alongside the existing distance/duration figures.
+  the routing geometry, alongside the existing distance/duration figures. A GPX
+  track (above) usually carries elevation per point, which would feed this
+  directly instead of needing a new elevation service.
 - **Whole-trip map in the PDF** — the viewer's 🗺️ Overview tab already draws one
   (every day's points plus the rendered drive routes, in one map); the printed
   book still only carries the per-day maps.
