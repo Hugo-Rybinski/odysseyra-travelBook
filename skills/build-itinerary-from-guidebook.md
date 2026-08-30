@@ -24,6 +24,16 @@ provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
 supplied sources, it does not exist for this task.
 
+**Settle the language before you write anything.** The whole Markdown file is
+prose you author — day headings, activity descriptions, the `Route from X to Y`
+entries, the section labels. All of it must be in **one** language. **If the
+language to use is unclear — the guidebook is in one language and the outline or
+request in another, the sources are themselves mixed, or nothing states it —
+stop and ask the user which language to write in before proceeding.** Do not
+guess, and do not silently default to the guidebook's language. Place names and
+any verbatim quotes stay exactly as the guidebook prints them — the choice only
+governs the prose you write.
+
 ---
 
 ## Purpose

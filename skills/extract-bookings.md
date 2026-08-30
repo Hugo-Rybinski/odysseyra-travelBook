@@ -26,6 +26,20 @@ provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
 supplied sources, it does not exist for this task.
 
+**Settle the language before you write anything.** The document's own wording is
+yours to write — the headings, the field labels, the notes, the conflict and gap
+descriptions. It must all be in **one** language. **If the language to use is
+unclear — the sources are in one language and the request in another, the
+sources are themselves mixed (they often are), or nothing states it — stop and
+ask the user which language to write in before proceeding.** Do not guess, and
+do not silently default to the sources' language. **Transcribed values are never
+translated**: names, addresses, room types, conditions and quoted small print
+stay exactly as the source prints them, in the source's language — translating
+one would break the no-invention rule below. The choice governs only the prose
+around them (including the `— not in sources` / `— illegible in source` markers,
+which you may render in the chosen language as long as you use one wording
+throughout).
+
 ---
 
 ## Absolute rule — never invent or infer

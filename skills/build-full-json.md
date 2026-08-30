@@ -22,6 +22,17 @@ provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
 supplied sources, it does not exist for this task.
 
+**Settle the language before you write anything.** The JSON is full of prose you
+author — `title`, `subtitle`, `summary`, every day's `title`/`description`, every
+activity `name`/`description`. All of it must be in **one** language, the one the
+book will be rendered in. **If the language to use is unclear — the sources are
+in one language and the request in another, the sources are themselves mixed, or
+nothing states it — stop and ask the user which language to write in before
+proceeding.** Do not guess, and do not silently default to the sources' language.
+JSON **keys** and enum values are always English (`point_of_interest`, `loop`,
+`hotel`, …), and proper nouns, booking references and addresses stay exactly as
+the sources print them — the choice only governs the prose you write.
+
 ---
 
 ## The workflow

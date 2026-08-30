@@ -23,6 +23,18 @@ provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
 supplied sources, it does not exist for this task.
 
+**Settle the language before you write anything.** The worksheet's own wording is
+yours to write — its headings, the per-entry labels, the instructions to the
+user, the `[to be checked]` notes. It must all be in **one** language. **If the
+language to use is unclear — the JSON is in one language and the request in
+another, the warnings are in a third, or nothing states it — stop and ask the
+user which language to write in before proceeding.** Do not guess: in
+particular, the warnings arriving in French (or English) tells you which language
+the validator ran in, **not** which language the worksheet should be in. Item
+names copied from the JSON, and the verbatim quotes backing a hike estimate, stay
+exactly as their source writes them — the choice only governs the prose you
+write.
+
 ---
 
 ## The warnings you handle

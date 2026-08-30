@@ -24,6 +24,16 @@ provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
 supplied sources, it does not exist for this task.
 
+**Settle the language before you write anything.** The KML carries prose you
+author — every placemark's description, its recommended-time wording, and the
+folder (section) names. All of it must be in **one** language. **If the language
+to use is unclear — the guidebook is in one language and the request in another,
+the sources are themselves mixed, or nothing states it — stop and ask the user
+which language to write in before proceeding.** Do not guess, and do not
+silently default to the guidebook's language. The `category` values stay English
+(they drive the style mapping), and place names stay exactly as the guidebook
+prints them — the choice only governs the prose you write.
+
 ---
 
 ## 1. What the final map should contain
