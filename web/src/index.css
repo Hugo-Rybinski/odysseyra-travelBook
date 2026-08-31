@@ -153,7 +153,7 @@ body {
   color: #fff;
 }
 .menu-item:disabled {
-  opacity: 0.45;
+  opacity: 0.45; /* overridden when the label carries `.fade-label` — see below */
   cursor: default;
 }
 .menu-item.active .dirty-dot {
@@ -672,6 +672,32 @@ body {
 .tip > .btn:disabled,
 .opt-check input:disabled {
   pointer-events: none;
+}
+
+/* Fading a *disabled* control that carries its own `data-tip`.
+   `opacity` on the control is wrong here: the bubble is an `::after` of that
+   same element, so it joins the opacity group and the explanation of *why* the
+   control is unavailable comes out greyer than the tooltips of the controls that
+   still work. Instead those call sites wrap their label in a `.fade-label` span
+   and we fade only that — the control keeps full opacity, so the bubble is
+   drawn at full strength while the label (emoji included, which a `color`
+   change can't touch) fades exactly as before.
+   Controls whose tip sits on a wrapper instead (see `.tip >` above) don't need
+   this and keep the plain `:disabled { opacity }` below. */
+:is(.btn, .icon-btn, .menu-item):disabled:has(> .fade-label),
+.btn[aria-disabled="true"]:has(> .fade-label) {
+  opacity: 1;
+}
+/* each family keeps the strength it faded at before */
+.menu-item:disabled > .fade-label {
+  opacity: 0.45;
+}
+.btn:disabled > .fade-label,
+.btn[aria-disabled="true"] > .fade-label {
+  opacity: 0.5;
+}
+.icon-btn:disabled > .fade-label {
+  opacity: 0.35;
 }
 
 /* Engine / connectivity / build-version line: a single row when wide enough,

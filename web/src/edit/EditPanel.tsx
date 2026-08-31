@@ -127,7 +127,7 @@ export function EditPanel({
               disabled={applying || !engineReady}
               data-tip={t("Apply the draft and rebuild this itinerary's maps")}
             >
-              {t("Apply & redraw maps")}
+              <span className="fade-label">{t("Apply & redraw maps")}</span>
             </button>
           )}
 
@@ -140,7 +140,7 @@ export function EditPanel({
             disabled={!canUndo}
             data-tip={t("Undo the last edit")}
           >
-            {t("↶ Undo")}
+            <span className="fade-label">{t("↶ Undo")}</span>
           </button>
           <button
             type="button"
@@ -149,7 +149,7 @@ export function EditPanel({
             disabled={!canRedo}
             data-tip={t("Redo")}
           >
-            {t("↷ Redo")}
+            <span className="fade-label">{t("↷ Redo")}</span>
           </button>
           <button
             type="button"
@@ -158,7 +158,7 @@ export function EditPanel({
             disabled={!unsaved}
             data-tip={t("Discard changes since the last save/open")}
           >
-            {t("Revert")}
+            <span className="fade-label">{t("Revert")}</span>
           </button>
 
           <span className="edit-actions-sep" aria-hidden />
@@ -170,12 +170,14 @@ export function EditPanel({
               disabled={!unsaved || saving}
               data-tip={t("Overwrite the opened file")}
             >
-              {saving ? t("Saving…") : unsaved ? t("Save") : t("Saved ✓")}
+              <span className="fade-label">
+                {saving ? t("Saving…") : unsaved ? t("Save") : t("Saved ✓")}
+              </span>
             </button>
           )}
           {hasSavePicker && (
             <button className="btn subtle" onClick={onSaveAs} disabled={saving} data-tip={t("Save to a new file")}>
-              {t("Save as…")}
+              <span className="fade-label">{t("Save as…")}</span>
             </button>
           )}
           <button
@@ -184,7 +186,7 @@ export function EditPanel({
             disabled={saving}
             data-tip={t("Download the itinerary as a .json file")}
           >
-            {t("Download JSON")}
+            <span className="fade-label">{t("Download JSON")}</span>
           </button>
 
           {dirty && (

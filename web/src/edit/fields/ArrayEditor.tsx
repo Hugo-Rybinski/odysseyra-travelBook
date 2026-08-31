@@ -107,7 +107,7 @@ export function ArrayEditor<T>({
                 aria-label={t("Move up")}
                 data-tip={t("Move up")}
               >
-                ↑
+                <span className="fade-label">↑</span>
               </button>
               <button
                 type="button"
@@ -121,7 +121,7 @@ export function ArrayEditor<T>({
                 aria-label={t("Move down")}
                 data-tip={t("Move down")}
               >
-                ↓
+                <span className="fade-label">↓</span>
               </button>
               <button
                 type="button"

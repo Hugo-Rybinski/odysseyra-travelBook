@@ -803,7 +803,9 @@ export function App() {
                       setMenuOpen(false);
                     }}
                   >
-                    {item.label}
+                    {/* `.fade-label` so a disabled item greys out without also
+                        fading its `data-tip` bubble (see index.css). */}
+                    <span className="fade-label">{item.label}</span>
                     {item.dot && (
                       <span
                         className="dirty-dot"
