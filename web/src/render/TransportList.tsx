@@ -3,6 +3,7 @@ import type { CarRental, Itinerary, Stamp, Transport } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
+import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, transportTimes, useMapProvider } from "./nav";
 
@@ -144,6 +145,7 @@ function TransportCard({
             </p>
           )}
           {booking && <p className="card-meta">{booking}</p>}
+          {t.description && <Clamp className="card-note" text={t.description} />}
           {t.price && (
             <p className="card-price">
               <Price price={t.price} lang={lang} />
@@ -236,6 +238,7 @@ function CarRentalCard({
             {window && <span>{window}</span>}
             {meta && <span>{meta}</span>}
           </p>
+          {c.description && <Clamp className="card-note" text={c.description} />}
           {c.price && (
             <p className="card-price">
               <Price price={c.price} lang={lang} />

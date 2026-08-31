@@ -533,6 +533,7 @@ One inter-city leg: a flight, train, bus, taxi, or ferry.
 | `website` | no | link | none | The carrier's website — clickable. |
 | `booking_link` | no | link | none | Direct link to this reservation — clickable. |
 | `status` | no | `booked` / `confirmed` | none | Reservation status. |
+| `description` | no | text | none | A **short note** for what the fields above don't cover — a seat, a terminal, a baggage allowance. One or two sentences. |
 | `price` | no | number | none | Amount only, e.g. `89` (no symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | Set only if this price is in a different currency. |
 | `paid` | no | `paid` / `to pay` | none | Payment state. |
@@ -559,6 +560,9 @@ One inter-city leg: a flight, train, bus, taxi, or ferry.
   `flight_number` on a `plane`, `train_number` on a `train`.
 - If `status` or `paid` is set, include the matching `booking_number` / `price`
   when available (`validate` warns otherwise).
+- **`description` is a note, not prose.** Put in it only what no other field can
+  carry, in one or two sentences. Never invent one, and never restate a value
+  that already has its own field — omit it if the source says nothing extra.
 
 ---
 
@@ -579,6 +583,7 @@ One place you sleep: hotel, campsite, B&B, or other.
 | `website` | no | link | none | The property's website — clickable. |
 | `booking_link` | no | link | none | Direct link to this reservation — clickable. |
 | `status` | no | `booked` / `confirmed` | none | Reservation status. |
+| `description` | no | text | none | A **short note** for what the fields above don't cover — a door code, where to park, which bell to ring. One or two sentences. |
 | `price` | no | number | none | Amount for the whole stay, e.g. `256` (no symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | Set only if it differs from the trip default. |
 | `paid` | no | `paid` / `to pay` (or `true` / `false`) | none | Payment state. |
@@ -595,6 +600,9 @@ One place you sleep: hotel, campsite, B&B, or other.
   the tool uses the **accommodation** and just notes the overlap (info, not an
   error).
 - If `status` or `paid` is set, include `booking_source` / `price` when known.
+- **`description` is a note, not prose.** Put in it only what no other field can
+  carry, in one or two sentences. Never invent one, and never restate a value
+  that already has its own field — omit it if the source says nothing extra.
 
 ---
 
@@ -620,6 +628,7 @@ One rental-car booking, with its booking window and pick-up / drop-off events.
 | `website` | no | link | none | The company's website — clickable. |
 | `booking_link` | no | link | none | Direct link to this reservation — clickable. |
 | `status` | no | `booked` / `confirmed` | none | Reservation status. |
+| `description` | no | text | none | A **short note** for what the fields above don't cover — the insurance excess, a fuel policy, where the desk is. One or two sentences. |
 | `price` | no | number | none | Amount only, e.g. `228` (no symbol). |
 | `currency` | no | 3-letter ISO code | trip default currency | Set only if it differs from the trip default. |
 | `paid` | no | `paid` / `to pay` | none | Payment state. |
@@ -640,6 +649,9 @@ One rental-car booking, with its booking window and pick-up / drop-off events.
 - `pickup_duration` / `dropoff_duration` place the events on the day timeline;
   set them only if the source implies a slot.
 - If `status` or `paid` is set, include `booking_number` / `price` when known.
+- **`description` is a note, not prose.** Put in it only what no other field can
+  carry, in one or two sentences. Never invent one, and never restate a value
+  that already has its own field — omit it if the source says nothing extra.
 
 ---
 

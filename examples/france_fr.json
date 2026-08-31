@@ -685,6 +685,7 @@
       "website": "https://www.airfrance.com",
       "booking_link": "https://wwws.airfrance.com/mmb/AF77-QWLM",
       "status": "confirmed",
+      "description": "Sièges 24A/24B, rangée hublot d'évacuation. Un bagage en soute chacun (23 kg) ; skis en supplément. Terminal 2E à l'arrivée — compter 45 min au contrôle des passeports.",
       "price": 720,
       "currency": "USD",
       "paid": "paid"
@@ -708,6 +709,7 @@
       "booking_number": "SNCF-3KQ9F2",
       "booking_source": "SNCF Connect",
       "status": "booked",
+      "description": "Voiture 12, places 41/42. Voie affichée 20 min avant le départ — aucun échange possible après l'embarquement.",
       "price": 45,
       "paid": "to pay"
     },
@@ -751,6 +753,7 @@
       "website": "https://grandsboulevardshotel.com",
       "booking_link": "https://secure.booking.com/myreservations/GB-40218",
       "status": "confirmed",
+      "description": "Arrivée à partir de 15h00, réception ouverte 24h/24. Petit-déjeuner servi dans la cour-verrière, 7h00–10h30.",
       "price": 340,
       "paid": true,
       "breakfast_included": true,
@@ -787,6 +790,7 @@
       "contact": "host@gite-perigord.example",
       "booking_source": "Airbnb",
       "status": "booked",
+      "description": "Digicode sur la porte bleue, code 4589B. Se garer dans la cour derrière le portail — la rue est piétonne après 11h00.",
       "price": 180,
       "breakfast_included": false,
       "coordinate": {
@@ -842,6 +846,7 @@
       "website": "https://www.hertz.fr",
       "booking_link": "https://www.hertz.fr/rentacar/reservation/HZ-90412",
       "status": "confirmed",
+      "description": "Politique carburant plein-à-plein, franchise d'assurance 1200 €. Le comptoir est au parking de la gare, niveau -1 — pas dans le hall principal.",
       "price": 415,
       "paid": "paid",
       "additional_drivers": 1,

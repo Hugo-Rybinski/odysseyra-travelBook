@@ -157,6 +157,7 @@ export interface SrcTransport {
   website?: string;
   booking_link?: string;
   status?: string;
+  description?: string;
   price?: number;
   currency?: string;
   paid?: string | boolean;
@@ -177,6 +178,7 @@ export interface SrcAccommodation {
   website?: string;
   booking_link?: string;
   status?: string;
+  description?: string;
   price?: number;
   currency?: string;
   paid?: string | boolean;
@@ -204,6 +206,7 @@ export interface SrcCarRental {
   website?: string;
   booking_link?: string;
   status?: string;
+  description?: string;
   price?: number;
   currency?: string;
   paid?: string | boolean;

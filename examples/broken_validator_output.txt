@@ -132,6 +132,7 @@
 ℹ️  line 66: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
 ℹ️  line 66: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
 ℹ️  line 66: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 66: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 66: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
 ❌  line 67: required field 'start' is missing — the departure address. Expected any text.
 ❌  line 67: required field 'end' is missing — the arrival address. Expected any text.
@@ -151,6 +152,7 @@
 ℹ️  line 67: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
 ℹ️  line 67: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 67: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 67: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 67: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ❌  line 70: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
 ⚠️  line 70: 'status' is set but 'booking_source' is missing — a confirmed/booked stay usually has a reference.
@@ -161,6 +163,7 @@
 ℹ️  line 70: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
 ℹ️  line 70: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 70: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 70: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 70: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 70: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 70: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
@@ -173,6 +176,7 @@
 ℹ️  line 71: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 71: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 71: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 71: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 71: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 71: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 71: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
@@ -188,6 +192,7 @@
 ℹ️  line 72: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 72: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 72: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 72: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 72: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 72: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 72: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
@@ -203,6 +208,7 @@
 ℹ️  line 75: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
 ℹ️  line 75: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
 ℹ️  line 75: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 75: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 75: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 75: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 75: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
@@ -228,6 +234,7 @@
 ℹ️  line 80: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 80: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 80: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 80: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 80: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
 ℹ️  line 80: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
 ℹ️  line 80: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
@@ -238,4 +245,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-65 error(s), 18 warning(s), 156 info.
+65 error(s), 18 warning(s), 163 info.

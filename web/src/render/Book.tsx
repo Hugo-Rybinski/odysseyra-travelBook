@@ -159,13 +159,18 @@ export function Book({
     return (
       <AccentContext.Provider value={itinerary.cover_color}>
       <MapProviderContext.Provider value={mapProvider}>
-        <div className="book" style={style}>
-          {empty ? (
-            <p className="section-empty">{tr(lang, "noTransport")}</p>
-          ) : (
-            <TransportList itinerary={itinerary} lang={lang} view={transportView} />
-          )}
-        </div>
+        {/* ClampProvider reaches here too since the cards carry prose of their
+            own now (a leg's / rental's `description`) — without it these notes
+            would ignore the app's "show full descriptions" option. */}
+        <ClampProvider value={clampDescriptions}>
+          <div className="book" style={style}>
+            {empty ? (
+              <p className="section-empty">{tr(lang, "noTransport")}</p>
+            ) : (
+              <TransportList itinerary={itinerary} lang={lang} view={transportView} />
+            )}
+          </div>
+        </ClampProvider>
       </MapProviderContext.Provider>
       </AccentContext.Provider>
     );
@@ -175,13 +180,15 @@ export function Book({
     return (
       <AccentContext.Provider value={itinerary.cover_color}>
       <MapProviderContext.Provider value={mapProvider}>
-        <div className="book" style={style}>
-          {itinerary.accommodations.length ? (
-            <AccommodationSummary itinerary={itinerary} lang={lang} view={accommodationView} />
-          ) : (
-            <p className="section-empty">{tr(lang, "noAccommodation")}</p>
-          )}
-        </div>
+        <ClampProvider value={clampDescriptions}>
+          <div className="book" style={style}>
+            {itinerary.accommodations.length ? (
+              <AccommodationSummary itinerary={itinerary} lang={lang} view={accommodationView} />
+            ) : (
+              <p className="section-empty">{tr(lang, "noAccommodation")}</p>
+            )}
+          </div>
+        </ClampProvider>
       </MapProviderContext.Provider>
       </AccentContext.Provider>
     );

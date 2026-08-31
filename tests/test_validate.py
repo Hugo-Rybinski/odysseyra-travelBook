@@ -672,6 +672,27 @@ def test_guidebook_pages_rejects_prose():
         assert "must be page numbers like '14', '15-18' or '16, 23, 25-30'" in messages, pages
 
 
+def test_booking_description_is_free_text_and_only_noted_when_absent():
+    # `description` on transport / accommodation / car rental is a note: any
+    # text is accepted (so it never errors), and its absence is only an info
+    # stating the default — the same shape as the activities' own description.
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "M"}]}],
+           "transport": [{"start": "A", "end": "B", "start_date": "2026-06-08",
+                          "start_time": "10:00", "duration": "1h"}],
+           "accommodations": [{"name": "H", "city": "B", "arrival": "2026-06-08",
+                               "departure": "2026-06-09"}]}
+    infos = _messages(_infos(validate_text(json.dumps(doc))))
+    assert "optional field 'description' is missing" in infos
+    assert "a short note for whatever the other fields don't cover" in infos
+
+    doc["transport"][0]["description"] = "Coach 12; platform posted late."
+    doc["accommodations"][0]["description"] = "Keypad code 4589B."
+    findings = validate_text(json.dumps(doc))
+    assert _errors(findings) == [], _messages(_errors(findings))
+
+
 def test_kyrgyzstan_example_has_no_errors():
     findings = validate_text((EXAMPLES / "kyrgyzstan.json").read_text(encoding="utf-8"))
     assert _errors(findings) == []

@@ -137,6 +137,9 @@ export interface Transport extends Scheduled {
   website: string;
   booking_link: string;
   status: string;
+  // A short note for whatever the fields above don't carry. Optional: a day
+  // cached before the field existed has none.
+  description?: string;
   price: Money | null;
   coordinate: Coordinate | null;
   start_coordinate: Coordinate | null;
@@ -157,6 +160,7 @@ export interface Accommodation {
   website: string;
   booking_link: string;
   status: string;
+  description?: string; // short note; see Transport.description
   price: Money | null;
   breakfast_included: boolean;
   coordinate: Coordinate | null;
@@ -220,6 +224,9 @@ export interface CarEvent extends Scheduled {
   car_model: string;
   car_type_label: string;
   booking_number: string;
+  // The owning rental's note, carried onto the event (which has no way back to
+  // its rental). See CarRental.description.
+  description?: string;
   coordinate: Coordinate | null;
 }
 
@@ -236,6 +243,7 @@ export interface CarRental {
   website: string;
   booking_link: string;
   status: string;
+  description?: string; // short note; see Transport.description
   price: Money | null;
   car_type: string;
   car_type_label: string;

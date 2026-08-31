@@ -31,7 +31,9 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // derived from its embedded `gpx` (the trail line + elevation profile). v11:
 // `track.gpx` carries the original file, for the "(Get GPX track)" download —
 // without the bump a v10-cached day would draw the trail but hide the link.
-const SCHEMA_VERSION = 11;
+// v12: transport legs, car pick-up/drop-off events and the night's stay gained
+// a `description` (a short note) — a v11-cached day carries none of them.
+const SCHEMA_VERSION = 12;
 
 interface Entry {
   day: Day;

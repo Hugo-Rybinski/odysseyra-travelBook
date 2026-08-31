@@ -80,6 +80,7 @@ class TransportMixin:
             p for p in (self._transport_date(t), self._transport_times(t, day_marker=False)) if p
         )
         booking = self._transport_booking(t)
+        note_n = self._measure_lines(t.description, inner_w)
         links = [(self.t("Website"), t.website),
                  (self.t("Reservation"), t.booking_link)]
         has_links = not self.ink_saver and any(url for _, url in links)
@@ -89,6 +90,8 @@ class TransportMixin:
             h += 5.5
         if booking:
             h += 5
+        if note_n:
+            h += note_n * 5
         if t.price is not None:
             h += 5
         if has_links:
@@ -134,6 +137,10 @@ class TransportMixin:
             self.set_text_color(*MUTED)
             self.cell(inner_w, 5, booking)
             yy += 5
+        if note_n:
+            self.set_xy(cx, yy)
+            self._para(cx, inner_w, t.description)
+            yy += note_n * 5
         if t.price is not None:
             self._draw_price(cx, yy, inner_w, t.price, t.currency)
             yy += 5

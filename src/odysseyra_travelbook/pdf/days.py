@@ -124,7 +124,7 @@ class DayMixin:
             links = [(self.t("Website"), acc.website),
                      (self.t("Reservation"), acc.booking_link)]
             self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
-                             links=links, moon=moon,
+                             links=links, moon=moon, note=acc.description,
                              nav=maps_url(acc.coordinate, acc.address, where,
                                           provider=self.map_provider),
                              addr_url=self._addr_url(acc.coordinate, acc.address))
@@ -135,19 +135,45 @@ class DayMixin:
             sub = "  ·  ".join(p for p in (leg.title, times) if p)
             links = [(self.t("Website"), leg.website),
                      (self.t("Reservation"), leg.booking_link)]
+            # The leg is normally also a row in the day's itinerary above (both
+            # `night_transport` and `transports_on` select on the departure
+            # date), and that row already prints its note — so the bar doesn't
+            # repeat it. Checked rather than assumed, so the note still shows if
+            # the two ever stop coinciding.
+            note = "" if leg in self._day_items(day) else leg.description
             self._bottom_bar(self._overnight_name(leg), sub, self.t("on board"),
-                             links=links, moon=moon)
+                             links=links, moon=moon, note=note)
+
+    _BAR_NOTE_LINES = 2  # the bar is a glance, not a page
+
+    def _bar_note(self, note: str, w: float) -> list[str]:
+        """The stay's ``description`` wrapped for the bottom bar, capped at
+        ``_BAR_NOTE_LINES`` lines with an ellipsis when it runs longer — the bar
+        is pinned near the page foot, so it can't grow without bound. The full
+        text is always on the accommodation page."""
+        if not note:
+            return []
+        self.set_font(FONT, "", 8.5)
+        lines = list(self.multi_cell(w, 4, note, dry_run=True, output="LINES"))
+        if len(lines) > self._BAR_NOTE_LINES:
+            lines = lines[:self._BAR_NOTE_LINES]
+            lines[-1] = lines[-1].rstrip() + " …"
+        return lines
 
     def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
-                    links=None, nav: str = "", addr_url: str = "", moon=None) -> None:
+                    links=None, nav: str = "", addr_url: str = "", moon=None,
+                    note: str = "") -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
-        # the bar by 6 mm.
+        # the bar by 6 mm; the note (when there is one) grows it by its own
+        # wrapped height, between the two.
         if self.ink_saver:  # ink-saver drops every hyperlink
             links, nav, addr_url = None, "", ""
         links = [(label, url) for label, url in (links or []) if url]
-        bar_h, pad = (26 if links else 20), 4
+        pad = 4
+        note_lines = self._bar_note(note, self.content_width - 2 * pad - 2)
+        bar_h = (26 if links else 20) + len(note_lines) * 4
         # The bar must sit whole on one page: if the day's content already
         # runs to the bottom, start a fresh page so the bar's name/sub cells
         # don't auto-break away onto stray pages of their own.
@@ -201,8 +227,16 @@ class DayMixin:
             self.set_text_color(*self.accent)
             self.cell(nav_w, 4, nav_label, link=nav)
 
+        ny = y + pad + 13.5
+        for line in note_lines:
+            self.set_xy(cx, ny)
+            self.set_font(FONT, "", 8.5)
+            self.set_text_color(*MUTED)
+            self.cell(0, 4, line)
+            ny += 4
+
         if links:
-            self._link_row(cx, y + pad + 14, links)
+            self._link_row(cx, y + pad + 14 + len(note_lines) * 4, links)
 
         self.set_y(y + bar_h)
 
@@ -360,6 +394,8 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(detail_w, 5, meta)
+        if t.description:
+            self._para(x, detail_w, t.description)
         if t.overnight:
             self._chip(x, self.t("OVERNIGHT"))
 
@@ -421,6 +457,8 @@ class DayMixin:
         if meta or maps_url(coord, ev.location, provider=self.map_provider):
             self.set_xy(x, self.get_y())
             self._line_with_nav(x, detail_w, meta, coord, ev.location)
+        if cr.description:
+            self._para(x, detail_w, cr.description)
 
         if self.page_no() == start_page:
             self.set_y(max(self.get_y(), top + 15))

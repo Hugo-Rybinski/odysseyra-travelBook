@@ -714,7 +714,11 @@ A travel leg, rendered on a dedicated transport page and woven into its
 `start_date` day's itinerary. A leg that spans midnight is treated as that
 night's accommodation (stay bar + "sleep" column, `+1` on the arrival time).
 `start_time` is required; provide one of `end_time` / `duration` and the other
-is inferred, across time zones when they differ.
+is inferred, across time zones when they differ. An optional `description`
+carries a short note the structured fields don't — drawn as prose under the
+leg's booking line, both on the transport page and on the day's row. An
+overnight leg also fills that night's stay bar, which leaves the note to the
+itinerary row above rather than printing it twice.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
@@ -735,6 +739,7 @@ is inferred, across time zones when they differ.
 | `website` |  | Link to the carrier's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note for whatever the other fields don't cover (a seat, a terminal, a baggage allowance) | string | any text | `""` |
 | `price` |  | Ticket price (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
@@ -743,7 +748,10 @@ is inferred, across time zones when they differ.
 
 Where you sleep, rendered as a summary page plus a bottom bar on each covered
 day. A stay covers nights from `arrival` up to (but not including) `departure`,
-so the checkout day shows no bar.
+so the checkout day shows no bar. An optional `description` carries a short note
+the structured fields don't — drawn in full under the contact line on the
+summary page, and in the day's stay bar (capped at two lines in the PDF, since
+the bar is pinned near the page foot; the viewer clamps it instead).
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
@@ -758,6 +766,7 @@ so the checkout day shows no bar.
 | `website` |  | Link to the property's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note for whatever the other fields don't cover (a door code, where to park, which bell to ring) | string | any text | `""` |
 | `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
@@ -773,7 +782,10 @@ validation errors otherwise (and the drop-off must not precede the pick-up). A
 pick-up or drop-off that overlaps an activity or transport on the same day is a
 validation warning. Each of the four times takes an optional UTC offset that
 falls back to `defaults.timezone`; a tz label is only shown when it differs. The
-drop-off location defaults to the pick-up location.
+drop-off location defaults to the pick-up location. An optional `description`
+carries a short note the structured fields don't — drawn under the card's meta
+line, and repeated on **both** the pick-up and drop-off rows woven into their
+days, since that is where you read it.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
@@ -796,6 +808,7 @@ drop-off location defaults to the pick-up location.
 | `website` |  | Link to the rental company's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note for whatever the other fields don't cover (the insurance excess, a fuel policy, where the desk is) | string | any text | `""` |
 | `price` |  | Rental price (amount only, no symbol) | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |

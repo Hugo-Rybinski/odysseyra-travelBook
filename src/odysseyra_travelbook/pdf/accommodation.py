@@ -43,6 +43,7 @@ class AccommodationMixin:
         addr_h = self._nav_block_h(acc.address, acc.coordinate, acc.address, where,
                                    w=inner_w, size=10, h=5)
         contact_lines = self._measure_lines(acc.contact, inner_w)
+        note_n = self._measure_lines(acc.description, inner_w)
         booked = self._booked_text(acc)
         date_line = self._acc_date_line(acc)
         links = [(self.t("Website"), acc.website),
@@ -53,6 +54,8 @@ class AccommodationMixin:
         if date_line:
             h += 5.5
         h += addr_h + contact_lines * 5
+        if note_n:
+            h += note_n * 5
         if booked:
             h += 5
         if acc.price is not None:
@@ -96,6 +99,10 @@ class AccommodationMixin:
             self.set_font(FONT, "", 10)
             self.multi_cell(inner_w, 5, acc.contact)
             yy += contact_lines * 5
+        if note_n:
+            self.set_xy(cx, yy)
+            self._para(cx, inner_w, acc.description)
+            yy += note_n * 5
         if booked:
             self.set_xy(cx, yy)
             self.set_font(FONT, "", 10)

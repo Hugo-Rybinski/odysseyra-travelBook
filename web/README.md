@@ -220,6 +220,18 @@ by the Python engine (`validate(text, lang)`).
   was attached, not a re-export of the simplified line. It's a `<button>` rather
   than an `<a href>` because the decode is async — there is no URL to point at
   until the click.
+- **A booking's short note** — the optional `description` on a transport leg,
+  an accommodation or a car rental appears in **three** places, all as muted
+  prose through `Clamp` (so the "show full descriptions" option applies): the
+  section card in `TransportList.tsx` / `AccommodationSummary.tsx`
+  (`.card-note`), the day's row for a leg or a car pick-up/drop-off in
+  `DayCard.tsx` (`.act-note`), and the day's stay bar (`.stay-note`, where the
+  clamp stands in for the PDF's two-line cap) — though a sleep-aboard leg, which
+  is already a row in that day's itinerary, leaves its note to that row instead
+  of repeating it in the bar. A car event carries its rental's
+  note on itself — the resolved event has no way back to the rental. This is
+  also why `Book.tsx` wraps the transport and accommodation views in
+  `ClampProvider`: they had no prose of their own before.
 - **Overview** tab (`render/TripMap.tsx` + `render/tripGeo.ts`) reuses the book's
   cover — trip title / dates / summary and the day-by-day table, always expanded,
   with each row jumping into that day in the Travel view (the app carries the day

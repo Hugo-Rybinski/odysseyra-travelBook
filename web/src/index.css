@@ -1545,6 +1545,23 @@ body {
   margin: 4px 0 0;
   line-height: 1.45;
 }
+/* The short `description` note a transport leg / car rental / stay carries, for
+   whatever its structured fields don't. Same muted prose treatment in all three
+   places it appears — a day row (.act-note), a summary card (.card-note) and the
+   day's stay bar (.stay-note) — mirroring the PDF, which draws all three with
+   `_para`. */
+.act-note,
+.card-note,
+.stay-note {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.stay-note {
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
 /* Guidebook page pointer: a light-accent pill appended inline at the end of the
    description text (mirrors the PDF's `_guidebook_pill`). Not bold and not
    uppercased — unlike the flag chips — since it carries a readable reference.

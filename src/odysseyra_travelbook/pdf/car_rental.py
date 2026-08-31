@@ -88,6 +88,7 @@ class CarRentalMixin:
         dropoff_h = self._nav_block_h(dropoff, dropoff_coord, cr.dropoff_location,
                                       w=inner_w, size=9, h=5, style="B")
         meta_n = self._measure_lines(meta, inner_w, 10)
+        note_n = self._measure_lines(cr.description, inner_w)
 
         h = pad * 2 + 7
         h += pickup_h + dropoff_h
@@ -95,6 +96,8 @@ class CarRentalMixin:
             h += 5.5
         if meta:
             h += meta_n * 5
+        if note_n:
+            h += note_n * 5
         if cr.price is not None:
             h += 5
         if has_links:
@@ -142,6 +145,10 @@ class CarRentalMixin:
             self.set_text_color(*MUTED)
             self.multi_cell(inner_w, 5, meta)
             yy += meta_n * 5
+        if note_n:
+            self.set_xy(cx, yy)
+            self._para(cx, inner_w, cr.description)
+            yy += note_n * 5
         if cr.price is not None:
             self._draw_price(cx, yy, inner_w, cr.price, cr.currency)
             yy += 5

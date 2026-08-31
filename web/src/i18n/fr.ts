@@ -604,6 +604,11 @@ export const FR: Record<string, string> = {
   "none (no badge)": "aucun (pas de badge)",
   "Reservation status, shown as a badge. No badge when unset.":
     "Statut de la réservation, affiché comme badge. Aucun badge si non défini.",
+  // The short `description` note — one shared placeholder, one help string per
+  // section (each names the examples that fit that section).
+  "Short note": "Note courte",
+  "A short note for whatever the other fields don't cover — a seat, a terminal, a baggage allowance. Optional.":
+    "Une note courte pour ce que les autres champs ne couvrent pas — un siège, un terminal, une franchise bagages. Facultatif.",
   Price: "Prix",
   "amount only, no symbol": "montant seul, sans symbole",
   "Ticket price (amount only, no symbol). Optional.":
@@ -631,6 +636,8 @@ export const FR: Record<string, string> = {
   "Phone or email. Optional.": "Téléphone ou e-mail. Facultatif.",
   "Link to the property's website. Optional.":
     "Lien vers le site de l'établissement. Facultatif.",
+  "A short note for whatever the other fields don't cover — a door code, where to park, which bell to ring. Optional.":
+    "Une note courte pour ce que les autres champs ne couvrent pas — un code d'entrée, où se garer, quelle sonnette. Facultatif.",
   "whole-stay amount, no symbol": "montant du séjour complet, sans symbole",
   "Price for the whole stay (amount only, no symbol). Optional.":
     "Prix pour l'ensemble du séjour (montant seul, sans symbole). Facultatif.",
@@ -690,6 +697,8 @@ export const FR: Record<string, string> = {
   "Reservation reference. Optional.": "Référence de réservation. Facultatif.",
   "Link to the rental company's website. Optional.":
     "Lien vers le site de la société de location. Facultatif.",
+  "A short note for whatever the other fields don't cover — the insurance excess, a fuel policy, where the desk is. Optional.":
+    "Une note courte pour ce que les autres champs ne couvrent pas — la franchise d'assurance, la politique carburant, où se trouve le comptoir. Facultatif.",
   "Rental price (amount only, no symbol). Optional.":
     "Prix de la location (montant seul, sans symbole). Facultatif.",
   "Car type": "Type de voiture",

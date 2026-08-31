@@ -83,6 +83,20 @@ def test_accommodation_fields_and_nights():
     assert it.accommodations[1].city == "Gavarnie"
 
 
+def test_booking_descriptions_parse_on_all_three_sections():
+    # The short note is plain text on transport / accommodation / car rental, and
+    # is "" when absent — no parsing, no validation beyond "any text".
+    it = Itinerary.from_json_file(EXAMPLE)
+    assert it.accommodations[0].description.startswith("Room 214")
+    assert it.accommodations[1].description.startswith("Bunks in a shared dorm")
+    assert it.car_rentals[0].description.startswith("Full-to-full fuel policy")
+    night_train = it.transports[-1]
+    assert night_train.description.startswith("Couchette compartment 4")
+    # The two other legs give none.
+    assert it.transports[0].description == ""
+    assert it.transports[1].description == ""
+
+
 def test_stay_lookup_and_night_index():
     it = Itinerary.from_json_file(EXAMPLE)
     hotel, refuge = it.accommodations
@@ -804,6 +818,55 @@ def test_build_pdf(tmp_path):
     assert out.stat().st_size > 1000
     # every locatable object gets a clickable "Navigate" maps link
     assert b"google.com/maps/search" in out.read_bytes()
+
+
+def test_stay_bar_note_is_capped_at_two_lines():
+    # The stay bar is pinned near the page foot, so it can't grow without bound:
+    # a long `description` wraps to at most two lines and gets an ellipsis. The
+    # full text is always on the accommodation page.
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    pdf = TravelPDF(Itinerary.from_json_file(EXAMPLE), "en", False, "google")
+    pdf.add_page()
+    w = pdf.content_width - 10
+
+    assert pdf._bar_note("", w) == []
+    short = pdf._bar_note("Room 214, second floor.", w)
+    assert short == ["Room 214, second floor."]  # untouched, no ellipsis
+
+    long = pdf._bar_note(" ".join(["a really quite wordy note"] * 20), w)
+    assert len(long) == pdf._BAR_NOTE_LINES == 2
+    assert long[-1].endswith(" …")
+    assert not long[0].endswith("…"), "only the last kept line is elided"
+
+
+def test_overnight_legs_note_is_not_repeated_in_the_stay_bar():
+    # You sleep aboard the last leg, so it fills the stay bar *and* appears as a
+    # row in the same day's itinerary (both select on the departure date). Its
+    # note belongs to the row; the bar must not print it twice.
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    it = Itinerary.from_json_file(EXAMPLE)
+    leg = it.transports[-1]
+    assert leg.overnight and leg.description, "the example exercises this path"
+
+    pdf = TravelPDF(it, "en", False, "google")
+    night = next(d for d in it.days if it.night_transport(d.date) is leg)
+    assert leg in pdf._day_items(night), "the row that carries the note"
+
+    notes = []
+    pdf._bottom_bar = lambda *a, **kw: notes.append(kw.get("note", ""))
+    pdf._day_stay(night)
+    assert notes == [""], "the bar leaves the note to the itinerary row"
+
+
+def test_build_pdf_with_booking_notes(tmp_path):
+    # The three notes grow the cards / rows / stay bar they sit in; the whole
+    # book must still lay out (every card measures its own height up front).
+    it = Itinerary.from_json_file(EXAMPLE)
+    assert any(a.description for a in it.accommodations)
+    out = build_pdf(it, tmp_path / "notes.pdf")
+    assert out.exists() and out.stat().st_size > 1000
 
 
 def test_build_pdf_ink_saver(tmp_path):

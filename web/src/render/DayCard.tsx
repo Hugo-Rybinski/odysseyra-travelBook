@@ -564,6 +564,7 @@ function TransportRow({ t, lang }: { t: Transport; lang: Lang }) {
         </div>
         {t.duration_display && <p className="chips-line accent">{t.duration_display}</p>}
         {booking && <p className="chips-line">{booking}</p>}
+        {t.description && <Clamp className="act-note" text={t.description} />}
         <Links lang={lang} website={t.website} reservation={t.booking_link} />
       </div>
     </li>
@@ -605,6 +606,9 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
             ) : null}
           </p>
         )}
+        {/* The owning rental's note, repeated on both of its events — this is
+            where you read it on the day. Mirrors pdf/days.py's car row. */}
+        {event.description && <Clamp className="act-note" text={event.description} />}
       </div>
     </li>
   );
@@ -674,12 +678,24 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
             ))}
           </p>
         )}
+        {/* The stay's note (a door code, where to park). The PDF's bar caps it
+            at two lines to protect the page foot; here Clamp plays that role,
+            with the full text one tap away. */}
+        {s.description && <Clamp className="stay-note" text={s.description} />}
         <Links lang={lang} website={s.website} reservation={s.booking_link} />
       </footer>
     );
   }
   if (day.night_transport) {
     const leg = day.night_transport;
+    // The leg is normally also a row in the day's itinerary above (both the
+    // day's `transports` and its `night_transport` select on the departure
+    // date), and that row already shows its note — so the bar doesn't repeat
+    // it. Matched on the departure stamp + route because the resolved doc holds
+    // two independently serialized copies of the same leg. Mirrors
+    // pdf/days.py's `_day_stay`.
+    const legKey = (t: Transport) => `${t.start_date}|${t.start_time}|${t.title}`;
+    const alsoListed = day.transports.some((t) => legKey(t) === legKey(leg));
     return (
       <footer className="stay-bar aboard">
         <div className="stay-line">
@@ -691,6 +707,9 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
           <span className="stay-progress">{tr(lang, "onBoard")}</span>
         </div>
         {transportTimes(leg) && <p className="stay-sub">{transportTimes(leg)}</p>}
+        {!alsoListed && leg.description && (
+          <Clamp className="stay-note" text={leg.description} />
+        )}
         <Links lang={lang} website={leg.website} reservation={leg.booking_link} />
       </footer>
     );

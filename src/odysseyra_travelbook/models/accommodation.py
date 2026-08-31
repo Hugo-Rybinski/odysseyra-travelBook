@@ -34,6 +34,9 @@ class Accommodation:
     website: str = ""  # the property's own website
     booking_link: str = ""  # direct link to this reservation
     status: str = ""  # "" | "booked" | "confirmed"
+    # A short note for whatever the fields above don't carry (a door code, where
+    # to park, which bell to ring…). Prose, drawn under the contact line.
+    description: str = ""
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
     paid: bool | None = None  # None = no badge
@@ -98,6 +101,7 @@ class Accommodation:
             website=str(d.get("website", "")),
             booking_link=str(d.get("booking_link", "")),
             status=status,
+            description=str(d.get("description", "")),
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),
             paid=_parse_paid(d.get("paid")),

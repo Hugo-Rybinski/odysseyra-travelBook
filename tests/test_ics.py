@@ -169,6 +169,24 @@ def test_guidebook_pages_reach_the_event_description():
     assert "Guide: p. 44-47" in fr
 
 
+def test_booking_notes_reach_the_event_description():
+    # The short note a leg / stay / rental carries is packed as a `Description:`
+    # detail — the same label activities already use — on every event it belongs
+    # to, including each night of a multi-night stay.
+    ics = _ics("france.json")
+    flight = _unfold(next(e for e in _events(ics) if "AF23" in e))
+    assert "Description: Seats 24A/24B" in flight
+
+    nights = [_unfold(e) for e in
+              _stay_events(ics, "Hôtel des Grands Boulevards")]
+    assert nights and all("Description: Check-in from 15:00" in e for e in nights)
+
+    # Both car events, since the rental's note is copied onto each.
+    car = [_unfold(e) for e in _events(ics) if "Hertz" in e]
+    assert len(car) == 2
+    assert all("Description: Full-to-full fuel policy" in e for e in car)
+
+
 def test_french_localizes_labels():
     ics = _ics("france_fr.json", lang="fr")
     flight = _unfold(next(e for e in _events(ics) if "Avion:" in e))

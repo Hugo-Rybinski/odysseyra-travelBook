@@ -532,6 +532,9 @@ _FR = {
     "the reservation reference": "la référence de réservation",
     "where it was booked": "où cela a été réservé",
     "the reservation status": "l'état de la réservation",
+    # the shared note on transport / accommodation / car rental (specs.NOTE_DESC)
+    "a short note for whatever the other fields don't cover":
+        "une note courte pour ce que les autres champs ne couvrent pas",
     "the ticket price": "le prix du billet",
     "the payment state": "l'état du paiement",
     "the accommodation name": "le nom de l'hébergement",

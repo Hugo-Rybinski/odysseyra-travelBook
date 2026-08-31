@@ -254,6 +254,11 @@ SCHEDULE = [
 GUIDEBOOK_DESC = "the guidebook page(s) covering this activity"
 GUIDEBOOK_FORMAT = "page numbers like '14', '15-18' or '16, 23, 25-30'"
 
+# The short free-text note the three booked sections (transport, accommodation,
+# car rental) carry for whatever their structured fields don't — same wording in
+# all three tables.
+NOTE_DESC = "a short note for whatever the other fields don't cover"
+
 ACTIVITY_SPECS = {
     "road": [
         Spec("start", True, "the departure address", "any text"),
@@ -365,6 +370,7 @@ TRANSPORT_SPECS = [
          "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
+    Spec("description", False, NOTE_DESC, "any text", '""'),
     Spec("price", False, "the ticket price", "a number", "none (no price shown)",
          V_NUMBER),
     Spec("currency", False, "the currency this price is in",
@@ -389,6 +395,7 @@ ACCOMMODATION_SPECS = [
          "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
+    Spec("description", False, NOTE_DESC, "any text", '""'),
     Spec("price", False, "the price", "a number", "none (no price shown)", V_NUMBER),
     Spec("currency", False, "the currency this price is in",
          "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
@@ -430,6 +437,7 @@ CAR_RENTAL_SPECS = [
          "a link like 'https://example.com'", "none (no link shown)", V_URL),
     Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
          "none (no badge)", V_STATUS),
+    Spec("description", False, NOTE_DESC, "any text", '""'),
     Spec("price", False, "the rental price", "a number", "none (no price shown)",
          V_NUMBER),
     Spec("currency", False, "the currency this price is in",

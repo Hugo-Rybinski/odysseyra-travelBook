@@ -3,6 +3,7 @@ import type { Accommodation, Itinerary } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
+import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, useMapProvider } from "./nav";
 
@@ -108,6 +109,7 @@ function StayCard({
             </p>
           )}
           {a.contact && <p className="card-addr">{a.contact}</p>}
+          {a.description && <Clamp className="card-note" text={a.description} />}
           {a.price && (
             <p className="card-price">
               <Price price={a.price} lang={lang} />

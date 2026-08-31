@@ -249,13 +249,38 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `other`); hike `route` (loop/back_and_forth/one_way, default back_and_forth);
   transport `type` (plane/train/bus/taxi/ferry/other, default other); accommodation
   `type` (hotel/camping/b&b/other, default hotel). Transport, accommodation and
-  car rental all share a tri-state `paid` (paid/to-pay/unset) and an optional
-  `status` (booked/confirmed). Meal `meal_type` (breakfast/lunch/dinner/brunch/
+  car rental all share a tri-state `paid` (paid/to-pay/unset), an optional
+  `status` (booked/confirmed) and an optional `description` (see below). Meal
+  `meal_type` (breakfast/lunch/dinner/brunch/
   snack/picnic/meal) is optional; when omitted the resolved `category` is
   inferred from the start time, but only ever as breakfast/lunch/dinner (the
   other four are explicit-only). The
   inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
+- **A booking's `description`.** Transport, accommodation and car rental each
+  carry an optional free-text `description` — a *short note* for whatever their
+  structured fields don't (a seat, a door code, a fuel policy). Plain text, no
+  validation beyond "any text" (one shared `NOTE_DESC` wording across the three
+  `validate/specs.py` tables). Both renderers draw it as muted prose wherever the
+  object appears, which is **three places**, not one: the section card (PDF
+  `pdf/transport.py` / `accommodation.py` / `car_rental.py`, viewer
+  `TransportList.tsx` / `AccommodationSummary.tsx` — class `.card-note`), the
+  day's row for a leg or a car pick-up/drop-off (`pdf/days.py`'s
+  `_transport_row` / `_car_rental_row`, viewer `DayCard.tsx` — `.act-note`), and
+  the day's **stay bar** (`.stay-note`) — except that a **sleep-aboard leg**
+  fills the bar *and* sits as a row in the same day's itinerary (both
+  `night_transport` and `transports_on` select on the departure date), so the
+  bar suppresses a note the row above already shows. Both renderers *check*
+  rather than assume the two coincide. A `CarRentalEvent` has no way back to
+  its rental once resolved, so `serialize.py`'s `_car_event` copies the note onto
+  both events. The stay bar is the one place with a cap: it's pinned near the
+  page foot, so `_bar_note` wraps to at most `_BAR_NOTE_LINES` (2) with an
+  ellipsis and grows the bar by exactly that much — the viewer's `Clamp` plays
+  the same role there, and the full text is always on the accommodation page.
+  Adding prose to the transport/accommodation *views* is also why `Book.tsx` now
+  wraps them in `ClampProvider` (without it the notes would ignore the app's
+  "show full descriptions" option). The `.ics` export packs it as a
+  `Description:` detail line, the same label activities already use.
 - **Guidebook pages.** The four activity types that carry a `description` —
   `road`, `point_of_interest`, `place`, `hike` — also carry an optional
   `guidebook_pages` string: page numbers only (`14` / `15-18` /

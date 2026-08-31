@@ -8,6 +8,7 @@
   "contact": "refuge@gavarnie.example",
   "booking_source": "Hotel website",
   "status": "booked",
+  "description": "Bunks in a shared dorm — bring a sleeping-bag liner. Dinner is at 19:00 sharp and there is no phone signal up there, so confirm by email before setting off; the warden bolts the door at 22:00.",
   "price": 52,
   "paid": false,
   "breakfast_included": false,

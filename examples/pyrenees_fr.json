@@ -350,6 +350,7 @@
       "booking_number": "IC-3711",
       "booking_source": "SNCF Connect",
       "status": "confirmed",
+      "description": "Compartiment couchettes 4, places du haut. Plateau petit-déjeuner servi à partir de 6h00.",
       "price": 74,
       "paid": "paid"
     }
@@ -367,6 +368,7 @@
       "website": "https://www.hotel-gallia-londres.com",
       "booking_link": "https://secure.booking.com/myreservations/GL-88213",
       "status": "confirmed",
+      "description": "Chambre 214, deuxième étage. Garage gratuit sous l'hôtel — demander la télécommande à la réception.",
       "price": 256,
       "paid": true,
       "breakfast_included": true,
@@ -385,6 +387,7 @@
       "contact": "refuge@gavarnie.example",
       "booking_source": "Site de l'hôtel",
       "status": "booked",
+      "description": "Couchettes en dortoir partagé — prévoir un drap de sac. Le dîner est à 19h00 pile et il n'y a aucun réseau là-haut, donc confirmer par e-mail avant de partir ; le gardien verrouille la porte à 22h00.",
       "price": 52,
       "paid": false,
       "breakfast_included": false,
@@ -415,6 +418,7 @@
       "website": "https://www.europcar.fr",
       "booking_link": "https://www.europcar.fr/fr/bookings/EC-55231",
       "status": "confirmed",
+      "description": "Politique carburant plein-à-plein, franchise d'assurance 950 €. Les chaînes sont dans le coffre — les y laisser.",
       "price": 228,
       "paid": "paid",
       "additional_drivers": 1,

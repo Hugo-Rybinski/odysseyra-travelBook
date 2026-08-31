@@ -47,6 +47,11 @@ class CarRental:
     website: str = ""  # the rental company's website
     booking_link: str = ""  # direct link to this reservation
     status: str = ""  # "" | "booked" | "confirmed"
+    # A short note for whatever the fields above don't carry (the insurance
+    # excess, a fuel policy, where the desk is). Prose, drawn under the meta line
+    # — and repeated on the pick-up / drop-off rows woven into their days, since
+    # that is where you read it.
+    description: str = ""
     price: float | None = None
     currency: str = ""  # "" → the trip's default currency
     paid: bool | None = None  # None = no badge
@@ -138,6 +143,7 @@ class CarRental:
             website=str(d.get("website", "")),
             booking_link=str(d.get("booking_link", "")),
             status=status,
+            description=str(d.get("description", "")),
             price=_parse_price(d.get("price")),
             currency=_parse_currency(d.get("currency")),
             paid=_parse_paid(d.get("paid")),

@@ -685,6 +685,7 @@
       "website": "https://www.airfrance.com",
       "booking_link": "https://wwws.airfrance.com/mmb/AF77-QWLM",
       "status": "confirmed",
+      "description": "Seats 24A/24B, exit row. One checked bag each (23 kg); skis extra. Terminal 2E on arrival — allow 45 min for passport control.",
       "price": 720,
       "currency": "USD",
       "paid": "paid"
@@ -708,6 +709,7 @@
       "booking_number": "SNCF-3KQ9F2",
       "booking_source": "SNCF Connect",
       "status": "booked",
+      "description": "Coach 12, seats 41/42. Platform posted 20 min before departure — no reservation change possible after boarding.",
       "price": 45,
       "paid": "to pay"
     },
@@ -751,6 +753,7 @@
       "website": "https://grandsboulevardshotel.com",
       "booking_link": "https://secure.booking.com/myreservations/GB-40218",
       "status": "confirmed",
+      "description": "Check-in from 15:00, reception open 24h. Breakfast is served in the glasshouse courtyard, 07:00–10:30.",
       "price": 340,
       "paid": true,
       "breakfast_included": true,
@@ -787,6 +790,7 @@
       "contact": "host@gite-perigord.example",
       "booking_source": "Airbnb",
       "status": "booked",
+      "description": "Keypad on the blue door, code 4589B. Park in the courtyard behind the gate — the street is pedestrian after 11:00.",
       "price": 180,
       "breakfast_included": false,
       "coordinate": {
@@ -842,6 +846,7 @@
       "website": "https://www.hertz.fr",
       "booking_link": "https://www.hertz.fr/rentacar/reservation/HZ-90412",
       "status": "confirmed",
+      "description": "Full-to-full fuel policy, €1200 insurance excess. Desk is in the station car park, level -1 — not in the main hall.",
       "price": 415,
       "paid": "paid",
       "additional_drivers": 1,

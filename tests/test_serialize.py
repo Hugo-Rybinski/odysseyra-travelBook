@@ -201,6 +201,73 @@ def test_guidebook_pages_on_a_nested_activity():
     assert place["activities"][0]["guidebook_pages"] == "56"
 
 
+def _booked_itinerary(**notes) -> dict:
+    """A one-day trip with a leg, a stay and a rental, each optionally carrying a
+    `description` — the three sections that share the short-note field."""
+    return {
+        "travel_description": {"title": "T"},
+        "days": [{"title": "D", "date": "2026-06-08"}],
+        "transport": [dict({"start": "Paris", "end": "Pau",
+                            "start_date": "2026-06-08", "start_time": "13:50",
+                            "duration": "4h20"},
+                           **({"description": notes["transport"]}
+                              if "transport" in notes else {}))],
+        "accommodations": [dict({"name": "Gîte", "city": "Pau",
+                                 "arrival": "2026-06-08",
+                                 "departure": "2026-06-09"},
+                                **({"description": notes["accommodation"]}
+                                   if "accommodation" in notes else {}))],
+        "car_rentals": [dict({"pickup_location": "Pau Airport",
+                              "booking_start_date": "2026-06-08",
+                              "booking_start_time": "18:00",
+                              "booking_end_date": "2026-06-09",
+                              "booking_end_time": "20:00",
+                              "pickup_date": "2026-06-08",
+                              "pickup_time": "18:15",
+                              "dropoff_date": "2026-06-09",
+                              "dropoff_time": "19:30"},
+                             **({"description": notes["car_rental"]}
+                                if "car_rental" in notes else {}))],
+    }
+
+
+def test_booking_descriptions_default_to_empty_and_round_trip():
+    # Transport, accommodation and car rental each carry a short free-text note
+    # for whatever their structured fields don't. It defaults to "" (so both
+    # renderers simply skip it) and reaches the serialized dict verbatim.
+    plain = to_dict(Itinerary.from_dict(_booked_itinerary()))
+    assert plain["transports"][0]["description"] == ""
+    assert plain["accommodations"][0]["description"] == ""
+    assert plain["car_rentals"][0]["description"] == ""
+
+    filled = to_dict(Itinerary.from_dict(_booked_itinerary(
+        transport="Coach 12, seats 41/42.",
+        accommodation="Keypad code 4589B.",
+        car_rental="Full-to-full fuel policy.")))
+    assert filled["transports"][0]["description"] == "Coach 12, seats 41/42."
+    assert filled["accommodations"][0]["description"] == "Keypad code 4589B."
+    assert filled["car_rentals"][0]["description"] == "Full-to-full fuel policy."
+
+
+def test_a_days_stay_and_leg_carry_their_note():
+    # The day's own copies (used by the stay bar and the day's transport row) are
+    # the same objects, so the note reaches them too.
+    day = to_dict(Itinerary.from_dict(_booked_itinerary(
+        transport="Coach 12.", accommodation="Keypad code 4589B.")))["days"][0]
+    assert day["stay"]["description"] == "Keypad code 4589B."
+    assert day["transports"][0]["description"] == "Coach 12."
+
+
+def test_a_car_event_carries_its_rentals_note():
+    # A resolved CarRentalEvent has no way back to its rental, so the note is
+    # copied onto *both* events — that's where the day's row reads it.
+    day = to_dict(Itinerary.from_dict(
+        _booked_itinerary(car_rental="Desk at level -1.")))["days"][0]
+    assert day["car_events"], "the pick-up lands on its day"
+    assert all(ev["description"] == "Desk at level -1."
+               for ev in day["car_events"])
+
+
 def test_map_pin_defaults_to_none_and_reflects_stamp():
     # Every activity/accommodation carries a `map_pin` key; it is None unless a
     # caller (the PWA bridge, from the rendered day maps) stamps `_map_pin` on

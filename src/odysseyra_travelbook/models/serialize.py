@@ -252,6 +252,7 @@ def _transport(itin: Itinerary, t) -> dict:
         "website": t.website,
         "booking_link": t.booking_link,
         "status": t.status,
+        "description": t.description,
         "price": _price(itin, t.price, t.currency, t.paid),
         "coordinate": _coord(t.coordinate),
         "start_coordinate": _coord(t.start_coordinate),
@@ -275,6 +276,7 @@ def _accommodation(itin: Itinerary, a) -> dict:
         "website": a.website,
         "booking_link": a.booking_link,
         "status": a.status,
+        "description": a.description,
         "price": _price(itin, a.price, a.currency, a.paid),
         "breakfast_included": a.breakfast_included,
         "coordinate": _coord(a.coordinate),
@@ -301,6 +303,7 @@ def _car_rental(itin: Itinerary, c) -> dict:
         "website": c.website,
         "booking_link": c.booking_link,
         "status": c.status,
+        "description": c.description,
         "price": _price(itin, c.price, c.currency, c.paid),
         "car_type": c.car_type,
         "car_type_label": c.car_type_label,
@@ -336,6 +339,9 @@ def _car_event(itin: Itinerary, ev) -> dict:
         "car_model": rental.car_model if rental else "",
         "car_type_label": rental.car_type_label if rental else "",
         "booking_number": rental.booking_number if rental else "",
+        # The rental's note, carried onto both of its events: the day's row is
+        # where you read it, and the event has no back-reference to look it up.
+        "description": rental.description if rental else "",
         "coordinate": _coord(coord),
         **_sched(ev, itin.default_timezone),
     }

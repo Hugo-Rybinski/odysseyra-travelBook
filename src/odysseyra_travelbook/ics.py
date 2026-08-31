@@ -253,6 +253,7 @@ def _transport_events(itin: Itinerary, uid_base: str, lang: str,
         _detail(lines, "Booking number", t.booking_number, lang)
         _detail(lines, "Booking source", t.booking_source, lang)
         _detail(lines, "Status", tr(t.status, lang) if t.status else "", lang)
+        _detail(lines, "Description", t.description, lang)
         _detail(lines, "Price", _money(itin, t.price, t.currency, t.paid, lang), lang)
         _detail(lines, "Website", t.website, lang)
         _detail(lines, "Booking", t.booking_link, lang)
@@ -291,6 +292,7 @@ def _car_events(itin: Itinerary, uid_base: str, lang: str,
                 _detail(lines, "Price",
                         _money(itin, cr.price, cr.currency, cr.paid, lang), lang)
             _detail(lines, "Status", tr(cr.status, lang) if cr.status else "", lang)
+            _detail(lines, "Description", cr.description, lang)
             _detail(lines, "Contact", cr.contact, lang)
             _detail(lines, "Website", cr.website, lang)
             _detail(lines, "Booking", cr.booking_link, lang)
@@ -334,6 +336,7 @@ def _accommodation_events(itin: Itinerary, uid_base: str, lang: str,
                 _detail(lines, "Breakfast included", tr("Yes", lang), lang)
             _detail(lines, "Contact", acc.contact, lang)
             _detail(lines, "Status", tr(acc.status, lang) if acc.status else "", lang)
+            _detail(lines, "Description", acc.description, lang)
             _detail(lines, "Price",
                     _money(itin, acc.price, acc.currency, acc.paid, lang), lang)
             _detail(lines, "Booking source", acc.booking_source, lang)
