@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const srcDir = join(here, "..", "..", "src", "odysseyra");
+const srcDir = join(here, "..", "..", "src", "odysseyra_travelbook");
 const pyDir = join(here, "..", "public", "py");
 
 function newestMtime(dir) {
