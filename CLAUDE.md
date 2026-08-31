@@ -501,11 +501,14 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `models.SunTimes` carries only the two times (+ `.hhmm`) and each renderer
   fills the **same English template** — `pdf/days.py` via `translations.py`,
   the viewer via `render/format.ts`'s `sunTimes` key. French deliberately
-  shortens to `Lever`/`Coucher`: the full `Lever du soleil`/`Coucher du soleil`
-  leaves ~1 mm before the band's kicker on the longest example day.
-  Placement differs on purpose: the PDF closes the day's header band with it,
-  the viewer opens the day's body with it (`.day-sun`, above `.day-intro`), so
-  in the viewer it's hidden while the day is collapsed.
+  shortens to `Lever`/`Coucher`.
+  **Both renderers now open the day's *body* with it**, above the intro and
+  below the bank-holiday banner (`pdf/days.py`'s `_sun_moon_line`, drawn in
+  `day()`; the viewer's `.day-sun` above `.day-intro`, so there it's hidden
+  while the day is collapsed). It used to close the PDF's header band, sharing
+  one row with the kicker — which is why `_sun_moon_text` measured and degraded
+  the phase (named → emoji → back to the stay bar). Owning a full-width row
+  retired all of that: the phase is always named, in both languages.
   **With both switches on, the phase closes that same line** (`☀️ Sunrise:
   07:12, Sunset: 20:27, 🌕 Full moon`) — a second template,
   `"…, {emoji} {moon}"` / `sunTimesMoon`, filled with the *already localized*
@@ -514,11 +517,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   leftover to `_day_stay(day, moon=…)`, and `DayCard.tsx`'s `StayBar` shows its
   emoji only when `!day.sun`. So the bar still carries the moon when the sun
   times are off *or* unavailable (no usable reference — every `kyrgyzstan.json`
-  day, `france.json` day 1). The PDF has one extra wrinkle the viewer doesn't
-  need: the band's kicker and meta line share a row drawn from opposite margins,
-  so `_sun_moon_text` measures and degrades — named phase, then emoji alone,
-  then back to the stay bar (a long city name plus `Lune gibbeuse décroissante`
-  overruns; france day 5 and pyrenees day 4 land on emoji-only).
+  day, `france.json` day 1).
   The two ends are located separately by `sun_for` via mirrored chains, so a day
   you change town gets both right: the **sunset** at `sun_reference` (that
   night's accommodation → the day's own **last** located stop → the nearest dated

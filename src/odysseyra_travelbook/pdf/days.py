@@ -56,28 +56,33 @@ class DayMixin:
         link = getattr(self, "day_links", {}).get(index)
         if link is not None:
             self.set_link(link, page=self.page_no())
-        # City, date, and the day's sun times (on unless defaults.show_sun_times
-        # is off), right-aligned in the header band. French uses shorter labels:
-        # the full "Lever du soleil"/"Coucher du soleil" leaves barely a
-        # millimetre before the kicker on the longest day.
+        # The band carries the city and the date; the day's sky goes in the body
+        # (see `_sun_moon_line`), where the viewer puts it too.
         sun = self.itinerary.sun_for(day)
         moon = moon_phase(day.date) if self.itinerary.show_moon_phase and day.date else None
         kicker = self.t("DAY {index}").format(index=index)
         head = [b for b in (day.city, self.d(day.date, "wd_full_md")) if b]
-        # With both switches on, the night's phase closes the same line — one
-        # "today's sky" reading instead of two. It then leaves the stay bar,
-        # rather than being printed twice on one page.
-        sun_text, band_moon = self._sun_moon_text(kicker, head, sun, moon)
-        meta_bits = head + [sun_text] if sun_text else head
-        self._band_header(kicker, day.title, "   ".join(meta_bits))
+        self._band_header(kicker, day.title, "   ".join(head))
 
-        # A public holiday opens the day, ahead of the intro and the map: it
-        # changes what you'll find open, so it should be the first thing read.
-        # The ⚠️ is U+26A0 + U+FE0F, both in DejaVu (like the sun line's ☀️), so
-        # it needs no emoji fallback font and is kept out of the translated key.
+        # A public holiday opens the day, ahead of the sky line, the intro and
+        # the map: it changes what you'll find open, so it should be the first
+        # thing read. The ⚠️ is U+26A0 + U+FE0F, both in DejaVu (like the sun
+        # line's ☀️), so it needs no emoji fallback font and is kept out of the
+        # translated key.
         if day.bank_holiday:
             self._notice(f"⚠️ {self.t('BANK HOLIDAY')}",
                          self.t("Expect closures and reduced opening hours."))
+
+        # With both switches on, the night's phase closes the sun line — one
+        # "today's sky" reading instead of two. It then leaves the stay bar,
+        # rather than being printed twice on one page.
+        sun_text, line_moon = self._sun_moon_line(sun, moon)
+        if sun_text:
+            self.set_x(self.l_margin)
+            self.set_font(FONT, "B", 9.5)
+            self.set_text_color(*self.accent)
+            self.multi_cell(self.content_width, 5.5, sun_text)
+            self.ln(1.5)
 
         if day.description:
             self.set_font(FONT, "", 11)
@@ -107,43 +112,27 @@ class DayMixin:
                     if item.kind == "place":
                         self.day_area_map(day_maps, item.title)
 
-        self._day_stay(day, moon=None if band_moon else moon)
+        self._day_stay(day, moon=None if line_moon else moon)
 
-    # The narrowest gutter allowed between the band's kicker and its meta line:
-    # the two are drawn on the same row, from opposite margins.
-    _BAND_META_GAP = 4
+    def _sun_moon_line(self, sun, moon):
+        """The day's sun times, closed by the night's moon phase when both
+        switches are on. Returns ``(text, moon_shown)`` — the caller then leaves
+        the moon out of the stay bar, so the page never prints it twice.
 
-    def _band_meta_fits(self, kicker: str, bits: list[str]) -> bool:
-        """Whether the band's meta line still clears the kicker beside it."""
-        self.set_font(FONT, "B", 9)
-        used = self.get_string_width(kicker) + self._BAND_META_GAP
-        self.set_font(FONT, "", 10)
-        return used + self.get_string_width("   ".join(bits)) <= self.content_width
-
-    def _sun_moon_text(self, kicker: str, head: list[str], sun, moon):
-        """The band's sun times, closed by the night's moon phase when both
-        switches are on. Returns ``(text, moon_in_band)`` — the caller then
-        leaves the moon out of the stay bar, so the page never prints it twice.
-
-        The kicker and the meta line share one row, drawn from opposite margins,
-        so the phase only goes in if it fits beside the kicker: the named form
-        first, then the emoji alone (a French name like "Lune gibbeuse
-        décroissante" is a third of the line by itself), and if even that is too
-        wide the moon stays in the stay bar, where there is always room."""
+        It is drawn in the day's body, above the intro, over the full content
+        width — so unlike the header band (where it used to sit beside the
+        kicker, sharing one row) there is nothing to degrade for: the phase is
+        always named, and the longest French name fits."""
         if sun is None:
             return "", None
         sunrise, sunset = sun.hhmm
-        plain = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}").format(
-            sunrise=sunrise, sunset=sunset)
         if moon is None:
-            return plain, None
-        template = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}")
-        for name in (self.t(moon.name), ""):
-            candidate = template.format(sunrise=sunrise, sunset=sunset,
-                                        emoji=moon.emoji, moon=name).rstrip()
-            if self._band_meta_fits(kicker, head + [candidate]):
-                return candidate, moon
-        return plain, None
+            return self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}").format(
+                sunrise=sunrise, sunset=sunset), None
+        return self.t(
+            "☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}"
+        ).format(sunrise=sunrise, sunset=sunset, emoji=moon.emoji,
+                 moon=self.t(moon.name)), moon
 
     def _day_items(self, day):
         """Activities, same-day transports and car pick-up/drop-off events,

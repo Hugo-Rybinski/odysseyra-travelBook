@@ -43,54 +43,53 @@ def test_serialized_moon_on_by_default():
     assert days and all(d["moon"] is not None for d in days if d["date"])
 
 
-def _band(src: str, lang: str = "en"):
-    """Each day's ``(kicker, meta line, moon left to the stay bar)`` as the day
-    page would draw it."""
+def _sky(src: str, lang: str = "en"):
+    """Each day's ``(sun/moon line, moon left to the stay bar)`` as the day page
+    would draw it — the line sits in the day's body, above the intro."""
     from odysseyra_travelbook.pdf import TravelPDF
 
     it = Itinerary.from_json_file(str(EXAMPLES / src))
     pdf = TravelPDF(it, lang, False, "google")
     pdf.add_page()
     out = []
-    for i, day in enumerate(it.days, 1):
-        kicker = pdf.t("DAY {index}").format(index=i)
-        head = [b for b in (day.city, pdf.d(day.date, "wd_full_md")) if b]
+    for day in it.days:
         moon = moon_phase(day.date) if it.show_moon_phase and day.date else None
-        text, in_band = pdf._sun_moon_text(kicker, head, it.sun_for(day), moon)
-        out.append((kicker, text, None if in_band else moon))
+        text, shown = pdf._sun_moon_line(it.sun_for(day), moon)
+        out.append((text, None if shown else moon))
     return out
 
 
 def test_the_moon_phase_closes_the_suntimes_line():
     # Both switches on: the phase joins the sun times, and leaves the stay bar.
-    rows = _band("france.json")
-    named = [t for _, t, stay_moon in rows if "Sunrise" in t and stay_moon is None]
+    rows = _sky("france.json")
+    named = [t for t, stay_moon in rows if "Sunrise" in t and stay_moon is None]
     assert named, "france.json has days with both"
-    assert any(t.endswith("Full moon") or "🌕" in t or "🌘" in t for t in named)
-    for kicker, text, stay_moon in rows:
+    for text, stay_moon in rows:
         if "Sunrise" in text:
-            assert stay_moon is None, "shown in the band → not repeated in the bar"
+            assert stay_moon is None, "shown on the line → not repeated in the bar"
 
 
 def test_the_stay_bar_keeps_the_moon_without_sun_times():
     # france.json day 1 is the Atlantic crossing: its only reference sits hours
     # of solar time from the day's clock, so there are no sun times to append
     # to — the phase stays where it has always been.
-    _, text, stay_moon = _band("france.json")[0]
+    text, stay_moon = _sky("france.json")[0]
     assert text == "", "no sun line on the crossing day"
     assert stay_moon is not None, "so the bar still carries the phase"
 
 
-def test_a_too_wide_band_falls_back_to_the_emoji_then_to_the_bar():
-    # The kicker and the meta line share a row, so the phase name is dropped
-    # when it wouldn't fit. pyrenees day 4's city is long enough to trigger it.
-    rows = _band("pyrenees.json")
-    tails = [t.split(", ")[-1] for _, t, _ in rows if "Sunrise" in t]
-    assert any(" " in tail for tail in tails), "most days name the phase"
-    assert any(" " not in tail for tail in tails), "a long line keeps the emoji only"
-    # Whatever the fallback, a phase in the band never also reaches the bar.
-    assert all(stay_moon is None for _, text, stay_moon in rows if "🌒" in text
-               or "🌘" in text or "🌗" in text)
+def test_the_phase_is_always_named_now_that_the_line_owns_its_row():
+    """Regression for the move out of the header band: the line used to share a
+    row with the band's kicker, so a long city + a long French phase name had to
+    fall back to the emoji alone. In the body it has the full width, so every
+    phase is named — in both languages."""
+    for src, lang in (("france.json", "en"), ("france_fr.json", "fr"),
+                      ("pyrenees.json", "en"), ("pyrenees_fr.json", "fr")):
+        for text, _ in _sky(src, lang):
+            if not text or "," not in text:
+                continue
+            tail = text.split(", ")[-1]
+            assert " " in tail, f"{src}: {tail!r} should name the phase"
 
 
 def test_serialized_moon_can_be_switched_off():

@@ -53,8 +53,13 @@ class _PDFBase(FPDF):
         self.add_font(FONT, "I", FONT_DIR / "DejaVuSans-Oblique.ttf")
         # Emoji fallback for the moon-phase glyphs (see EMOJI_FONT); fpdf2 uses
         # it only for codepoints DejaVu can't draw, so normal text is unaffected.
+        # `exact_match=False` because the subset is regular-only: with the
+        # default (True), a **bold** run finds no bold emoji font and silently
+        # drops the glyph — which is what happened to the moon when the sun/moon
+        # line moved into the day's body and became bold. Emoji have no weight
+        # of their own, so falling back across styles is exactly right.
         self.add_font(EMOJI_FONT, "", FONT_DIR / "NotoEmojiMoon.ttf")
-        self.set_fallback_fonts([EMOJI_FONT])
+        self.set_fallback_fonts([EMOJI_FONT], exact_match=False)
         self.itinerary = itinerary
         self.lang = lang
         # Ink-saving mode: skip large solid accent fills (cover banner, page

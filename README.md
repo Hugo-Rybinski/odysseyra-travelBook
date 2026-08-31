@@ -113,7 +113,7 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 
 The PDF has a colored cover (title, inferred date range, day count, summary and a
 day-by-day overview table), one page per day (a colored header band carrying the
-city, date and the day's sunrise/sunset, the day's
+city and date, then the day's sunrise/sunset, its
 intro, the merged time-ordered timeline of typed activity cards — including any
 car pick-up/drop-off — and a bottom "tonight's stay" bar), then a transport page
 and an accommodation summary. The whole palette is derived from `cover_color`.
@@ -472,9 +472,9 @@ Turn it on to geocode the rest from their `name`/`address` at build time
 #### Sunrise & sunset
 
 Every day carries `☀️ Sunrise: 06:12, Sunset: 21:34` (in French,
-`☀️ Lever : 06:12, Coucher : 21:34`). The PDF closes the day's header band with
-it; the viewer opens the day's body with it, just above the intro. It's on by
-default; set `defaults.show_sun_times` to `false` to hide it.
+`☀️ Lever : 06:12, Coucher : 21:34`). Both renderers open the day's body with it,
+just above the intro (and below the bank-holiday banner, when there is one).
+It's on by default; set `defaults.show_sun_times` to `false` to hide it.
 
 The two ends are located **separately**, because on a day you change town they
 happen in different places — the sunset where you'll sleep, the sunrise where you

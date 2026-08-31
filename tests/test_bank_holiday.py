@@ -93,9 +93,11 @@ class _Stop(Exception):
     """Cuts a day's render short once the order under test is known."""
 
 
-def test_the_banner_precedes_the_intro_and_the_map():
+def test_the_banner_precedes_the_sun_line_the_intro_and_the_map():
     # It's a heads-up about what's open, so it must be the first thing on the
-    # page below the header band — ahead of the day's intro and its map.
+    # page below the header band — ahead of the day's sky line, its intro and
+    # its map. (The sun/moon line sits between the banner and the intro, which
+    # is where the viewer puts it too.)
     it = _itinerary([True])
     pdf = TravelPDF(it, "en", False, "google")
     assert it.days[0].description, "the example day has an intro to come after"
@@ -103,17 +105,24 @@ def test_the_banner_precedes_the_intro_and_the_map():
     order = []
     real_multi_cell = pdf.multi_cell
     pdf._notice = lambda *a, **kw: order.append("notice")
-    pdf.multi_cell = lambda *a, **kw: (order.append("intro"),
-                                       real_multi_cell(*a, **kw))[1]
 
-    def maps(day):  # the last of the three — stop before the rest of the page
+    def record(*a, **kw):
+        # Both the sky line and the intro are drawn with multi_cell; the sun
+        # times are the ones that open with the ☀️.
+        text = next((x for x in a if isinstance(x, str)), "")
+        order.append("sun" if text.startswith("☀") else "intro")
+        return real_multi_cell(*a, **kw)
+
+    pdf.multi_cell = record
+
+    def maps(day):  # the last of the four — stop before the rest of the page
         order.append("maps")
         raise _Stop
 
     pdf.day_maps = maps
     with pytest.raises(_Stop):
         pdf.day(1, it.days[0])
-    assert order == ["notice", "intro", "maps"]
+    assert order == ["notice", "sun", "intro", "maps"]
 
 
 # -- the strip itself ------------------------------------------------------
