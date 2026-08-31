@@ -848,9 +848,11 @@ committed to — this is a backlog of directions, roughly ordered by how much
 they reuse of what's already here.
 
 - **GPX / KML export** — a new CLI sub-command (sibling to `ics`) emitting the
-  trip as GPX tracks/waypoints or KML, for Garmin, Komoot, OsmAnd and other
-  offline-GPS apps. The geocoding and OSRM routing pipeline (`maps/`) already
-  produces the points and route geometry it would serialize.
+  **whole trip** as GPX tracks/waypoints or KML, for Garmin, Komoot, OsmAnd and
+  other offline-GPS apps. The geocoding and OSRM routing pipeline (`maps/`)
+  already produces the points and route geometry it would serialize. (A hike's
+  own attached GPX can already be downloaded from the viewer — that's the file
+  coming back out, not the trip being exported.)
 - **PDF cover photo / per-day hero images** — let `travel_description` carry a
   cover image and each day an optional hero image, rendered behind the cover
   banner and day header. Today the layout is typography + maps only.
@@ -863,11 +865,6 @@ they reuse of what's already here.
   PDF summary page and in the viewer.
 - **Contacts / emergency info** — an optional section for embassy, insurance,
   host and per-country emergency numbers, rendered as its own page.
-- **A hike's GPX track on the day map** — a `hike` with a `gpx` gets its own
-  trail map and elevation profile today, but on the *day* map it is still a
-  single pin. Drawing the track there too (as a second polyline beside the
-  drives) would show how the walk sits in the day, and `resolve_day` already
-  returns routes the renderer paints.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.
