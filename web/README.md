@@ -150,7 +150,12 @@ Carto's vector Positron style with its tile source pinned to a single host, so
 `prefetchTiles` can warm the exact tile URLs MapLibre will request (fit-1…fit+1
 over the day's bounds, capped) — that plus the runtime-cached MapLibre chunk lets
 a day pan/zoom offline after one online view. If the style/tiles or the chunk
-can't load, an error boundary + timeout fall back to the static PNG.
+can't load, an error boundary + timeout report it (`mapUnavailable`) — the two
+renderings are **alternatives, not a fallback chain**: with the toggle on, a map
+slot is the interactive map or nothing, and the static PNG appears only with the
+toggle off. Substituting it on a failure would hand back the rendering the user
+switched away from — one that can't be panned or zoomed — which reads as the map
+having silently lost its controls.
 
 ## Current status — v1 complete
 
@@ -196,8 +201,9 @@ by the Python engine (`validate(text, lang)`).
   zoom/compass, fullscreen, a distance scale and geolocate controls, and
   cooperative gestures (⌘/two-finger to zoom, so the page still scrolls);
   each day's tiles are prefetched over its area so
-  it also pans/zooms **offline** after one online view, and it falls back to the
-  static PNG automatically if it can't load. MapLibre is code-split into its own
+  it also pans/zooms **offline** after one online view. With the toggle on the
+  static images are never shown — a map that can't load says so instead (see
+  *Maps* above). MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
 - **A hike's GPX** (`render/HikeTrack.tsx`) — a `hike` that embeds a `gpx` gets

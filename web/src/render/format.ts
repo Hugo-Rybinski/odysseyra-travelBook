@@ -106,6 +106,9 @@ const LABELS = {
     buildingMap: "Building map…",
     noTripMap: "No coordinates on file — add coordinates (or turn maps on) to map the trip.",
     tripMapUnavailable: "The trip map couldn't be loaded.",
+    // A day/area map slot with interactive maps ON that failed to load. There is
+    // deliberately no fall back to the static PNG (see DayCard's MapView).
+    mapUnavailable: "The interactive map couldn't be loaded.",
     noTransport: "No transport on file",
     noAccommodation: "No accommodation on file",
     // Moon phases (keys shared with the Python model's moon.py).
@@ -222,6 +225,7 @@ const LABELS = {
     noTripMap:
       "Aucune coordonnée enregistrée — ajoutez des coordonnées (ou activez les cartes) pour cartographier le voyage.",
     tripMapUnavailable: "La carte du voyage n'a pas pu être chargée.",
+    mapUnavailable: "La carte interactive n'a pas pu être chargée.",
     noTransport: "Aucun transport enregistré",
     noAccommodation: "Aucun hébergement enregistré",
     moonNew: "Nouvelle lune",

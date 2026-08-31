@@ -58,10 +58,15 @@ function MapLoading({ lang }: { lang: Lang }) {
   );
 }
 
-// One map slot (used for both the day overview and each area detail map): the
-// interactive MapLibre map when possible (toggle on, geo present, loads OK),
-// otherwise the static PNG. A load failure or a fresh geo re-tries via the
-// error boundary + remount key.
+// One map slot (used for both the day overview and each area detail map).
+//
+// The two renderings are **alternatives chosen in Options, not a fallback
+// chain**: with interactive maps on the slot is the MapLibre map or nothing, and
+// the pre-rendered PNG appears only with the toggle off. A GL failure therefore
+// says so rather than quietly substituting the static image — which the user
+// switched away from, and which can't be panned or zoomed, so silently swapping
+// it in reads as "the map lost its controls". A fresh geo re-tries via the error
+// boundary + remount key.
 function MapView({
   geo,
   staticMap,
@@ -85,23 +90,24 @@ function MapView({
   // torn down on every re-render.
   const onFail = useCallback(() => setGlFailed(true), []);
 
-  const staticFigure = staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
-  const canInteractive =
-    interactive &&
-    !glFailed &&
-    !!geo &&
-    (geo.points.length > 0 || geo.routes.length > 0 || (geo.legs?.length ?? 0) > 0);
+  const hasGeo =
+    !!geo && (geo.points.length > 0 || geo.routes.length > 0 || (geo.legs?.length ?? 0) > 0);
 
-  if (canInteractive && geo) {
+  if (interactive) {
+    // Nothing locatable — there's no map to draw either way, so stay silent
+    // rather than report a failure that didn't happen.
+    if (!hasGeo || !geo) return null;
+    const unavailable = <p className="section-empty">{tr(lang, "mapUnavailable")}</p>;
+    if (glFailed) return unavailable;
     return (
-      <MapErrorBoundary key={mapKey} onError={onFail} fallback={staticFigure}>
+      <MapErrorBoundary key={mapKey} onError={onFail} fallback={unavailable}>
         <Suspense fallback={<MapLoading lang={lang} />}>
           <DayMapGL geo={geo} caption={caption} onFail={onFail} />
         </Suspense>
       </MapErrorBoundary>
     );
   }
-  return staticFigure;
+  return staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
 }
 
 // Uppercase type label shown in the gutter badge, mirroring the PDF's
