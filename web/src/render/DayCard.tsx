@@ -420,8 +420,13 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
     act.type === "hike" && act.name && act.start && act.end
       ? `${act.start} → ${act.end}`
       : "";
+  // Every activity type the model gives a `description` to — poi, place and hike
+  // (the PDF prints all three; the hike was missed here). It follows the trail
+  // line, so a hike reads title → chips → trailhead → prose.
   const description =
-    act.type === "point_of_interest" || act.type === "place" ? act.description : "";
+    act.type === "point_of_interest" || act.type === "place" || act.type === "hike"
+      ? act.description
+      : "";
 
   // Compose the meta line from nodes so the address stays a link amid the
   // text bits and the Navigate link, all "·"-separated.
