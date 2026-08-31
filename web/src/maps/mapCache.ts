@@ -37,8 +37,10 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // total instead of 0, which also shifts every later item on that day's timeline.
 // v14: buffers are auto-sized by default (`defaults.auto_sized_buffer`), so a
 // day's timeline is spread out to `defaults.end_time` (now 18:00 when unset) —
-// every activity moves and the buffers between them change length.
-const SCHEMA_VERSION = 14;
+// every activity moves and the buffers between them change length. v15: a day
+// gained `bank_holiday`, which draws the holiday banner — a v14-cached day
+// carries the flag nowhere, so the banner would never appear for it.
+const SCHEMA_VERSION = 15;
 
 interface Entry {
   day: Day;

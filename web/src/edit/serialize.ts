@@ -29,6 +29,7 @@ const SAFE_DEFAULTS: Record<string, unknown> = {
   include_hike_maps: true,
   auto_sized_buffer: true,
   off_road: false,
+  bank_holiday: false,
   breakfast_included: false,
   additional_drivers: 0,
 };

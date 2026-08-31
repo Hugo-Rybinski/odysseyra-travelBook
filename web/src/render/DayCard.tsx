@@ -185,6 +185,8 @@ export function DayCard({
 
       {!collapsed && (
         <>
+          <BankHolidayBanner day={day} lang={lang} />
+
           <SunTimes day={day} lang={lang} />
 
           {day.description && <Clamp className="day-intro" text={day.description} />}
@@ -636,6 +638,21 @@ function SunTimes({ day, lang }: { day: Day; lang: Lang }) {
             moon: tr(lang, day.moon.key as LabelKey),
           })
         : fill(tr(lang, "sunTimes"), { sunrise, sunset })}
+    </p>
+  );
+}
+
+// A public-holiday call-out opening the day's body — the PDF's `_notice` strip,
+// which sits in the same spot (ahead of the intro and the map): what's open and
+// how things run changes, so it's the first thing read.
+function BankHolidayBanner({ day, lang }: { day: Day; lang: Lang }) {
+  if (!day.bank_holiday) return null;
+  return (
+    <p className="day-holiday">
+      <span className="day-holiday-label">
+        <span aria-hidden>⚠️</span> {tr(lang, "bankHoliday")}
+      </span>
+      <span className="day-holiday-note">{tr(lang, "bankHolidayNote")}</span>
     </p>
   );
 }

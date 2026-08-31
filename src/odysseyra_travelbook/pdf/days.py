@@ -70,6 +70,14 @@ class DayMixin:
         meta_bits = head + [sun_text] if sun_text else head
         self._band_header(kicker, day.title, "   ".join(meta_bits))
 
+        # A public holiday opens the day, ahead of the intro and the map: it
+        # changes what you'll find open, so it should be the first thing read.
+        # The ⚠️ is U+26A0 + U+FE0F, both in DejaVu (like the sun line's ☀️), so
+        # it needs no emoji fallback font and is kept out of the translated key.
+        if day.bank_holiday:
+            self._notice(f"⚠️ {self.t('BANK HOLIDAY')}",
+                         self.t("Expect closures and reduced opening hours."))
+
         if day.description:
             self.set_font(FONT, "", 11)
             self.set_text_color(*MUTED)

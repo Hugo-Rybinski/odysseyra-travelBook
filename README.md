@@ -529,7 +529,17 @@ Every day needs a `title` and a non-empty `activities` array.
 | `city` |  | City/region label | string | any text | `""` |
 | `date` |  | The day's date (matched to stays & transport) | string | `YYYY-MM-DD` | trip start date + the day's index |
 | `description` |  | Intro paragraph for the day | string | any text | `""` |
+| `bank_holiday` |  | The day is a public holiday where you are | bool | `true` / `false` | `false` |
 | `activities` | ✅ | The day's items (at least one) | array | activity objects | — |
+
+**Bank holidays.** Set `bank_holiday` on a day that falls on a public holiday in
+the country you're in — what's open, and how transport runs, changes. Both
+renderers then open the day with a call-out banner (⚠️ **BANK HOLIDAY** — *Expect
+closures and reduced opening hours.*), ahead of the intro and the day map, so it's
+the first thing you read. It's a flag, not a name: the banner is the same whichever
+holiday it is. Nothing infers it — the dates differ by country and by year, so
+they have to be looked up (`skills/build-full-json.md` tells the assistant filling
+in a trip to do exactly that).
 
 ### `activities[]` — common fields
 

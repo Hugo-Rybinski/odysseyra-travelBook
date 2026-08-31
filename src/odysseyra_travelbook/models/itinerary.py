@@ -80,6 +80,9 @@ class Day:
     date: date | None = None
     city: str = ""
     description: str = ""
+    # A public holiday where you are that day: both renderers open the day with a
+    # call-out banner, since it changes what's open and how things run.
+    bank_holiday: bool = False
     activities: list[Activity] = field(default_factory=list)
 
     @classmethod
@@ -91,6 +94,7 @@ class Day:
             date=_parse_date(data.get("date")),
             city=str(data.get("city", "")),
             description=str(data.get("description", "")),
+            bank_holiday=_parse_bool(data.get("bank_holiday", False)),
             activities=[activity_from_dict(a) for a in data.get("activities", [])],
         )
 

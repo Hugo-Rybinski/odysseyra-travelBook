@@ -121,6 +121,11 @@ const LABELS = {
     // show_moon_phase is on too (the phase then leaves the stay bar, so the day
     // never shows it twice). `{moon}` is filled with the localized phase name.
     sunTimesMoon: "☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}",
+    // The bank-holiday banner opening a day (the day's `bank_holiday`). Same two
+    // strings the PDF localizes via translations.py, where the label is keyed
+    // uppercase; here CSS uppercases it — keep the wordings in step.
+    bankHoliday: "Bank holiday",
+    bankHolidayNote: "Expect closures and reduced opening hours.",
     // Weather-forecast condition labels (WMO codes → text; see weather.ts wmo()).
     wxClear: "Clear sky",
     wxMainlyClear: "Mainly clear",
@@ -213,6 +218,8 @@ const LABELS = {
     moonWaningCrescent: "Dernier croissant",
     sunTimes: "☀️ Lever : {sunrise}, Coucher : {sunset}",
     sunTimesMoon: "☀️ Lever : {sunrise}, Coucher : {sunset}, {emoji} {moon}",
+    bankHoliday: "Jour férié",
+    bankHolidayNote: "Attendez-vous à des fermetures et à des horaires réduits.",
     wxClear: "Ciel dégagé",
     wxMainlyClear: "Plutôt dégagé",
     wxPartlyCloudy: "Partiellement nuageux",

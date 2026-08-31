@@ -458,6 +458,9 @@ export const FR: Record<string, string> = {
   Description: "Description",
   "Intro paragraph for the day": "Paragraphe d'introduction du jour",
   "Intro paragraph for the day. Optional.": "Paragraphe d'introduction du jour. Facultatif.",
+  "Bank holiday": "Jour férié",
+  "Switch on if the day is a public holiday where you are — the day then opens with a banner warning about closures and reduced hours. Defaults to off.":
+    "Activez si le jour est un jour férié là où vous êtes — le jour s'ouvre alors sur une bannière signalant fermetures et horaires réduits. Désactivé par défaut.",
 
   // Scheduled (shared)
   "previous item's end / defaults.start_time":

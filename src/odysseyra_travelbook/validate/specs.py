@@ -361,6 +361,9 @@ DAY_SPECS = [
     Spec("date", False, "the day's date", "a date YYYY-MM-DD",
          "the trip start date + the day's index in 'days'", V_DATE),
     Spec("description", False, "an intro paragraph for the day", "any text", '""'),
+    Spec("bank_holiday", False, "whether the day is a public holiday where you are "
+         "— shown as a banner above the day's activities", "true or false",
+         "false (an ordinary day)", V_BOOL),
 ]
 
 TRANSPORT_SPECS = [

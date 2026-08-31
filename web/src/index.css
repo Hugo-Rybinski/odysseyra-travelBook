@@ -1176,6 +1176,37 @@ body {
   font-size: 0.8rem;
   opacity: 0.85;
 }
+/* A day's bank-holiday call-out (the day's `bank_holiday`), mirroring the PDF's
+   `_notice` strip and sitting where it does — the first thing in the day's body,
+   ahead of the sun times, the intro and the map. Light accent wash, the accent
+   spine `_notice` draws, the label uppercased like the band's kicker. The advice
+   wraps under the label when it won't fit; the PDF, which has only the one line,
+   drops it instead. The wash is `--accent-soft` (90% toward white) against
+   `_notice`'s 82% — the palette's existing tint, near enough, and not worth a
+   one-off `color-mix` for. */
+.day-holiday {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 12px 18px 0;
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.84rem;
+}
+.day-holiday-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.day-holiday-note {
+  color: var(--muted);
+}
+
 /* The day's "☀ 06:12 → 21:34", opening the day's body above the intro. Padded
    to the body's gutter and kept on one line — it's never worth wrapping. */
 .day-sun {

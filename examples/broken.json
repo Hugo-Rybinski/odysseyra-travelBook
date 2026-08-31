@@ -23,6 +23,7 @@
       "title": "Day one",
       "city": "Lyon",
       "date": "2026-06-09",
+      "bank_holiday": "maybe",
       "activities": []
     },
     {

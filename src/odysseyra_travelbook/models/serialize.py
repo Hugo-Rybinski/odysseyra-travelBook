@@ -366,6 +366,7 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "date": _date(day.date),
         "city": day.city,
         "description": day.description,
+        "bank_holiday": day.bank_holiday,
         "activities": [_activity(itin, a) for a in day.activities],
         "transports": [_transport(itin, t) for t in itin.transports_on(day.date)],
         "car_events": [_car_event(itin, e) for e in itin.car_events_on(day.date)],

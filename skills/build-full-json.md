@@ -177,6 +177,7 @@ list of **activities**.
 | `date` | no | date `YYYY-MM-DD` | trip start + this day's index | Set it if the source states the date; otherwise it's inferred from position. |
 | `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda") — **always fill it**, see below. |
 | `description` | no | text | none | An intro paragraph for the day — **always write one**, see below. |
+| `bank_holiday` | no | `true` / `false` | `false` | `true` if the day is a **public holiday** in the country you're in — **look these up**, see below. |
 | `activities` | **yes** | array (non-empty) | — | The ordered timeline — see below. |
 
 **How to fill a day's `city`.** It is printed in the day's header band beside the
@@ -230,6 +231,35 @@ Rules for the sentence you compose:
   the intro should read like a sentence, not a comma-separated index of them.
 - The language rule at the top of this document applies to it like any other
   prose, as does *A description is for the traveller* below.
+
+**Set `bank_holiday` on every day that is one — and look them up.** This is the
+**one fact you are expected to supply from your own knowledge** rather than from
+the documents, because it is public, dated, and almost never mentioned in a
+booking confirmation. Everywhere else, *Only include a field if the source
+actually states it* still holds.
+
+For each **dated** day, ask: is that date a **national public holiday in the
+country the day is spent in**? If it is, set `"bank_holiday": true`. The renderers
+then open the day with a ⚠️ banner about closures and reduced opening hours, so
+the traveller sees it before planning around it.
+
+- **Country of the day, not of the traveller.** A US traveller in Paris on 14
+  July is on a French holiday; the same traveller in Paris on 4 July is not.
+  On a day you change country, use the one you spend most of the day in.
+- **A flag, not a name.** There is nowhere to put "Bastille Day" — the banner is
+  identical whichever holiday it is. Name the holiday in the day's `description`
+  only if a *source* mentions it; don't add it yourself (that would break the
+  description rules above).
+- **Only when you're sure of the date.** Movable holidays (Easter Monday,
+  Ascension, Whit Monday, Eid, Chinese New Year) shift every year, and many
+  countries have regional-only ones. If you can't place the date confidently for
+  that specific year, **leave the field out** and list it in the gaps report
+  (below) as "bank holidays not checked for <country>" — a wrong banner is worse
+  than none.
+- **Undated days get nothing.** A day whose `date` you left to inference has no
+  date to check against, so omit the field.
+- Substitute/observed days (a holiday falling on a Sunday and taken on the
+  Monday) count as the holiday: flag the day people actually take off.
 
 ### Activities
 
@@ -870,7 +900,9 @@ the shape — real values come from your sources. The full version lives at
 
 - **Only include a field if the source actually states it.** Never invent
   bookings, prices, dates, or times. Omitting an optional field lets the tool
-  fall back to a sensible default (listed above).
+  fall back to a sensible default (listed above). **One exception:** a day's
+  `bank_holiday` — public holiday dates are yours to look up, since a source
+  almost never states them (see *Set `bank_holiday` on every day that is one*).
 - The top level is one JSON **object** with the keys shown above; `days` must be
   a non-empty array.
 - Write dates/times/durations exactly in the formats above; convert "6pm" →
@@ -1012,6 +1044,10 @@ You cannot run the validator, so verify these by hand:
   as a `road` or a `point_of_interest` inside the day.
 - **Every day has a `description`** — 1–2 sentences drawn from that day's own
   activities, with no verdict on how busy it is.
+- **Bank holidays checked:** every dated day's date has been weighed against the
+  public holidays of the country it's spent in, and `bank_holiday` set on the ones
+  that are (or the country listed in the gaps report when you couldn't confirm
+  its calendar for that year).
 - **Every day has a `city`**, and that night's accommodation `city` appears
   inside it spelled identically (`"Amboise → Sarlat-la-Canéda"` for a stay in
   `"Sarlat-la-Canéda"`).

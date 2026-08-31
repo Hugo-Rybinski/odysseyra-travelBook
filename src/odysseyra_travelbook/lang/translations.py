@@ -110,6 +110,11 @@ _FR = {
     # show_moon_phase is on too. `{moon}` arrives already localized.
     "☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}":
         "☀️ Lever : {sunrise}, Coucher : {sunset}, {emoji} {moon}",
+    # The bank-holiday call-out strip opening a day (day 'bank_holiday'). The
+    # label is uppercase like the band's kicker; the ⚠️ is added by the renderer.
+    "BANK HOLIDAY": "JOUR FÉRIÉ",
+    "Expect closures and reduced opening hours.":
+        "Attendez-vous à des fermetures et à des horaires réduits.",
     # Moon phases (in that line, or in the "tonight" section when the sun times
     # are off or don't fit).
     "New moon": "Nouvelle lune",

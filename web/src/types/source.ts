@@ -228,6 +228,7 @@ export interface SrcDay {
   city?: string;
   date?: string;
   description?: string;
+  bank_holiday?: boolean;
   activities?: SrcActivity[];
 }
 

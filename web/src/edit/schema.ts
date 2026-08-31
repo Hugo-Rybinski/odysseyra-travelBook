@@ -190,6 +190,7 @@ export const DAY_FIELDS: FieldSpec[] = [
   { key: "city", label: "City", kind: "text", placeholder: "City/region label", help: "City/region label for the day. Optional." },
   { key: "date", label: "Date", kind: "date", placeholder: "trip start + the day's index", help: "The day's date, matched to stays & transport. Defaults to the trip start date plus the day's index." },
   { key: "description", label: "Description", kind: "textarea", placeholder: "Intro paragraph for the day", help: "Intro paragraph for the day. Optional." },
+  { key: "bank_holiday", label: "Bank holiday", kind: "bool", help: "Switch on if the day is a public holiday where you are — the day then opens with a banner warning about closures and reduced hours. Defaults to off." },
 ];
 
 // Shared scheduling fields (all activities except buffer).

@@ -265,6 +265,9 @@ export interface Day {
   date: string | null;
   city: string;
   description: string;
+  // A public holiday where you are that day: the day opens with a call-out
+  // banner. Optional — a doc resolved before the flag existed carries none.
+  bank_holiday?: boolean;
   activities: Activity[];
   transports: Transport[];
   car_events: CarEvent[];

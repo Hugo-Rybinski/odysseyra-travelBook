@@ -148,6 +148,53 @@ class _PDFBase(FPDF):
         self.set_fill_color(*self.accent)
         self.rect(self.l_margin, y, 2, h, style="F")
 
+    # The call-out strip's height, and the inset its text sits at (clear of the
+    # accent spine `_card_bg` also draws).
+    _NOTICE_H = 9.0
+    _NOTICE_PAD = 6.0
+
+    def _notice(self, label: str, text: str = "") -> None:
+        """A full-width call-out strip drawn at the cursor: a bold accent label,
+        followed by a muted sentence when there's room for it on the same line
+        (there is only one line — the strip is a heads-up, not a paragraph).
+        Advances the cursor past it.
+
+        Ink-saving mode swaps the tinted fill for an accent outline, like the
+        other large accent areas."""
+        y = self.get_y()
+        if self.ink_saver:
+            self.set_draw_color(*self.accent)
+            self.set_line_width(0.4)
+            self.rect(self.l_margin, y, self.content_width, self._NOTICE_H, style="D")
+        else:
+            # Deliberately a shade stronger than `_card_bg`'s 0.93: this is a
+            # call-out and has to read as more than another card.
+            self.set_fill_color(*_tint(self.accent, 0.82))
+            self.rect(self.l_margin, y, self.content_width, self._NOTICE_H, style="F")
+        self.set_fill_color(*self.accent)
+        self.rect(self.l_margin, y, 2, self._NOTICE_H, style="F")
+
+        self.set_font(FONT, "B", 9)
+        label_w = self.get_string_width(label)
+        if text:
+            self.set_font(FONT, "", 9)
+            gap = self.get_string_width("  ")
+            room = self.content_width - 2 * self._NOTICE_PAD - label_w - gap
+            if self.get_string_width(text) > room:
+                text = ""  # a long sentence would spill out of the strip
+
+        self.set_xy(self.l_margin + self._NOTICE_PAD, y + 2.3)
+        self.set_font(FONT, "B", 9)
+        self.set_text_color(*self.accent)
+        self.cell(label_w, 4.4, label)
+        if text:
+            self.set_font(FONT, "", 9)
+            self.set_text_color(*MUTED)
+            self.cell(0, 4.4, f"  {text}")
+
+        self.set_y(y + self._NOTICE_H + 4)
+        self.set_text_color(*INK)
+
     def _measure_lines(self, text: str, w: float, size: float = 10,
                        style: str = "") -> int:
         if not text:

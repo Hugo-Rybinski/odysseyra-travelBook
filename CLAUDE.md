@@ -47,7 +47,7 @@ convenience layer over the raw commands above — both still work.
 A PDF with: a **cover** (title, inferred date range, day count, summary, and a
 day-by-day overview table), a **whole-trip map** page (maps on only), one **page
 per day** (colored header band with the
-city / date / sunrise→sunset, intro,
+city / date / sunrise→sunset, a bank-holiday banner when the day is one, intro,
 a merged time-ordered itinerary — including a **trail map + elevation profile**
 under any hike that embeds a `gpx` — and a bottom "tonight's stay" bar), a
 **transport** page, and an **accommodation** summary page. The whole palette is
@@ -100,6 +100,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
   `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
   solid accent areas — the cover banner, the `_band_header` page bands, `_card_bg`,
+  `_notice` (the full-width call-out strip a day's `bank_holiday` opens with),
   `_badge`, `_pill`, `_chip`, `_inline_chip` (the small pill drawn *inside* a text
   row, unlike `_chip` which owns its line — a VIA leg's `OFF-ROAD`) — which then
   render outlines + accent-colored text + thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
@@ -314,6 +315,27 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   wraps them in `ClampProvider` (without it the notes would ignore the app's
   "show full descriptions" option). The `.ics` export packs it as a
   `Description:` detail line, the same label activities already use.
+- **A day's `bank_holiday`.** An optional boolean (default false) marking a day
+  that falls on a public holiday where you are. Both renderers open the day's
+  body with a call-out banner — ahead of the intro *and* the day map, since it
+  changes what you'll find open — drawn by `pdf/base.py`'s new shared `_notice`
+  primitive (a full-width accent-tinted strip with the `_card_bg` spine,
+  outline-only under `ink_saver`) and by `DayCard.tsx`'s `BankHolidayBanner`
+  (`.day-holiday`). Deliberately a **flag, not a name**: the banner reads the
+  same whichever holiday it is, so there is nothing to localize per country. The
+  label and its one-line advice are the same two English sources in
+  `translations.py` and `render/format.ts` (`bankHoliday` / `bankHolidayNote`) —
+  keep the wordings in step; the ⚠️ is added by each renderer, not the key
+  (U+26A0 + U+FE0F are in DejaVu, like the sun line's ☀️, so no emoji fallback is
+  involved). `_notice` has room for one line only and **drops** the advice when
+  the label plus sentence would overrun; the viewer wraps it under instead.
+  Nothing infers it — holiday dates differ by country and year, which is why
+  `skills/build-full-json.md` carves it out as the one field an LLM is told to
+  look up rather than take from the source documents. No example sets it: no day
+  of `france.json` (Sept 4–11, 2026) or `pyrenees.json` (June 8–11, 2026) is a
+  real French holiday, and `kyrgyzstan.json` is dateless, so flagging one would
+  contradict that skill guidance. `broken.json` carries an invalid value for the
+  validator's `V_BOOL`, and `tests/test_bank_holiday.py` covers the rest.
 - **Guidebook pages.** The four activity types that carry a `description` —
   `road`, `point_of_interest`, `place`, `hike` — also carry an optional
   `guidebook_pages` string: page numbers only (`14` / `15-18` /
