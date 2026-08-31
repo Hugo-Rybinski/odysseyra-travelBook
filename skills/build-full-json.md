@@ -123,10 +123,56 @@ dates.
 |---|---|---|---|---|
 | `title` | **yes** | text | — | Shown big on the cover. |
 | `subtitle` | no | text | none | A tagline under the title. |
-| `summary` | no | text | none | A short paragraph shown on the cover. |
+| `summary` | no | text | none | **Write one.** The paragraph on the cover: a 4–6 sentence overview that sells the trip — see below. |
 | `cover_color` | no | hex color (`"#2f6b4f"`) | `"#1f4e5f"` (teal) | Accent color for the whole PDF. |
 | `start_date` | no | date `YYYY-MM-DD` | inferred (earliest date in the trip) | Only set if the source states an explicit trip start; otherwise omit and let it be inferred. |
 | `end_date` | no | date `YYYY-MM-DD` | inferred (latest date in the trip) | Same — omit unless explicitly given. |
+
+**Always write a `summary`, and make it sell the trip.** It is the only prose on
+the cover and the first thing anyone opening the book reads, so give it **4–6
+sentences** that make the reader want to go. A shape that works: open with the
+trip's arc (where it goes, over how many days, by what means), move through its
+two or three high points in the order the trip meets them, and close on the note
+it ends on.
+
+> `"A week across France, from the museums and boulevards of Paris to the high
+> Pyrenees. The first days are city days on foot — the Louvre, the river, the
+> quarters between them — before the TGV south and a hire car for the Renaissance
+> châteaux above the Loire. The road then runs down to the Dordogne, to medieval
+> Sarlat, its market streets and the painted caves nearby. The last two days
+> climb: a base at Lourdes, the Col du Tourmalet, and a proper mountain hike
+> above the valley. It ends where the mountains do, flying out of Toulouse."`
+
+This is the **one place in the whole document where evocative writing belongs**. A
+day's `description` may only re-state that day's own activities, flatly (see
+*Always give every day a `description`*); the summary is allowed to step back and
+characterise the trip as a whole, because it is a cover blurb rather than a
+schedule. What does *not* change:
+
+- **No facts from outside the itinerary.** Enticing is a matter of *how* you
+  write the places, days and legs already in the JSON — not of adding history, a
+  site's importance, what a region is famous for, prices or hours you happen to
+  know. If it is nowhere in the trip you built, it is not in the summary.
+- **Say what the trip does, not what the reader will feel.** No promises
+  (`"you'll never forget"`), and no verdict on the pacing (`"a relaxed week"`,
+  `"an ambitious loop"`) unless a source used those words — the same rule the day
+  intros follow.
+- **No brochure filler.** "Unforgettable", "trip of a lifetime", "hidden gem",
+  "must-see", "breathtaking", "immerse yourself", "nestled" — cut them all. A
+  sentence that would fit any itinerary in the world is a wasted sentence.
+  Concrete nouns sell harder than adjectives: *"Renaissance châteaux above the
+  Loire"* beats *"stunning historic castles"*.
+- **Don't march through the days and don't list the towns.** No `"Day 1 … Day 2
+  …"`, and no comma-separated run of every stop: the day-by-day table is printed
+  on the same page directly underneath, and the trip's own days follow it.
+- **Don't shorten it to save room on the page.** The cover grows to fit and the
+  day-by-day table flows onto a second page if it must. Do stop at six sentences
+  though — it's a cover, not an introduction.
+- **Keep it distinct from `subtitle`.** The tagline goes there; don't open the
+  summary by restating it, or the title.
+- The language rule at the top of this document applies, as does *A description
+  is for the traveller* below — which names the `summary` explicitly: no sources,
+  no process, no guidebook pages, no `[to be checked]`.
 
 ---
 
@@ -848,7 +894,7 @@ the shape — real values come from your sources. The full version lives at
     "title": "Grand Tour of France",
     "subtitle": "Paris, the Loire châteaux, the Dordogne and the high Pyrenees",
     "cover_color": "#2f5d8c",
-    "summary": "A week across France: Paris, the Loire châteaux, the medieval Dordogne, and a hike in the high Pyrenees."
+    "summary": "Eight days that start in a city and end on a mountain pass. Paris comes first and on foot: the Louvre, the Seine, the streets in between, with nothing to drive. A TGV south and a hire car turn the trip outward — Renaissance châteaux standing over the Loire, then the long road down to the Dordogne and the market streets of Sarlat. The last stretch climbs into the Pyrenees for the Cirque de Gavarnie and a full day's walk above the valley. The flight home leaves from Toulouse, an hour from the peaks."
   },
   "defaults": {
     "start_time": "08:30",
@@ -1181,6 +1227,10 @@ You cannot run the validator, so verify these by hand:
   leg, never both.
 - **Every day has a `description`** — 1–2 sentences drawn from that day's own
   activities, with no verdict on how busy it is.
+- **The trip has a `summary`** — 4–6 sentences that sell the trip, built only from
+  places and legs the JSON already contains, free of brochure filler
+  ("unforgettable", "must-see", "breathtaking"), not a day-by-day march, not a
+  restatement of the `subtitle`.
 - **Bank holidays checked:** every dated day's date has been weighed against the
   public holidays of the country it's spent in, and `bank_holiday` set on the ones
   that are (or the country listed in the gaps report when you couldn't confirm
