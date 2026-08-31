@@ -14,7 +14,15 @@
 //      trip map still works with maps off (or before the renders arrive) —
 //      points only, since routes need the routing pass.
 
-import type { Activity, Coordinate, Day, Itinerary, MapGeo, MapPoint } from "../types/resolved";
+import type {
+  Activity,
+  Coordinate,
+  Day,
+  Itinerary,
+  MapGeo,
+  MapPoint,
+  TransportLeg,
+} from "../types/resolved";
 import { tr, type Lang } from "./format";
 import { palette } from "./palette";
 
@@ -100,9 +108,9 @@ function kmFrom(c: Center, lat: number, long: number): number {
 }
 
 // An endpoint pair for one transport leg, when both ends are mapped.
-function legOf(t: Itinerary["transports"][number]): LatLng[] | null {
-  const a = t.start_coordinate;
-  const b = t.end_coordinate;
+function legOf(leg: TransportLeg): LatLng[] | null {
+  const a = leg.start_coordinate;
+  const b = leg.end_coordinate;
   if (!a || !b || !a.show_on_map || !b.show_on_map) return null;
   return [
     [a.lat, a.long],
@@ -145,9 +153,11 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): MapGeo | null {
     }
   }
 
-  // Transport legs: one straight dotted line per leg. The legs are the trip's
-  // own list, so an overnight one is drawn once rather than on both of its days.
+  // Transport legs: one straight dotted line per leg, every booking's legs
+  // flattened. Taken from the trip's own list, so an overnight leg is drawn once
+  // rather than on both of its days.
   const legs = itinerary.transports
+    .flatMap((t) => t.legs)
     .map(legOf)
     .filter((line): line is LatLng[] => line !== null);
 

@@ -6,7 +6,7 @@ The model is split across submodules:
 * :mod:`.activities` — the activity types and the day-scheduling pass;
 * :mod:`.gpx` — a hike's embedded GPX track (decode, parse, measure);
 * :mod:`.opening` — a point of interest's opening days and hours;
-* :mod:`.transport` — the ``Transport`` leg;
+* :mod:`.transport` — the ``Transport`` booking and its ``TransportLeg``s;
 * :mod:`.accommodation` — the ``Accommodation``;
 * :mod:`.itinerary` — the ``Day`` and ``Itinerary`` aggregates.
 """
@@ -69,7 +69,12 @@ from .parsers import (
     _parse_time,
     _parse_tz,
 )
-from .transport import TRANSPORT_TYPES, Transport, resolve_transport
+from .transport import (
+    TRANSPORT_TYPES,
+    Transport,
+    TransportLeg,
+    resolve_transport,
+)
 
 __all__ = [
     "Accommodation",
@@ -114,6 +119,7 @@ __all__ = [
     "to_dict",
     "Waypoint",
     "Transport",
+    "TransportLeg",
     "TRANSPORT_TYPES",
     "activity_from_dict",
     "nested_duration_total",

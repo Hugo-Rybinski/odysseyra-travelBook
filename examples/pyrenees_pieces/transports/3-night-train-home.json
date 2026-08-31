@@ -1,16 +1,22 @@
 {
   "type": "train",
-  "start": "Montréjeau",
-  "end": "Paris Austerlitz",
-  "start_date": "2026-06-11",
-  "end_date": "2026-06-12",
-  "start_time": "22:10",
-  "end_time": "06:45",
-  "train_number": "IC 3711",
+  "description": "Non-refundable fare, one bag plus hand luggage each. Couchette linen is provided; the door code is on the ticket.",
+  "name": "Night train back to Paris",
   "booking_number": "IC-3711",
   "booking_source": "SNCF Connect",
   "status": "confirmed",
-  "description": "Couchette compartment 4, upper berths. Breakfast tray served from 06:00.",
   "price": 74,
-  "paid": "paid"
+  "paid": "paid",
+  "legs": [
+    {
+      "start": "Montréjeau",
+      "end": "Paris Austerlitz",
+      "start_date": "2026-06-11",
+      "end_date": "2026-06-12",
+      "start_time": "22:10",
+      "end_time": "06:45",
+      "train_number": "IC 3711",
+      "description": "Couchette compartment 4, upper berths. Breakfast tray served from 06:00."
+    }
+  ]
 }

@@ -138,12 +138,12 @@ def day_legs(day, itinerary):
     if d is None:
         return []
     legs = []
-    for t in itinerary.transports:
-        if t.start_date is None:
+    for leg in itinerary.legs:
+        if leg.start_date is None:
             continue
-        if not (t.start_date <= d <= (t.end_date or t.start_date)):
+        if not (leg.start_date <= d <= (leg.end_date or leg.start_date)):
             continue
-        a, b = _leg_coord(t.start_coordinate), _leg_coord(t.end_coordinate)
+        a, b = _leg_coord(leg.start_coordinate), _leg_coord(leg.end_coordinate)
         if a and b:
             legs.append([a, b])
     return legs
@@ -363,8 +363,8 @@ def resolve_trip(itinerary, cache):
         routes.extend(day_routes)
 
     legs = []
-    for t in itinerary.transports:
-        a, b = _leg_coord(t.start_coordinate), _leg_coord(t.end_coordinate)
+    for leg in itinerary.legs:
+        a, b = _leg_coord(leg.start_coordinate), _leg_coord(leg.end_coordinate)
         if a and b:
             legs.append([a, b])
     return points, labels, routes, legs

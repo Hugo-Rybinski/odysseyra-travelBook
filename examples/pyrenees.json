@@ -306,15 +306,6 @@
   "transport": [
     {
       "type": "plane",
-      "start": "New York JFK",
-      "end": "Paris CDG",
-      "start_date": "2026-06-07",
-      "end_date": "2026-06-08",
-      "start_time": "22:30",
-      "start_tz": "-04:00",
-      "end_time": "11:45",
-      "end_tz": "+02:00",
-      "flight_number": "AF9",
       "booking_number": "AF1234-XY",
       "booking_source": "AirFrance website",
       "website": "https://www.airfrance.com",
@@ -322,37 +313,60 @@
       "status": "confirmed",
       "price": 667,
       "currency": "USD",
-      "paid": "paid"
+      "paid": "paid",
+      "legs": [
+        {
+          "start": "New York JFK",
+          "end": "Paris CDG",
+          "start_date": "2026-06-07",
+          "end_date": "2026-06-08",
+          "start_time": "22:30",
+          "start_tz": "-04:00",
+          "end_time": "11:45",
+          "end_tz": "+02:00",
+          "flight_number": "AF9"
+        }
+      ]
     },
     {
       "type": "train",
-      "start": "Paris Montparnasse",
-      "end": "Pau",
-      "start_date": "2026-06-08",
-      "start_time": "13:50",
-      "duration": "4h20",
-      "train_number": "TGV 8541",
       "booking_number": "TGV-8841",
       "booking_source": "SNCF Connect",
       "status": "booked",
       "price": 89,
-      "paid": "to pay"
+      "paid": "to pay",
+      "legs": [
+        {
+          "start": "Paris Montparnasse",
+          "end": "Pau",
+          "start_date": "2026-06-08",
+          "start_time": "13:50",
+          "duration": "4h20",
+          "train_number": "TGV 8541"
+        }
+      ]
     },
     {
       "type": "train",
-      "start": "Montréjeau",
-      "end": "Paris Austerlitz",
-      "start_date": "2026-06-11",
-      "end_date": "2026-06-12",
-      "start_time": "22:10",
-      "end_time": "06:45",
-      "train_number": "IC 3711",
+      "description": "Non-refundable fare, one bag plus hand luggage each. Couchette linen is provided; the door code is on the ticket.",
+      "name": "Night train back to Paris",
       "booking_number": "IC-3711",
       "booking_source": "SNCF Connect",
       "status": "confirmed",
-      "description": "Couchette compartment 4, upper berths. Breakfast tray served from 06:00.",
       "price": 74,
-      "paid": "paid"
+      "paid": "paid",
+      "legs": [
+        {
+          "start": "Montréjeau",
+          "end": "Paris Austerlitz",
+          "start_date": "2026-06-11",
+          "end_date": "2026-06-12",
+          "start_time": "22:10",
+          "end_time": "06:45",
+          "train_number": "IC 3711",
+          "description": "Couchette compartment 4, upper berths. Breakfast tray served from 06:00."
+        }
+      ]
     }
   ],
   "accommodations": [

@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CarRental, Itinerary, Stamp, Transport } from "../types/resolved";
+import type {
+  CarRental,
+  Itinerary,
+  Stamp,
+  Transport,
+  TransportLeg,
+} from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
@@ -94,15 +100,105 @@ export function TransportList({
   );
 }
 
-function transportBooking(t: Transport, lang: Lang): string {
+// The booking's reference line: what identifies the reservation as a whole. The
+// flight/train number is *not* here — that belongs to a single leg (see LegBlock).
+function bookingRef(t: Transport, lang: Lang): string {
   const bits: string[] = [];
-  if (t.type === "plane" && t.flight_number)
-    bits.push(fill(tr(lang, "flight"), { number: t.flight_number }));
-  else if (t.type === "train" && t.train_number)
-    bits.push(fill(tr(lang, "train"), { number: t.train_number }));
   if (t.booking_number) bits.push(fill(tr(lang, "ref"), { ref: t.booking_number }));
   if (t.booking_source) bits.push(fill(tr(lang, "bookedVia"), { source: t.booking_source }));
   return bits.join("  ·  ");
+}
+
+function legNumber(leg: TransportLeg, lang: Lang): string {
+  if (leg.type === "plane" && leg.flight_number)
+    return fill(tr(lang, "flight"), { number: leg.flight_number });
+  if (leg.type === "train" && leg.train_number)
+    return fill(tr(lang, "train"), { number: leg.train_number });
+  return "";
+}
+
+function legDates(leg: TransportLeg, lang: Lang): string {
+  const dateStr = leg.start_date
+    ? fmtDate(leg.start_date, lang) +
+      (leg.end_date && leg.end_date !== leg.start_date
+        ? ` → ${fmtDate(leg.end_date, lang)}`
+        : "")
+    : "";
+  return [dateStr, transportTimes(leg)].filter(Boolean).join("  ·  ");
+}
+
+// One hop of a *multi-leg* booking: its position, where it goes, when, its own
+// number and note — inset under everything the reservation covers. A one-leg
+// booking has nothing to tell apart, so TransportCard lays it out flat instead.
+function LegBlock({ leg, lang, index }: { leg: TransportLeg; lang: Lang; index: number }) {
+  const provider = useMapProvider();
+  const info = legDates(leg, lang);
+  const navHref = navUrl(provider, leg.start_coordinate ?? leg.coordinate, leg.start);
+  const number = legNumber(leg, lang);
+  return (
+    <div className="card-leg">
+      <p className="card-leg-title">
+        <span className="card-leg-badge">{fill(tr(lang, "leg"), { n: index + 1 })}</span>
+        <strong>{leg.title}</strong>
+        {leg.overnight && <span className="chip">{tr(lang, "overnight")}</span>}
+      </p>
+      {info && <p className="card-info">{info}</p>}
+      {navHref && (
+        <p className="card-nav">
+          <NavLink lang={lang} href={navHref} />
+        </p>
+      )}
+      {number && <p className="card-meta">{number}</p>}
+      {leg.description && <Clamp className="card-note" text={leg.description} />}
+    </div>
+  );
+}
+
+// A one-leg booking, flat: no rule, no inset, no leg number — the booking *is*
+// that movement. Its route line is dropped when it would only repeat the card's
+// heading (the usual case: an unnamed booking is headed with its route, so the
+// heading carries the Navigate link instead). Mirrors pdf/transport.py's
+// `_flat_transport_card`.
+function FlatBooking({ t, lang }: { t: Transport; lang: Lang }) {
+  const provider = useMapProvider();
+  const leg = t.legs[0];
+  const info = legDates(leg, lang);
+  const navHref = navUrl(provider, leg.start_coordinate ?? leg.coordinate, leg.start);
+  const route = leg.title === t.title ? "" : leg.title;
+  // This leg's own number joined with the booking's reference: with one leg
+  // there's no reason to split them over two lines.
+  const identity = [legNumber(leg, lang), bookingRef(t, lang)]
+    .filter(Boolean)
+    .join("  ·  ");
+  return (
+    <>
+      <div className="card-pills">
+        {leg.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
+        <Status status={t.status} lang={lang} />
+      </div>
+      {route && (
+        <p className="card-leg-title">
+          <strong>{route}</strong>
+        </p>
+      )}
+      {info && <p className="card-info">{info}</p>}
+      {navHref && (
+        <p className="card-nav">
+          <NavLink lang={lang} href={navHref} />
+        </p>
+      )}
+      {identity && <p className="card-meta">{identity}</p>}
+      {/* the reservation's note, then this hop's — the multi-leg card's order */}
+      {t.description && <Clamp className="card-note" text={t.description} />}
+      {leg.description && <Clamp className="card-note" text={leg.description} />}
+      {t.price && (
+        <p className="card-price">
+          <Price price={t.price} lang={lang} />
+        </p>
+      )}
+      <Links lang={lang} website={t.website} reservation={t.booking_link} />
+    </>
+  );
 }
 
 function TransportCard({
@@ -116,14 +212,7 @@ function TransportCard({
   collapsed: boolean;
   onToggle: () => void;
 }) {
-  const dateStr = t.start_date
-    ? fmtDate(t.start_date, lang) +
-      (t.end_date && t.end_date !== t.start_date ? ` → ${fmtDate(t.end_date, lang)}` : "")
-    : "";
-  const info = [dateStr, transportTimes(t)].filter(Boolean).join("  ·  ");
-  const provider = useMapProvider();
-  const booking = transportBooking(t, lang);
-  const navHref = navUrl(provider, t.start_coordinate ?? t.coordinate, t.start);
+  const ref = bookingRef(t, lang);
   return (
     <div className={`card ${collapsed ? "collapsed" : ""}`}>
       <CardHead collapsed={collapsed} onToggle={onToggle}>
@@ -132,28 +221,33 @@ function TransportCard({
         </span>
         <span className="card-title">{t.title}</span>
       </CardHead>
-      {!collapsed && (
-        <>
-          <div className="card-pills">
-            {t.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
-            <Status status={t.status} lang={lang} />
-          </div>
-          {info && <p className="card-info">{info}</p>}
-          {navHref && (
-            <p className="card-nav">
-              <NavLink lang={lang} href={navHref} />
-            </p>
-          )}
-          {booking && <p className="card-meta">{booking}</p>}
-          {t.description && <Clamp className="card-note" text={t.description} />}
-          {t.price && (
-            <p className="card-price">
-              <Price price={t.price} lang={lang} />
-            </p>
-          )}
-          <Links lang={lang} website={t.website} reservation={t.booking_link} />
-        </>
-      )}
+      {!collapsed &&
+        (t.legs.length === 1 ? (
+          <FlatBooking t={t} lang={lang} />
+        ) : (
+          <>
+            {/* Everything the reservation covers, stated once, first… */}
+            <div className="card-pills">
+              <Status status={t.status} lang={lang} />
+            </div>
+            {ref && <p className="card-meta">{ref}</p>}
+            {t.description && <Clamp className="card-note" text={t.description} />}
+            {/* One price for the whole booking, every leg included. */}
+            {t.price && (
+              <p className="card-price">
+                <Price price={t.price} lang={lang} />
+              </p>
+            )}
+            <Links lang={lang} website={t.website} reservation={t.booking_link} />
+            {/* …then the legs, inset under a rule so they read as subordinate to
+                the booking above (mirrors pdf/transport.py's card). */}
+            <div className="card-legs">
+              {t.legs.map((leg, i) => (
+                <LegBlock key={i} leg={leg} lang={lang} index={i} />
+              ))}
+            </div>
+          </>
+        ))}
     </div>
   );
 }

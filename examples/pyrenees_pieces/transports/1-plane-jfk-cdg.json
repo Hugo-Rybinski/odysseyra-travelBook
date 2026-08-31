@@ -1,14 +1,5 @@
 {
   "type": "plane",
-  "start": "New York JFK",
-  "end": "Paris CDG",
-  "start_date": "2026-06-07",
-  "end_date": "2026-06-08",
-  "start_time": "22:30",
-  "start_tz": "-04:00",
-  "end_time": "11:45",
-  "end_tz": "+02:00",
-  "flight_number": "AF9",
   "booking_number": "AF1234-XY",
   "booking_source": "AirFrance website",
   "website": "https://www.airfrance.com",
@@ -16,5 +7,18 @@
   "status": "confirmed",
   "price": 667,
   "currency": "USD",
-  "paid": "paid"
+  "paid": "paid",
+  "legs": [
+    {
+      "start": "New York JFK",
+      "end": "Paris CDG",
+      "start_date": "2026-06-07",
+      "end_date": "2026-06-08",
+      "start_time": "22:30",
+      "start_tz": "-04:00",
+      "end_time": "11:45",
+      "end_tz": "+02:00",
+      "flight_number": "AF9"
+    }
+  ]
 }

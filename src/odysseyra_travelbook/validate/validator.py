@@ -28,6 +28,7 @@ from .specs import (
     DEFAULTS,
     PLACE_SCHEDULE,
     SCHEDULE,
+    TRANSPORT_LEG_SPECS,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
     V_BOOL,
@@ -42,6 +43,22 @@ from .specs import (
 COORDINATE_KEYS = (
     "coordinate", "start_coordinate", "end_coordinate",
     "pickup_coordinate", "dropoff_coordinate",
+)
+
+# The two sides of the transport booking/leg split, taken straight from the spec
+# tables so they can't drift from them. A key found on the wrong side is unread
+# by the model and silently lost, so `_misplaced_transport_fields` names it.
+#
+# Only keys belonging to *one* level qualify: `description` is read on both (the
+# booking's is about the reservation, a leg's about that hop), so it is excluded
+# from both sets — flagging it either way would be plain wrong.
+_TRANSPORT_BOTH_LEVELS = ({spec.name for spec in TRANSPORT_SPECS}
+                          & {spec.name for spec in TRANSPORT_LEG_SPECS})
+BOOKING_ONLY_KEYS = tuple(spec.name for spec in TRANSPORT_SPECS
+                          if spec.name not in _TRANSPORT_BOTH_LEVELS)
+LEG_ONLY_KEYS = tuple(spec.name for spec in TRANSPORT_LEG_SPECS
+                      if spec.name not in _TRANSPORT_BOTH_LEVELS) + (
+    "coordinate", "start_coordinate", "end_coordinate",
 )
 
 # The parenthetical ``({error})`` detail comes from the value parsers/checks as a
@@ -173,13 +190,28 @@ def _acc_covers(a, day):
     return bool(nights and nights[0] <= day < nights[1])
 
 
-def _transport_dates(t):
+def _transport_dates(leg):
     """(start_date, end_date) with end_date inferred (+1 for overnight legs)."""
-    sd, ed = _date(t.get("start_date")), _date(t.get("end_date"))
+    sd, ed = _date(leg.get("start_date")), _date(leg.get("end_date"))
     if ed is None and sd is not None:
-        s, e = _tmin(t.get("start_time")), _tmin(t.get("end_time"))
+        s, e = _tmin(leg.get("start_time")), _tmin(leg.get("end_time"))
         ed = sd + timedelta(days=1) if (s is not None and e is not None and e < s) else sd
     return sd, ed
+
+
+def _all_legs(transport):
+    """``(path, leg)`` for every leg of every booking in the ``transport`` array,
+    skipping anything malformed (already reported by ``_transport``). The
+    coherence checks work on legs — a booking has no times or dates of its own."""
+    for i, t in enumerate(transport):
+        if not isinstance(t, dict):
+            continue
+        legs = t.get("legs")
+        if not isinstance(legs, list):
+            continue
+        for j, leg in enumerate(legs):
+            if isinstance(leg, dict):
+                yield ("transport", i, "legs", j), leg
 
 
 # Longest value echoed back in a finding. A field like a hike's base64 `gpx` runs
@@ -315,8 +347,9 @@ class _Validator:
         transport = data.get("transport")
         if transport is None:
             self.add("info", (), "optional field 'transport' is missing — the "
-                     "transport legs. Expected an array of transport objects. "
-                     "Defaulting to [] (no transport page).")
+                     "transport bookings. Expected an array of transport "
+                     "objects, each with its 'legs'. Defaulting to [] (no "
+                     "transport page).")
         elif isinstance(transport, list):
             for i, t in enumerate(transport):
                 self._transport(t, ("transport", i))
@@ -351,7 +384,9 @@ class _Validator:
             return
         self.check_object(day, path, DAY_SPECS)
         activities = day.get("activities")
-        if not activities:
+        # An absent key is the standard required-field error (DAY_SPECS); this is
+        # the case a field check can't see — the key is there, but empty.
+        if activities is not None and not activities:
             self.add("error", path, "a day's 'activities' must not be empty — every "
                      "day needs at least one activity.")
         for j, act in enumerate(activities or []):
@@ -628,34 +663,80 @@ class _Validator:
                      parent=_format_duration(parent))
 
     def _transport(self, t, path):
+        """A booking: the reservation fields, then each of its ``legs``."""
         if not isinstance(t, dict):
             self.add("error", path, "each transport must be an object")
             return
         self.check_object(t, path, TRANSPORT_SPECS)
-        self._time_consistency(t, path, tz_aware=True)
-        self._magnitudes(t, path, "transport")
-        if _tmin(t.get("start_time")) is not None and _obj_minutes(t) is None:
-            self.add("warning", path, "this transport has no duration and none can "
-                     "be inferred from its start/end times — add a 'duration', or "
-                     "an 'end_time'.")
-        sd, ed = _date(t.get("start_date")), _date(t.get("end_date"))
-        if sd and ed and ed < sd:
-            self.add("error", path, "transport end_date ({ed}) is before "
-                     "start_date ({sd}).", ed=ed, sd=sd)
-        ttype = str(t.get("type", "")).strip().lower()
-        if t.get("flight_number") and ttype and ttype != "plane":
-            self.add("warning", path, "'flight_number' is set but the transport "
-                     "type is '{type}', not 'plane'.", type=ttype)
-        if t.get("train_number") and ttype and ttype != "train":
-            self.add("warning", path, "'train_number' is set but the transport "
-                     "type is '{type}', not 'train'.", type=ttype)
+        self._misplaced_transport_fields(
+            t, path, LEG_ONLY_KEYS,
+            "field '{name}' belongs on a transport leg, not on the booking — "
+            "move it into 'legs', where the model reads it.")
         if t.get("status") and not t.get("booking_number"):
             self.add("warning", path, "'status' is set but 'booking_number' is "
-                     "missing — a confirmed/booked leg usually has a reference.")
+                     "missing — a confirmed/booked booking usually has a "
+                     "reference.")
         if t.get("paid") is not None and not self._has_price(t):
             self.add("warning", path, "'paid' is set but 'price' is missing — the "
                      "payment state is given without an amount.")
         self._check_price_currency(t, path)
+        self._transport_legs(t, path)
+
+    def _misplaced_transport_fields(self, obj, path, keys, message):
+        """Name a transport field written at the wrong side of the booking/leg
+        split. Neither the model nor ``check_object`` would say anything (an
+        unread key is silently ignored), and that silence is the likeliest way
+        to lose a value when moving a document onto the two-level shape."""
+        for key in keys:
+            if obj.get(key) is not None:
+                self.add("warning", path + (key,), message, name=key)
+
+    def _transport_legs(self, t, path):
+        """Validate a booking's ``legs`` — required, an array, non-empty, each an
+        object carrying one hop (see ``TRANSPORT_LEG_SPECS``)."""
+        raw = t.get("legs")
+        if raw is None:
+            return  # required-field-missing is reported by check_object
+        lpath = path + ("legs",)
+        if not isinstance(raw, list):
+            self.add("error", lpath, "'legs' must be an array of {start, end, "
+                     "start_date, start_time, …} objects — one per hop.")
+            return
+        if not raw:
+            self.add("error", lpath, "a transport needs at least one leg in "
+                     "'legs' — a single-hop booking is a one-entry array.")
+            return
+        for i, leg in enumerate(raw):
+            self._transport_leg(leg, t, lpath + (i,))
+
+    def _transport_leg(self, leg, t, path):
+        if not isinstance(leg, dict):
+            self.add("error", path, "each transport leg must be an object")
+            return
+        self.check_object(leg, path, TRANSPORT_LEG_SPECS)
+        self._misplaced_transport_fields(
+            leg, path, BOOKING_ONLY_KEYS,
+            "field '{name}' belongs on the transport booking, not on a leg — "
+            "one reservation covers every leg, so move it up.")
+        self._time_consistency(leg, path, tz_aware=True)
+        self._magnitudes(leg, path, "transport")
+        if _tmin(leg.get("start_time")) is not None and _obj_minutes(leg) is None:
+            self.add("warning", path, "this leg has no duration and none can be "
+                     "inferred from its start/end times — add a 'duration', or an "
+                     "'end_time'.")
+        sd, ed = _date(leg.get("start_date")), _date(leg.get("end_date"))
+        if sd and ed and ed < sd:
+            self.add("error", path, "leg end_date ({ed}) is before "
+                     "start_date ({sd}).", ed=ed, sd=sd)
+        # The number is the leg's, the type is the booking's, so this one check
+        # spans the two levels.
+        ttype = str(t.get("type", "")).strip().lower() if isinstance(t, dict) else ""
+        if leg.get("flight_number") and ttype and ttype != "plane":
+            self.add("warning", path, "'flight_number' is set but the transport "
+                     "type is '{type}', not 'plane'.", type=ttype)
+        if leg.get("train_number") and ttype and ttype != "train":
+            self.add("warning", path, "'train_number' is set but the transport "
+                     "type is '{type}', not 'train'.", type=ttype)
 
     def _accommodation(self, a, path):
         if not isinstance(a, dict):
@@ -1089,14 +1170,13 @@ class _Validator:
                             self.add("warning", ("accommodations", i, key),
                                      "accommodation {key} {d} is outside the trip "
                                      "range ({sd} → {ed}).", key=key, d=d, sd=sd, ed=ed)
-            for i, t in enumerate(transport):
-                if isinstance(t, dict):
-                    for key in ("start_date", "end_date"):
-                        d = _date(t.get(key))
-                        if d and _out(d):
-                            self.add("warning", ("transport", i, key),
-                                     "transport {key} {d} is outside the trip "
-                                     "range ({sd} → {ed}).", key=key, d=d, sd=sd, ed=ed)
+            for lpath, leg in _all_legs(transport):
+                for key in ("start_date", "end_date"):
+                    d = _date(leg.get(key))
+                    if d and _out(d):
+                        self.add("warning", lpath + (key,),
+                                 "transport {key} {d} is outside the trip "
+                                 "range ({sd} → {ed}).", key=key, d=d, sd=sd, ed=ed)
 
         # (5-existing) overlapping accommodations (same night booked twice)
         stays = []
@@ -1115,13 +1195,12 @@ class _Validator:
                              "night(s) — you can only sleep in one place.",
                              n1=repr(n1), n2=repr(n2))
 
-        # overnight transports indexed by departure date
+        # overnight transport legs indexed by departure date
         overnight = {}
-        for i, t in enumerate(transport):
-            if isinstance(t, dict):
-                tsd, ted = _transport_dates(t)
-                if tsd and ted and ted > tsd:
-                    overnight.setdefault(tsd, []).append(i)
+        for lpath, leg in _all_legs(transport):
+            tsd, ted = _transport_dates(leg)
+            if tsd and ted and ted > tsd:
+                overnight.setdefault(tsd, []).append(lpath)
 
         # (1) nights with nowhere to sleep, (2) double-booked nights,
         # (12) accommodation city vs day city
@@ -1161,11 +1240,11 @@ class _Validator:
                     if sp:
                         spans.append((sp[0], sp[1], ("days", di, "activities", aj)))
             if day_date:
-                for tj, t in enumerate(transport):
-                    if isinstance(t, dict) and _date(t.get("start_date")) == day_date:
-                        sp = _span(t)
+                for lpath, leg in _all_legs(transport):
+                    if _date(leg.get("start_date")) == day_date:
+                        sp = _span(leg)
                         if sp:
-                            spans.append((sp[0], sp[1], ("transport", tj)))
+                            spans.append((sp[0], sp[1], lpath))
             # A sweep over the start-ordered spans, tracking the furthest end
             # seen so far: any span starting before that end overlaps an earlier
             # item (not necessarily the immediately preceding one — a long item

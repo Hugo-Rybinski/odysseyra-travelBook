@@ -166,8 +166,9 @@ Writes an [iCalendar](https://en.wikipedia.org/wiki/ICalendar) (`.ics`) file you
 can import into Google Calendar (or Apple/Outlook). One event is emitted per:
 
 - **day activity** — except **buffers** (free time isn't an event);
-- **transport leg** — timezone-aware, so a flight that departs in one zone and
-  arrives in another keeps *both* wall-clock times;
+- **transport leg** — one event per leg, so a booking that moves you twice gets
+  two; timezone-aware, so a flight that departs in one zone and arrives in
+  another keeps *both* wall-clock times;
 - **car-rental** pick-up and drop-off;
 - each **night** of an accommodation booking — from that evening at
   `defaults.accommodation_start_time` (default `22:00`) to
@@ -204,7 +205,7 @@ examples/pyrenees_pieces/
   travel_description.json     # → "travel_description"  (optional; prompted if absent)
   defaults.json               # → "defaults"            (optional)
   days/*.json                 # → "days"            (one day per file)
-  transports/*.json           # → "transport"       (one leg per file)
+  transports/*.json           # → "transport"       (one booking per file)
   accommodations/*.json       # → "accommodations"  (one stay per file)
   car-rentals/*.json          # → "car_rentals"     (one rental per file)
 ```
@@ -299,7 +300,8 @@ The top-level object has two config groups and three content arrays:
   day start and end time, how the buffers between activities are sized, time
   zone.
 - **`days`** *(array, required, non-empty)* — the itinerary, one per day.
-- **`transport`** *(array, optional)* — travel legs (also woven into the days).
+- **`transport`** *(array, optional)* — travel bookings, each with its `legs`
+  (the legs are also woven into the days).
 - **`accommodations`** *(array, optional)* — where you sleep.
 - **`car_rentals`** *(array, optional)* — rental-car bookings.
 
@@ -317,7 +319,7 @@ The top-level object has two config groups and three content arrays:
     "timezone": "+02:00"
   },
   "days": [ /* day objects */ ],
-  "transport": [ /* transport objects */ ],
+  "transport": [ /* transport bookings, each with its "legs" */ ],
   "accommodations": [ /* accommodation objects */ ],
   "car_rentals": [ /* car rental objects */ ]
 }
@@ -445,10 +447,11 @@ maps are off or nothing on the trip is located.
 "coordinate": { "lat": 43.0974, "long": -0.0583 }
 ```
 
-Segment objects that go from A→B carry endpoint coordinates: `transport`
-accepts `start_coordinate` / `end_coordinate`, and `car_rentals` accept
-`pickup_coordinate` / `dropoff_coordinate`. Give a transport leg both endpoints
-and it's drawn as a **dotted straight line** between them — on the per-day maps
+Segment objects that go from A→B carry endpoint coordinates: a `transport`
+**leg** accepts `start_coordinate` / `end_coordinate` (they belong to the leg,
+which is what has a departure and an arrival — not to its booking), and
+`car_rentals` accept `pickup_coordinate` / `dropoff_coordinate`. Give a transport
+leg both endpoints and it's drawn as a **dotted straight line** between them — on the per-day maps
 (PDF and viewer alike), on the PDF's whole-trip page and on the viewer's
 whole-trip 🗺️ **Overview** map. It's dotted because the real path isn't known,
 and for a flight isn't a path on the ground at all. A leg is drawn on every day
@@ -796,39 +799,92 @@ states how long that particular pause is, so the spreading skips that gap.
 
 ### `transport[]`
 
-A travel leg, rendered on a dedicated transport page and woven into its
-`start_date` day's itinerary. A leg that spans midnight is treated as that
-night's accommodation (stay bar + "sleep" column, `+1` on the arrival time).
-`start_time` is required; provide one of `end_time` / `duration` and the other
-is inferred, across time zones when they differ. An optional `description`
-carries a short note the structured fields don't — drawn as prose under the
-leg's booking line, both on the transport page and on the day's row. An
-overnight leg also fills that night's stay bar, which leaves the note to the
-itinerary row above rather than printing it twice.
+One **booking** and the **legs** it moves you over. What you reserve once — the
+type, the reference, the price, the links, the status — sits on the booking;
+where and when you actually travel sits in `legs`, one entry per hop. A
+single-hop booking is a one-leg booking, not a special case: `legs` is required
+and must hold at least one entry.
+
+That split is what lets a round trip, or a flight with a connection, be the one
+thing it is: one PNR, one price, one "Reservation" link, several movements.
+
+Both renderers draw a booking as one card, in one of **two shapes**:
+
+- **Several legs** — everything the reservation covers first (its `name`, type
+  badge, status/payment, reference, `description`, price and links), then, under
+  a grey rule, **one inset block per leg**, each badged `Leg 1`, `Leg 2`… beside
+  its route. Shared information and per-hop information can't be mistaken for
+  each other.
+- **One leg** — a single flat block: no rule, no inset, no badge, because there
+  is nothing to tell apart and the booking *is* that movement. Its route line is
+  dropped when it would only repeat the heading, which is the usual case since an
+  unnamed booking is headed with its route.
+
+Each day's itinerary, meanwhile, shows only the legs that depart that day,
+**enriched with the booking's shared fields**, so a day's row still carries its
+type badge, reference and source without the booking around it.
+
+**Two levels, two notes.** The booking's `description` is about the reservation —
+a baggage allowance, a fare condition, a check-in window — and shows on the
+transport card (and on every one of that booking's calendar events, as
+`Booking note`). A leg's `description` is about that hop — a seat, a terminal, a
+coach number — and shows under that leg, on the day's row and, for a sleep-aboard
+leg, in the stay bar. Put each fact where it belongs and neither renderer repeats
+it.
+
+**The `name`** is what the card is headed with. Left out, it defaults to the
+route through every leg — `New York JFK → Paris CDG → Toulouse-Blagnac → Paris
+CDG → New York JFK` — where a connection is named once (leg 2 starting where leg
+1 ended) but a break is not, since dropping either end would misdescribe the
+booking. Set it to something shorter and truer when the chain gets long
+("Round trip New York ↔ France").
+
+A leg that spans midnight is treated as that night's accommodation (stay bar +
+"sleep" column, `+1` on the arrival time). Its `start_time` is required; provide
+one of `end_time` / `duration` and the other is inferred, across time zones when
+they differ. A field written on the wrong side of the split is not read by the
+model, so the validator warns and names the level it belongs to.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
-| `type` |  | Transport kind, shown as the badge | string | `plane` \| `train` \| `bus` \| `taxi` \| `ferry` \| `other` | `"other"` |
+| `type` |  | Transport kind, shown as the badge on the booking and its legs | string | `plane` \| `train` \| `bus` \| `taxi` \| `ferry` \| `other` | `"other"` |
+| `name` |  | What to call the whole booking, shown as the card's heading | string | any text | the route through its legs (`A → B → C`) |
+| `booking_number` |  | Reservation reference / PNR, covering every leg | string | any text | `""` |
+| `booking_source` |  | Where it was booked | string | any text | `""` |
+| `website` |  | Link to the carrier's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note about the **whole booking** (a baggage allowance, a fare condition) | string | any text | `""` |
+| `price` |  | Price of the whole booking, every leg included (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `legs` | ✅ | The hops this booking moves you over | array | non-empty array of leg objects | — |
+
+#### `transport[].legs[]`
+
+One hop: where it goes, when, its own number and its own note. An optional
+`description` carries a short note the structured fields don't — a seat, a
+terminal, a baggage allowance — drawn as prose under that leg's number, both on
+the transport page and on the day's row. It is per leg because an outbound and a
+return rarely share a seat. An overnight leg also fills that night's stay bar,
+which leaves the note to the itinerary row above rather than printing it twice.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
 | `start` | ✅ | Departure address | string | any text | — |
 | `end` | ✅ | Arrival address | string | any text | — |
-| `start_date` | ✅ | Departure date; slots the leg into that day (alias: `date`) | string | `YYYY-MM-DD` | — |
+| `start_date` | ✅ | Departure date; slots the leg into that day | string | `YYYY-MM-DD` | — |
 | `end_date` |  | Arrival date | string | `YYYY-MM-DD` | inferred (+1 day if it crosses midnight) |
 | `start_time` | ✅ | Departure time | string | `HH:MM` | — |
 | `end_time` |  | Arrival time | string | `HH:MM` | inferred (`start_time + duration`) |
 | `start_tz` |  | Departure time zone | string | UTC offset | `defaults.timezone` |
 | `end_tz` |  | Arrival time zone | string | UTC offset | `defaults.timezone` |
 | `duration` |  | Travel time | string | duration | inferred from the two times |
-| `flight_number` |  | Flight number (planes only; shown on the card) | string | any text | `""` |
-| `train_number` |  | Train number (trains only; shown on the card) | string | any text | `""` |
-| `booking_number` |  | Reservation reference / PNR | string | any text | `""` |
-| `booking_source` |  | Where it was booked | string | any text | `""` |
-| `website` |  | Link to the carrier's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
-| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
-| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
-| `description` |  | A short note for whatever the other fields don't cover (a seat, a terminal, a baggage allowance) | string | any text | `""` |
-| `price` |  | Ticket price (amount only, no symbol) | number | number | none (not shown) |
-| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
-| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `flight_number` |  | Flight number of this leg (planes only) | string | any text | `""` |
+| `train_number` |  | Train number of this leg (trains only) | string | any text | `""` |
+| `description` |  | A short note about this leg (a seat, a terminal, a baggage allowance) | string | any text | `""` |
+| `start_coordinate` |  | Departure point, for the maps | object | `{lat, long}` | none (never geocoded) |
+| `end_coordinate` |  | Arrival point, for the maps | object | `{lat, long}` | none (never geocoded) |
 
 ### `accommodations[]`
 

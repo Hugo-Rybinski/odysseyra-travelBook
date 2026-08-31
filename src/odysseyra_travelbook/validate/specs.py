@@ -376,11 +376,45 @@ DAY_SPECS = [
     Spec("bank_holiday", False, "whether the day is a public holiday where you are "
          "— shown as a banner above the day's activities", "true or false",
          "false (an ordinary day)", V_BOOL),
+    # Required like any other field, so an absent key reads the same as a missing
+    # `title`. The *present but empty* case can't be a field check and stays in
+    # the validator's `_day` (an empty array is "present").
+    Spec("activities", True, "the day's items, in order (at least one)",
+         "a non-empty array of activity objects, each with a 'type'"),
 ]
 
+# A booking holds what is reserved once; its `legs` hold what moves once. The
+# two tables are checked separately (see the validator's `_transport` /
+# `_transport_leg`). A field written at the wrong level is simply *not read* by
+# the model, so the validator names it: `_misplaced_transport_fields` compares
+# the two key sets and says which way to move it.
 TRANSPORT_SPECS = [
     Spec("type", False, "the transport type", "one of: " + ", ".join(TRANSPORT_TYPES),
          '"other"', V_TTYPE),
+    Spec("name", False, "what to call the whole booking", "any text",
+         "the route through its legs (A → B → C)"),
+    Spec("booking_number", False, "the reservation reference", "any text", '""'),
+    Spec("booking_source", False, "where it was booked", "any text", '""'),
+    Spec("website", False, "a link to the carrier's website",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
+    Spec("booking_link", False, "a direct link to this reservation",
+         "a link like 'https://example.com'", "none (no link shown)", V_URL),
+    Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
+         "none (no badge)", V_STATUS),
+    Spec("description", False, "a short note about the whole booking (a leg's "
+         "own note goes on the leg)", "any text", '""'),
+    Spec("price", False, "the price of the whole booking, every leg included",
+         "a number", "none (no price shown)", V_NUMBER),
+    Spec("currency", False, "the currency this price is in",
+         "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
+    Spec("paid", False, "the payment state", "'paid' or 'to pay'",
+         "none (no badge)", V_PAID),
+    Spec("legs", True, "the hops this booking moves you over (a single-hop "
+         "booking has one)",
+         "a non-empty array of {start, end, start_date, start_time, …} objects"),
+]
+
+TRANSPORT_LEG_SPECS = [
     Spec("start", True, "the departure address", "any text"),
     Spec("end", True, "the arrival address", "any text"),
     Spec("start_date", True, "the departure date", "a date YYYY-MM-DD", "", V_DATE),
@@ -395,23 +429,11 @@ TRANSPORT_SPECS = [
          "the trip's default timezone", V_TZ),
     Spec("duration", False, "the travel time", "a duration like '4h20'",
          "inferred from the two times", V_DUR),
-    Spec("flight_number", False, "the flight number (planes only)", "any text", '""'),
-    Spec("train_number", False, "the train number (trains only)", "any text", '""'),
-    Spec("booking_number", False, "the reservation reference", "any text", '""'),
-    Spec("booking_source", False, "where it was booked", "any text", '""'),
-    Spec("website", False, "a link to the carrier's website",
-         "a link like 'https://example.com'", "none (no link shown)", V_URL),
-    Spec("booking_link", False, "a direct link to this reservation",
-         "a link like 'https://example.com'", "none (no link shown)", V_URL),
-    Spec("status", False, "the reservation status", "'booked' or 'confirmed'",
-         "none (no badge)", V_STATUS),
+    Spec("flight_number", False, "the flight number of this leg (planes only)",
+         "any text", '""'),
+    Spec("train_number", False, "the train number of this leg (trains only)",
+         "any text", '""'),
     Spec("description", False, NOTE_DESC, "any text", '""'),
-    Spec("price", False, "the ticket price", "a number", "none (no price shown)",
-         V_NUMBER),
-    Spec("currency", False, "the currency this price is in",
-         "a 3-letter ISO code like 'USD'", "the trip's default currency", V_CURRENCY),
-    Spec("paid", False, "the payment state", "'paid' or 'to pay'",
-         "none (no badge)", V_PAID),
 ]
 
 ACCOMMODATION_SPECS = [

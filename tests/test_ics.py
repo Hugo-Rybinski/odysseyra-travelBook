@@ -76,8 +76,9 @@ def test_transport_emoji_covers_all_types():
         "defaults": {"timezone": "Z"},
         "days": [{"title": "D1", "date": "2026-05-01"}],
         "transport": [
-            {"type": t, "start": "A", "end": "B", "start_date": "2026-05-01",
-             "start_time": "08:00", "duration": "1h"}
+            {"type": t, "legs": [
+                {"start": "A", "end": "B", "start_date": "2026-05-01",
+                 "start_time": "08:00", "duration": "1h"}]}
             for t in ("bus", "taxi", "ferry", "other")
         ],
     }
@@ -99,11 +100,11 @@ def test_cross_timezone_transport_keeps_both_offsets():
 
 
 def test_return_flight_stays_a_timed_same_day_event():
-    # Regression: the Toulouse→JFK leg departs 18:30 (+02) and lands 22:05 (−04)
-    # the same day; both ends must fall on 2026-09-11 (not a ~33h multi-day band).
+    # Regression: the CDG→JFK leg departs 21:30 (+02) and lands 23:40 (−04) the
+    # same day; both ends must fall on 2026-09-11 (not a ~33h multi-day band).
     ics = _ics("france.json")
     leg = _unfold(next(e for e in _events(ics)
-                       if "Toulouse-Blagnac → New York JFK" in _unfold(e)))
+                       if "Paris CDG → New York JFK" in _unfold(e)))
     start = re.search(r"DTSTART[^:]*:(\d{8})T", leg).group(1)
     end = re.search(r"DTEND[^:]*:(\d{8})T", leg).group(1)
     assert start == "20260911" and end == "20260911"

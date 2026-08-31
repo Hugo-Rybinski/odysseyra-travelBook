@@ -14,6 +14,7 @@ import {
   SCHEDULED_FIELDS,
   SECONDARY_CURRENCY_FIELDS,
   TRANSPORT_FIELDS,
+  TRANSPORT_LEG_FIELDS,
   TRAVEL_DESCRIPTION_FIELDS,
   WAYPOINT_FIELDS,
 } from "./schema";
@@ -197,7 +198,11 @@ export function collectContainerPaths(draft: SrcItinerary): Set<string> {
     out.add(`days.${i}`);
     (day.activities ?? []).forEach((a, j) => walk(`days.${i}.activities.${j}`, a));
   });
-  (draft.transport ?? []).forEach((_t, i) => out.add(`transport.${i}`));
+  (draft.transport ?? []).forEach((t, i) => {
+    out.add(`transport.${i}`);
+    out.add(`transport.${i}.legs`); // the array itself ("needs at least one leg")
+    (t.legs ?? []).forEach((_l, j) => out.add(`transport.${i}.legs.${j}`));
+  });
   (draft.accommodations ?? []).forEach((_a, i) => out.add(`accommodations.${i}`));
   (draft.car_rentals ?? []).forEach((_c, i) => out.add(`car_rentals.${i}`));
   return out;
@@ -234,10 +239,13 @@ export function collectFieldPaths(draft: SrcItinerary): Set<string> {
     );
   });
 
-  (draft.transport ?? []).forEach((_t, i) => {
+  (draft.transport ?? []).forEach((t, i) => {
     addFields(`transport.${i}`, TRANSPORT_FIELDS);
-    addCoord(`transport.${i}.start_coordinate`);
-    addCoord(`transport.${i}.end_coordinate`);
+    (t.legs ?? []).forEach((_l, j) => {
+      addFields(`transport.${i}.legs.${j}`, TRANSPORT_LEG_FIELDS);
+      addCoord(`transport.${i}.legs.${j}.start_coordinate`);
+      addCoord(`transport.${i}.legs.${j}.end_coordinate`);
+    });
   });
 
   (draft.accommodations ?? []).forEach((_a, i) => {

@@ -90,11 +90,12 @@ def test_booking_descriptions_parse_on_all_three_sections():
     assert it.accommodations[0].description.startswith("Room 214")
     assert it.accommodations[1].description.startswith("Bunks in a shared dorm")
     assert it.car_rentals[0].description.startswith("Full-to-full fuel policy")
-    night_train = it.transports[-1]
+    # The note is the *leg's* — an outbound and a return rarely share a seat.
+    night_train = it.legs[-1]
     assert night_train.description.startswith("Couchette compartment 4")
     # The two other legs give none.
-    assert it.transports[0].description == ""
-    assert it.transports[1].description == ""
+    assert it.legs[0].description == ""
+    assert it.legs[1].description == ""
 
 
 def test_stay_lookup_and_night_index():
@@ -380,9 +381,9 @@ def test_dates_inferred_from_earliest_and_latest():
                 {"title": "b", "activities": []},  # date inferred → 2026-06-11
             ],
             "transport": [
-                {"type": "plane", "start": "A", "end": "B",
-                 "start_date": "2026-06-08",
-                 "start_time": "20:00", "end_time": "23:00"}
+                {"type": "plane", "legs": [
+                    {"start": "A", "end": "B", "start_date": "2026-06-08",
+                     "start_time": "20:00", "end_time": "23:00"}]}
             ],
             "accommodations": [
                 {"name": "H", "city": "X", "arrival": "2026-06-10",
@@ -764,8 +765,11 @@ def test_buffer_requires_duration():
 
 
 def test_transport_example_section():
+    """pyrenees.json is the single-leg example: three bookings, one hop each
+    (france.json carries the multi-leg round trip)."""
     it = Itinerary.from_json_file(EXAMPLE)
     assert len(it.transports) == 3
+    assert [len(t.legs) for t in it.transports] == [1, 1, 1]
     plane, train, night = it.transports
     assert isinstance(plane, Transport)
     assert plane.type == "plane"
@@ -773,7 +777,7 @@ def test_transport_example_section():
     assert plane.status == "confirmed"
     assert plane.paid is True
     assert train.paid is False and train.status == "booked"
-    assert night.type == "train" and night.overnight is True
+    assert night.type == "train" and night.legs[0].overnight is True
 
 
 def test_transport_slots_into_day_and_night_lookup():
@@ -797,13 +801,13 @@ def test_transport_end_date_same_day_when_not_overnight():
             "title": "t",
             "days": [{"title": "d", "activities": []}],
             "transport": [
-                {"type": "bus", "start": "A", "end": "B",
-                 "start_date": "2026-06-08",
-                 "start_time": "09:00", "duration": "2h"}
+                {"type": "bus", "legs": [
+                    {"start": "A", "end": "B", "start_date": "2026-06-08",
+                     "start_time": "09:00", "duration": "2h"}]}
             ],
         }
     )
-    t = it.transports[0]
+    t = it.legs[0]
     assert t.end_date == t.start_date and t.overnight is False
     assert t.end_day_offset == 0
 
@@ -816,13 +820,13 @@ def test_transport_overnight_crosses_midnight():
             "title": "t",
             "days": [{"title": "d", "activities": []}],
             "transport": [
-                {"type": "train", "start": "A", "end": "B",
-                 "start_date": "2026-06-11",
-                 "start_time": "22:10", "end_time": "06:45"}
+                {"type": "train", "legs": [
+                    {"start": "A", "end": "B", "start_date": "2026-06-11",
+                     "start_time": "22:10", "end_time": "06:45"}]}
             ],
         }
     )
-    t = it.transports[0]
+    t = it.legs[0]
     assert t.end_date == date(2026, 6, 12) and t.overnight is True
 
 
@@ -835,16 +839,18 @@ def test_transport_duration_inferred_across_timezones():
             "transport": [
                 {
                     "type": "plane",
-                    "start": "A", "end": "B", "start_date": "2026-06-08",
-                    "start_time": "22:30",
-                    "start_tz": "-04:00",
-                    "end_time": "11:45",
-                    "end_tz": "+02:00",
+                    "legs": [{
+                        "start": "A", "end": "B", "start_date": "2026-06-08",
+                        "start_time": "22:30",
+                        "start_tz": "-04:00",
+                        "end_time": "11:45",
+                        "end_tz": "+02:00",
+                    }],
                 }
             ],
         }
     )
-    assert it.transports[0].duration_min == 7 * 60 + 15
+    assert it.legs[0].duration_min == 7 * 60 + 15
 
 
 def test_transport_end_inferred_uses_default_timezone():
@@ -854,33 +860,83 @@ def test_transport_end_inferred_uses_default_timezone():
             "timezone": "+02:00",
             "days": [{"title": "d", "activities": []}],
             "transport": [
-                {"type": "train", "start": "A", "end": "B",
-                 "start_date": "2026-06-08", "start_time": "13:50",
-                 "duration": "4h20"}
+                {"type": "train", "legs": [
+                    {"start": "A", "end": "B", "start_date": "2026-06-08",
+                     "start_time": "13:50", "duration": "4h20"}]}
             ],
         }
     )
-    tr = it.transports[0]
+    tr = it.legs[0]
     assert tr.end_time.strftime("%H:%M") == "18:10"
     assert tr.start_tz == 120 and tr.end_tz == 120  # inherited global tz
 
 
 def test_transport_requires_core_fields_and_type_enum():
-    base = {"start": "A", "end": "B", "start_date": "2026-06-08",
-            "start_time": "09:00", "type": "train"}
+    """The four required fields are the *leg's*; `type` (and every other
+    reservation field) is the booking's."""
+    leg = {"start": "A", "end": "B", "start_date": "2026-06-08",
+           "start_time": "09:00"}
+
+    def build(**booking):
+        return Itinerary.from_dict({"title": "t", "days": [
+            {"title": "d", "activities": []}], "transport": [booking]})
+
     for drop in ("start", "end", "start_date", "start_time"):
-        d = {k: v for k, v in base.items() if k != drop}
         with pytest.raises(ItineraryError):
-            Itinerary.from_dict({"title": "t", "days": [{"title": "d",
-                "activities": []}], "transport": [d]})
+            build(type="train", legs=[{k: v for k, v in leg.items() if k != drop}])
     with pytest.raises(ItineraryError):
-        Itinerary.from_dict({"title": "t", "days": [{"title": "d",
-            "activities": []}], "transport": [{**base, "type": "rocket"}]})
-    # type defaults to "other"
-    it = Itinerary.from_dict({"title": "t", "days": [{"title": "d",
-        "activities": []}], "transport": [{k: v for k, v in base.items()
-                                            if k != "type"}]})
+        build(type="rocket", legs=[leg])
+    # type defaults to "other", and a leg reads it off its booking
+    it = build(legs=[leg])
     assert it.transports[0].type == "other"
+    assert it.legs[0].type == "other"
+
+
+def test_transport_needs_a_non_empty_legs_array():
+    def build(**booking):
+        return Itinerary.from_dict({"title": "t", "days": [
+            {"title": "d", "activities": []}], "transport": [booking]})
+
+    leg = {"start": "A", "end": "B", "start_date": "2026-06-08",
+           "start_time": "09:00"}
+    for bad in ({}, {"legs": []}, {"legs": "nope"}):
+        with pytest.raises(ItineraryError):
+            build(type="train", **bad)
+    assert len(build(type="train", legs=[leg, leg]).transports[0].legs) == 2
+
+
+def test_a_leg_reads_its_bookings_shared_fields():
+    """The enrichment the day pages rely on: a leg answers for the whole
+    reservation, so nothing downstream has to hold on to its parent."""
+    from datetime import date
+
+    it = Itinerary.from_dict({"title": "t", "days": [
+        {"title": "d", "activities": []}], "transport": [{
+            "type": "plane", "booking_number": "PNR1",
+            "booking_source": "Air France", "website": "https://af.example",
+            "booking_link": "https://af.example/PNR1", "status": "confirmed",
+            "price": 400, "currency": "USD", "paid": "paid",
+            "legs": [
+                {"start": "A", "end": "B", "start_date": "2026-06-08",
+                 "start_time": "09:00", "duration": "2h"},
+                {"start": "B", "end": "C", "start_date": "2026-06-09",
+                 "start_time": "09:00", "duration": "1h"},
+            ]}]})
+    booking = it.transports[0]
+    for i, leg in enumerate(booking.legs, start=1):
+        assert leg.type == "plane"
+        assert leg.booking_number == "PNR1"
+        assert leg.booking_source == "Air France"
+        assert leg.website == "https://af.example"
+        assert leg.booking_link == "https://af.example/PNR1"
+        assert leg.status == "confirmed"
+        assert leg.price == 400 and leg.currency == "USD" and leg.paid is True
+        assert (leg.leg_index, leg.leg_count) == (i, 2)
+    # the booking's own route runs through its legs (the connection at B named
+    # once), and so do its dates
+    assert booking.title == "A → B → C"
+    assert (booking.start_date, booking.end_date) == (date(2026, 6, 8),
+                                                      date(2026, 6, 9))
 
 
 def test_accommodation_requires_fields_and_type_enum():
@@ -1039,7 +1095,7 @@ def test_overnight_legs_note_is_not_repeated_in_the_stay_bar():
     from odysseyra_travelbook.pdf import TravelPDF
 
     it = Itinerary.from_json_file(EXAMPLE)
-    leg = it.transports[-1]
+    leg = it.legs[-1]
     assert leg.overnight and leg.description, "the example exercises this path"
 
     pdf = TravelPDF(it, "en", False, "google")

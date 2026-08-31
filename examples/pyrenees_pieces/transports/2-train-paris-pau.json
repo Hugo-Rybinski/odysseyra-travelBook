@@ -1,14 +1,18 @@
 {
   "type": "train",
-  "start": "Paris Montparnasse",
-  "end": "Pau",
-  "start_date": "2026-06-08",
-  "start_time": "13:50",
-  "duration": "4h20",
-  "train_number": "TGV 8541",
   "booking_number": "TGV-8841",
   "booking_source": "SNCF Connect",
   "status": "booked",
   "price": 89,
-  "paid": "to pay"
+  "paid": "to pay",
+  "legs": [
+    {
+      "start": "Paris Montparnasse",
+      "end": "Pau",
+      "start_date": "2026-06-08",
+      "start_time": "13:50",
+      "duration": "4h20",
+      "train_number": "TGV 8541"
+    }
+  ]
 }

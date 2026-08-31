@@ -67,7 +67,14 @@
   ],
   "transport": [
     { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "website": "not-a-link", "status": "confirmed", "price": 120, "currency": "CHF" },
-    { "type": "bus", "start_date": "2026-06-11", "end_date": "2026-06-10", "status": "maybe", "paid": "later", "flight_number": "AF999", "price": "lots" }
+    { "type": "bus", "status": "maybe", "paid": "later", "price": "lots", "legs": [
+      { "start": "Pau", "end": "Lourdes", "start_date": "2026-06-11", "end_date": "2026-06-10", "start_time": "09:00", "flight_number": "AF999", "booking_number": "MOVE-ME", "price": 12 }
+    ] },
+    { "type": "train", "booking_number": "OK-1", "legs": [
+      { "start": "Lourdes", "end": "Paris", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00" }
+    ] },
+    { "type": "ferry", "legs": [] },
+    { "type": "taxi", "legs": "not-an-array" }
   ],
   "accommodations": [
     { "name": "Hotel A", "city": "Paris", "arrival": "2026-06-09", "departure": "2026-06-10", "status": "maybe", "paid": true },

@@ -27,7 +27,7 @@ from .parsers import (
     _parse_tz,
 )
 from .sun import SunTimes, sun_times
-from .transport import Transport, resolve_transport
+from .transport import Transport, TransportLeg, resolve_transport
 
 
 # How far a sun-times reference point may sit from the clock the day is read in.
@@ -219,8 +219,8 @@ class Itinerary:
                 CarRental.from_dict(c) for c in data.get("car_rentals", [])
             ],
         )
-        for transport in itinerary.transports:
-            resolve_transport(transport, default_tz)
+        for leg in itinerary.legs:
+            resolve_transport(leg, default_tz)
         for car_rental in itinerary.car_rentals:
             resolve_car_rental(car_rental, default_tz)
         itinerary._infer_dates()
@@ -460,11 +460,18 @@ class Itinerary:
         morning = self._sun_at(self.wake_reference(when, day), when, tz) or evening
         return SunTimes(morning.sunrise, evening.sunset)
 
-    def transports_on(self, day: date | None) -> list[Transport]:
+    @property
+    def legs(self) -> list[TransportLeg]:
+        """Every transport leg of the trip, booking order then leg order. The
+        legs are what a day, a map or a calendar event deals with; the bookings
+        group them for the transport page."""
+        return [leg for t in self.transports for leg in t.legs]
+
+    def transports_on(self, day: date | None) -> list[TransportLeg]:
         """Transport legs departing on ``day``."""
         if day is None:
             return []
-        return [t for t in self.transports if t.start_date == day]
+        return [leg for leg in self.legs if leg.start_date == day]
 
     def car_events_on(self, day: date | None) -> list[CarRentalEvent]:
         """Car-rental pick-up / drop-off events falling on ``day``."""
@@ -478,11 +485,11 @@ class Itinerary:
                 events.append(cr.dropoff_event())
         return events
 
-    def night_transport(self, day: date | None) -> Transport | None:
+    def night_transport(self, day: date | None) -> TransportLeg | None:
         """An overnight leg departing on ``day`` — you sleep aboard it."""
         if day is None:
             return None
-        for t in self.transports:
-            if t.overnight and t.start_date == day:
-                return t
+        for leg in self.legs:
+            if leg.overnight and leg.start_date == day:
+                return leg
         return None

@@ -4,7 +4,7 @@ that imports cleanly into Google Calendar (and Apple/Outlook).
 One ``VEVENT`` is emitted per timed thing in the trip:
 
 * every day activity **except buffers** (which are free time, not events),
-* every transport leg,
+* every transport **leg** — a booking that moves you twice gets two events,
 * every car-rental pick-up and drop-off,
 * every **night** of each accommodation booking — a night runs from that evening
   at ``defaults.accommodation_start_time`` (22:00) to
@@ -226,43 +226,56 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
 def _transport_events(itin: Itinerary, uid_base: str, lang: str,
                       counter: list[int]) -> list[_Event]:
     events: list[_Event] = []
+    # One event per *leg* — a calendar entry is a movement, so a two-leg round
+    # trip is two entries. The booking's shared fields (reference, source,
+    # status, price, links) are packed onto each, read straight off the leg.
     for t in itin.transports:
-        if t.start_date is None or t.start_time is None:
-            continue
-        start_off = t.start_tz if t.start_tz is not None else itin.default_timezone
-        end_off = t.end_tz if t.end_tz is not None else itin.default_timezone
-        sdt = _combine(t.start_date, t.start_time)
-        end_date = t.end_date or t.start_date
-        edt = (_combine(end_date, t.end_time) if t.end_time is not None
-               else sdt + timedelta(minutes=_MIN_EVENT_MIN))
-        if edt <= sdt:
-            edt = sdt + timedelta(minutes=_MIN_EVENT_MIN)
+        for leg in t.legs:
+            if leg.start_date is None or leg.start_time is None:
+                continue
+            start_off = (leg.start_tz if leg.start_tz is not None
+                         else itin.default_timezone)
+            end_off = leg.end_tz if leg.end_tz is not None else itin.default_timezone
+            sdt = _combine(leg.start_date, leg.start_time)
+            end_date = leg.end_date or leg.start_date
+            edt = (_combine(end_date, leg.end_time) if leg.end_time is not None
+                   else sdt + timedelta(minutes=_MIN_EVENT_MIN))
+            if edt <= sdt:
+                edt = sdt + timedelta(minutes=_MIN_EVENT_MIN)
 
-        type_label = t.type.title() if t.type else tr("Transport", lang)
-        summary = _with_emoji(_TRANSPORT_EMOJI.get(t.type, ""),
-                              f"{tr(type_label, lang)}: {t.title}")
-        lines = [
-            f"{tr('Departure', lang)}: {t.start} — "
-            f"{fmt_date(t.start_date, 'wd_md', lang)} {t.start_time:%H:%M}",
-            f"{tr('Arrival', lang)}: {t.end} — "
-            f"{fmt_date(end_date, 'wd_md', lang)} {(t.end_time or t.start_time):%H:%M}",
-            "",
-        ]
-        _detail(lines, "Duration", t.duration_display, lang)
-        _detail(lines, "Flight number", t.flight_number, lang)
-        _detail(lines, "Train number", t.train_number, lang)
-        _detail(lines, "Booking number", t.booking_number, lang)
-        _detail(lines, "Booking source", t.booking_source, lang)
-        _detail(lines, "Status", tr(t.status, lang) if t.status else "", lang)
-        _detail(lines, "Description", t.description, lang)
-        _detail(lines, "Price", _money(itin, t.price, t.currency, t.paid, lang), lang)
-        _detail(lines, "Website", t.website, lang)
-        _detail(lines, "Booking", t.booking_link, lang)
+            type_label = leg.type.title() if leg.type else tr("Transport", lang)
+            summary = _with_emoji(_TRANSPORT_EMOJI.get(leg.type, ""),
+                                  f"{tr(type_label, lang)}: {leg.title}")
+            lines = [
+                f"{tr('Departure', lang)}: {leg.start} — "
+                f"{fmt_date(leg.start_date, 'wd_md', lang)} {leg.start_time:%H:%M}",
+                f"{tr('Arrival', lang)}: {leg.end} — "
+                f"{fmt_date(end_date, 'wd_md', lang)} "
+                f"{(leg.end_time or leg.start_time):%H:%M}",
+                "",
+            ]
+            _detail(lines, "Duration", leg.duration_display, lang)
+            _detail(lines, "Flight number", leg.flight_number, lang)
+            _detail(lines, "Train number", leg.train_number, lang)
+            _detail(lines, "Booking number", leg.booking_number, lang)
+            _detail(lines, "Booking source", leg.booking_source, lang)
+            _detail(lines, "Status", tr(leg.status, lang) if leg.status else "", lang)
+            _detail(lines, "Description", leg.description, lang)
+            # The booking's own note, on every one of its events — it is about
+            # the reservation, so it applies to each hop. Labelled apart from the
+            # leg's own note above so the two can't be read as one.
+            _detail(lines, "Booking note", t.description, lang)
+            # The booking's price, and a multi-leg booking says so rather than
+            # looking like this hop's fare.
+            _detail(lines, "Price" if leg.leg_count == 1 else "Price (whole booking)",
+                    _money(itin, leg.price, leg.currency, leg.paid, lang), lang)
+            _detail(lines, "Website", leg.website, lang)
+            _detail(lines, "Booking", leg.booking_link, lang)
 
-        counter[0] += 1
-        events.append(_Event(
-            f"{uid_base}-{counter[0]}@odysseyra", summary,
-            sdt, start_off, edt, end_off, t.start, _trim(lines)))
+            counter[0] += 1
+            events.append(_Event(
+                f"{uid_base}-{counter[0]}@odysseyra", summary,
+                sdt, start_off, edt, end_off, leg.start, _trim(lines)))
     return events
 
 

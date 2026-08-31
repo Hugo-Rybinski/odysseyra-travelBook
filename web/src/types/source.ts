@@ -146,8 +146,10 @@ export type SrcActivity = SrcRoad | SrcPoi | SrcPlace | SrcHike | SrcMeal | SrcB
 export type SrcNestedActivity = SrcPoi | SrcHike | SrcMeal;
 export type SrcActivityType = SrcActivity["type"];
 
-export interface SrcTransport {
-  type?: string;
+// One hop of a booking: where it goes, when, and the number of that hop. The
+// reservation fields (type, reference, price, links, status) live on the parent
+// booking, not here.
+export interface SrcTransportLeg {
   start?: string;
   end?: string;
   start_date?: string;
@@ -159,18 +161,29 @@ export interface SrcTransport {
   duration?: string;
   flight_number?: string;
   train_number?: string;
+  description?: string;
+  coordinate?: SrcCoordinate;
+  start_coordinate?: SrcCoordinate;
+  end_coordinate?: SrcCoordinate;
+}
+
+export interface SrcTransport {
+  type?: string;
+  // What the booking is called as a whole. Defaults to the route chain through
+  // its legs ("A → B → C → D").
+  name?: string;
+  // A note about the whole reservation (a leg's own note is on the leg).
+  description?: string;
   booking_number?: string;
   booking_source?: string;
   website?: string;
   booking_link?: string;
   status?: string;
-  description?: string;
   price?: number;
   currency?: string;
   paid?: string | boolean;
-  coordinate?: SrcCoordinate;
-  start_coordinate?: SrcCoordinate;
-  end_coordinate?: SrcCoordinate;
+  // Required and non-empty: one entry per hop. A single-hop booking has one.
+  legs?: SrcTransportLeg[];
 }
 
 export interface SrcAccommodation {

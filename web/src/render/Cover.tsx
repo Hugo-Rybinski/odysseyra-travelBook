@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Day, Itinerary, Transport } from "../types/resolved";
+import type { Day, Itinerary, TransportLeg } from "../types/resolved";
 import { fill, fmtDate, fmtDateRange, tr, type Lang } from "./format";
 import { Clamp } from "./Clamp";
 
@@ -135,7 +135,7 @@ function highlightsOf(day: Day, lang: Lang): string {
   return drives.join(", ") || day.title || "—";
 }
 
-function overnightName(leg: Transport, lang: Lang): string {
+function overnightName(leg: TransportLeg, lang: Lang): string {
   const type = (leg.type || "").trim();
   if (!type) return tr(lang, "overnightTravel");
   if (/night|overnight|nuit/i.test(type)) return type[0].toUpperCase() + type.slice(1);

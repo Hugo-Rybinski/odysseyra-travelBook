@@ -85,6 +85,9 @@ _FR = {
     "GETTING AROUND": "SE DÉPLACER",
     "Transport": "Transport",
     "Ref {ref}": "Réf {ref}",
+    # the badge on each leg of a multi-leg booking (the viewer mirrors this
+    # template in render/format.ts's `leg` key — keep the two wordings in step)
+    "Leg {n}": "Trajet {n}",
     "Flight {number}": "Vol {number}",
     "Train {number}": "Train {number}",
     "Booked via {source}": "Réservé via {source}",
@@ -169,11 +172,12 @@ _FR = {
     "non-empty array of day objects.":
         "champ obligatoire « days » manquant ou vide — la liste des jours. "
         "Attendu : un tableau non vide d'objets jour.",
-    "optional field 'transport' is missing — the transport legs. Expected an "
-    "array of transport objects. Defaulting to [] (no transport page).":
-        "champ optionnel « transport » manquant — les trajets. Attendu : un "
-        "tableau d'objets transport. Valeur par défaut : [] (pas de page "
-        "transport).",
+    "optional field 'transport' is missing — the transport bookings. Expected "
+    "an array of transport objects, each with its 'legs'. Defaulting to [] (no "
+    "transport page).":
+        "champ optionnel « transport » manquant — les réservations de transport. "
+        "Attendu : un tableau d'objets transport, chacun avec ses « legs ». "
+        "Valeur par défaut : [] (pas de page transport).",
     "optional field 'accommodations' is missing — the places you stay. Expected "
     "an array of accommodation objects. Defaulting to [] (no accommodation "
     "page).":
@@ -251,8 +255,26 @@ _FR = {
     "a point of interest must be an object or a name string":
         "un point d'intérêt doit être un objet ou une chaîne de caractères",
     "each transport must be an object": "chaque transport doit être un objet",
-    "transport end_date ({ed}) is before start_date ({sd}).":
-        "la date d'arrivée du transport ({ed}) est avant la date de départ ({sd}).",
+    "leg end_date ({ed}) is before start_date ({sd}).":
+        "la date d'arrivée du trajet ({ed}) est avant la date de départ ({sd}).",
+    "each transport leg must be an object":
+        "chaque trajet de transport doit être un objet",
+    "'legs' must be an array of {start, end, start_date, start_time, …} objects "
+    "— one per hop.":
+        "« legs » doit être un tableau d'objets {start, end, start_date, "
+        "start_time, …} — un par trajet.",
+    "a transport needs at least one leg in 'legs' — a single-hop booking is a "
+    "one-entry array.":
+        "un transport nécessite au moins un trajet dans « legs » — une "
+        "réservation directe est un tableau d'une entrée.",
+    "field '{name}' belongs on a transport leg, not on the booking — move it "
+    "into 'legs', where the model reads it.":
+        "le champ « {name} » appartient à un trajet, pas à la réservation — "
+        "déplacez-le dans « legs », où le modèle le lit.",
+    "field '{name}' belongs on the transport booking, not on a leg — one "
+    "reservation covers every leg, so move it up.":
+        "le champ « {name} » appartient à la réservation, pas à un trajet — une "
+        "seule réservation couvre tous les trajets, remontez-le.",
     "'flight_number' is set but the transport type is '{type}', not 'plane'.":
         "« flight_number » est défini mais le type de transport est « {type} », "
         "pas « plane ».",
@@ -455,9 +477,9 @@ _FR = {
     "'elevation_m' — missing: {missing}.":
         "cette randonnée ({name}) devrait indiquer une durée, « distance_km » et "
         "« elevation_m » — manquant : {missing}.",
-    "this transport has no duration and none can be inferred from its start/end "
+    "this leg has no duration and none can be inferred from its start/end "
     "times — add a 'duration', or an 'end_time'.":
-        "ce transport n'a pas de durée et aucune ne peut être déduite de ses "
+        "ce trajet n'a pas de durée et aucune ne peut être déduite de ses "
         "horaires — ajoutez « duration » ou « end_time ».",
     "invalid JSON — {error}": "JSON invalide — {error}",
     # -- validation: summary & CLI --
@@ -523,6 +545,10 @@ _FR = {
     "the city/region label": "le libellé de ville/région",
     "the day's date": "la date du jour",
     "an intro paragraph for the day": "un paragraphe d'intro pour le jour",
+    "the day's items, in order (at least one)":
+        "les éléments du jour, dans l'ordre (au moins un)",
+    "a non-empty array of activity objects, each with a 'type'":
+        "un tableau non vide d'objets activité, chacun avec un « type »",
     "the departure address": "l'adresse de départ",
     "the arrival address": "l'adresse d'arrivée",
     "the driving distance in km": "la distance de conduite en km",
@@ -585,15 +611,33 @@ _FR = {
     "the departure time zone": "le fuseau horaire de départ",
     "the arrival time zone": "le fuseau horaire d'arrivée",
     "the travel time": "le temps de trajet",
-    "the flight number (planes only)": "le numéro de vol (avions uniquement)",
-    "the train number (trains only)": "le numéro de train (trains uniquement)",
+    "the flight number of this leg (planes only)":
+        "le numéro de vol de ce trajet (avions uniquement)",
+    "the train number of this leg (trains only)":
+        "le numéro de train de ce trajet (trains uniquement)",
     "the reservation reference": "la référence de réservation",
+    "'status' is set but 'booking_number' is missing — a confirmed/booked "
+    "booking usually has a reference.":
+        "« status » est défini mais « booking_number » manque — une réservation "
+        "confirmée/réservée a généralement une référence.",
     "where it was booked": "où cela a été réservé",
     "the reservation status": "l'état de la réservation",
     # the shared note on transport / accommodation / car rental (specs.NOTE_DESC)
     "a short note for whatever the other fields don't cover":
         "une note courte pour ce que les autres champs ne couvrent pas",
-    "the ticket price": "le prix du billet",
+    "the price of the whole booking, every leg included":
+        "le prix de la réservation entière, tous les trajets compris",
+    "what to call the whole booking": "le nom de la réservation entière",
+    "the route through its legs (A → B → C)":
+        "l'itinéraire de ses trajets (A → B → C)",
+    "a short note about the whole booking (a leg's own note goes on the leg)":
+        "une note courte sur la réservation entière (la note d'un trajet se met "
+        "sur le trajet)",
+    "the hops this booking moves you over (a single-hop booking has one)":
+        "les trajets que cette réservation couvre (une réservation directe en "
+        "compte un)",
+    "a non-empty array of {start, end, start_date, start_time, …} objects":
+        "un tableau non vide d'objets {start, end, start_date, start_time, …}",
     "the payment state": "l'état du paiement",
     "the accommodation name": "le nom de l'hébergement",
     "the check-in date": "la date d'arrivée",
@@ -873,6 +917,10 @@ _FR = {
     "Booking source": "Réservé via",
     "Status": "Statut",
     "Price": "Prix",
+    # a multi-leg booking's fare covers every leg, so its label says so
+    "Price (whole booking)": "Prix (réservation entière)",
+    # the booking's own note, kept apart from a leg's "Description"
+    "Booking note": "Note de réservation",
     "Booking": "Réservation",
     "Company": "Société",
     "Car model": "Modèle",

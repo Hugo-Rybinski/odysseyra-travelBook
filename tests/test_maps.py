@@ -363,11 +363,16 @@ def _trip_with_leg(**leg):
                              "coordinate": {"lat": 43.0 + n / 10, "long": 0.1 * n}}]}
             for n in (1, 2, 3)
         ],
+        # One booking with one leg; `leg` overrides fields on the leg itself,
+        # which is where every place and time now lives.
         "transport": [{
-            "type": "plane", "start": "A", "end": "B", "start_time": "22:10",
-            "start_coordinate": {"lat": 40.0, "long": -70.0},
-            "end_coordinate": {"lat": 49.0, "long": 2.5},
-            **leg,
+            "type": "plane",
+            "legs": [{
+                "start": "A", "end": "B", "start_time": "22:10",
+                "start_coordinate": {"lat": 40.0, "long": -70.0},
+                "end_coordinate": {"lat": 49.0, "long": 2.5},
+                **leg,
+            }],
         }],
     }
     return Itinerary.from_dict(doc)

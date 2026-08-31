@@ -213,15 +213,20 @@ export const FR: Record<string, string> = {
   "Car rentals ({n})": "Locations de voiture ({n})",
   "Day {n}": "Jour {n}",
   "Transport {n}": "Transport {n}",
+  Legs: "Trajets",
+  "Leg {n}": "Trajet {n}",
+  "No legs — a transport needs at least one (a single-hop booking has one).":
+    "Aucun trajet — un transport en nécessite au moins un (une réservation directe en compte un).",
   "Accommodation {n}": "Hébergement {n}",
   "Car rental {n}": "Location de voiture {n}",
   day: "jour",
   transport: "transport",
+  leg: "trajet",
   accommodation: "hébergement",
   "car rental": "location de voiture",
   "No days yet — an itinerary needs at least one.":
     "Aucun jour — un itinéraire en nécessite au moins un.",
-  "No transport legs.": "Aucun trajet.",
+  "No transport bookings.": "Aucune réservation de transport.",
   "No accommodations.": "Aucun hébergement.",
   "No car rentals.": "Aucune location de voiture.",
 
@@ -586,8 +591,8 @@ export const FR: Record<string, string> = {
     "Marquer ce seul tronçon comme hors-piste, sans signaler tout le trajet. Désactivé par défaut.",
 
   // Transport
-  "Transport kind, shown as a badge. Defaults to 'other'.":
-    "Type de transport, affiché comme badge. Par défaut « other ».",
+  "Transport kind, shown as a badge on the booking and on each of its legs. Defaults to 'other'.":
+    "Type de transport, affiché comme badge sur la réservation et sur chacun de ses trajets. Par défaut « other ».",
   "Departure address. Required.": "Adresse de départ. Obligatoire.",
   "End (arrival)": "Arrivée",
   "Arrival address": "Adresse d'arrivée",
@@ -608,13 +613,14 @@ export const FR: Record<string, string> = {
   "Arrival time zone (UTC offset). Defaults to defaults.timezone (GMT).":
     "Fuseau horaire d'arrivée (décalage UTC). Par défaut defaults.timezone (GMT).",
   "Flight number": "Numéro de vol",
-  "Flight number (planes only), shown on the card. Optional.":
-    "Numéro de vol (avions uniquement), affiché sur la carte. Facultatif.",
+  "Flight number of this leg (planes only), shown under its route. Optional.":
+    "Numéro de vol de ce trajet (avions uniquement), affiché sous son itinéraire. Facultatif.",
   "Train number": "Numéro de train",
-  "Train number (trains only), shown on the card. Optional.":
-    "Numéro de train (trains uniquement), affiché sur la carte. Facultatif.",
+  "Train number of this leg (trains only), shown under its route. Optional.":
+    "Numéro de train de ce trajet (trains uniquement), affiché sous son itinéraire. Facultatif.",
   "Booking number": "Numéro de réservation",
-  "Reservation reference / PNR. Optional.": "Référence de réservation / PNR. Facultatif.",
+  "Reservation reference / PNR, covering every leg. Optional.":
+    "Référence de réservation / PNR, valable pour tous les trajets. Facultatif.",
   "Booking source": "Source de réservation",
   "Where it was booked. Optional.": "Où la réservation a été faite. Facultatif.",
   "Link to the carrier's website. Optional.":
@@ -629,12 +635,18 @@ export const FR: Record<string, string> = {
   // The short `description` note — one shared placeholder, one help string per
   // section (each names the examples that fit that section).
   "Short note": "Note courte",
-  "A short note for whatever the other fields don't cover — a seat, a terminal, a baggage allowance. Optional.":
-    "Une note courte pour ce que les autres champs ne couvrent pas — un siège, un terminal, une franchise bagages. Facultatif.",
+  "the route through its legs": "l'itinéraire de ses trajets",
+  "What to call the whole booking (“Round trip New York ↔ France”), shown as the card's heading. Defaults to the route through its legs (A → B → C).":
+    "Le nom de la réservation entière (« Aller-retour New York ↔ France »), affiché en titre de la carte. Par défaut, l'itinéraire de ses trajets (A → B → C).",
+  "Short note about the whole booking": "Note courte sur la réservation entière",
+  "A short note about the whole reservation — a baggage allowance, a fare condition, a check-in window. A note about one hop goes on that leg instead. Optional.":
+    "Une note courte sur la réservation entière — une franchise bagages, une condition tarifaire, une fenêtre d'enregistrement. Une note sur un seul trajet se met sur ce trajet. Facultatif.",
+  "A short note about this leg — a seat, a terminal, a coach number. A note about the whole reservation goes on the booking instead. Optional.":
+    "Une note courte sur ce trajet — un siège, un terminal, un numéro de voiture. Une note sur la réservation entière se met sur la réservation. Facultatif.",
   Price: "Prix",
   "amount only, no symbol": "montant seul, sans symbole",
-  "Ticket price (amount only, no symbol). Optional.":
-    "Prix du billet (montant seul, sans symbole). Facultatif.",
+  "Price of the whole booking, every leg included (amount only, no symbol). Optional.":
+    "Prix de la réservation entière, tous trajets compris (montant seul, sans symbole). Facultatif.",
   "Currency this price is in (3-letter ISO). Defaults to defaults.currency.":
     "Devise de ce prix (ISO à 3 lettres). Par défaut defaults.currency.",
   Paid: "Payé",

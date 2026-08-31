@@ -124,15 +124,17 @@ def test_coordinates_are_carried_through():
 
 def test_scheduled_tz_keys_do_not_clobber_place_names():
     # Regression: the timeline UTC offsets serialize as start_tz/end_tz, never
-    # as start/end — so a transport keeps its departure/arrival place names.
+    # as start/end — so a leg keeps its departure/arrival place names.
     d = _load(PYRENEES)
     assert d["transports"], "the example has transports"
-    for t in d["transports"]:
-        assert isinstance(t["start"], str) and t["start"], "start is a place name"
-        assert isinstance(t["end"], str), "end is a place name"
+    legs = [leg for t in d["transports"] for leg in t["legs"]]
+    assert legs, "every booking carries at least one leg"
+    for leg in legs:
+        assert isinstance(leg["start"], str) and leg["start"], "start is a place"
+        assert isinstance(leg["end"], str), "end is a place name"
         # tz travels under its own keys (int minutes or None) + a label string.
-        assert "start_tz" in t and "end_tz" in t
-        assert isinstance(t["start_tz_label"], str)
+        assert "start_tz" in leg and "end_tz" in leg
+        assert isinstance(leg["start_tz_label"], str)
 
 
 def test_road_waypoints_and_legs_are_serialized():
@@ -207,11 +209,12 @@ def _booked_itinerary(**notes) -> dict:
     return {
         "travel_description": {"title": "T"},
         "days": [{"title": "D", "date": "2026-06-08"}],
-        "transport": [dict({"start": "Paris", "end": "Pau",
-                            "start_date": "2026-06-08", "start_time": "13:50",
-                            "duration": "4h20"},
-                           **({"description": notes["transport"]}
-                              if "transport" in notes else {}))],
+        "transport": [{"legs": [dict({"start": "Paris", "end": "Pau",
+                                      "start_date": "2026-06-08",
+                                      "start_time": "13:50",
+                                      "duration": "4h20"},
+                                     **({"description": notes["transport"]}
+                                        if "transport" in notes else {}))]}],
         "accommodations": [dict({"name": "Gîte", "city": "Pau",
                                  "arrival": "2026-06-08",
                                  "departure": "2026-06-09"},
@@ -236,7 +239,8 @@ def test_booking_descriptions_default_to_empty_and_round_trip():
     # for whatever their structured fields don't. It defaults to "" (so both
     # renderers simply skip it) and reaches the serialized dict verbatim.
     plain = to_dict(Itinerary.from_dict(_booked_itinerary()))
-    assert plain["transports"][0]["description"] == ""
+    # On transport the note is the leg's; the booking itself carries none.
+    assert plain["transports"][0]["legs"][0]["description"] == ""
     assert plain["accommodations"][0]["description"] == ""
     assert plain["car_rentals"][0]["description"] == ""
 
@@ -244,7 +248,8 @@ def test_booking_descriptions_default_to_empty_and_round_trip():
         transport="Coach 12, seats 41/42.",
         accommodation="Keypad code 4589B.",
         car_rental="Full-to-full fuel policy.")))
-    assert filled["transports"][0]["description"] == "Coach 12, seats 41/42."
+    assert (filled["transports"][0]["legs"][0]["description"]
+            == "Coach 12, seats 41/42.")
     assert filled["accommodations"][0]["description"] == "Keypad code 4589B."
     assert filled["car_rentals"][0]["description"] == "Full-to-full fuel policy."
 

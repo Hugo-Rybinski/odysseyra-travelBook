@@ -1834,6 +1834,45 @@ body {
 .card-price {
   margin: 8px 0 0;
 }
+
+/* The legs of a multi-leg transport booking, under everything the reservation
+   covers: a grey rule marks the boundary (heavier than the hairlines between the
+   legs, but not accent-coloured — accent means emphasis here, not structure) and
+   the blocks are inset, so shared info and per-hop info can't be mistaken for
+   each other. Mirrors pdf/transport.py's card: same rules, inset and badges. */
+.card-legs {
+  margin-top: 12px;
+  padding-top: 2px;
+  border-top: 2px solid var(--border);
+}
+.card-leg {
+  padding-left: 12px;
+}
+.card-leg + .card-leg {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.card-leg-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+/* "Leg 1" — an outlined badge, not uppercased (unlike the status/payment chips),
+   so it reads as the label the PDF prints beside the same route. */
+.card-leg-badge {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .mono {
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

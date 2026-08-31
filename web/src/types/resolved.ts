@@ -137,8 +137,12 @@ export interface Activity extends Scheduled {
   meal_type?: string;
 }
 
-export interface Transport extends Scheduled {
-  type: string;
+// One hop of a booking — what a day is actually moved by, and so what the day
+// pages, the maps and the calendar export deal with. Everything from
+// `leg_index` down is **its booking's**, copied on by the Python serializer
+// (models/serialize.py's `_transport_leg`) so a leg shown away from its booking
+// still has its type badge, reference and links.
+export interface TransportLeg extends Scheduled {
   title: string;
   start: string; // departure place name
   end: string; // arrival place name
@@ -148,18 +152,53 @@ export interface Transport extends Scheduled {
   end_day_offset: number;
   flight_number: string;
   train_number: string;
+  // A short note for whatever the fields above don't carry (a seat, a terminal).
+  // Per-leg — an outbound and a return rarely share one.
+  description?: string;
+  coordinate: Coordinate | null;
+  start_coordinate: Coordinate | null;
+  end_coordinate: Coordinate | null;
+  // --- from the parent booking ---
+  leg_index: number; // 1-based within the booking
+  leg_count: number; // 1 for a single-hop booking
+  type: string;
   booking_number: string;
   booking_source: string;
   website: string;
   booking_link: string;
   status: string;
-  // A short note for whatever the fields above don't carry. Optional: a day
-  // cached before the field existed has none.
-  description?: string;
+  // The **whole booking's** price, every leg included — never draw it per leg
+  // (a two-leg round trip would show its fare twice). The transport page draws
+  // it once, on the booking.
   price: Money | null;
-  coordinate: Coordinate | null;
-  start_coordinate: Coordinate | null;
-  end_coordinate: Coordinate | null;
+}
+
+// A booking: one reservation (a PNR, a price, a link) and the legs it moves you
+// over. `legs` always holds at least one entry — a single-hop booking is a
+// one-leg booking, not a separate shape.
+export interface Transport {
+  type: string;
+  // What to call the booking as a whole ("Round trip New York ↔ France").
+  // Optional in the source; "" when unset — use `title`, which falls back to
+  // `route_chain`.
+  name: string;
+  title: string; // `name` when set, else `route_chain`
+  // Every place the booking touches, in travel order ("A → B → C → D"), a
+  // connection named once. This is the default heading when there's no `name`.
+  route_chain: string;
+  // A note about the whole reservation (a baggage allowance, a fare condition)
+  // — distinct from a leg's `description`, which is about that hop. Shown in
+  // the transport section only, never on a day's row.
+  description: string;
+  start_date: string | null; // earliest departure across the legs
+  end_date: string | null; // latest arrival across the legs
+  booking_number: string;
+  booking_source: string;
+  website: string;
+  booking_link: string;
+  status: string;
+  price: Money | null;
+  legs: TransportLeg[];
 }
 
 export interface Accommodation {
@@ -176,7 +215,7 @@ export interface Accommodation {
   website: string;
   booking_link: string;
   status: string;
-  description?: string; // short note; see Transport.description
+  description?: string; // short note; see TransportLeg.description
   price: Money | null;
   breakfast_included: boolean;
   coordinate: Coordinate | null;
@@ -259,7 +298,7 @@ export interface CarRental {
   website: string;
   booking_link: string;
   status: string;
-  description?: string; // short note; see Transport.description
+  description?: string; // short note; see TransportLeg.description
   price: Money | null;
   car_type: string;
   car_type_label: string;
@@ -285,11 +324,13 @@ export interface Day {
   // banner. Optional — a doc resolved before the flag existed carries none.
   bank_holiday?: boolean;
   activities: Activity[];
-  transports: Transport[];
+  // The legs departing that day (not the bookings), each enriched with its
+  // booking's shared fields.
+  transports: TransportLeg[];
   car_events: CarEvent[];
   stay: Accommodation | null;
   stay_night: number | null; // 1-based night index within the stay
-  night_transport: Transport | null;
+  night_transport: TransportLeg | null;
   sleep_city: string;
   // The night's moon phase, present unless defaults.show_moon_phase is off (it
   // defaults on).

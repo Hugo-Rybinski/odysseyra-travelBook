@@ -15,6 +15,7 @@ import type {
   SrcMeal,
   SrcSecondaryCurrency,
   SrcTransport,
+  SrcTransportLeg,
   SrcWaypoint,
 } from "../types/source";
 
@@ -277,8 +278,25 @@ export const WAYPOINT_FIELDS: FieldSpec[] = [
   { key: "off_road", label: "Leg off-road", kind: "bool", help: "Mark just this leg as off-road, without flagging the whole drive. Defaults to off." },
 ];
 
+// A booking: what is reserved once. Its hops live in `legs` (TRANSPORT_LEG_FIELDS),
+// rendered by TransportForm as a sub-array — the same shape as a road's waypoints.
 export const TRANSPORT_FIELDS: FieldSpec[] = [
-  { key: "type", label: "Type", kind: "enum", enum: TRANSPORT_TYPES, placeholder: "other", help: "Transport kind, shown as a badge. Defaults to 'other'." },
+  { key: "type", label: "Type", kind: "enum", enum: TRANSPORT_TYPES, placeholder: "other", help: "Transport kind, shown as a badge on the booking and on each of its legs. Defaults to 'other'." },
+  { key: "name", label: "Name", kind: "text", placeholder: "the route through its legs", help: "What to call the whole booking (“Round trip New York ↔ France”), shown as the card's heading. Defaults to the route through its legs (A → B → C)." },
+  { key: "booking_number", label: "Booking number", kind: "text", help: "Reservation reference / PNR, covering every leg. Optional." },
+  { key: "booking_source", label: "Booking source", kind: "text", help: "Where it was booked. Optional." },
+  { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the carrier's website. Optional." },
+  { key: "booking_link", label: "Booking link", kind: "text", placeholder: "https://example.com", help: "Direct link to this reservation. Optional." },
+  { key: "status", label: "Status", kind: "enum", enum: STATUSES, placeholder: "none (no badge)", help: "Reservation status, shown as a badge. No badge when unset." },
+  { key: "description", label: "Description", kind: "textarea", placeholder: "Short note about the whole booking", help: "A short note about the whole reservation — a baggage allowance, a fare condition, a check-in window. A note about one hop goes on that leg instead. Optional." },
+  { key: "price", label: "Price", kind: "number", placeholder: "amount only, no symbol", help: "Price of the whole booking, every leg included (amount only, no symbol). Optional." },
+  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", help: "Currency this price is in (3-letter ISO). Defaults to defaults.currency." },
+  { key: "paid", label: "Paid", kind: "paid", help: "Payment state, shown as a badge. No badge when unset." },
+];
+
+// One hop of a booking. A single-hop booking has exactly one leg — the array is
+// required and must not be empty.
+export const TRANSPORT_LEG_FIELDS: FieldSpec[] = [
   { key: "start", label: "Start (departure)", kind: "text", required: true, placeholder: "Departure address", help: "Departure address. Required." },
   { key: "end", label: "End (arrival)", kind: "text", required: true, placeholder: "Arrival address", help: "Arrival address. Required." },
   { key: "start_date", label: "Start date", kind: "date", required: true, help: "Departure date; slots the leg into that day. Required." },
@@ -288,17 +306,9 @@ export const TRANSPORT_FIELDS: FieldSpec[] = [
   { key: "duration", label: "Duration", kind: "duration", placeholder: "inferred from the two times", help: "Travel time. Inferred from the two times when unset." },
   { key: "start_tz", label: "Start tz", kind: "tz", inheritsFrom: "timezone", help: "Departure time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "Arrival time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
-  { key: "flight_number", label: "Flight number", kind: "text", help: "Flight number (planes only), shown on the card. Optional." },
-  { key: "train_number", label: "Train number", kind: "text", help: "Train number (trains only), shown on the card. Optional." },
-  { key: "booking_number", label: "Booking number", kind: "text", help: "Reservation reference / PNR. Optional." },
-  { key: "booking_source", label: "Booking source", kind: "text", help: "Where it was booked. Optional." },
-  { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the carrier's website. Optional." },
-  { key: "booking_link", label: "Booking link", kind: "text", placeholder: "https://example.com", help: "Direct link to this reservation. Optional." },
-  { key: "status", label: "Status", kind: "enum", enum: STATUSES, placeholder: "none (no badge)", help: "Reservation status, shown as a badge. No badge when unset." },
-  { key: "description", label: "Description", kind: "textarea", placeholder: "Short note", help: "A short note for whatever the other fields don't cover — a seat, a terminal, a baggage allowance. Optional." },
-  { key: "price", label: "Price", kind: "number", placeholder: "amount only, no symbol", help: "Ticket price (amount only, no symbol). Optional." },
-  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", help: "Currency this price is in (3-letter ISO). Defaults to defaults.currency." },
-  { key: "paid", label: "Paid", kind: "paid", help: "Payment state, shown as a badge. No badge when unset." },
+  { key: "flight_number", label: "Flight number", kind: "text", help: "Flight number of this leg (planes only), shown under its route. Optional." },
+  { key: "train_number", label: "Train number", kind: "text", help: "Train number of this leg (trains only), shown under its route. Optional." },
+  { key: "description", label: "Description", kind: "textarea", placeholder: "Short note", help: "A short note about this leg — a seat, a terminal, a coach number. A note about the whole reservation goes on the booking instead. Optional." },
 ];
 
 export const ACCOMMODATION_FIELDS: FieldSpec[] = [
@@ -385,7 +395,11 @@ export function newDay(): SrcDay {
 }
 
 export function newTransport(): SrcTransport {
-  return { type: "other", start: "", end: "", start_date: "", start_time: "" };
+  return { type: "other", legs: [newTransportLeg()] };
+}
+
+export function newTransportLeg(): SrcTransportLeg {
+  return { start: "", end: "", start_date: "", start_time: "" };
 }
 
 export function newAccommodation(): SrcAccommodation {

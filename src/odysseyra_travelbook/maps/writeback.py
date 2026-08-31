@@ -47,10 +47,13 @@ def fill_coordinates(data: dict, countries, cache, geocoder=_default_geocode):
         for act in day.get("activities", []) or []:
             do_activity(act, city)
 
+    # A booking carries no places of its own — its legs do.
     for t in data.get("transport", []) or []:
         if isinstance(t, dict):
-            resolve(t.get("start"), t, "start_coordinate")
-            resolve(t.get("end"), t, "end_coordinate")
+            for leg in t.get("legs", []) or []:
+                if isinstance(leg, dict):
+                    resolve(leg.get("start"), leg, "start_coordinate")
+                    resolve(leg.get("end"), leg, "end_coordinate")
 
     for a in data.get("accommodations", []) or []:
         if isinstance(a, dict):

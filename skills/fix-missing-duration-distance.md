@@ -50,9 +50,15 @@ find the object in the JSON. Only ever ask for the fields the warning lists.
 | `this road (A → B) should give a duration and a 'distance_km' — missing: …` | `cette route (A → B) devrait indiquer une durée et « distance_km » — manquant : …` | a plain (single-leg) drive | listed |
 | `this road's leg (A → B) should give … — missing: …` | `l'étape de cette route (A → B) devrait indiquer … — manquant : …` | the drive's leg **A → B** | listed |
 | `this hike (NAME) should give a duration, a 'distance_km' and an 'elevation_m' — missing: …` | `cette randonnée (NAME) devrait indiquer une durée, « distance_km » et « elevation_m » — manquant : …` | hike | listed |
-| `this transport has no duration and none can be inferred…` | `ce transport n'a pas de durée…` | transport | `duration` |
+| `this leg has no duration and none can be inferred…` | `ce trajet n'a pas de durée…` | a transport **leg** | `duration` |
 
 `missing:` lists the raw JSON keys: `duration`, `distance_km`, `elevation_m`.
+
+The **leg** warning names nothing in parentheses, so its **line number is the
+only way to tell one leg from another** — a booking with three legs can raise it
+three times, identically. Match each warning to the leg whose `start_time` sits
+on that line, and label the worksheet entry with that leg's own
+`start → end` so the reader knows which hop is being asked about.
 
 For a **`place`** the first warning has two answers, and the better one is
 usually the second: a place with no `duration` lasts whatever its nested
@@ -68,8 +74,12 @@ The itinerary is one JSON **object**. You only need a few of its keys:
 
 - **`days`** — an array; `days[i]` is day *i* (0-based). Each day has a `title`,
   an optional `city`/`date`, and **`activities`** — an ordered array.
-- **`transport`** — an array of inter-city legs (`transport[i]`), each with
-  `start`, `end`, `start_date`, `start_time`, …
+- **`transport`** — an array of **bookings** (`transport[i]`): one reservation
+  each, carrying `type` / `booking_number` / `price` and a **`legs`** array. The
+  places and times are on the legs, so a warned leg is
+  `transport[i].legs[j]`, with `start`, `end`, `start_date`, `start_time`, … A
+  one-hop booking still has one leg (`legs[0]`), so the path shape never
+  changes.
 
 **Activities.** Each entry of an `activities` array is an object with a `type`:
 `point_of_interest`, `place`, `hike`, `road`, `meal`, or `buffer`. The ones that
@@ -204,7 +214,7 @@ No link, no inference — just a blank to fill:
 ```
 - **Point of interest** Musée national d'Histoire · `days[1].activities[0]`
   - duration: ______
-- **Transport** Bishkek → Osh (plane) · `transport[1]`
+- **Transport leg** Bishkek → Osh (plane) · `transport[1].legs[0]`
   - duration: ______
 ```
 

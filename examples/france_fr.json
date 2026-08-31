@@ -667,81 +667,104 @@
   "transport": [
     {
       "type": "plane",
-      "start": "New York JFK",
-      "end": "Paris CDG",
-      "start_coordinate": {
-        "lat": 40.6413,
-        "long": -73.7781
-      },
-      "end_coordinate": {
-        "lat": 49.0097,
-        "long": 2.5479
-      },
-      "start_date": "2026-09-04",
-      "end_date": "2026-09-05",
-      "start_time": "22:10",
-      "start_tz": "-04:00",
-      "end_time": "11:45",
-      "end_tz": "+02:00",
-      "flight_number": "AF23",
+      "name": "Aller-retour New York ↔ France",
       "booking_number": "AF77-QWLM",
       "booking_source": "site Air France",
       "website": "https://www.airfrance.com",
       "booking_link": "https://wwws.airfrance.com/mmb/AF77-QWLM",
       "status": "confirmed",
-      "description": "Sièges 24A/24B, rangée hublot d'évacuation. Un bagage en soute chacun (23 kg) ; skis en supplément. Terminal 2E à l'arrivée — compter 45 min au contrôle des passeports.",
-      "price": 720,
+      "description": "Une seule réservation à l'aller comme au retour : les bagages sont enregistrés depuis Toulouse. Un bagage en soute chacun (23 kg) inclus, skis en supplément. L'enregistrement en ligne ouvre 30 h avant chaque vol.",
+      "price": 1410,
       "currency": "USD",
-      "paid": "paid"
+      "paid": "paid",
+      "legs": [
+        {
+          "start": "New York JFK",
+          "end": "Paris CDG",
+          "start_coordinate": {
+            "lat": 40.6413,
+            "long": -73.7781
+          },
+          "end_coordinate": {
+            "lat": 49.0097,
+            "long": 2.5479
+          },
+          "start_date": "2026-09-04",
+          "end_date": "2026-09-05",
+          "start_time": "22:10",
+          "start_tz": "-04:00",
+          "end_time": "11:45",
+          "end_tz": "+02:00",
+          "flight_number": "AF23",
+          "description": "Sièges 24A/24B, rangée hublot d'évacuation. Terminal 2E à l'arrivée — compter 45 min au contrôle des passeports."
+        },
+        {
+          "start": "Toulouse-Blagnac",
+          "end": "Paris CDG",
+          "start_coordinate": {
+            "lat": 43.6293,
+            "long": 1.3638
+          },
+          "end_coordinate": {
+            "lat": 49.0097,
+            "long": 2.5479
+          },
+          "start_date": "2026-09-11",
+          "start_time": "18:30",
+          "start_tz": "+02:00",
+          "end_time": "19:55",
+          "end_tz": "+02:00",
+          "flight_number": "AF7590",
+          "description": "Terminal domestique à l'arrivée — la correspondance vers le 2E est fléchée, compter 30 min."
+        },
+        {
+          "start": "Paris CDG",
+          "end": "New York JFK",
+          "start_coordinate": {
+            "lat": 49.0097,
+            "long": 2.5479
+          },
+          "end_coordinate": {
+            "lat": 40.6413,
+            "long": -73.7781
+          },
+          "start_date": "2026-09-11",
+          "end_date": "2026-09-11",
+          "start_time": "21:30",
+          "start_tz": "+02:00",
+          "end_time": "23:40",
+          "end_tz": "-04:00",
+          "flight_number": "AF6",
+          "description": "Sièges 31A/31B, vers l'arrière de la cabine."
+        }
+      ]
     },
     {
       "type": "train",
-      "start": "Paris Montparnasse",
-      "end": "Tours",
-      "start_coordinate": {
-        "lat": 48.8414,
-        "long": 2.3209
-      },
-      "end_coordinate": {
-        "lat": 47.3894,
-        "long": 0.6866
-      },
-      "start_date": "2026-09-07",
-      "start_time": "08:52",
-      "duration": "1h15",
-      "train_number": "TGV inOui 8341",
       "booking_number": "SNCF-3KQ9F2",
       "booking_source": "SNCF Connect",
       "status": "booked",
-      "description": "Voiture 12, places 41/42. Voie affichée 20 min avant le départ — aucun échange possible après l'embarquement.",
       "price": 45,
-      "paid": "to pay"
-    },
-    {
-      "type": "plane",
-      "start": "Toulouse-Blagnac",
-      "end": "New York JFK",
-      "start_coordinate": {
-        "lat": 43.6293,
-        "long": 1.3638
-      },
-      "end_coordinate": {
-        "lat": 40.6413,
-        "long": -73.7781
-      },
-      "start_date": "2026-09-11",
-      "end_date": "2026-09-11",
-      "start_time": "18:30",
-      "start_tz": "+02:00",
-      "end_time": "22:05",
-      "end_tz": "-04:00",
-      "flight_number": "AF7590 / AF6",
-      "booking_number": "AF77-QWLM",
-      "booking_source": "site Air France (retour, via CDG)",
-      "website": "https://www.airfrance.com",
-      "status": "confirmed",
-      "price": 690,
-      "currency": "USD"
+      "paid": "to pay",
+      "legs": [
+        {
+          "start": "Paris Montparnasse",
+          "end": "Tours",
+          "start_coordinate": {
+            "lat": 48.8414,
+            "long": 2.3209
+          },
+          "end_coordinate": {
+            "lat": 47.3894,
+            "long": 0.6866
+          },
+          "start_date": "2026-09-07",
+          "start_time": "08:52",
+          "duration": "1h15",
+          "train_number": "TGV inOui 8341",
+          "description": "Voiture 12, places 41/42. Voie affichée 20 min avant le départ — aucun échange possible après l'embarquement."
+        }
+      ]
     }
   ],
   "accommodations": [

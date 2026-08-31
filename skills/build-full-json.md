@@ -70,7 +70,7 @@ The itinerary is one JSON **object** with these keys:
   "travel_description": { ... },   // object — cover info (title required)
   "defaults":           { ... },   // object — trip-wide defaults (all optional)
   "days":               [ ... ],   // array  — REQUIRED, non-empty; one entry per day, in order
-  "transport":          [ ... ],   // array  — inter-city legs (flights/trains/buses/…)
+  "transport":          [ ... ],   // array  — inter-city bookings, each with its "legs"
   "accommodations":     [ ... ],   // array  — places you sleep
   "car_rentals":        [ ... ]    // array  — rental-car bookings
 }
@@ -600,59 +600,118 @@ for a `place` an omitted duration becomes the nested total anyway.
 
 ---
 
-## `transport` (array — one entry per leg)
+## `transport` (array — one entry per booking, each with its `legs`)
 
-One inter-city leg: a flight, train, bus, taxi, or ferry.
+Inter-city travel: flights, trains, buses, taxis, ferries. Each entry is **one
+reservation** — one thing you bought, with one reference and one price — and its
+`legs` array holds the hops that reservation moves you over.
+
+**`legs` is required and must hold at least one entry.** A direct one-hop
+journey is a one-leg booking; there is no flat form.
+
+### The booking
 
 | Field | Required | Format | Default | Notes |
 |---|---|---|---|---|
-| `type` | no | enum | `other` | One of `plane`, `train`, `bus`, `taxi`, `ferry`, `other`. |
+| `type` | no | enum | `other` | One of `plane`, `train`, `bus`, `taxi`, `ferry`, `other`. Applies to every leg. |
+| `name` | no | text | the route through its legs (`A → B → C`) | What the booking is called, used as the card's heading. **Infer one** — see below. |
+| `booking_number` | no | text | none | Reservation reference / PNR, covering the whole booking. |
+| `booking_source` | no | text | none | Where booked (e.g. "SNCF Connect"). |
+| `website` | no | link | none | The carrier's website — clickable. |
+| `booking_link` | no | link | none | Direct link to this reservation — clickable. |
+| `status` | no | `booked` / `confirmed` | none | Reservation status. |
+| `description` | no | text | none | A **short note about the whole booking** — a baggage allowance, a fare condition, a check-in window. A note about one hop goes on that leg instead. |
+| `price` | no | number | none | Amount for the **whole booking**, every leg included, e.g. `89` (no symbol). |
+| `currency` | no | 3-letter ISO code | trip default currency | Set only if this price is in a different currency. |
+| `paid` | no | `paid` / `to pay` | none | Payment state. |
+| `legs` | **yes** | array | — | One entry per hop, in travel order. Never empty. |
+
+### A leg (`transport[].legs[]`)
+
+| Field | Required | Format | Default | Notes |
+|---|---|---|---|---|
 | `start` | **yes** | text | — | Departure point (station/airport/city). |
 | `end` | **yes** | text | — | Arrival point. |
-| `start_date` | **yes** | date `YYYY-MM-DD` | — | Departure date. |
+| `start_date` | **yes** | date `YYYY-MM-DD` | — | Departure date; slots the leg into that day. |
 | `start_time` | **yes** | time `HH:MM` | — | Departure time (local). |
 | `end_date` | no | date `YYYY-MM-DD` | inferred (+1 day if it crosses midnight) | Set for overnight legs when known. |
 | `end_time` | no | time `HH:MM` | inferred from `start_time` + `duration` | Arrival time (local). |
 | `start_tz` | no | UTC offset | trip default timezone | Departure zone — **set it for flights** between zones. |
 | `end_tz` | no | UTC offset | trip default timezone | Arrival zone. |
 | `duration` | no | duration (`"4h20"`) | inferred from the two times (timezone-aware) | Give it if the two times aren't both known. |
-| `flight_number` | no | text | none | **Planes only** — e.g. `"AF9"`. |
-| `train_number` | no | text | none | **Trains only** — e.g. `"TGV 8541"`. |
-| `booking_number` | no | text | none | Reservation reference / PNR. |
-| `booking_source` | no | text | none | Where booked (e.g. "SNCF Connect"). |
-| `website` | no | link | none | The carrier's website — clickable. |
-| `booking_link` | no | link | none | Direct link to this reservation — clickable. |
-| `status` | no | `booked` / `confirmed` | none | Reservation status. |
-| `description` | no | text | none | A **short note** for what the fields above don't cover — a seat, a terminal, a baggage allowance. One or two sentences. |
-| `price` | no | number | none | Amount only, e.g. `89` (no symbol). |
-| `currency` | no | 3-letter ISO code | trip default currency | Set only if this price is in a different currency. |
-| `paid` | no | `paid` / `to pay` | none | Payment state. |
+| `flight_number` | no | text | none | **Planes only** — e.g. `"AF9"`. This leg's own flight. |
+| `train_number` | no | text | none | **Trains only** — e.g. `"TGV 8541"`. This leg's own train. |
+| `description` | no | text | none | A **short note** about this leg for what its fields don't cover — a seat, a terminal, a baggage allowance. One or two sentences. |
 | `start_coordinate` / `end_coordinate` | no | `{ "lat": .., "long": .. }` | none | For maps; a dotted straight line is drawn between them on each day map the leg is in progress on (both days of an overnight leg) and on the whole-trip map. |
+
+**Name it.** `name` is optional to the tool, but **write one for every booking**:
+it is the heading the card carries, and left out it falls back to the route
+through every leg — `New York JFK → Paris CDG → Toulouse-Blagnac → Paris CDG →
+New York JFK`, which is accurate but a mouthful. Compose it from what the booking
+*is*:
+
+> `"Round trip New York ↔ France"` · `"Flight home via Paris"` ·
+> `"Paris → Tours by TGV"` · `"Night train back to Paris"`
+
+- **Say the shape of the journey, not the ticket's paperwork.** Where it goes,
+  in which direction, and by what means if it isn't obvious from `type`. Never
+  put the reference, the price, the dates or the carrier's name in it — those all
+  have their own fields and are printed beside it.
+- **Only from the itinerary.** Use the place names already in the legs (shortened
+  to the city where the airport code adds nothing: "New York", not "New York
+  JFK"). Don't invent a product name ("Air France Business Saver") the source
+  never states.
+- **Short.** Under about 40 characters, one line.
+- **A one-leg booking may go unnamed.** Its card is a flat block headed with the
+  route, and the renderers drop the route line when the name would repeat it —
+  so `"Paris → Tours"` as a `name` adds nothing. Name it only when you can say
+  something the route doesn't ("Night train back to Paris").
+- **The language rule at the top of this document applies**, like any other prose
+  you author.
 
 **Notes:**
 
-- **Provide any two of** `start_time` / `end_time` / `duration`; the tool
-  derives the third. Departure date + time are always required.
+- **Booking-level or leg-level? Ask what you bought once.** One reference, one
+  price, one cancellation link → one entry. Each separate movement inside it →
+  one leg. A field written on the wrong side is **not read** — `validate` warns
+  and names the level it belongs on, but don't rely on that: get it right.
+- **A connection is one booking with several legs.** Paris → New York *via*
+  London on a single ticket is **one** entry with two legs (Paris → London,
+  London → New York), each with its own times, zones and flight numbers. So is a
+  **round trip** on one reservation: outbound and return are two legs of the same
+  entry, however many days apart.
+- **Separate tickets stay separate entries** even between the same two cities. If
+  the source shows two references, two prices or two cancellation links, that is
+  two bookings — don't merge them just because they connect.
+- **Provide any two of** `start_time` / `end_time` / `duration` per leg; the tool
+  derives the third. Each leg's departure date and time are always required.
 - **Timezones matter.** For a flight `22:30 (UTC-4) → 11:45 (UTC+2)`, set both
-  `start_tz` and `end_tz` so the duration comes out right (here 7h15). If the
-  source doesn't state them, look them up from the airport codes / station
-  cities (use the offset in effect on the travel date — mind DST). Only skip
-  this when both endpoints clearly share the trip's default timezone.
-- **One file/entry per leg.** A journey Paris → New York *via* London is two
-  entries (Paris → London, London → New York), each with its own times, zones
-  and (where they differ) flight/train numbers. Don't collapse them.
+  `start_tz` and `end_tz` on that leg so the duration comes out right (here
+  7h15). If the source doesn't state them, look them up from the airport codes /
+  station cities (use the offset in effect on the travel date — mind DST). Only
+  skip this when both endpoints clearly share the trip's default timezone.
 - An **overnight** leg (arrival earlier than departure, or `end_date` after
   `start_date`) is treated as *that night's accommodation* — don't also add a
   hotel for that night.
-- **`flight_number` / `train_number` vs `booking_number`** are different: the
-  first is the public service identifier (`AF9`, `TGV 8541`), the second your
-  reservation reference / PNR (`AF1234-XY`). Capture both when given. Only set
+- **`flight_number` / `train_number` vs `booking_number`** are different, and
+  they now sit at different levels: the first is the public service identifier of
+  **one leg** (`AF9`, `TGV 8541`), the second is your reservation reference / PNR
+  for the **whole booking** (`AF1234-XY`). Capture both when given. Only set
   `flight_number` on a `plane`, `train_number` on a `train`.
+- **One price, not one per leg.** If the source prices a round trip as a single
+  fare, put that fare on the booking. If it prices each direction separately and
+  they are one reservation, add them up and say nothing about the split (there is
+  nowhere to put it); if they are genuinely two reservations, they are two
+  entries.
 - If `status` or `paid` is set, include the matching `booking_number` / `price`
   when available (`validate` warns otherwise).
-- **`description` is a note, not prose.** Put in it only what no other field can
-  carry, in one or two sentences. Never invent one, and never restate a value
-  that already has its own field — omit it if the source says nothing extra.
+- **Two `description` fields, two jobs.** The **booking's** is about the
+  reservation: a baggage allowance, a fare condition, a check-in window, a
+  cancellation rule — anything true of every leg. A **leg's** is about that hop:
+  a seat, a terminal, a coach number. Put each fact on one level only; stating
+  the bag allowance on both prints it twice. Neither is prose — one or two
+  sentences of what no other field can carry, never invented, never restating a
+  value that already has its own field.
 
 ---
 
@@ -885,20 +944,36 @@ the shape — real values come from your sources. The full version lives at
   "transport": [
     {
       "type": "plane",
-      "start": "New York JFK",
-      "end": "Paris CDG",
-      "start_date": "2026-09-04",
-      "end_date": "2026-09-05",
-      "start_time": "22:10",
-      "start_tz": "-04:00",
-      "end_time": "11:45",
-      "end_tz": "+02:00",
-      "flight_number": "AF23",
+      "name": "Round trip New York ↔ France",
       "booking_number": "AF77-QWLM",
       "status": "confirmed",
-      "price": 720,
+      "description": "One booking both ways, so the bags are checked through from Toulouse. One checked bag each (23 kg) included.",
+      "price": 1410,
       "currency": "USD",
-      "paid": "paid"
+      "paid": "paid",
+      "legs": [
+        {
+          "start": "New York JFK",
+          "end": "Paris CDG",
+          "start_date": "2026-09-04",
+          "end_date": "2026-09-05",
+          "start_time": "22:10",
+          "start_tz": "-04:00",
+          "end_time": "11:45",
+          "end_tz": "+02:00",
+          "flight_number": "AF23"
+        },
+        {
+          "start": "Paris CDG",
+          "end": "New York JFK",
+          "start_date": "2026-09-11",
+          "start_time": "21:30",
+          "start_tz": "+02:00",
+          "end_time": "23:40",
+          "end_tz": "-04:00",
+          "flight_number": "AF6"
+        }
+      ]
     }
   ],
   "accommodations": [
@@ -1094,6 +1169,16 @@ You cannot run the validator, so verify these by hand:
 - **No flights or trains in `activities`:** every plane/train (and inter-city
   bus/ferry) leg sits in the top-level `transport` array, exactly once — not also
   as a `road` or a `point_of_interest` inside the day.
+- **Every transport entry has a non-empty `legs` array**, with `start`, `end`,
+  `start_date` and `start_time` on each leg — and nothing left at the booking
+  level that belongs on a leg (a place, a date, a time, a flight/train number) or
+  vice versa (a reference, a price, a link, the `type`). Hops of one reservation
+  are legs of one entry; separate tickets are separate entries.
+- **Every multi-leg transport entry has a `name`** — short, describing the
+  journey, with no reference/price/date in it — since its default (the whole
+  route chain) gets long. A one-leg entry may go unnamed. Any `description` sits
+  on the level it is true of: the reservation's on the booking, one hop's on that
+  leg, never both.
 - **Every day has a `description`** — 1–2 sentences drawn from that day's own
   activities, with no verdict on how busy it is.
 - **Bank holidays checked:** every dated day's date has been weighed against the

@@ -9,10 +9,15 @@ this emits carries the *resolved* values, not the raw input. Consumers never
 re-implement any of that logic; they just render what is here.
 
 Beyond the per-object fields, each day also carries the associations the day
-renderer needs — the night's ``stay``, the ``transports`` departing that day,
-the ``car_events`` (pick-up / drop-off) falling on it, and any ``night_transport``
-— computed through the same :class:`Itinerary` helpers the PDF uses, so the
-per-day weaving isn't duplicated downstream either.
+renderer needs — the night's ``stay``, the transport **legs** departing that day
+(``transports``), the ``car_events`` (pick-up / drop-off) falling on it, and any
+``night_transport`` — computed through the same :class:`Itinerary` helpers the
+PDF uses, so the per-day weaving isn't duplicated downstream either.
+
+Transport is emitted at both levels: the top-level ``transports`` are *bookings*,
+each holding its ``legs``, while a day's ``transports`` are the legs themselves,
+each enriched with its booking's shared reservation fields (see
+:func:`_transport_leg`) so nothing has to look its parent up.
 
 Times are ``"HH:MM"`` strings, dates ISO ``"YYYY-MM-DD"``, UTC offsets integer
 minutes (with a formatted ``*_tz_label`` alongside). Money is emitted structured
@@ -252,29 +257,66 @@ def _activity(itin: Itinerary, act) -> dict:
 
 # --- top-level sections -----------------------------------------------------
 
+def _transport_leg(itin: Itinerary, leg) -> dict:
+    """One leg, **enriched with its booking's shared fields** (type, reference,
+    source, links, status, price) so it stands alone wherever a leg is shown
+    without its booking around it — a day's itinerary, the night's stay bar, the
+    calendar export. The leg-level values come first; everything from
+    ``booking_number`` on is the parent's, identical across its legs.
+
+    ``price`` is the **whole booking's**: a renderer that draws it once per leg
+    would print a two-leg round trip's fare twice. The day pages don't draw it;
+    the transport page draws it once on the booking."""
+    return {
+        "type": leg.type,
+        "title": leg.title,
+        "start": leg.start,
+        "end": leg.end,
+        "start_date": _date(leg.start_date),
+        "end_date": _date(leg.end_date),
+        "overnight": leg.overnight,
+        "end_day_offset": leg.end_day_offset,
+        "flight_number": leg.flight_number,
+        "train_number": leg.train_number,
+        "description": leg.description,
+        "coordinate": _coord(leg.coordinate),
+        "start_coordinate": _coord(leg.start_coordinate),
+        "end_coordinate": _coord(leg.end_coordinate),
+        "leg_index": leg.leg_index,
+        "leg_count": leg.leg_count,
+        "booking_number": leg.booking_number,
+        "booking_source": leg.booking_source,
+        "website": leg.website,
+        "booking_link": leg.booking_link,
+        "status": leg.status,
+        "price": _price(itin, leg.price, leg.currency, leg.paid),
+        **_sched(leg, itin.default_timezone),
+    }
+
+
 def _transport(itin: Itinerary, t) -> dict:
+    """A booking: what was reserved once, plus its legs (always at least one).
+
+    ``name``/``description`` are *not* copied onto the legs (unlike the other
+    shared fields): they describe the reservation, and the renderers show them
+    where the reservation itself is — the transport section — rather than on a
+    day's row, which is about one hop. ``title`` resolves the name for a
+    consumer that just wants a heading (the route chain when none is set)."""
     return {
         "type": t.type,
+        "name": t.name,
         "title": t.title,
-        "start": t.start,
-        "end": t.end,
+        "route_chain": t.route_chain,
+        "description": t.description,
         "start_date": _date(t.start_date),
         "end_date": _date(t.end_date),
-        "overnight": t.overnight,
-        "end_day_offset": t.end_day_offset,
-        "flight_number": t.flight_number,
-        "train_number": t.train_number,
         "booking_number": t.booking_number,
         "booking_source": t.booking_source,
         "website": t.website,
         "booking_link": t.booking_link,
         "status": t.status,
-        "description": t.description,
         "price": _price(itin, t.price, t.currency, t.paid),
-        "coordinate": _coord(t.coordinate),
-        "start_coordinate": _coord(t.start_coordinate),
-        "end_coordinate": _coord(t.end_coordinate),
-        **_sched(t, itin.default_timezone),
+        "legs": [_transport_leg(itin, leg) for leg in t.legs],
     }
 
 
@@ -385,12 +427,15 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "description": day.description,
         "bank_holiday": day.bank_holiday,
         "activities": [_activity(itin, a) for a in day.activities],
-        "transports": [_transport(itin, t) for t in itin.transports_on(day.date)],
+        # Legs, not bookings: a day is moved by hops. Each carries its
+        # booking's shared fields (see _transport_leg).
+        "transports": [_transport_leg(itin, leg)
+                       for leg in itin.transports_on(day.date)],
         "car_events": [_car_event(itin, e) for e in itin.car_events_on(day.date)],
         "stay": _accommodation(itin, stay) if stay else None,
         # 1-based index of this night within the stay (for "Night x/total").
         "stay_night": stay.night_of(day.date) if stay else None,
-        "night_transport": _transport(itin, night) if night else None,
+        "night_transport": _transport_leg(itin, night) if night else None,
         "sleep_city": (stay.city if stay else "") or day.city,
         "moon": {"key": moon.key, "emoji": moon.emoji, "name": moon.name} if moon else None,
         # Just the two clock times: the viewer builds the display string from

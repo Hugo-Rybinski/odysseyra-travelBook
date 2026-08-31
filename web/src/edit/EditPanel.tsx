@@ -250,13 +250,19 @@ export function EditPanel({
               onChange={(next) => onChange({ ...draft, transport: next })}
               basePath="transport"
               defaultOpen={false}
-              itemTitle={(item, i) =>
-                item.start || item.end
-                  ? `${item.start || "?"} → ${item.end || "?"}`
-                  : t("Transport {n}", { n: i + 1 })
-              }
+              itemTitle={(item, i) => {
+                // The booking's own route: first leg's departure → last leg's
+                // arrival, so a round trip reads end to end (mirrors the
+                // model's `Transport.title`).
+                const legs = item.legs ?? [];
+                const from = legs[0]?.start;
+                const to = legs[legs.length - 1]?.end;
+                return from || to
+                  ? `${from || "?"} → ${to || "?"}`
+                  : t("Transport {n}", { n: i + 1 });
+              }}
               add={[{ label: t("transport"), make: newTransport }]}
-              emptyLabel={t("No transport legs.")}
+              emptyLabel={t("No transport bookings.")}
               renderItem={(item, _i, onItemChange, itemPath) => (
                 <TransportForm value={item} path={itemPath} onChange={onItemChange} />
               )}

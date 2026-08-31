@@ -72,6 +72,9 @@ const LABELS = {
     onBoard: "on board",
     bookedVia: "Booked via {source}",
     ref: "Ref {ref}",
+    // the badge on each leg of a multi-leg transport booking — the same template
+    // the PDF localizes via translations.py ("Leg {n}"); keep the two in step
+    leg: "Leg {n}",
     driver: "{n} additional driver",
     drivers: "{n} additional drivers",
     nightIndex: "Night {n}/{total}",
@@ -193,6 +196,7 @@ const LABELS = {
     onBoard: "à bord",
     bookedVia: "Réservé via {source}",
     ref: "Réf {ref}",
+    leg: "Trajet {n}",
     driver: "{n} conducteur supplémentaire",
     drivers: "{n} conducteurs supplémentaires",
     nightIndex: "Nuit {n}/{total}",

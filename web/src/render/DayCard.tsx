@@ -6,7 +6,7 @@ import type {
   DayMap,
   MapGeo,
   RenderedMap,
-  Transport,
+  TransportLeg,
 } from "../types/resolved";
 import { fill, fmtDate, fmtWeekdayRuns, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
@@ -232,7 +232,7 @@ export function DayCard({
 
 type TimelineItem =
   | { kind: "act"; act: Activity; t: string }
-  | { kind: "transport"; t: Transport; sort: string }
+  | { kind: "transport"; t: TransportLeg; sort: string }
   | { kind: "car"; event: CarEvent; sort: string };
 
 function mergeTimeline(day: Day): TimelineItem[] {
@@ -551,7 +551,7 @@ function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
   );
 }
 
-function transportBooking(t: Transport, lang: Lang): string {
+function transportBooking(t: TransportLeg, lang: Lang): string {
   const bits: string[] = [];
   if (t.type === "plane" && t.flight_number)
     bits.push(fill(tr(lang, "flight"), { number: t.flight_number }));
@@ -562,7 +562,7 @@ function transportBooking(t: Transport, lang: Lang): string {
   return bits.join("  ·  ");
 }
 
-function TransportRow({ t, lang }: { t: Transport; lang: Lang }) {
+function TransportRow({ t, lang }: { t: TransportLeg; lang: Lang }) {
   const provider = useMapProvider();
   const booking = transportBooking(t, lang);
   const nav = navUrl(provider, t.start_coordinate ?? t.coordinate, t.start);
@@ -750,7 +750,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
     // it. Matched on the departure stamp + route because the resolved doc holds
     // two independently serialized copies of the same leg. Mirrors
     // pdf/days.py's `_day_stay`.
-    const legKey = (t: Transport) => `${t.start_date}|${t.start_time}|${t.title}`;
+    const legKey = (t: TransportLeg) => `${t.start_date}|${t.start_time}|${t.title}`;
     const alsoListed = day.transports.some((t) => legKey(t) === legKey(leg));
     return (
       <footer className="stay-bar aboard">

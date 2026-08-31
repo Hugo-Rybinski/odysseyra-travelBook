@@ -65,7 +65,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     currency), `format_money`, and the `CURRENCY_SYMBOLS` table.
   - `scheduling.py` — `Scheduled`, the shared base carrying the timeline fields
     (`start_/end_time`, `duration_min`, `start_/end_tz`, `duration_display`)
-    inherited by `Activity`, `Transport` and `CarRentalEvent`; plus `Stamp`
+    inherited by `Activity`, `TransportLeg` and `CarRentalEvent`; plus `Stamp`
     (a `date`+`time`+`tz` triple used for the car rental's four datetimes).
   - `sun.py` — `sun_times(date, lat, long, tz_minutes)` → `SunTimes`
     (`sunrise`/`sunset` + a `display` of `☀ 06:12 → 21:34`), the NOAA sunrise
@@ -88,7 +88,14 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
     (fills each `Meal.category` from the trip thresholds after scheduling).
-  - `transport.py` — `Transport` + `resolve_transport` (tz-aware time inference).
+  - `transport.py` — `Transport` (a booking) + `TransportLeg` (one hop, a
+    `Scheduled`) + `resolve_transport(leg, …)` (tz-aware time inference, per leg).
+    A leg proxies its booking's shared fields (`type`, `booking_number`,
+    `booking_source`, `website`, `booking_link`, `status`, `price`, `currency`,
+    `paid`, plus `leg_index`/`leg_count`) through read-only properties, so
+    everything downstream can keep treating a leg as self-contained.
+    `Itinerary.legs` flattens every booking's legs; `transports_on(day)` /
+    `night_transport(day)` return **legs**.
   - `accommodation.py` — `Accommodation`.
   - `itinerary.py` — `Day` and `Itinerary` (top-level `from_dict`, date inference).
 - **`validate/`** — read-only checker, never mutates.
@@ -140,7 +147,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **`ics.py`** — `build_ics(itinerary, output=None, lang, now=None)` exports a
   resolved itinerary to an iCalendar (`.ics`) string (CLI `ics`, and the viewer's
   **Options → Calendar export**). One `VEVENT` per day activity (buffers excluded),
-  transport leg, car pick-up/drop-off and accommodation **night**. Times are emitted
+  transport **leg** (so a booking that moves you twice yields two events), car
+  pick-up/drop-off and accommodation **night**. Times are emitted
   as local wall time tagged with a self-contained fixed-offset `VTIMEZONE` (from
   each item's `start_tz`/`end_tz`, falling back to `defaults.timezone`), so events
   land at the right instant and show local time; each night runs from that evening
@@ -171,14 +179,15 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `infer_coordinates_from_address`
   false / `inference_countries` [], and `show_moon_phase` / `show_sun_times`
   both **true**) — plus
-  content arrays `days` (required, non-empty), `transport`, `accommodations`.
+  content arrays `days` (required, non-empty), `transport` (bookings, each with
+  a required non-empty `legs`), `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/
   `default_buffer`, `start_timezone`/`end_timezone`, transport `date`,
   `transports`, `default`) — use the canonical names.
 - **Maps & coordinates.** Every locatable object may carry an optional
   `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
-  segments use `start_/end_coordinate` (road, transport) or
+  segments use `start_/end_coordinate` (road, a transport **leg**) or
   `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
   per-day OSM map with a pin per located activity + drives as routes; areas get a
   single pin plus a second zoomed map of their nested points. A transport leg
@@ -279,14 +288,82 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     **superseded, not stacked**: the validator's `_buffer_coherence` warns when
     both are set and the auto one wins. Because a day's whole timeline moves,
     this needed a `SCHEMA_VERSION` bump (v14).
-  - Transport requires `start_time`; the other of `end_time`/`duration` is inferred,
-    tz-aware. An overnight leg (`start_date` given a `start_time`) becomes that
-    night's "accommodation".
-- **Enums** (case-insensitive, validated in the model): PoI `category`
-  (museum/church/building/viewpoint/ruins/castle/temple/street/other, default
-  `other`); hike `route` (loop/back_and_forth/one_way, default back_and_forth);
+  - A transport **leg** requires `start_time`; the other of `end_time`/`duration`
+    is inferred, tz-aware. An overnight leg (`start_date` given a `start_time`)
+    becomes that night's "accommodation". A **booking** infers nothing of its
+    own: its `title`/`start_date`/`end_date` are derived from its legs (first
+    departure → last arrival).
+- **Transport is a booking plus its `legs`.** What is reserved once — `type`,
+  `name`, `booking_number`, `booking_source`, `website`, `booking_link`,
+  `status`, `description`, `price`/`currency`/`paid` — sits on the `Transport`;
+  what moves once — the places, dates, times, `flight_number`/`train_number`, its
+  own `description`, the endpoint coordinates — sits on each `TransportLeg`. `legs` is **required and
+  non-empty**, so a single-hop booking is a one-leg booking and there is exactly
+  one shape to consume. A round trip, or a flight with a connection, is finally
+  the one thing it is: one PNR, one price, one cancellation link, several
+  movements (`examples/france.json` is the multi-leg example — one 3-leg
+  `AF77-QWLM`; `pyrenees.json` keeps three one-leg bookings, so both paths stay
+  rendered).
+  - **A leg answers for its booking.** `TransportLeg` proxies the shared fields
+    to its parent (`models/transport.py`), and `serialize.py`'s `_transport_leg`
+    *copies* them into the resolved leg (plus `leg_index`/`leg_count`), so a day's
+    row, the stay bar, a map line and a calendar event each get a self-contained
+    object — the same trick as `_car_event` copying its rental's note. That is
+    why `Day.transports` is a list of **legs** while the top-level `transports`
+    is a list of **bookings** holding theirs (`web/src/types/resolved.ts` mirrors
+    both as `TransportLeg` / `Transport`), and why the resolved-`Day` change
+    needed a `SCHEMA_VERSION` bump (v17).
+  - **The booking's `name` and `description` are the two fields that are *not*
+    copied onto the legs.** `name` is the card's heading, defaulting to
+    `route_chain` — every place the booking touches in travel order, a connection
+    named once but a break kept (`Transport.title` resolves the two). The
+    `description` is about the reservation (a baggage allowance, a fare
+    condition) while a leg's is about that hop (a seat, a terminal): both levels
+    have one, they answer different questions, and each renderer draws each where
+    its object is drawn — so `validate/validator.py` must exclude `description`
+    from **both** `BOOKING_ONLY_KEYS` and `LEG_ONLY_KEYS` (it derives the sets by
+    subtracting their intersection; a field on both levels can't be "misplaced").
+    The `.ics` packs the booking's onto every one of its leg events as
+    `Booking note`, kept apart from the leg's own `Description`.
+  - **`price` stays the booking's.** It is copied onto the leg for completeness
+    but covers *every* leg, so nothing may draw it per leg: only the transport
+    page (once, on the booking) and the `.ics` do — and the ICS labels it
+    `Price (whole booking)` as soon as `leg_count > 1`.
+  - **Both renderers draw the card in one of two shapes**, and the pair must
+    stay in step (`pdf/transport.py` / `TransportList.tsx`):
+    - **several legs** — everything the reservation covers (name, type badge,
+      status/payment pills, `Ref …  ·  Booked via …`, the booking note, the
+      price, the links), then a **rule**, then one **inset** block per leg,
+      hairline separated, each carrying a `Leg N` badge beside its route
+      (`_multi_leg_transport_card` + `_leg_block` + `LEG_INDENT` + `_leg_label` /
+      `LegBlock` + `.card-legs`/`.card-leg`/`.card-leg-badge`). Every rule here
+      is **grey**, not accent: the accent marks emphasis (badges, times, links),
+      so using it for structure made the boundary shout. The badge's label is one
+      template in two places — `"Leg {n}"` in `translations.py` and the `leg` key
+      in `render/format.ts` — so keep the wordings in step. The identity line is
+      split to match — the flight/train number under each route (`_leg_number`),
+      the reference once above (`_booking_ref`) — so `Ref …` isn't repeated.
+    - **one leg** — flat: no rule, no inset, no badge, and the leg's route line
+      is **dropped when it equals the heading** (`_flat_transport_card` /
+      `FlatBooking`), so an unnamed one-leg booking prints its route once and the
+      heading carries the Navigate link. The two halves of the identity line are
+      joined again here (there's only one leg to attribute them to).
+    A **day row** has no booking around it either, so `_transport_booking` there
+    joins both halves too.
+  - **The validator has two tables** (`TRANSPORT_SPECS` / `TRANSPORT_LEG_SPECS`)
+    and walks `transport.i.legs.j`. Since nothing reports an unknown key, a field
+    written on the wrong side would be silently dropped — so
+    `_misplaced_transport_fields` compares the two key sets (derived from the
+    tables themselves) and names the level it belongs on. The coherence checks
+    all work on legs, via the `_all_legs` generator.
+- **Enums** (case-insensitive, validated in the model — the tuples in `models/`
+  are the source of truth, so check them rather than this list): PoI `category`
+  (museum/church/building/viewpoint/ruins/castle/temple/street/natural park/
+  mountain/lake/beach/waterfall/other, default `other`); hike `route`
+  (loop/back_and_forth/one_way, default back_and_forth);
   transport `type` (plane/train/bus/taxi/ferry/other, default other); accommodation
-  `type` (hotel/camping/b&b/other, default hotel). Transport, accommodation and
+  `type` (hotel/camping/b&b/other, default hotel); car rental `car_type`
+  (regular/small/suv/4x4, default regular). Transport, accommodation and
   car rental all share a tri-state `paid` (paid/to-pay/unset), an optional
   `status` (booked/confirmed) and an optional `description` (see below). Meal
   `meal_type` (breakfast/lunch/dinner/brunch/
@@ -295,9 +372,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   other four are explicit-only). The
   inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
-- **A booking's `description`.** Transport, accommodation and car rental each
-  carry an optional free-text `description` — a *short note* for whatever their
-  structured fields don't (a seat, a door code, a fuel policy). Plain text, no
+- **A booking's `description`.** A transport **leg**, an accommodation and a car
+  rental each carry an optional free-text `description` — a *short note* for
+  whatever their structured fields don't (a seat, a door code, a fuel policy).
+  On transport it sits on the leg, not the booking: an outbound and a return
+  rarely share a seat. Plain text, no
   validation beyond "any text" (one shared `NOTE_DESC` wording across the three
   `validate/specs.py` tables). Both renderers draw it as muted prose wherever the
   object appears, which is **three places**, not one: the section card (PDF

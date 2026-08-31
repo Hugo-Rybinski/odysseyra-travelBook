@@ -143,10 +143,11 @@ def test_transport_reversed_dates_is_error():
     text = json.dumps({
         "travel_description": {"title": "T"},
         "days": [{"title": "d", "activities": [{"type": "point_of_interest", "name": "M"}]}],
-        "transport": [{"type": "train", "start_date": "2026-06-11",
-                       "end_date": "2026-06-10"}],
+        "transport": [{"type": "train", "legs": [
+            {"start": "A", "end": "B", "start_date": "2026-06-11",
+             "start_time": "09:00", "end_date": "2026-06-10"}]}],
     })
-    assert "transport end_date" in _messages(_errors(validate_text(text)))
+    assert "leg end_date" in _messages(_errors(validate_text(text)))
 
 
 def test_manual_reversed_trip_dates_is_error():
@@ -337,13 +338,14 @@ def test_transport_without_determinable_duration_warns():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
                {"type": "point_of_interest", "name": "M"}]}],
-           "transport": [{"type": "bus", "start": "A", "end": "B",
-                          "start_date": "2026-06-08", "start_time": "09:00"}]}
+           "transport": [{"type": "bus", "legs": [
+               {"start": "A", "end": "B", "start_date": "2026-06-08",
+                "start_time": "09:00"}]}]}
     findings = validate_text(json.dumps(doc))
-    assert "this transport has no duration" in _messages(_warnings(findings))
+    assert "this leg has no duration" in _messages(_warnings(findings))
     # an end_time makes the duration inferable
-    doc["transport"][0]["end_time"] = "12:00"
-    assert "this transport has no duration" not in _messages(
+    doc["transport"][0]["legs"][0]["end_time"] = "12:00"
+    assert "this leg has no duration" not in _messages(
         _warnings(validate_text(json.dumps(doc))))
 
 
@@ -351,11 +353,40 @@ def test_transport_required_fields_and_type_enum():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
                {"type": "point_of_interest", "name": "M"}]}],
-           "transport": [{"type": "rocket"}]}
+           "transport": [{"type": "rocket", "legs": [{}]}]}
     msgs = _messages(_errors(validate_text(json.dumps(doc))))
     assert "required field 'start'" in msgs
     assert "required field 'start_date'" in msgs
     assert "'type' is invalid" in msgs
+
+
+def test_transport_legs_must_be_a_non_empty_array():
+    def msgs(transport):
+        doc = {"travel_description": {"title": "T"},
+               "days": [{"title": "d", "activities": [
+                   {"type": "point_of_interest", "name": "M"}]}],
+               "transport": [transport]}
+        return _messages(_errors(validate_text(json.dumps(doc))))
+
+    assert "required field 'legs' is missing" in msgs({"type": "train"})
+    assert "at least one leg" in msgs({"type": "train", "legs": []})
+    assert "'legs' must be an array" in msgs({"type": "train", "legs": "nope"})
+
+
+def test_a_transport_field_on_the_wrong_level_is_named():
+    # Neither the model nor the field tables would say anything about a key
+    # written on the wrong side of the booking/leg split — it is simply unread.
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "M"}]}],
+           "transport": [{"type": "train", "start": "A",
+                          "legs": [{"start": "A", "end": "B",
+                                    "start_date": "2026-06-08",
+                                    "start_time": "09:00", "duration": "1h",
+                                    "price": 30}]}]}
+    warnings = _messages(_warnings(validate_text(json.dumps(doc))))
+    assert "field 'start' belongs on a transport leg" in warnings
+    assert "field 'price' belongs on the transport booking" in warnings
 
 
 def test_accommodation_required_fields_and_type_enum():
@@ -468,10 +499,20 @@ def test_empty_days_is_error():
 def test_empty_activities_is_error():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": []}]}
-    assert "'activities' must not be empty" in _messages(_errors(validate_text(json.dumps(doc))))
-    # a missing activities array is also flagged
-    doc2 = {"travel_description": {"title": "T"}, "days": [{"title": "d"}]}
-    assert "'activities' must not be empty" in _messages(_errors(validate_text(json.dumps(doc2))))
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "'activities' must not be empty" in msgs
+    # …and only that: an empty array *is* present, so the required-field check
+    # has nothing to say about it.
+    assert "required field 'activities' is missing" not in msgs
+
+
+def test_missing_activities_is_the_standard_required_field_error():
+    # `activities` is a required field like `title` (DAY_SPECS), so an absent key
+    # reads the same as any other missing one rather than as "must not be empty".
+    doc = {"travel_description": {"title": "T"}, "days": [{"title": "d"}]}
+    msgs = _messages(_errors(validate_text(json.dumps(doc))))
+    assert "required field 'activities' is missing" in msgs
+    assert "'activities' must not be empty" not in msgs
 
 
 def _one_day(activities, **extra):
@@ -495,8 +536,9 @@ def test_double_booked_night_is_info_and_prefers_accommodation():
         "days": [{"title": "d", "date": "2026-06-08", "activities": []},
                  {"title": "d2", "date": "2026-06-09", "activities": []}],
         "accommodations": [{"name": "H", "arrival": "2026-06-08", "departure": "2026-06-09"}],
-        "transport": [{"type": "night train", "start_date": "2026-06-08",
-                       "start_time": "22:00", "end_time": "06:00"}],
+        "transport": [{"type": "train", "legs": [
+            {"start": "A", "end": "B", "start_date": "2026-06-08",
+             "start_time": "22:00", "end_time": "06:00"}]}],
     }
     findings = validate_text(json.dumps(doc))
     # the accommodation is kept; the clash is reported at info level, not error
@@ -519,8 +561,9 @@ def test_transport_overlaps_activity_is_error():
         "travel_description": {"title": "T"},
         "days": [{"title": "d", "date": "2026-06-08", "activities": [
             {"type": "point_of_interest", "name": "M", "start_time": "09:00", "end_time": "12:00"}]}],
-        "transport": [{"type": "train", "start_date": "2026-06-08",
-                       "start_time": "11:00", "end_time": "13:00"}],
+        "transport": [{"type": "train", "legs": [
+            {"start": "A", "end": "B", "start_date": "2026-06-08",
+             "start_time": "11:00", "end_time": "13:00"}]}],
     }
     assert "overlaps an earlier item" in _messages(_errors(validate_text(json.dumps(doc))))
 
@@ -553,7 +596,10 @@ def test_zero_minute_buffer_is_info():
 def test_paid_without_price_and_status_without_ref_warn():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": []}],
-           "transport": [{"type": "train", "status": "confirmed", "paid": "paid"}]}
+           "transport": [{"type": "train", "status": "confirmed", "paid": "paid",
+                          "legs": [{"start": "A", "end": "B",
+                                    "start_date": "2026-06-08",
+                                    "start_time": "09:00", "duration": "1h"}]}]}
     msgs = _messages(_warnings(validate_text(json.dumps(doc))))
     assert "'status' is set but 'booking_number' is missing" in msgs
     assert "'paid' is set but 'price' is missing" in msgs
@@ -735,15 +781,16 @@ def test_booking_description_is_free_text_and_only_noted_when_absent():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
                {"type": "point_of_interest", "name": "M"}]}],
-           "transport": [{"start": "A", "end": "B", "start_date": "2026-06-08",
-                          "start_time": "10:00", "duration": "1h"}],
+           "transport": [{"legs": [
+               {"start": "A", "end": "B", "start_date": "2026-06-08",
+                "start_time": "10:00", "duration": "1h"}]}],
            "accommodations": [{"name": "H", "city": "B", "arrival": "2026-06-08",
                                "departure": "2026-06-09"}]}
     infos = _messages(_infos(validate_text(json.dumps(doc))))
     assert "optional field 'description' is missing" in infos
     assert "a short note for whatever the other fields don't cover" in infos
 
-    doc["transport"][0]["description"] = "Coach 12; platform posted late."
+    doc["transport"][0]["legs"][0]["description"] = "Coach 12; platform posted late."
     doc["accommodations"][0]["description"] = "Keypad code 4589B."
     findings = validate_text(json.dumps(doc))
     assert _errors(findings) == [], _messages(_errors(findings))

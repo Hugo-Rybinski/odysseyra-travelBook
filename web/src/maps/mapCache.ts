@@ -41,8 +41,11 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // gained `bank_holiday`, which draws the holiday banner — a v14-cached day
 // carries the flag nowhere, so the banner would never appear for it. v16: a
 // point of interest gained `opening` (its opening days/hours), drawn under the
-// address — a v15-cached day carries it nowhere.
-const SCHEMA_VERSION = 16;
+// address — a v15-cached day carries it nowhere. v17: transport split into a
+// booking plus its `legs`, so a day's `transports` are now legs enriched with
+// their booking's shared fields (`leg_index`/`leg_count` included) — a
+// v16-cached day holds the old flat objects, which the new row would misread.
+const SCHEMA_VERSION = 17;
 
 interface Entry {
   day: Day;

@@ -1,7 +1,7 @@
 // Client-side helpers that mirror bits of the Python renderer/model so the UI
 // can offer the same links and leg breakdown without another round-trip.
 import { createContext, useContext } from "react";
-import type { Activity, Coordinate, Transport, Waypoint } from "../types/resolved";
+import type { Activity, Coordinate, TransportLeg, Waypoint } from "../types/resolved";
 
 // Which mapping app the "Navigate" links open. Chosen in Options and shared with
 // every render component via MapProviderContext (default Google Maps).
@@ -164,8 +164,8 @@ export function fmtDurationMin(min: number | null): string {
   return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
 }
 
-/** A transport's time line with tz labels and the arrival day-offset ("+1"). */
-export function transportTimes(t: Transport): string {
+/** A leg's time line with tz labels and the arrival day-offset ("+1"). */
+export function transportTimes(t: TransportLeg): string {
   const stamp = (time: string | null, tz: string, off = 0) => {
     if (!time) return "";
     return time + (tz ? ` ${tz}` : "") + (off ? ` +${off}` : "");
