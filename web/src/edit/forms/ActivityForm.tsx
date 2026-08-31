@@ -5,6 +5,7 @@ import {
   ACTIVITY_TYPES,
   newActivity,
   newWaypoint,
+  PLACE_SCHEDULED_FIELDS,
   SCHEDULED_FIELDS,
   WAYPOINT_FIELDS,
 } from "../schema";
@@ -183,7 +184,8 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
   // "not iterable" spread crash) so the form still renders and the type finding
   // can be fixed.
   const typeFields = ACTIVITY_FIELDS[type] ?? [];
-  const specs = type === "buffer" ? ACTIVITY_FIELDS.buffer : [...SCHEDULED_FIELDS, ...typeFields];
+  const scheduled = type === "place" ? PLACE_SCHEDULED_FIELDS : SCHEDULED_FIELDS;
+  const specs = type === "buffer" ? ACTIVITY_FIELDS.buffer : [...scheduled, ...typeFields];
 
   // What may be nested, per container type (see README nesting rules).
   const nestedTypes: readonly SrcActivityType[] =

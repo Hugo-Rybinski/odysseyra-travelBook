@@ -510,7 +510,7 @@ starts at `defaults.start_time`, each next one at the previous item's end.
 | `type` | ✅ | The activity kind | string | `road` \| `point_of_interest` \| `place` \| `hike` \| `meal` \| `buffer` | — |
 | `start_time` |  | Clock time it starts | string | `HH:MM` | previous item's end, else `defaults.start_time` |
 | `end_time` |  | Clock time it ends | string | `HH:MM` | `start_time` + `duration` |
-| `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`, else 0 |
+| `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`; for a `place`, its nested activities' total; else 0 |
 | `start_tz` |  | Start time zone | string | UTC offset | `defaults.timezone` |
 | `end_tz` |  | End time zone | string | UTC offset | `defaults.timezone` |
 
@@ -598,6 +598,18 @@ is promoted to the road's chip rather than being lost.
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering the area | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
+
+**A place lasts what it contains.** A place has no length of its own — it *is*
+what you do there — so when it gives neither a `duration` nor an `end_time`, its
+duration defaults to the **sum of its nested activities'** durations (each taken
+from its own `duration`, or from its `start_time`/`end_time` span; nested items
+that say nothing add nothing). That total then chains into the day's timeline
+like any other duration, so a town with three timed visits no longer collapses to
+a zero-minute row. It's a default, not a cap: an explicit `duration` (or an
+`end_time`) still wins — but set one *below* the nested total and validation
+warns, since the nested activities can't all fit inside it. This applies to
+`place` alone; a `point_of_interest` has a visit length of its own beyond
+whatever is nested under it.
 
 `road`, `hike`, `place` and `point_of_interest` may each carry an `activities`
 array of nested activities. Every entry must be an object with an explicit

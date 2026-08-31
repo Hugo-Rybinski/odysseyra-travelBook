@@ -213,7 +213,13 @@ class PointOfInterest(Activity):
 
 @dataclass
 class Place(Activity):
-    """A place (a town for instance) grouping several nested activities."""
+    """A place (a town for instance) grouping several nested activities.
+
+    Unlike the other containers a place has no length of its own — it *is* what
+    you do there — so when it gives neither a ``duration`` nor an ``end_time``,
+    :meth:`Itinerary.from_dict` fills its duration with its nested activities'
+    total (see :func:`nested_duration_total`).
+    """
 
     kind = "place"
     name: str = ""
@@ -531,6 +537,28 @@ def schedule_activities(
             continue
         merged.append(item)
     return merged
+
+
+def _item_minutes(act: Activity) -> int | None:
+    """One activity's length from what it was given: its ``duration``, else the
+    span between an explicit ``start_time`` and ``end_time``. ``None`` when
+    neither settles it. Mirrors the validator's ``_obj_minutes``, on the model
+    side — a *nested* activity is never put on the timeline, so its times are
+    whatever the JSON said and nothing more."""
+    if act.duration_min is not None:
+        return act.duration_min
+    if act.start_time is not None and act.end_time is not None:
+        return _diff_minutes(act.start_time, act.end_time)
+    return None
+
+
+def nested_duration_total(activities: list[Activity]) -> int | None:
+    """The nested activities' lengths added up, or ``None`` when not one of them
+    says how long it lasts (so there is nothing to conclude). Items that don't
+    say simply contribute nothing — this is a floor for the container, not a
+    measurement of it."""
+    known = [m for m in (_item_minutes(a) for a in activities) if m is not None]
+    return sum(known) if known else None
 
 
 def resolve_meal_categories(

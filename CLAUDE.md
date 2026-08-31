@@ -241,6 +241,16 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - Activities chain on a timeline: first starts at `defaults.start_time`, each next
     at the previous end; give any two of `start_time`/`end_time`/`duration` and the
     third is inferred. Buffers (default, manual, or gap-inferred) fill gaps.
+  - A **`place`** that gives neither a `duration` nor an `end_time` lasts its
+    nested activities' total (`activities.nested_duration_total`, applied in
+    `Itinerary.from_dict` next to the meal-duration fill-in) — a place is what
+    you do there, so zero was always wrong. Only a fallback: an explicit
+    duration wins, and the validator's pre-existing `_nested_duration_fit`
+    warns when one is set *below* the total. `place` alone, not
+    `point_of_interest` (a visit has a length beyond what's nested in it). The
+    validator swaps `SCHEDULE` for `specs.PLACE_SCHEDULE` on a place so the
+    missing-`duration` info states *this* default, and the Edit tab mirrors
+    that with `PLACE_SCHEDULED_FIELDS`.
   - Transport requires `start_time`; the other of `end_time`/`duration` is inferred,
     tz-aware. An overnight leg (`start_date` given a `start_time`) becomes that
     night's "accommodation".

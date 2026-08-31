@@ -158,6 +158,19 @@ export const SCHEDULED_FIELDS: FieldSpec[] = [
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "End time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
 ];
 
+// `place` is the one activity whose duration falls back to what it *contains*,
+// so its Duration field reads differently from every other activity's (mirrors
+// validate/specs.py's PLACE_SCHEDULE). Same fields otherwise.
+export const PLACE_SCHEDULED_FIELDS: FieldSpec[] = SCHEDULED_FIELDS.map((f) =>
+  f.key === "duration"
+    ? {
+        ...f,
+        placeholder: "the nested activities' total",
+        help: "How long it lasts (e.g. 1h30, 45 min). Defaults to the nested activities' total — a place is what you do there. Inferred from start/end when those are given.",
+      }
+    : f,
+);
+
 // The guidebook page reference, offered on every activity type that has a
 // `description` (road / point_of_interest / place / hike) with one wording.
 const GUIDEBOOK_FIELD: FieldSpec = {

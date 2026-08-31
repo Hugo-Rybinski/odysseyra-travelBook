@@ -249,6 +249,19 @@ SCHEDULE = [
          "the trip's default timezone", V_TZ),
 ]
 
+# `place` is the one activity whose duration is inferred from what it *contains*,
+# so the "defaulting to…" line of its missing-`duration` finding reads
+# differently from every other activity's. Same table otherwise — a place is
+# checked against this instead of SCHEDULE (see validator._activity).
+PLACE_SCHEDULE = [
+    Spec("duration", False, "how long the activity lasts",
+         "a duration like '1h30' or '45 min'",
+         "inferred from end_time, else the nested activities' total, else 0",
+         V_DUR)
+    if spec.name == "duration" else spec
+    for spec in SCHEDULE
+]
+
 # The guidebook page reference sits on all four activity types that have a
 # `description`, with the same wording everywhere.
 GUIDEBOOK_DESC = "the guidebook page(s) covering this activity"

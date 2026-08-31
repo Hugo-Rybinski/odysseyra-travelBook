@@ -26,6 +26,7 @@ from .specs import (
     CAR_RENTAL_SPECS,
     DAY_SPECS,
     DEFAULTS,
+    PLACE_SCHEDULE,
     SCHEDULE,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
@@ -354,7 +355,8 @@ class _Validator:
             return
         self.check_object(act, path, ACTIVITY_SPECS[kind])
         if kind != "buffer":
-            self.check_object(act, path, SCHEDULE)
+            self.check_object(act, path,
+                              PLACE_SCHEDULE if kind == "place" else SCHEDULE)
             self._time_consistency(act, path, tz_aware=False)
         self._magnitudes(act, path, kind)
         if kind == "buffer":

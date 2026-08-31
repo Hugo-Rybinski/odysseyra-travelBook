@@ -387,7 +387,6 @@
           "type": "place",
           "name": "Sarlat old town",
           "start_time": "16:30",
-          "duration": "2h30",
           "description": "One of the best-preserved medieval centres in France — sandstone façades, a covered market and lantern-lit lanes.",
           "coordinate": {
             "lat": 44.889,
@@ -398,6 +397,7 @@
               "type": "point_of_interest",
               "name": "Rue de la République",
               "category": "street",
+              "duration": "45 min",
               "description": "The 'Traverse' cutting through the old town, lined with shops.",
               "coordinate": {
                 "lat": 44.8905,
@@ -417,6 +417,7 @@
             {
               "type": "meal",
               "meal_type": "dinner",
+              "duration": "1h15",
               "restaurant": "Le Bistrot de l'Octroi",
               "address": "111 Av. de Selves, 24200 Sarlat-la-Canéda",
               "coordinate": {

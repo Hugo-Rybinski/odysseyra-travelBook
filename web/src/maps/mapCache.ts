@@ -33,7 +33,9 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // without the bump a v10-cached day would draw the trail but hide the link.
 // v12: transport legs, car pick-up/drop-off events and the night's stay gained
 // a `description` (a short note) — a v11-cached day carries none of them.
-const SCHEMA_VERSION = 12;
+// v13: a `place` with no duration/end_time now lasts its nested activities'
+// total instead of 0, which also shifts every later item on that day's timeline.
+const SCHEMA_VERSION = 13;
 
 interface Entry {
   day: Day;

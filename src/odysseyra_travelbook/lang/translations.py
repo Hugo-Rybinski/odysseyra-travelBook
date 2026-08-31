@@ -627,6 +627,9 @@ _FR = {
         "la fin de l'activité précédente, ou le début par défaut du jour",
     "start_time + duration": "start_time + duration",
     "inferred from end_time, else 0": "déduite de end_time, sinon 0",
+    # a place's duration alone falls back to what it contains (specs.PLACE_SCHEDULE)
+    "inferred from end_time, else the nested activities' total, else 0":
+        "déduite de end_time, sinon le total des activités imbriquées, sinon 0",
     "the trip's default timezone": "le fuseau par défaut du voyage",
     '"" ': "« » ",
     "the trip start date + the day's index in 'days'":

@@ -645,6 +645,33 @@ def test_road_waypoint_durations_exceeding_road_warns():
         _warnings(validate_text(json.dumps(doc))))
 
 
+def _place_doc(nested, **fields):
+    return _one_day([{"type": "place", "name": "Town",
+                      "activities": nested, **fields}])
+
+
+_NESTED_2H = [{"type": "point_of_interest", "name": "A", "duration": "1h"},
+              {"type": "point_of_interest", "name": "B", "duration": "1h"}]
+
+
+def test_place_duration_below_the_nested_total_warns():
+    findings = _place_doc(_NESTED_2H, duration="1h30")
+    assert ("the nested activities last 2h in total, longer than this "
+            "activity's 1h30") in _messages(_warnings(findings))
+    # a duration that fits, and an omitted one (it becomes the total), are quiet
+    for ok in (_place_doc(_NESTED_2H, duration="3h"), _place_doc(_NESTED_2H)):
+        assert "the nested activities last" not in _messages(_warnings(ok))
+
+
+def test_a_missing_place_duration_states_the_nested_total_as_its_default():
+    infos = _messages(_infos(_place_doc(_NESTED_2H)))
+    assert ("optional field 'duration' is missing" in infos
+            and "the nested activities' total" in infos)
+    # every other activity keeps the generic wording
+    poi = _messages(_infos(_one_day([{"type": "point_of_interest", "name": "M"}])))
+    assert "Defaulting to inferred from end_time, else 0." in poi
+
+
 def _pages_doc(kind: str, pages):
     extra = {"road": {"start": "A",
                       "waypoints": [{"coordinate": {"lat": 1, "long": 2}}]}}

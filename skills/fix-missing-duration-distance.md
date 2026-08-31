@@ -54,6 +54,12 @@ find the object in the JSON. Only ever ask for the fields the warning lists.
 
 `missing:` lists the raw JSON keys: `duration`, `distance_km`, `elevation_m`.
 
+For a **`place`** the first warning has two answers, and the better one is
+usually the second: a place with no `duration` lasts whatever its nested
+activities add up to, so timing the stops inside it (a `duration` each) settles
+the place too. Ask for the place's own `duration` only when the source gives the
+whole visit as one figure.
+
 ---
 
 ## How to read the JSON

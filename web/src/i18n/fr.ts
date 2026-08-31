@@ -462,6 +462,10 @@ export const FR: Record<string, string> = {
   "1h30 / 45 min": "1h30 / 45 min",
   "How long it lasts (e.g. 1h30, 45 min). Inferred from start/end when unset, else 0.":
     "Durée (ex. 1h30, 45 min). Déduite de début/fin si non définie, sinon 0.",
+  // a place alone falls back to what it contains (PLACE_SCHEDULED_FIELDS)
+  "the nested activities' total": "le total des activités imbriquées",
+  "How long it lasts (e.g. 1h30, 45 min). Defaults to the nested activities' total — a place is what you do there. Inferred from start/end when those are given.":
+    "Durée (ex. 1h30, 45 min). Par défaut, le total des activités imbriquées — un lieu, c'est ce qu'on y fait. Déduite de début/fin si les deux sont donnés.",
   "Start tz": "Fuseau de début",
   "Start time zone (UTC offset). Defaults to defaults.timezone (GMT).":
     "Fuseau horaire de début (décalage UTC). Par défaut defaults.timezone (GMT).",

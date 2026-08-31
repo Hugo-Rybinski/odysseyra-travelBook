@@ -11,6 +11,7 @@ from .accommodation import Accommodation
 from .activities import (
     Activity,
     activity_from_dict,
+    nested_duration_total,
     resolve_meal_categories,
     schedule_activities,
 )
@@ -217,6 +218,15 @@ class Itinerary:
                 if (act.kind == "meal" and act.duration_min is None
                         and act.end_time is None):
                     act.duration_min = meal_duration
+                elif (act.kind == "place" and act.duration_min is None
+                        and act.end_time is None):
+                    # A place is nothing but what you do there, so its length
+                    # defaults to its nested activities' total rather than to
+                    # zero — a town you gave three timed visits to lasts the
+                    # three visits. Only a floor: an explicit duration (or an
+                    # end_time) still wins, and the validator warns when one is
+                    # set *below* the total.
+                    act.duration_min = nested_duration_total(act.activities)
             day.activities = schedule_activities(
                 day.activities, default_start, default_buffer
             )

@@ -39,6 +39,7 @@ from .activities import (
     Road,
     Waypoint,
     activity_from_dict,
+    nested_duration_total,
     schedule_activities,
 )
 from .itinerary import Day, Itinerary
@@ -104,6 +105,7 @@ __all__ = [
     "Transport",
     "TRANSPORT_TYPES",
     "activity_from_dict",
+    "nested_duration_total",
     "resolve_car_rental",
     "resolve_transport",
     "schedule_activities",

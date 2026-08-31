@@ -297,7 +297,7 @@ end-of-run gaps and inconsistency report, never in the JSON.
 |---|---|---|
 | `start_time` | time `HH:MM` | Clock start. |
 | `end_time` | time `HH:MM` | Clock end. |
-| `duration` | duration (`"1h30"`, `"45 min"`) | How long it lasts. |
+| `duration` | duration (`"1h30"`, `"45 min"`) | How long it lasts. On a `place`, omitting it means "as long as its nested activities add up to" (see `place` below). |
 | `start_tz` / `end_tz` | UTC offset | Only if this activity is in a different timezone than the trip default. |
 
 **Map coordinates (any located activity may include these):** if the trip
@@ -435,6 +435,14 @@ second map zoomed to its nested points. You don't need to give the area its own
 `coordinate` — if omitted, its pin is placed at the average position of its
 located sub-activities.
 
+**Leave a place's `duration` out unless the source states one.** A place has no
+length of its own, so an omitted `duration` (and `end_time`) means "however long
+the nested activities add up to" — the tool sums them and chains that into the
+day's timeline. Give it explicitly only when the source says how long the whole
+visit takes (and then make sure it is **not below** the nested total, which
+`validate` warns about). Never invent a round number to fill it: an invented `3h`
+silently overrides three real sub-durations.
+
 #### Type `hike`
 
 | Field | Required | Format | Notes |
@@ -506,7 +514,8 @@ only** (a nested activity may not itself nest). Allowed nesting:
 Nested activities happen *inside* the container, so their durations should fit
 within it: if the container gives a `duration` (or start/end span) and the
 nested durations add up to more, `validate` warns. Leave the container's
-duration out if unsure — the warning only fires when both sides are known.
+duration out if unsure — the warning only fires when both sides are known, and
+for a `place` an omitted duration becomes the nested total anyway.
 
 ---
 

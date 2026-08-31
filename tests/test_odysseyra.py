@@ -467,6 +467,61 @@ def test_explicit_start_time_overrides_chain():
     assert acts[2].start_time.strftime("%H:%M") == "15:00"
 
 
+def _place(nested, **fields):
+    """A one-day trip whose only activity is a place wrapping ``nested``."""
+    return _one_day([
+        {"type": "place", "name": "Town", "activities": nested, **fields}
+    ], default_start_time="09:00")[0]
+
+
+def test_a_places_duration_defaults_to_its_nested_activities_total():
+    place = _place([
+        {"type": "point_of_interest", "name": "A", "duration": "1h"},
+        # a nested item timed by a start/end span counts too — it says how long
+        # it lasts just as plainly as a `duration` would
+        {"type": "point_of_interest", "name": "B",
+         "start_time": "11:00", "end_time": "12:30"},
+        {"type": "meal", "duration": "45 min"},
+    ])
+    assert place.duration_min == 60 + 90 + 45
+    assert place.duration_display == "3h15"
+    assert place.end_time.strftime("%H:%M") == "12:15"  # and it chains on
+
+
+def test_an_explicit_place_duration_wins_over_the_nested_total():
+    nested = [{"type": "point_of_interest", "name": "A", "duration": "1h"},
+              {"type": "point_of_interest", "name": "B", "duration": "1h"}]
+    assert _place(nested, duration="30 min").duration_min == 30  # even if short
+    assert _place(nested, end_time="09:45").duration_min == 45   # so does end_time
+
+
+def test_a_place_whose_nested_activities_are_untimed_still_lasts_nothing():
+    # nothing to add up — the old behavior stands rather than guessing
+    place = _place([{"type": "point_of_interest", "name": "A"},
+                    {"type": "meal"}])
+    assert place.duration_min == 0
+
+
+def test_the_nested_total_is_a_place_rule_only():
+    # a point of interest has a visit length of its own beyond what's nested
+    poi = _one_day([{
+        "type": "point_of_interest", "name": "Museum",
+        "activities": [{"type": "meal", "duration": "45 min"}],
+    }], default_start_time="09:00")[0]
+    assert poi.duration_min == 0
+
+
+def test_nested_duration_total_ignores_what_it_cannot_measure():
+    from odysseyra_travelbook.models import activity_from_dict, nested_duration_total
+
+    assert nested_duration_total([]) is None
+    untimed = [activity_from_dict({"type": "meal"})]
+    assert nested_duration_total(untimed) is None
+    mixed = [activity_from_dict({"type": "meal", "duration": "20 min"}),
+             activity_from_dict({"type": "meal"})]
+    assert nested_duration_total(mixed) == 20
+
+
 def test_duration_parsing_formats():
     from odysseyra_travelbook.models import _format_duration, _parse_duration
 
