@@ -100,11 +100,13 @@ export interface RoadLeg {
   durationMin: number | null;
   distanceKm: number | null;
   destCoord: Coordinate | null;
+  offRoad: boolean;
 }
 
 // Collapse a road's waypoints into display legs, mirroring
 // pdf.days.road_display_legs: unnamed (route-shaping) waypoints merge forward
-// into the next named leg, summing their duration/distance.
+// into the next named leg, summing their duration/distance and OR-ing their
+// off_road flag.
 export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
   const legs: RoadLeg[] = [];
   let prev = start;
@@ -114,6 +116,7 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
   let hasDist = false;
   let pending = false;
   let coord: Coordinate | null = null;
+  let off = false;
 
   const flush = (dest: string | null) => {
     legs.push({
@@ -122,6 +125,7 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
       durationMin: hasDur ? dur : null,
       distanceKm: hasDist ? dist : null,
       destCoord: coord,
+      offRoad: off,
     });
     prev = dest ?? prev;
     dur = 0;
@@ -130,6 +134,7 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
     hasDist = false;
     pending = false;
     coord = null;
+    off = false;
   };
 
   for (const wp of waypoints) {
@@ -143,6 +148,7 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
       dist += wp.distance_km;
       hasDist = true;
     }
+    if (wp.off_road) off = true;
     if (wp.location) flush(wp.location);
   }
   if (pending) flush(null);

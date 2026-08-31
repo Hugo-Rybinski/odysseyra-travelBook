@@ -118,6 +118,8 @@ def _waypoint(wp) -> dict:
         "duration_min": wp.duration_min,
         "duration_display": wp.duration_display,
         "distance_km": wp.distance_km,
+        # whether the leg *reaching* this waypoint runs off-road
+        "off_road": wp.off_road,
     }
 
 
@@ -142,6 +144,7 @@ def _activity(itin: Itinerary, act) -> dict:
         out.update({
             "start": act.start,
             "destination": act.destination,
+            "description": act.description,
             "distance_km": act.distance_km,
             "off_road": act.off_road,
             "waypoints": [_waypoint(w) for w in act.waypoints],

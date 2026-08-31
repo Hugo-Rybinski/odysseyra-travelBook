@@ -477,6 +477,8 @@ export const FR: Record<string, string> = {
   "Off-road": "Hors-piste",
   "Highlight off-road sections. Defaults to off.":
     "Mettre en évidence les sections hors-piste. Désactivé par défaut.",
+  "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional.":
+    "Tout ce que les autres champs ne couvrent pas — l'état de la route, un tronçon panoramique, un péage ou un ferry. Facultatif.",
 
   // POI
   Name: "Nom",
@@ -540,6 +542,9 @@ export const FR: Record<string, string> = {
   "Leg distance (km)": "Distance du tronçon (km)",
   "Driving distance for the leg reaching this waypoint. Optional.":
     "Distance routière du tronçon menant à ce point de passage. Facultatif.",
+  "Leg off-road": "Tronçon hors-piste",
+  "Mark just this leg as off-road, without flagging the whole drive. Defaults to off.":
+    "Marquer ce seul tronçon comme hors-piste, sans signaler tout le trajet. Désactivé par défaut.",
 
   // Transport
   "Transport kind, shown as a badge. Defaults to 'other'.":

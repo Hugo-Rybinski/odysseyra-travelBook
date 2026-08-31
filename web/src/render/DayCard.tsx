@@ -351,7 +351,7 @@ function ActivityRow({
         <div className="act-title">
           <PinDisc label={act.map_pin} />
           {act.title}
-          {act.type === "road" && act.off_road && (
+          {act.type === "road" && (act.off_road || singleLegOffRoad(act)) && (
             <span className="chip outline">{tr(lang, "offRoad")}</span>
           )}
           {act.type === "hike" && act.route_label && (
@@ -420,11 +420,15 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
     act.type === "hike" && act.name && act.start && act.end
       ? `${act.start} → ${act.end}`
       : "";
-  // Every activity type the model gives a `description` to — poi, place and hike
-  // (the PDF prints all three; the hike was missed here). It follows the trail
-  // line, so a hike reads title → chips → trailhead → prose.
+  // Every activity type the model gives a `description` to — road, poi, place
+  // and hike (the PDF prints all four; the hike was once missed here). It
+  // follows the trail line, so a hike reads title → chips → trailhead → prose;
+  // a road's lands above its VIA legs, as in the PDF.
   const description =
-    act.type === "point_of_interest" || act.type === "place" || act.type === "hike"
+    act.type === "point_of_interest" ||
+    act.type === "place" ||
+    act.type === "hike" ||
+    act.type === "road"
       ? act.description
       : "";
 
@@ -454,6 +458,14 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   );
 }
 
+// A single-leg drive draws no VIA list, so a per-leg off-road flag would have
+// nowhere to show — it is promoted to the road's own chip instead (mirrors
+// pdf/days.py's `_details_road`).
+function singleLegOffRoad(act: Activity): boolean {
+  const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
+  return legs.length === 1 && legs[0].offRoad;
+}
+
 // The VIA breakdown for a multi-leg drive: one row per named leg with its own
 // duration/distance and a Navigate link.
 function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
@@ -475,6 +487,8 @@ function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
               {leg.src || "?"} → {leg.dest || "?"}
             </span>
             {meta.length > 0 && <span className="via-meta">{meta.join("  ·  ")}</span>}
+            {/* the same small chip the road-level flag uses, on the rough leg */}
+            {leg.offRoad && <span className="chip outline">{tr(lang, "offRoad")}</span>}
             {nav && (
               <a className="link" href={nav} target="_blank" rel="noreferrer">
                 {tr(lang, "navigate")}

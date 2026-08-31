@@ -69,14 +69,20 @@ class Buffer(Activity):
 class Waypoint:
     """An intermediate stop a drive's route passes through. Carries a required
     ``coordinate`` (the point plotted on the route) plus an optional location
-    name and the leg's ``duration``/``distance_km``. When a road has waypoints
-    the route runs start → waypoint 1 → … → last waypoint, and the last one is
-    the effective destination (the road's ``end_coordinate`` is not plotted)."""
+    name and the leg's ``duration``/``distance_km``/``off_road``. When a road has
+    waypoints the route runs start → waypoint 1 → … → last waypoint, and the last
+    one is the effective destination (the road's ``end_coordinate`` is not
+    plotted).
+
+    ``off_road`` describes the **leg reaching this waypoint**, exactly like
+    ``duration`` and ``distance_km`` — so a drive can be rough on one stretch
+    without the whole road being flagged (``Road.off_road``)."""
 
     coordinate: Coordinate
     location: str = ""
     duration_min: int | None = None
     distance_km: float | None = None
+    off_road: bool = False
 
     @property
     def duration_display(self) -> str:
@@ -96,6 +102,7 @@ class Waypoint:
             location=str(d.get("location", "")),
             duration_min=_parse_duration(d.get("duration")),
             distance_km=_parse_float(d.get("distance_km"), "waypoint distance_km"),
+            off_road=_parse_bool(d.get("off_road", False)),
         )
 
 
@@ -108,6 +115,7 @@ class Road(Activity):
 
     kind = "road"
     start: str = ""
+    description: str = ""
     distance_km: float | None = None
     off_road: bool = False
     waypoints: list[Waypoint] = field(default_factory=list)  # ordered stops; last = arrival
@@ -139,6 +147,7 @@ class Road(Activity):
         return cls(
             **_sched(d),  # 'coordinate' here is the departure point
             start=str(d["start"]),
+            description=str(d.get("description", "")),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
             waypoints=waypoints,

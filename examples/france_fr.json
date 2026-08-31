@@ -452,6 +452,7 @@
           "distance_km": 55,
           "duration": "1h",
           "off_road": false,
+          "description": "Un trajet lent le long de la Dordogne plutôt que la route intérieure, plus rapide.",
           "coordinate": {
             "lat": 44.8397,
             "long": 1.1456
@@ -521,6 +522,7 @@
           "start_time": "07:30",
           "duration": "4h30",
           "off_road": false,
+          "description": "Autoroute jusqu'à Pau, puis une montée lente dans la vallée du Gave — la dernière approche de Cauterets est étroite et chargée en saison.",
           "coordinate": {
             "lat": 44.889,
             "long": 1.216

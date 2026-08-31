@@ -24,7 +24,9 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // v2: `sun` added. v3: sunrise re-referenced to the previous night's stay.
 // v4: each end got its own fallback chain (sunset → the day's last located stop,
 // sunrise → its first). v5: `sun.display` dropped — the viewer localizes it now.
-const SCHEMA_VERSION = 5;
+// v6: `road` activities gained a `description`. v7: road waypoints gained a
+// per-leg `off_road`.
+const SCHEMA_VERSION = 7;
 
 interface Entry {
   day: Day;

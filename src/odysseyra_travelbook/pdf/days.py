@@ -12,22 +12,23 @@ from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 def road_display_legs(start, waypoints):
     """Collapse a road's waypoints into display legs. Unnamed (route-shaping)
     waypoints carry no leg of their own — they merge forward into the next named
-    waypoint, their ``duration`` / ``distance_km`` summed into that leg. Returns
-    ``[(src, dest, duration_min | None, distance_km | None, dest_coord)]``;
-    ``dest`` is ``None`` for a trailing run of unnamed waypoints (an unnamed
-    arrival), and ``dest_coord`` is that leg's destination coordinate (the named
-    waypoint's, or the last shaping point's for an unnamed arrival)."""
+    waypoint, their ``duration`` / ``distance_km`` summed into that leg and their
+    ``off_road`` OR-ed into it. Returns
+    ``[(src, dest, duration_min | None, distance_km | None, dest_coord,
+    off_road)]``; ``dest`` is ``None`` for a trailing run of unnamed waypoints (an
+    unnamed arrival), and ``dest_coord`` is that leg's destination coordinate (the
+    named waypoint's, or the last shaping point's for an unnamed arrival)."""
     legs = []
-    acc = {"prev": start, "dur": 0, "dist": 0.0,
-           "has_dur": False, "has_dist": False, "pending": False, "coord": None}
+    acc = {"prev": start, "dur": 0, "dist": 0.0, "has_dur": False,
+           "has_dist": False, "pending": False, "coord": None, "off": False}
 
     def flush(dest):
         legs.append((acc["prev"], dest,
                      acc["dur"] if acc["has_dur"] else None,
                      acc["dist"] if acc["has_dist"] else None,
-                     acc["coord"]))
-        acc.update(prev=dest, dur=0, dist=0.0,
-                   has_dur=False, has_dist=False, pending=False, coord=None)
+                     acc["coord"], acc["off"]))
+        acc.update(prev=dest, dur=0, dist=0.0, has_dur=False,
+                   has_dist=False, pending=False, coord=None, off=False)
 
     for wp in waypoints:
         acc["pending"] = True
@@ -38,6 +39,8 @@ def road_display_legs(start, waypoints):
         if wp.distance_km is not None:
             acc["dist"] += wp.distance_km
             acc["has_dist"] = True
+        if wp.off_road:
+            acc["off"] = True
         if wp.location:
             flush(wp.location)
     if acc["pending"]:  # trailing unnamed waypoints → the arrival
@@ -443,15 +446,21 @@ class DayMixin:
         if act.distance_km is not None:
             parts.append(f"{act.distance_km:g} km")
         meta = "  ·  ".join(p for p in parts if p)
-        multi = len(road_display_legs(act.start, act.waypoints)) > 1
+        legs = road_display_legs(act.start, act.waypoints)
+        multi = len(legs) > 1
         if multi:
             # multi-leg drives get a Navigate link per leg (in the VIA list).
             self._meta_line(x, w, parts)
         else:
             dest_coord = act.waypoints[-1].coordinate if act.waypoints else None
             self._line_with_nav(x, w, meta, dest_coord, act.destination)
-        if act.off_road:
+        # The road-level chip covers the whole drive. A single-leg drive has no
+        # VIA list to hang a per-leg flag on, so its leg's flag shows here too —
+        # otherwise the only off-road marking on that road would be invisible.
+        if act.off_road or (not multi and legs and legs[0][5]):
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
+        if act.description:
+            self._para(x, w, act.description)
         self._road_waypoints(x, w, act)
         self._render_nested(x, w, act.activities)
 
@@ -470,7 +479,7 @@ class DayMixin:
         self.set_font(FONT, "B", 8)
         self.set_text_color(*low_accent)
         self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
-        for src, dest, dur_min, dist_km, dest_coord in legs:
+        for src, dest, dur_min, dist_km, dest_coord, off_road in legs:
             self._ensure_room(6)
             self.set_x(x + 3)
             self.set_font(FONT, "", 9)
@@ -487,6 +496,11 @@ class DayMixin:
                 self.set_text_color(*FAINT)
                 mtext = "   " + "  ·  ".join(meta)
                 self.cell(self.get_string_width(mtext) + 1, 5, mtext)
+            if off_road:
+                # a small pill on this leg's row — the road-level chip stays for
+                # a drive that is off-road as a whole
+                self.cell(2, 5, "")
+                self._inline_chip(self.t("OFF-ROAD"))
             url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
                                                      provider=self.map_provider)
             if url:

@@ -452,6 +452,7 @@
           "distance_km": 55,
           "duration": "1h",
           "off_road": false,
+          "description": "A slow riverside run along the Dordogne rather than the faster inland road.",
           "coordinate": {
             "lat": 44.8397,
             "long": 1.1456
@@ -521,6 +522,7 @@
           "start_time": "07:30",
           "duration": "4h30",
           "off_road": false,
+          "description": "Motorway as far as Pau, then a slow climb up the Gave valley — the final approach to Cauterets is narrow and busy in season.",
           "coordinate": {
             "lat": 44.889,
             "long": 1.216

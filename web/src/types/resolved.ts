@@ -39,9 +39,12 @@ export interface Scheduled {
 export interface Waypoint {
   coordinate: Coordinate | null;
   location: string;
+  // duration / distance / off_road all describe the leg *reaching* this waypoint
   duration_min: number | null;
   duration_display: string;
   distance_km: number | null;
+  // Optional: a day cached before per-leg off-road existed has none.
+  off_road?: boolean;
 }
 
 export type ActivityType =
@@ -75,6 +78,8 @@ export interface Activity extends Scheduled {
   route_label?: string;
   // poi / place / hike
   name?: string;
+  // road / poi / place / hike — free prose for whatever the other fields don't
+  // carry (a road's is drawn above its VIA legs, in both renderers)
   description?: string;
   // poi
   address?: string;

@@ -310,6 +310,7 @@ a road.
 | `coordinate` | no | `{ "lat": .., "long": .. }` | The departure point, for the map route. |
 | `distance_km` | recommended | positive number | Driving distance. A road should carry a duration (its own/inferred times, or waypoint durations) **and** a `distance_km`; `validate` warns naming either that's missing. |
 | `off_road` | no | boolean | `true` if part is off-road. |
+| `description` | no | text | Free prose for what the other fields can't say — see below. |
 | `waypoints` | **yes** | non-empty array of **waypoint** objects | Ordered stops through to the arrival. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
 
@@ -321,6 +322,7 @@ Each **waypoint** is an object:
 | `location` | no | text | The waypoint's name. |
 | `duration` | no | duration (`"45 min"`) | Time for the leg reaching this waypoint. |
 | `distance_km` | no | positive number | Distance for the leg reaching this waypoint. |
+| `off_road` | no | boolean | `true` if the leg reaching this waypoint is off-road. |
 
 - A road needs **at least one** waypoint — the arrival. For a plain A→B drive,
   that's a single waypoint at the destination (name it in `location`).
@@ -333,6 +335,20 @@ Each **waypoint** is an object:
   shaping points); `validate` warns for a named leg missing either.
 - Keep the waypoint `duration`s adding up to no more than the road's own
   `duration`; `validate` warns if the segments don't fit the drive.
+- **Off-road: flag the drive, or just the rough leg.** Set the road's own
+  `off_road` only when the drive as a whole leaves the tarmac. When the source
+  says just one stretch is rough — paved to the village, then 5 km of track —
+  leave the road's flag off and set `off_road: true` on the **waypoint that leg
+  arrives at** (the same place its `duration`/`distance_km` go). Setting both is
+  wrong unless both are genuinely true; a per-leg flag on a single-leg drive is
+  simply shown as the road's own flag, since a one-leg drive lists no legs.
+- A road's **`description` is optional and holds only what no other field can**:
+  the state of the road, a scenic or difficult stretch, a pass that may be shut,
+  a toll, a ferry crossing, where to refuel. It is **not** the place to restate
+  the route, the distance, the duration or the stops — `start`, `distance_km` and
+  the waypoints already print those, and repeating them just doubles the text.
+  Leave it out when the source says nothing beyond the itinerary itself; most
+  drives don't need one. (Both renderers print it above the `VIA` leg list.)
 
 **Build the waypoints from a KML/KMZ directions track when one is provided.** If
 a KML/KMZ holds a *directions* geometry matching this drive, use it to generate

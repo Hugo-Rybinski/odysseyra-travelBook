@@ -32,6 +32,7 @@
 ⚠️  line 30: the waypoint segments last 16h in total, longer than the road's 14h — the segment times don't fit the drive.
 ⚠️  line 30: this road's leg (A → No coordinate) should give a duration and a 'distance_km' — missing: duration, distance_km.
 ℹ️  line 30: optional field 'off_road' is missing — whether part of the drive is off-road. Expected true or false. Defaulting to false.
+ℹ️  line 30: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 30: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
 ℹ️  line 30: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ℹ️  line 30: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
@@ -102,6 +103,7 @@
 ⚠️  line 61: this road (? → ?) should give a duration and a 'distance_km' — missing: duration, distance_km.
 ℹ️  line 61: optional field 'distance_km' is missing — the driving distance in km. Expected a number. Defaulting to none (not shown).
 ℹ️  line 61: optional field 'off_road' is missing — whether part of the drive is off-road. Expected true or false. Defaulting to false.
+ℹ️  line 61: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 61: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
 ℹ️  line 61: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
 ℹ️  line 61: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
@@ -229,4 +231,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-63 error(s), 18 warning(s), 149 info.
+63 error(s), 18 warning(s), 151 info.

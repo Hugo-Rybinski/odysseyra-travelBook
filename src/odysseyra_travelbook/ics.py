@@ -178,7 +178,8 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
         if act.kind == "road":
             _detail(lines, "Type", tr("Drive", lang), lang)
             _detail(lines, "Distance", _km(act.distance_km), lang)
-            if act.off_road:
+            # road-level flag, or any single leg marked off-road
+            if act.off_road or any(w.off_road for w in act.waypoints):
                 _detail(lines, "Off-road", tr("Yes", lang), lang)
             names = [w.location for w in act.waypoints if w.location]
             _detail(lines, "Via", ", ".join(names), lang)

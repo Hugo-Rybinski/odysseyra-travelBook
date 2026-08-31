@@ -30,6 +30,8 @@ _FR = {
     "MEAL": "REPAS",
     "TRANSPORT": "TRANSPORT",
     "OFF-ROAD SECTIONS": "SECTIONS HORS-ROUTE",
+    # the same flag as a small pill on a single VIA leg's row
+    "OFF-ROAD": "HORS-ROUTE",
     "VIA": "VIA",
     "arrival": "arrivée",
     "OVERNIGHT": "DE NUIT",

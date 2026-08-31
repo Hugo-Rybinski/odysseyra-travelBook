@@ -94,7 +94,10 @@
         { "type": "road", "start": "Karakol", "distance_km": 30,
           "coordinate": { "lat": 42.4817, "long": 78.4003 },
           "waypoints": [
-            { "coordinate": { "lat": 42.3520, "long": 78.2340 }, "location": "Jeti-Oguz" }
+            { "coordinate": { "lat": 42.3520, "long": 78.2340 }, "location": "Jeti-Oguz",
+              "duration": "35 min", "distance_km": 25 },
+            { "coordinate": { "lat": 42.3368, "long": 78.2387 }, "location": "Jeti-Oguz Seven Bulls",
+              "duration": "20 min", "distance_km": 5, "off_road": true }
           ] },
         { "type": "point_of_interest", "name": "Jeti-Oguz Seven Bulls", "category": "viewpoint",
           "coordinate": { "lat": 42.3368, "long": 78.2387 } },

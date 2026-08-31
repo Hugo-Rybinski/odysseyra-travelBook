@@ -144,6 +144,24 @@ def test_road_waypoints_and_legs_are_serialized():
     assert road["start"]
     assert road["waypoints"], "a road serializes its ordered waypoints"
     assert road["destination"], "destination resolves from the last named waypoint"
+    assert "description" in road, "a road carries its optional free prose"
+
+
+def test_road_description_is_optional_and_round_trips():
+    # A road's `description` holds what the structured fields can't say. It
+    # defaults to "" (so the renderers simply skip it) and survives to_dict.
+    base = {"type": "road", "start": "Sarlat",
+            "waypoints": [{"coordinate": {"lat": 43.0, "long": 0.1},
+                           "location": "Cauterets"}]}
+    it = Itinerary.from_dict({"travel_description": {"title": "T"},
+                              "days": [{"title": "D", "activities": [base]}]})
+    assert to_dict(it)["days"][0]["activities"][0]["description"] == ""
+
+    with_desc = dict(base, description="Narrow above Pierrefitte; slow in season.")
+    it2 = Itinerary.from_dict({"travel_description": {"title": "T"},
+                               "days": [{"title": "D", "activities": [with_desc]}]})
+    road2 = to_dict(it2)["days"][0]["activities"][0]
+    assert road2["description"] == "Narrow above Pierrefitte; slow in season."
 
 
 def test_map_pin_defaults_to_none_and_reflects_stamp():

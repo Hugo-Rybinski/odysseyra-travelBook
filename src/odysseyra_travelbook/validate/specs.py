@@ -224,10 +224,12 @@ ACTIVITY_SPECS = {
              "none (not shown)", V_NUMBER),
         Spec("off_road", False, "whether part of the drive is off-road",
              "true or false", "false", V_BOOL),
+        Spec("description", False, "anything about the drive the other fields "
+             "don't cover", "any text", '""'),
         Spec("waypoints", True, "the ordered stops the route runs through "
              "(the last is the arrival)",
-             "a non-empty array of {coordinate, location, duration, distance_km} "
-             "objects"),
+             "a non-empty array of {coordinate, location, duration, distance_km, "
+             "off_road} objects"),
         Spec("activities", False, "nested meals (a stop along the drive)",
              "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],

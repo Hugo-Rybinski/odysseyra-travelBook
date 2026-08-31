@@ -506,6 +506,7 @@ A tz label is only shown in the PDF when it differs from `defaults.timezone`.
 | `coordinate` |  | The departure point (for the map route) | object | `{ "lat": .., "long": .. }` | none |
 | `distance_km` |  | Driving distance | number | positive number | none |
 | `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
+| `description` |  | Anything the other fields don't cover | string | any text | `""` |
 | `waypoints` | ✅ | Ordered stops the route runs through (last = arrival) | array | non-empty array of `waypoint` objects (see below) | — |
 | `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
@@ -514,20 +515,37 @@ through its `waypoints`, in order — the **last waypoint is the arrival**. Ther
 is no separate `end`. The map draws `coordinate → waypoint 1 → … → last
 waypoint`, with a full-opacity accent disc on the departure and every waypoint.
 
+`description` is free prose for what the structured fields can't say — the state
+of the road, a scenic stretch, a pass that closes in winter, a toll or a ferry
+crossing. Both renderers print it under the drive's meta line and **above** the
+`VIA` leg list; leave it out when the legs already tell the story.
+
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `coordinate` | ✅ | The point on the route | object | `{ "lat": .., "long": .. }` | — |
 | `location` |  | The waypoint's name | string | any text | `""` |
 | `duration` |  | Time for the leg reaching it | string | duration (`1h30`, `45 min`) | none |
 | `distance_km` |  | Distance for the leg reaching it | number | positive number | none |
+| `off_road` |  | The leg reaching it runs off-road | boolean | `true` / `false` | `false` |
 
 The waypoints are listed under the road in the PDF (in a lower accent), one row
 per leg (`previous → this waypoint`) — but the list is omitted for a road with a
 single leg (a plain departure→arrival), since the title already shows it. An
 **unnamed** waypoint (no `location`) still gets a map disc but has no row of its
 own — it merges forward into the next named waypoint, its `duration`/`distance_km`
-summed into that leg. If the waypoint `duration`s sum to more than the road's own
-`duration`, validation warns (the segment times can't fit the drive).
+summed into that leg and its `off_road` OR-ed into it. If the waypoint
+`duration`s sum to more than the road's own `duration`, validation warns (the
+segment times can't fit the drive).
+
+**Off-road, per drive or per leg.** The road's own `off_road` says the drive as a
+whole leaves the tarmac and prints the `OFF-ROAD SECTIONS` chip beside the title.
+A waypoint's `off_road` marks **only the leg reaching it**, so a drive that is
+paved to the village and rough for the last 5 km needs no road-level flag: that
+leg's row in the `VIA` list carries a small `OFF-ROAD` chip after its
+duration/distance, in the PDF and the viewer alike. The two are independent —
+setting one never sets the other. The one
+special case: a **single-leg** drive has no `VIA` list, so a flag on its only leg
+is promoted to the road's chip rather than being lost.
 
 #### `point_of_interest` — a specific place
 

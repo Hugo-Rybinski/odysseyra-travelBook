@@ -163,6 +163,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "start", label: "Start (departure)", kind: "text", required: true, placeholder: "Departure address", help: "Departure address/name; also the map route's start. Required." },
     { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km. Optional." },
     { key: "off_road", label: "Off-road", kind: "bool", help: "Highlight off-road sections. Defaults to off." },
+    { key: "description", label: "Description", kind: "textarea", help: "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional." },
   ],
   point_of_interest: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Point-of-interest name", help: "Point-of-interest name. Required." },
@@ -197,6 +198,7 @@ export const WAYPOINT_FIELDS: FieldSpec[] = [
   { key: "location", label: "Location", kind: "text", placeholder: "The waypoint's name", help: "The waypoint's name. Optional — an unnamed waypoint still draws a map pin but merges into the next named leg." },
   { key: "duration", label: "Leg duration", kind: "duration", placeholder: "1h30 / 45 min", help: "Driving time for the leg reaching this waypoint. Optional." },
   { key: "distance_km", label: "Leg distance (km)", kind: "number", help: "Driving distance for the leg reaching this waypoint. Optional." },
+  { key: "off_road", label: "Leg off-road", kind: "bool", help: "Mark just this leg as off-road, without flagging the whole drive. Defaults to off." },
 ];
 
 export const TRANSPORT_FIELDS: FieldSpec[] = [

@@ -375,6 +375,29 @@ class _PDFBase(FPDF):
             self.set_text_color(*FAINT)
             self.cell(w - pw, 5, "  " + secondary)
 
+    def _inline_chip(self, label: str) -> None:
+        """A small filled pill drawn *inline*, at the cursor, inside a text row —
+        used for a VIA leg's off-road marker. Unlike ``_chip`` (which owns its
+        line) this advances x past the pill and leaves y where it was, so the row
+        can carry on with a link afterwards. Follows ``ink_saver`` like the rest:
+        outline + accent text instead of a solid fill."""
+        self.set_font(FONT, "B", 6)
+        tw = self.get_string_width(label) + 3
+        x, y = self.get_x(), self.get_y()
+        if self.ink_saver:
+            self.set_draw_color(*self.accent)
+            self.set_line_width(0.25)
+            self.rect(x, y + 0.9, tw, 3.4, style="D")
+            text_col = self.accent
+        else:
+            self.set_fill_color(*self.accent)
+            self.rect(x, y + 0.9, tw, 3.4, style="F")
+            text_col = (255, 255, 255)
+        self.set_xy(x, y + 0.7)
+        self.set_text_color(*text_col)
+        self.cell(tw, 3.8, label, align="C")
+        self.set_xy(x + tw, y)  # back on the row's baseline for what follows
+
     def _chip(self, x: float, label: str) -> None:
         self.ln(0.8)
         self.set_x(x)

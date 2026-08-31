@@ -92,8 +92,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
   `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
   solid accent areas — the cover banner, the `_band_header` page bands, `_card_bg`,
-  `_badge`, `_pill`, `_chip` — which then render outlines + accent-colored text +
-  thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
+  `_badge`, `_pill`, `_chip`, `_inline_chip` (the small pill drawn *inside* a text
+  row, unlike `_chip` which owns its line — a VIA leg's `OFF-ROAD`) — which then
+  render outlines + accent-colored text + thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
   map (from `maps/`) after the intro plus a numbered legend, and each area's zoom
   map inline after it; it degrades gracefully (a map failure never breaks the build).
 - **`maps/`** — per-day map rendering, imported only when maps are on. `geocode.py`

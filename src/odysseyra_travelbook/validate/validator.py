@@ -28,6 +28,7 @@ from .specs import (
     SCHEDULE,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
+    V_BOOL,
     V_COORDINATE,
     V_CURRENCY,
     V_DUR,
@@ -507,7 +508,8 @@ class _Validator:
     def _road_waypoints(self, act, path):
         """Validate a road's optional ``waypoints`` — each an object with a
         required ``coordinate`` and optional ``location`` / ``duration`` /
-        ``distance_km``. Warns when the segment durations sum past the road's
+        ``distance_km`` / ``off_road`` (all three describing the leg *reaching*
+        that waypoint). Warns when the segment durations sum past the road's
         own duration (they can't fit the drive)."""
         raw = act.get("waypoints")
         if raw is None:
@@ -515,7 +517,7 @@ class _Validator:
         if not isinstance(raw, list):
             self.add("error", path + ("waypoints",),
                      "'waypoints' must be an array of {coordinate, location, "
-                     "duration, distance_km} objects.")
+                     "duration, distance_km, off_road} objects.")
             return
         if not raw:
             self.add("error", path + ("waypoints",),
@@ -543,6 +545,13 @@ class _Validator:
                     self.add("error", wpath + ("distance_km",),
                              "distance_km must be a positive number (got {value}).",
                              value=dk)
+            off = wp.get("off_road")
+            if off is not None:
+                err = V_BOOL(off)
+                if err:
+                    self.add("error", wpath + ("off_road",),
+                             "field '{name}' is invalid ({value}) — {error}.",
+                             name="off_road", value=repr(off), error=self._terr(err))
             dur = wp.get("duration")
             if dur is not None:
                 err = V_DUR(dur)

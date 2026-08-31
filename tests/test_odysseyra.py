@@ -166,27 +166,34 @@ def test_road_display_legs():
     from odysseyra_travelbook.models import Coordinate, Waypoint
     from odysseyra_travelbook.pdf.days import road_display_legs
 
-    def wp(loc=None, d=None, km=None):
+    def wp(loc=None, d=None, km=None, off=False):
         return Waypoint(coordinate=Coordinate(0.0, 0.0), location=loc or "",
-                        duration_min=d, distance_km=km)
+                        duration_min=d, distance_km=km, off_road=off)
 
     # a single named arrival → one leg (the caller hides the VIA list for this);
-    # each leg carries its destination's coordinate as the trailing element
+    # each leg carries its destination's coordinate then its off-road flag
     legs = road_display_legs("A", [wp("B")])
-    assert legs == [("A", "B", None, None, Coordinate(0.0, 0.0))]
+    assert legs == [("A", "B", None, None, Coordinate(0.0, 0.0), False)]
 
     # an unnamed shaping point merges forward into the next named waypoint,
     # summing duration and distance into that one leg
     legs = road_display_legs("A", [wp(None, 30, 10), wp("C", 40, 20)])
-    assert legs == [("A", "C", 70, 30.0, Coordinate(0.0, 0.0))]
+    assert legs == [("A", "C", 70, 30.0, Coordinate(0.0, 0.0), False)]
 
     # two named waypoints → two legs
     legs = road_display_legs("A", [wp("B", 30), wp("C", 40)])
-    assert [(s, d) for s, d, _, _, _ in legs] == [("A", "B"), ("B", "C")]
+    assert [(s, d) for s, d, _, _, _, _ in legs] == [("A", "B"), ("B", "C")]
 
     # a trailing unnamed run yields a final leg with dest=None (the arrival)
     legs = road_display_legs("A", [wp("B"), wp(None, 15)])
-    assert legs[-1] == ("B", None, 15, None, Coordinate(0.0, 0.0))
+    assert legs[-1] == ("B", None, 15, None, Coordinate(0.0, 0.0), False)
+
+    # off_road is per leg: only the flagged leg carries it, and an unnamed
+    # shaping point OR-s its flag into the named leg it merges into
+    legs = road_display_legs("A", [wp("B", 30), wp("C", 40, off=True)])
+    assert [leg[5] for leg in legs] == [False, True]
+    legs = road_display_legs("A", [wp(None, 10, off=True), wp("C", 40)])
+    assert legs == [("A", "C", 50, None, Coordinate(0.0, 0.0), True)]
 
 
 def test_hike_route_normalization():

@@ -62,6 +62,7 @@ export interface SrcWaypoint {
   location?: string;
   duration?: string;
   distance_km?: number;
+  off_road?: boolean; // this leg alone runs off-road
 }
 
 export interface SrcRoad extends SrcScheduled {
@@ -70,6 +71,7 @@ export interface SrcRoad extends SrcScheduled {
   coordinate?: SrcCoordinate; // the departure point
   distance_km?: number;
   off_road?: boolean;
+  description?: string;
   waypoints?: SrcWaypoint[];
   activities?: SrcMeal[]; // nested meals only
 }
