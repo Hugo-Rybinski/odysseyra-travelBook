@@ -283,6 +283,7 @@ class _Validator:
         self._inference_countries(df_obj, df_path or ())
         self._walk_coordinates(data, ())
         self._maps_coherence(df_obj, df_path or ())
+        self._buffer_coherence(df_obj, df_path or ())
 
         days = data.get("days")
         if not isinstance(days, list) or not days:
@@ -727,6 +728,20 @@ class _Validator:
                 self.add("error", base_path + ("inference_countries", i),
                          "inference country {value} is invalid — {error}.",
                          value=repr(code), error=self._terr(err))
+
+    def _buffer_coherence(self, df, df_path):
+        """``buffer`` and ``auto_sized_buffer`` are two answers to the same
+        question — how much room to leave between two activities — so setting
+        both is a contradiction rather than a combination. The auto-sized one
+        wins; say so where the ignored value sits."""
+        if df.get("buffer") in (None, ""):
+            return
+        if "auto_sized_buffer" in df and not _truthy(df.get("auto_sized_buffer")):
+            return  # auto-sizing is off: the fixed buffer is the one in charge
+        self.add("warning", df_path + ("buffer",),
+                 "'buffer' is ignored — 'auto_sized_buffer' is on (it is by "
+                 "default) and sizes the buffers to fill the day instead. Drop one "
+                 "of the two.")
 
     def _maps_coherence(self, df, df_path):
         """Soft checks that only apply when maps are on: a located activity with
@@ -1173,16 +1188,13 @@ class _Validator:
                 self.add("error", ("days", di), "the day's activities run past "
                          "midnight — the schedule doesn't fit in a single day.")
 
-        # activities ending after the day's default end_time
-        df = self._defaults()
-        end_raw = df.get("end_time")
-        if end_raw is not None:
-            try:
-                day_end = _parse_time(end_raw)
-            except ItineraryError:
-                day_end = None
-            if day_end is not None:
-                self._check_end_of_day(day_end)
+        # activities ending after the day's end_time (18:00 unless it says)
+        try:
+            day_end = _parse_time(self._defaults().get("end_time")) or time(18, 0)
+        except ItineraryError:
+            day_end = None  # invalid value, already reported as an error
+        if day_end is not None:
+            self._check_end_of_day(day_end)
 
     def _check_end_of_day(self, day_end):
         """Warn about any activity whose computed end time is after the day's

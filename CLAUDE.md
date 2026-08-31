@@ -157,7 +157,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 
 - **JSON shape.** Two config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
-  `end_time`, `buffer`, `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
+  `end_time` **18:00**, `auto_sized_buffer` **true** / `buffer` 0 (alternatives,
+  not layers), `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
   `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
   `secondary_currencies`, the accommodation calendar-event times
   `accommodation_start_time` 22:00 / `accommodation_end_time` 00:00 (midnight), the maps
@@ -251,6 +252,28 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     validator swaps `SCHEDULE` for `specs.PLACE_SCHEDULE` on a place so the
     missing-`duration` info states *this* default, and the Edit tab mirrors
     that with `PLACE_SCHEDULED_FIELDS`.
+  - **Auto-sized buffers** (`defaults.auto_sized_buffer`, **on** by default)
+    size those gap buffers instead of fixing them, so a day spreads out and its
+    last activity lands on `defaults.end_time` (itself now **18:00** when
+    unset — it used to be `None`, i.e. no end-of-day check at all, so that
+    validator warning is no longer opt-in). `schedule_activities` gained
+    `day_end` + `auto_sized_buffer` and became a wrapper: lay the day out tight
+    once (`_lay_out`) to measure the slack, `_auto_buffer_plan` decides the
+    padding, then **restore the snapshotted scheduling fields** and lay it out
+    again — without the restore the first pass's assigned start times would read
+    as explicit ones on the second and pin everything. The plan cuts the day at
+    every *stated* time (a given `start_time` ends the stretch before it; a given
+    `end_time` ends the stretch it's in, so padding never shortens that
+    activity), shares each stretch's slack evenly over the gaps between
+    consecutive activities, skips a gap a manual `buffer` already fills, and
+    rounds down to `AUTO_BUFFER_STEP` (5 min — a residual under 5 min is
+    unspent, so the day may end up to 4 min early). A stretch where *no*
+    activity has a length is skipped: `kyrgyzstan.json` gives almost no
+    durations, and spreading would have turned it into a page of multi-hour
+    buffers around instant sights. `defaults.buffer` is
+    **superseded, not stacked**: the validator's `_buffer_coherence` warns when
+    both are set and the auto one wins. Because a day's whole timeline moves,
+    this needed a `SCHEMA_VERSION` bump (v14).
   - Transport requires `start_time`; the other of `end_time`/`duration` is inferred,
     tz-aware. An overnight leg (`start_date` given a `start_time`) becomes that
     night's "accommodation".
@@ -367,7 +390,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **Examples are kept in sync and tested.** `examples/france.json` (the flagship:
   a valid, feature-rich France tour, maps on — also the web viewer's **Demo**) and
   `examples/france_fr.json` (same trip in French — build with `--lang fr`);
-  `examples/pyrenees.json` (valid, English), `examples/pyrenees_pieces/` (the same
+  `examples/pyrenees.json` (valid, English — the one example with
+  `auto_sized_buffer` **off** and a fixed `buffer`, so both spacing paths stay
+  rendered), `examples/pyrenees_pieces/` (the same
   trip split into per-file fragments for `stitch` — a test asserts it reassembles
   `pyrenees.json` exactly, so keep the two in sync), `examples/pyrenees_fr.json`
   (same trip in French — build with `--lang fr`), `examples/kyrgyzstan.json`

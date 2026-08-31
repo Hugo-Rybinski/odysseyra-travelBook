@@ -35,7 +35,10 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // a `description` (a short note) — a v11-cached day carries none of them.
 // v13: a `place` with no duration/end_time now lasts its nested activities'
 // total instead of 0, which also shifts every later item on that day's timeline.
-const SCHEMA_VERSION = 13;
+// v14: buffers are auto-sized by default (`defaults.auto_sized_buffer`), so a
+// day's timeline is spread out to `defaults.end_time` (now 18:00 when unset) —
+// every activity moves and the buffers between them change length.
+const SCHEMA_VERSION = 14;
 
 interface Entry {
   day: Day;

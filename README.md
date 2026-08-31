@@ -295,7 +295,8 @@ The top-level object has two config groups and three content arrays:
   accent color, and an optional date range (inferred from the earliest/latest
   date across days, transport and accommodation when not set).
 - **`defaults`** *(object)* — fallback settings applied across the trip: the
-  day start time, inter-activity buffer, time zone, end-of-day check.
+  day start and end time, how the buffers between activities are sized, time
+  zone.
 - **`days`** *(array, required, non-empty)* — the itinerary, one per day.
 - **`transport`** *(array, optional)* — travel legs (also woven into the days).
 - **`accommodations`** *(array, optional)* — where you sleep.
@@ -312,7 +313,6 @@ The top-level object has two config groups and three content arrays:
   "defaults": {
     "start_time": "08:30",
     "end_time": "21:00",
-    "buffer": "15 min",
     "timezone": "+02:00"
   },
   "days": [ /* day objects */ ],
@@ -350,8 +350,9 @@ override and validation cross-checks the itinerary against them.
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `start_time` |  | First activity's start time each day | string | `HH:MM` | `"08:00"` |
-| `end_time` |  | Latest an activity should end (validation warns past it) | string | `HH:MM` | none (no check) |
-| `buffer` |  | Buffer auto-inserted between consecutive activities | string | duration | `0` (no buffer) |
+| `end_time` |  | Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it | string | `HH:MM` | `"18:00"` |
+| `auto_sized_buffer` |  | Size the buffers between a day's activities so the day ends on `end_time` (supersedes `buffer`) | boolean | `true`/`false` | `true` (auto-sized) |
+| `buffer` |  | Fixed buffer inserted between consecutive activities — ignored while `auto_sized_buffer` is on | string | duration | `0` (no fixed buffer) |
 | `timezone` |  | Default UTC offset for all times | string | offset (`+02:00`, `UTC-3`, `Z`) | `GMT` (UTC+0) |
 | `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
 | `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
@@ -366,6 +367,38 @@ override and validation cross-checks the itinerary against them.
 | `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
 | `show_moon_phase` |  | Show the night's moon phase (emoji + name) in each day's "tonight" section | boolean | `true`/`false` | `true` (shown) |
 | `show_sun_times` |  | Show each day's sunrise/sunset (`☀ 06:12 → 21:34`) in its header, computed at that night's accommodation | boolean | `true`/`false` | `true` (shown) |
+
+#### Auto-sized buffers — spreading a day out to `end_time`
+
+By default (`defaults.auto_sized_buffer`) the pauses between a day's activities
+aren't a fixed length: they're **sized** so the day spreads out and its last
+activity lands on `defaults.end_time` (`18:00` unless you set it). Four visits of
+an hour each from `09:00` don't finish at `13:00` and leave five empty hours —
+they get about 1h40 of breathing room between them, which is what the day
+actually looks like.
+
+The rules:
+
+- The slack is shared out **evenly** over the gaps between consecutive
+  activities, in whole steps of **5 minutes** (a leftover of under 5 minutes
+  isn't spent, so a day can end up to 4 minutes early).
+- **A `start_time` you wrote is never moved.** It cuts the day in two: what comes
+  before it is spread out only as far as that time, and what comes after starts
+  there. An explicit `end_time` is a promise too — the activity carrying one ends
+  the stretch it's in, so padding never shortens it.
+- A gap you filled with a **`buffer` activity** is left alone — it already says
+  how long that pause is — and its length counts against the slack.
+- A day with **more** in it than fits before `end_time` is left packed as it is
+  (and validation warns about the overrun); so is a single activity with no gap
+  to spread into.
+- A day where **nothing** gives a duration is left alone too: there's no
+  schedule to space out, and spreading would invent one. Fill in the durations
+  validation is asking for and the spacing follows.
+
+`defaults.buffer` — a *fixed* pause between every two activities — is the
+alternative, not a floor underneath it: with auto-sizing on, `buffer` is ignored
+and validation warns that you set both. Switch `auto_sized_buffer` off to go back
+to the fixed buffer and a day that stays packed.
 
 Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
 <number>}`, where `change_rate` is **units of that currency per one unit of the
@@ -714,7 +747,9 @@ when a restaurant is named.
 #### `buffer` — free time between activities
 
 A `0 min` buffer only suppresses the trip's default buffer at that spot (no line
-drawn). A default buffer and an inferred gap that meet are merged into one.
+drawn). A default buffer and an inferred gap that meet are merged into one. A
+buffer you write yourself is never resized by `defaults.auto_sized_buffer`: it
+states how long that particular pause is, so the spreading skips that gap.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |

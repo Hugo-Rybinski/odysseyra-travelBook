@@ -450,8 +450,19 @@ def activity_from_dict(data: dict) -> Activity:
     return _ACTIVITY_TYPES[kind].from_dict(data)
 
 
+# An auto-sized buffer is rounded down to a whole multiple of this many minutes.
+# A printed schedule is a plan you read off a page, so "1h05" is a break and
+# "1h04" is a division result; whatever is left over (under five minutes) simply
+# isn't spent.
+AUTO_BUFFER_STEP = 5
+
+
 def schedule_activities(
-    activities: list[Activity], day_start: time, default_buffer_min: int = 0
+    activities: list[Activity],
+    day_start: time,
+    default_buffer_min: int = 0,
+    day_end: time | None = None,
+    auto_sized_buffer: bool = False,
 ) -> list[Activity]:
     """Lay activities out on a timeline, inserting buffers, and return the
     resulting ordered list (activities plus any :class:`Buffer` items).
@@ -462,7 +473,108 @@ def schedule_activities(
     * a default buffer (``default_buffer_min``) is inserted between every two
       consecutive activities that don't already have a manual buffer between
       them; a gap left by an explicit ``start_time`` becomes an inferred buffer.
+    * ``auto_sized_buffer`` (with a ``day_end``) instead *sizes* those buffers so
+      the day spreads out and its last activity lands on ``day_end``, per
+      :func:`_auto_buffer_plan`. ``default_buffer_min`` is then ignored — the two
+      are alternatives, not layers: a fixed 15 min between every stop and "fill
+      the day" are two answers to the same question.
     """
+    if not auto_sized_buffer or day_end is None:
+        return _lay_out(activities, day_start, default_buffer_min)
+
+    # Packing the day tight is what reveals how much slack there is, so lay it
+    # out once for measurement. That mutates the activities, so snapshot the
+    # fields the walk fills in and restore them before the real pass — otherwise
+    # it would read the first pass's assigned start times as explicit ones and
+    # treat every activity as pinned.
+    snapshot = [(a.start_time, a.end_time, a.duration_min) for a in activities]
+    _lay_out(activities, day_start, 0)
+    plan = _auto_buffer_plan(activities, snapshot, day_end)
+    for act, (start, end, duration) in zip(activities, snapshot):
+        act.start_time, act.end_time, act.duration_min = start, end, duration
+    padded: list[Activity] = []
+    for i, act in enumerate(activities):
+        padded.append(act)
+        if plan.get(i):
+            padded.append(Buffer(duration_min=plan[i], auto=True))
+    return _lay_out(padded, day_start, 0)
+
+
+def _minute(t: time) -> int:
+    """A clock time as minutes since midnight."""
+    return t.hour * 60 + t.minute
+
+
+def _auto_buffer_plan(
+    activities: list[Activity], snapshot: list[tuple], day_end: time
+) -> dict[int, int]:
+    """How long a buffer to insert *after* each activity index so that every
+    stretch of the day the timeline is free to move fills the room it has.
+
+    Read from ``activities`` — already laid out tight, so each one's ``end_time``
+    is the earliest it can happen — and from ``snapshot``, the ``(start_time,
+    end_time, duration)`` they were *given*, which is what pins them.
+
+    The day is cut into stretches at every time the JSON states, because a stated
+    time is a promise the spacing may not break: a given ``start_time`` fixes
+    where its activity begins, so the stretch before it has to end there, and a
+    given ``end_time`` fixes where its activity finishes, so the stretch ends
+    with that activity (padding ahead of it would only shorten it). The stretch
+    left over is the one running to ``day_end`` — the point of the whole option.
+
+    Each stretch's slack is then shared out evenly over the gaps between its
+    consecutive activities, skipping any gap a manual buffer already fills (it
+    said how long that pause is) and rounding down to ``AUTO_BUFFER_STEP``.
+    """
+    n = len(activities)
+    plan: dict[int, int] = {}
+
+    # cut after any activity whose end is stated, and before any whose start is
+    stretches: list[tuple[int, int]] = []
+    first = 0
+    for i in range(n):
+        closes = snapshot[i][1] is not None
+        next_pinned = i + 1 < n and snapshot[i + 1][0] is not None
+        if closes or next_pinned or i == n - 1:
+            stretches.append((first, i))
+            first = i + 1
+
+    for lo, hi in stretches:
+        if snapshot[hi][1] is not None:
+            continue  # this stretch ends on a stated end_time: nothing may move
+        limit = _minute(day_end) if hi == n - 1 else _minute(snapshot[hi + 1][0])
+        opens, closes_at = activities[lo].start_time, activities[hi].end_time
+        if opens is None or closes_at is None:
+            continue
+        if _minute(closes_at) < _minute(opens):
+            continue  # already spilling past midnight — no room to add any
+        slack = limit - _minute(closes_at)
+        if slack < AUTO_BUFFER_STEP:
+            continue
+        if not any(act.duration_min for act in activities[lo:hi + 1]
+                   if act.kind != "buffer"):
+            # Nothing here says how long it takes, so there is no schedule to
+            # space out — spreading would only invent one ("be at the square at
+            # 18:00") out of a day the validator is already asking you to time.
+            continue
+        gaps = [
+            i for i in range(lo, hi)
+            if activities[i].kind != "buffer" and activities[i + 1].kind != "buffer"
+        ]
+        if not gaps:
+            continue  # nothing between: a lone activity can't be spread out
+        base, extra = divmod(slack // AUTO_BUFFER_STEP, len(gaps))
+        for j, i in enumerate(gaps):
+            size = (base + (1 if j < extra else 0)) * AUTO_BUFFER_STEP
+            if size:
+                plan[i] = size
+    return plan
+
+
+def _lay_out(
+    activities: list[Activity], day_start: time, default_buffer_min: int = 0
+) -> list[Activity]:
+    """The timeline walk itself — see :func:`schedule_activities`."""
     # 1. Insert the trip's default buffer between adjacent real activities.
     expanded: list[Activity] = []
     for item in activities:

@@ -186,10 +186,16 @@ TRAVEL_DESCRIPTION = [
 DEFAULTS = [
     Spec("start_time", False, "the day's default start time (first activity)",
          "a time HH:MM", '"08:00"', V_TIME),
-    Spec("end_time", False, "the latest an activity should end each day",
-         "a time HH:MM", "none (no end-of-day check)", V_TIME),
-    Spec("buffer", False, "a buffer inserted between consecutive activities",
-         "a duration like '15 min'", "0 (no buffer)", V_DUR),
+    Spec("end_time", False, "the time each day's last activity should end at",
+         "a time HH:MM", '"18:00"', V_TIME),
+    Spec("auto_sized_buffer", False,
+         "whether to size the buffers between a day's activities so the day ends "
+         "on 'end_time'",
+         "true or false", "true (buffers are auto-sized)", V_BOOL),
+    Spec("buffer", False,
+         "a fixed buffer inserted between consecutive activities (ignored when "
+         "'auto_sized_buffer' is on)",
+         "a duration like '15 min'", "0 (no fixed buffer)", V_DUR),
     Spec("timezone", False, "the default UTC offset for all times",
          "an offset like '+02:00', 'UTC-3' or 'Z'", "GMT (UTC+0)", V_TZ),
     Spec("breakfast_until", False,

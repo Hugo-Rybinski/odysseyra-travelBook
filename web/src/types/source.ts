@@ -31,8 +31,11 @@ export interface SrcTravelDescription {
 
 export interface SrcDefaults {
   start_time?: string; // HH:MM
-  end_time?: string;
-  buffer?: string; // duration
+  end_time?: string; // HH:MM — where the day's last activity should land (18:00)
+  // Size the buffers between a day's activities so the day ends on `end_time`.
+  // Defaults to **true**, and supersedes `buffer` rather than stacking with it.
+  auto_sized_buffer?: boolean;
+  buffer?: string; // duration — fixed buffer, ignored when auto_sized_buffer is on
   timezone?: string; // UTC offset
   breakfast_until?: string; // HH:MM
   lunch_until?: string;

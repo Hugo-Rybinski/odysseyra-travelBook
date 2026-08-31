@@ -8,7 +8,6 @@
   "defaults": {
     "start_time": "08:30",
     "end_time": "21:00",
-    "buffer": "15 min",
     "timezone": "+02:00",
     "breakfast_until": "10:00",
     "lunch_until": "15:00",

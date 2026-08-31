@@ -1,6 +1,7 @@
 {
   "start_time": "09:00",
   "end_time": "19:00",
+  "auto_sized_buffer": false,
   "buffer": "15 min",
   "timezone": "+02:00",
   "meal_duration": "1h",

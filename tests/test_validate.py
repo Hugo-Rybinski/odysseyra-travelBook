@@ -586,14 +586,43 @@ def test_activity_after_default_end_time_warns():
         _warnings(validate_text(json.dumps(doc))))
 
 
-def test_no_end_time_check_when_default_end_time_absent():
+def test_end_of_day_check_falls_back_to_the_18h_default():
     doc = {
         "travel_description": {"title": "T"},
         "defaults": {"start_time": "09:00"},
         "days": [{"title": "d", "activities": [
             {"type": "point_of_interest", "name": "Late", "duration": "10h"}]}],
     }
-    assert "after the day's end_time" not in _messages(validate_text(json.dumps(doc)))
+    # no end_time given, so the 18:00 default is what 09:00 + 10h is checked
+    # against — the check is always on now.
+    assert "after the day's end_time (18:00)" in _messages(
+        _warnings(validate_text(json.dumps(doc))))
+
+
+def _buffer_doc(**defaults):
+    doc = {"travel_description": {"title": "T"},
+           "defaults": defaults,
+           "days": [{"title": "d", "activities": [
+               {"type": "point_of_interest", "name": "A", "duration": "1h"}]}]}
+    return validate_text(json.dumps(doc))
+
+
+def test_fixed_buffer_with_auto_sizing_on_warns():
+    msg = "'buffer' is ignored"
+    # auto-sizing is on by default, so a fixed buffer alone is already a clash
+    assert msg in _messages(_warnings(_buffer_doc(buffer="15 min")))
+    assert msg in _messages(_warnings(_buffer_doc(buffer="15 min",
+                                                  auto_sized_buffer=True)))
+    # …and no clash once one of the two is out of the way
+    assert msg not in _messages(_buffer_doc(buffer="15 min",
+                                            auto_sized_buffer=False))
+    assert msg not in _messages(_buffer_doc(auto_sized_buffer=True))
+
+
+def test_missing_auto_sized_buffer_states_that_it_is_on():
+    infos = _messages([f for f in _buffer_doc() if f.level == "info"])
+    assert "'auto_sized_buffer' is missing" in infos
+    assert "Defaulting to true (buffers are auto-sized)." in infos
 
 
 def test_build_surfaces_validation_errors(tmp_path, capsys):

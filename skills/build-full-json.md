@@ -139,8 +139,9 @@ setting (e.g. "all times are local Paris time (UTC+2)" or "we start at 9am").
 | Field | Required | Format | Default | Notes |
 |---|---|---|---|---|
 | `start_time` | no | time `HH:MM` | `"08:00"` | When the first activity of each day begins if it gives no start. |
-| `end_time` | no | time `HH:MM` | none | If set, `validate` warns about any activity that ends later. |
-| `buffer` | no | duration (`"15 min"`) | `0` (none) | Free time auto-inserted between consecutive activities. |
+| `end_time` | no | time `HH:MM` | `"18:00"` | Where each day's last activity should land: the buffers are sized to spread the day out to it, and `validate` warns about anything ending later. |
+| `auto_sized_buffer` | no | boolean | `true` | Size the buffers between a day's activities so the day ends on `end_time` (in 5-minute steps). Leave it out unless the source wants a fixed break instead. |
+| `buffer` | no | duration (`"15 min"`) | `0` (none) | A **fixed** break between consecutive activities. **Ignored** while `auto_sized_buffer` is on, so only set it together with `"auto_sized_buffer": false` — setting both is a validator warning. |
 | `timezone` | no | UTC offset (`"+02:00"`, `"UTC-3"`, `"Z"`) | `GMT` (UTC+0) | The default offset for every time in the trip that gives none. |
 | `breakfast_until` | no | time `HH:MM` | `"10:00"` | A meal with no `meal_type` starting at/before this is a **breakfast**. |
 | `lunch_until` | no | time `HH:MM` | `"16:00"` | A meal starting after breakfast and at/before this is **lunch**; later is **dinner**. |
@@ -239,8 +240,12 @@ types. **Timing is usually inferred** — you rarely give every time:
   computed. Give one, or none, and the chain fills in.
 - The first activity starts at the day's default start (`defaults.start_time`,
   else 08:00). Each next activity starts when the previous one ends.
-- Gaps (and the trip's default buffer) become **buffer** activities
-  automatically — you seldom add those by hand.
+- Gaps become **buffer** activities automatically — you seldom add those by
+  hand. By default they are *sized* so the day's last activity lands on
+  `defaults.end_time` (18:00), so a day with a few timed visits is spread out
+  rather than packed into the morning. A `start_time` you write is never moved
+  by that spreading, so give the times the source actually states and let the
+  rest breathe.
 
 Capture the **order** and whatever concrete times/durations the source gives;
 leave the rest out.
@@ -496,8 +501,9 @@ Rules:
 |---|---|---|---|
 | `duration` | **yes** | duration (`"30 min"`) | Length of free time. A `0`-minute buffer *suppresses* the default buffer at that point. |
 
-Only add `buffer` when the source explicitly calls for a fixed break; gaps are
-otherwise generated for you.
+Only add `buffer` when the source explicitly calls for a fixed break ("an hour
+free before dinner"); gaps are otherwise generated for you, and a buffer you
+write is the one thing the auto-sizing leaves at exactly the length you gave.
 
 ### Nesting rules
 

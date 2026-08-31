@@ -7,6 +7,8 @@
   },
   "defaults": {
     "start_time": "9am",
+    "auto_sized_buffer": true,
+    "buffer": "20 min",
     "timezone": "Mars",
     "currency": "EU",
     "secondary_currencies": [

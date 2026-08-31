@@ -141,6 +141,8 @@ def test_activity_types_parse():
     it = Itinerary.from_dict(
         {
             "title": "t",
+            # a parsing test, not a spacing one — keep the timeline packed
+            "defaults": {"auto_sized_buffer": False},
             "days": [
                 {
                     "title": "d",
@@ -441,6 +443,7 @@ def test_subsequent_activity_starts_at_previous_end():
             {"type": "point_of_interest", "name": "B", "duration": "30 min"},
         ],
         default_start_time="09:00",
+        default_auto_sized_buffer=False,
     )
     assert acts[1].start_time.strftime("%H:%M") == "10:00"
     assert acts[1].end_time.strftime("%H:%M") == "10:30"
@@ -543,11 +546,145 @@ def test_default_buffer_inserted_between_activities():
         ],
         default_start_time="09:00",
         default_buffer="15 min",
+        default_auto_sized_buffer=False,
     )
     assert [a.kind for a in acts] == ["point_of_interest", "buffer", "point_of_interest"]
     assert acts[1].duration_min == 15
     assert acts[1].auto is True
     assert acts[2].start_time.strftime("%H:%M") == "10:15"
+
+
+def _spread(activities, **trip):
+    """A day laid out with the auto-sized buffers on (the default), rendered as
+    ``HH:MM-HH:MM kind`` lines so a whole timeline reads in one assertion."""
+    trip.setdefault("default_start_time", "09:00")
+    return [
+        f"{a.start_time:%H:%M}-{a.end_time:%H:%M} {a.kind}"
+        for a in _one_day(activities, **trip)
+    ]
+
+
+_THREE_HOURS = [
+    {"type": "point_of_interest", "name": "A", "duration": "1h"},
+    {"type": "point_of_interest", "name": "B", "duration": "1h"},
+    {"type": "point_of_interest", "name": "C", "duration": "1h"},
+]
+
+
+def test_auto_sized_buffers_spread_the_day_to_the_end_time():
+    # 09:00 → 18:00 is 9h for 3h of activities: 6h shared over the two gaps.
+    assert _spread(_THREE_HOURS) == [
+        "09:00-10:00 point_of_interest",
+        "10:00-13:00 buffer",
+        "13:00-14:00 point_of_interest",
+        "14:00-17:00 buffer",
+        "17:00-18:00 point_of_interest",
+    ]
+
+
+def test_auto_sized_buffers_stop_at_an_explicit_end_time():
+    assert _spread(_THREE_HOURS, default_end_time="15:00")[-1] == (
+        "14:00-15:00 point_of_interest"
+    )
+
+
+def test_auto_sized_buffers_round_down_to_five_minutes():
+    # 09:00 → 17:22 leaves 322 min of slack over 2 gaps: 160 each, and the 2
+    # minutes that won't divide into 5-minute breaks are simply not spent.
+    acts = _one_day(_THREE_HOURS, default_start_time="09:00",
+                    default_end_time="17:22")
+    assert [a.duration_min for a in acts if a.kind == "buffer"] == [160, 160]
+    assert acts[-1].end_time.strftime("%H:%M") == "17:20"
+
+
+def test_auto_sized_buffers_respect_an_explicit_start_time():
+    # B is pinned at 14:00, so only C and D may be spread — and only after it.
+    assert _spread([
+        {"type": "point_of_interest", "name": "A", "duration": "1h"},
+        {"type": "point_of_interest", "name": "B", "start_time": "14:00",
+         "duration": "1h"},
+        {"type": "point_of_interest", "name": "C", "duration": "1h"},
+        {"type": "point_of_interest", "name": "D", "duration": "30 min"},
+    ]) == [
+        "09:00-10:00 point_of_interest",
+        "10:00-14:00 buffer",
+        "14:00-15:00 point_of_interest",
+        "15:00-15:45 buffer",
+        "15:45-16:45 point_of_interest",
+        "16:45-17:30 buffer",
+        "17:30-18:00 point_of_interest",
+    ]
+
+
+def test_auto_sizing_leaves_a_gap_a_manual_buffer_already_fills():
+    # the 20-min buffer says how long that pause is; the slack goes to the
+    # only other gap, so the day still ends at 18:00.
+    assert _spread([
+        {"type": "point_of_interest", "name": "A", "duration": "1h"},
+        {"type": "buffer", "duration": "20 min"},
+        {"type": "point_of_interest", "name": "B", "duration": "1h"},
+        {"type": "point_of_interest", "name": "C", "duration": "1h"},
+    ]) == [
+        "09:00-10:00 point_of_interest",
+        "10:00-10:20 buffer",
+        "10:20-11:20 point_of_interest",
+        "11:20-17:00 buffer",
+        "17:00-18:00 point_of_interest",
+    ]
+
+
+def test_a_lone_activity_is_not_spread_and_an_overrun_day_is_left_alone():
+    assert _spread([{"type": "point_of_interest", "name": "A", "duration": "1h"}]) == [
+        "09:00-10:00 point_of_interest"
+    ]
+    assert _spread([
+        {"type": "point_of_interest", "name": "A", "duration": "4h"},
+        {"type": "point_of_interest", "name": "B", "duration": "6h"},
+    ]) == [
+        "09:00-13:00 point_of_interest",
+        "13:00-19:00 point_of_interest",
+    ]
+
+
+def test_a_day_with_no_durations_at_all_is_not_spread():
+    # nothing says how long anything takes, so there is no schedule to space
+    # out — spreading would invent one. (The validator asks for the durations.)
+    assert _spread([
+        {"type": "point_of_interest", "name": "A"},
+        {"type": "point_of_interest", "name": "B"},
+    ]) == [
+        "09:00-09:00 point_of_interest",
+        "09:00-09:00 point_of_interest",
+    ]
+    # one timed activity is enough for the day to have a shape
+    assert _spread([
+        {"type": "point_of_interest", "name": "A"},
+        {"type": "point_of_interest", "name": "B", "duration": "1h"},
+    ]) == [
+        "09:00-09:00 point_of_interest",
+        "09:00-17:00 buffer",
+        "17:00-18:00 point_of_interest",
+    ]
+
+
+def test_auto_sizing_supersedes_the_fixed_default_buffer():
+    # the two are alternatives: with auto-sizing on, `buffer` is not a floor
+    # under it — the gaps are sized to the day, not to 15 min plus the day.
+    assert _spread(_THREE_HOURS, default_buffer="15 min") == _spread(_THREE_HOURS)
+
+
+def test_auto_sizing_can_be_switched_off():
+    assert _spread(_THREE_HOURS, default_auto_sized_buffer=False) == [
+        "09:00-10:00 point_of_interest",
+        "10:00-11:00 point_of_interest",
+        "11:00-12:00 point_of_interest",
+    ]
+
+
+def test_default_end_time_is_6pm():
+    assert Itinerary.from_dict(
+        {"title": "t", "days": [{"title": "d"}]}
+    ).default_end_time.strftime("%H:%M") == "18:00"
 
 
 def test_manual_buffer_honored_and_suppresses_default():

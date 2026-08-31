@@ -102,8 +102,12 @@ class Itinerary:
     summary: str = ""
     cover_color: str = "#1f4e5f"
     default_start_time: time = time(8, 0)
-    default_end_time: time | None = None
+    default_end_time: time = time(18, 0)
     default_buffer_min: int = 0
+    # Size the buffers between a day's activities so the day spreads out and its
+    # last activity lands on `default_end_time` (opt-out). Supersedes
+    # `default_buffer_min` rather than stacking with it.
+    auto_sized_buffer: bool = True
     default_timezone: int = 0  # GMT / UTC+0
     default_meal_breakfast_until: time = time(10, 0)
     default_meal_lunch_until: time = time(16, 0)
@@ -149,8 +153,9 @@ class Itinerary:
             raise ItineraryError("Itinerary needs a non-empty 'days' array")
 
         default_start = _parse_time(defaults.get("start_time")) or time(8, 0)
-        default_end = _parse_time(defaults.get("end_time"))
+        default_end = _parse_time(defaults.get("end_time")) or time(18, 0)
         default_buffer = _parse_duration(defaults.get("buffer")) or 0
+        auto_sized_buffer = _parse_bool(defaults.get("auto_sized_buffer", True))
         default_tz = _parse_tz(defaults.get("timezone", data.get("timezone")))
         if default_tz is None:
             default_tz = 0  # GMT / UTC+0
@@ -183,6 +188,7 @@ class Itinerary:
             default_start_time=default_start,
             default_end_time=default_end,
             default_buffer_min=default_buffer,
+            auto_sized_buffer=auto_sized_buffer,
             default_timezone=default_tz,
             default_meal_breakfast_until=breakfast_until,
             default_meal_lunch_until=lunch_until,
@@ -228,7 +234,8 @@ class Itinerary:
                     # set *below* the total.
                     act.duration_min = nested_duration_total(act.activities)
             day.activities = schedule_activities(
-                day.activities, default_start, default_buffer
+                day.activities, default_start, default_buffer,
+                day_end=default_end, auto_sized_buffer=auto_sized_buffer,
             )
             # Resolve each meal's category now the timeline (and so each meal's
             # start time) is settled, using the trip's meal thresholds.

@@ -451,10 +451,16 @@ _FR = {
     "a paragraph shown on the cover": "un paragraphe affiché sur la couverture",
     "the day's default start time (first activity)":
         "l'heure de début par défaut de la journée (première activité)",
-    "the latest an activity should end each day":
-        "l'heure la plus tardive à laquelle une activité doit finir",
-    "a buffer inserted between consecutive activities":
-        "une pause insérée entre deux activités consécutives",
+    "the time each day's last activity should end at":
+        "l'heure à laquelle la dernière activité de chaque journée doit finir",
+    "whether to size the buffers between a day's activities so the day ends on "
+    "'end_time'":
+        "s'il faut dimensionner les pauses entre les activités d'une journée pour "
+        "qu'elle finisse à « end_time »",
+    "a fixed buffer inserted between consecutive activities (ignored when "
+    "'auto_sized_buffer' is on)":
+        "une pause fixe insérée entre deux activités consécutives (ignorée quand "
+        "« auto_sized_buffer » est activé)",
     "the default UTC offset for all times":
         "le décalage UTC par défaut pour toutes les heures",
     "meals starting before this are categorized as breakfast":
@@ -613,8 +619,9 @@ _FR = {
     '"#1f4e5f" (teal)': "« #1f4e5f » (bleu-vert)",
     '"" (no summary shown)': "« » (aucun résumé)",
     '"08:00"': "« 08:00 »",
-    "none (no end-of-day check)": "aucune (pas de contrôle de fin de journée)",
-    "0 (no buffer)": "0 (aucune pause)",
+    '"18:00"': "« 18:00 »",
+    "true (buffers are auto-sized)": "vrai (les pauses sont dimensionnées)",
+    "0 (no fixed buffer)": "0 (aucune pause fixe)",
     "GMT (UTC+0)": "GMT (UTC+0)",
     '"10:00"': "« 10:00 »",
     '"16:00"': "« 16:00 »",
@@ -729,6 +736,11 @@ _FR = {
     "it is ignored.":
         "« inference_countries » est défini mais « infer_coordinates_from_address » "
         "est désactivé — il est ignoré.",
+    "'buffer' is ignored — 'auto_sized_buffer' is on (it is by default) and "
+    "sizes the buffers to fill the day instead. Drop one of the two.":
+        "« buffer » est ignoré — « auto_sized_buffer » est activé (il l'est par "
+        "défaut) et dimensionne les pauses pour remplir la journée. Supprimez "
+        "l'un des deux.",
     # -- validation: value-check messages (the parenthetical "(...)") --
     "must be a number": "doit être un nombre",
     "must be a number, not a boolean": "doit être un nombre, pas un booléen",

@@ -379,13 +379,15 @@ export const FR: Record<string, string> = {
   "The first activity's start time each day. Defaults to 08:00.":
     "Heure de début de la première activité chaque jour. Par défaut 08:00.",
   "End time": "Heure de fin",
-  "none (no check)": "aucune (pas de contrôle)",
-  "The latest an activity should end; validation warns past it. No check when unset.":
-    "L'heure limite à laquelle une activité devrait se terminer ; la validation avertit au-delà. Aucun contrôle si non défini.",
+  "Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it. Defaults to 18:00.":
+    "L'heure où devrait tomber la dernière activité de chaque journée : les pauses dimensionnées étalent la journée jusque-là, et la validation avertit au-delà. Par défaut 18:00.",
+  "Auto-sized buffer": "Pause dimensionnée",
+  "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — un-tick to fall back to the fixed “Buffer” below.":
+    "Dimensionne les pauses entre les activités d'une journée pour l'étaler jusqu'à « Heure de fin », par pas de 5 min. Activé par défaut — décochez pour revenir à la « Pause » fixe ci-dessous.",
   // "Buffer" is defined once in the activity-type labels above (→ "Pause").
-  "0 (no buffer)": "0 (aucune pause)",
-  "Buffer auto-inserted between consecutive activities. Defaults to 0 (none).":
-    "Pause insérée automatiquement entre activités consécutives. Par défaut 0 (aucune).",
+  "0 (no fixed buffer)": "0 (aucune pause fixe)",
+  "A fixed buffer inserted between consecutive activities. Ignored while “Auto-sized buffer” is on. Defaults to 0 (none).":
+    "Pause fixe insérée entre activités consécutives. Ignorée tant que « Pause dimensionnée » est activée. Par défaut 0 (aucune).",
   "Time zone": "Fuseau horaire",
   "Default UTC offset for all times (e.g. +02:00, UTC-3, Z). Defaults to GMT (UTC+0).":
     "Décalage UTC par défaut pour toutes les heures (ex. +02:00, UTC-3, Z). Par défaut GMT (UTC+0).",

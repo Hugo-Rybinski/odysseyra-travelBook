@@ -120,8 +120,9 @@ export const TRAVEL_DESCRIPTION_FIELDS: FieldSpec[] = [
 
 export const DEFAULTS_FIELDS: FieldSpec[] = [
   { key: "start_time", label: "Start time", kind: "time", placeholder: "08:00", help: "The first activity's start time each day. Defaults to 08:00." },
-  { key: "end_time", label: "End time", kind: "time", placeholder: "none (no check)", help: "The latest an activity should end; validation warns past it. No check when unset." },
-  { key: "buffer", label: "Buffer", kind: "duration", placeholder: "0 (no buffer)", help: "Buffer auto-inserted between consecutive activities. Defaults to 0 (none)." },
+  { key: "end_time", label: "End time", kind: "time", placeholder: "18:00", help: "Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it. Defaults to 18:00." },
+  { key: "auto_sized_buffer", label: "Auto-sized buffer", kind: "bool", defaultOn: true, help: "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — un-tick to fall back to the fixed “Buffer” below." },
+  { key: "buffer", label: "Buffer", kind: "duration", placeholder: "0 (no fixed buffer)", help: "A fixed buffer inserted between consecutive activities. Ignored while “Auto-sized buffer” is on. Defaults to 0 (none)." },
   { key: "timezone", label: "Time zone", kind: "tz", placeholder: "GMT", help: "Default UTC offset for all times (e.g. +02:00, UTC-3, Z). Defaults to GMT (UTC+0)." },
   { key: "breakfast_until", label: "Breakfast until", kind: "time", placeholder: "10:00", help: "A meal starting before this is inferred as breakfast. Defaults to 10:00." },
   { key: "lunch_until", label: "Lunch until", kind: "time", placeholder: "16:00", help: "A meal up to this (after breakfast) is lunch; later is dinner. Defaults to 16:00." },
