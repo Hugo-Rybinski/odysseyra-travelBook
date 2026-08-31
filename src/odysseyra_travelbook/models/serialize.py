@@ -126,6 +126,22 @@ def _track(itin: Itinerary, act) -> dict | None:
     }
 
 
+def _opening(op) -> dict | None:
+    """A point of interest's opening days/hours (``None`` when it states
+    neither). ``day_runs`` is the *folded* form — consecutive days already
+    grouped into ``(first, last)`` pairs — so the viewer only has to name the
+    weekdays, not work out the runs; ``hours_display`` is digits only, hence
+    language-neutral and precomputed once here."""
+    if op is None:
+        return None
+    return {
+        "days": list(op.days),
+        "day_runs": [list(run) for run in op.day_runs],
+        "hours": [[f"{o:%H:%M}", f"{c:%H:%M}"] for o, c in op.hours],
+        "hours_display": op.hours_display,
+    }
+
+
 def _sched(obj, default_tz: int | None) -> dict:
     """The shared timeline fields carried by every scheduled object. The UTC
     offsets are emitted as ``start_tz``/``end_tz`` (integer minutes) with a
@@ -195,6 +211,7 @@ def _activity(itin: Itinerary, act) -> dict:
             "guidebook_pages": act.guidebook_pages,
             "category": act.category,
             "website": act.website,
+            "opening": _opening(act.opening),
         })
 
     elif act.kind == "place":

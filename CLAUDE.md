@@ -81,6 +81,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     `profile` (`PROFILE_POINTS` samples), and the measured
     distance/ascent/descent/min/max. Pure stdlib, no network. Ascent is smoothed
     + accumulated with hysteresis so altimeter jitter isn't counted as climb.
+  - `opening.py` — a point of interest's `opening_days` / `opening_hours` parsed
+    into one `Opening` (`WEEKDAYS`, `parse_opening`, `day_runs`/`hours_display`,
+    `closed_on`/`covers`). Pure data: the localized naming lives in `lang/dates.py`.
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
@@ -131,7 +134,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `geocode` command),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
   `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
-- **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`),
+- **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`,
+  plus `weekday_name` and `fmt_weekday_runs` for a POI's opening days),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
 - **`ics.py`** — `build_ics(itinerary, output=None, lang, now=None)` exports a
   resolved itinerary to an iCalendar (`.ics`) string (CLI `ics`, and the viewer's
@@ -336,6 +340,36 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   real French holiday, and `kyrgyzstan.json` is dateless, so flagging one would
   contradict that skill guidance. `broken.json` carries an invalid value for the
   validator's `V_BOOL`, and `tests/test_bank_holiday.py` covers the rest.
+- **A point of interest's opening days & hours.** Two optional strings on
+  `point_of_interest` alone — `opening_days` (`tue-sun` / `mon-fri, sun`; single
+  days and/or ranges, English names or 3-letter prefixes, a range may wrap the
+  week) and `opening_hours` (`09:30-18:00` / `09:30-12:30, 14:00-18:00`; a close
+  before its open crosses midnight). Deliberately **compact strings, not
+  objects**: a guidebook line ("Tue–Sun 9.30–12.30 & 2–6pm") transcribes as it
+  stands, and the Edit tab needs two text inputs. `models/opening.py` reduces
+  both to one frozen `Opening` (`None` when neither is given, so *absent* means
+  every day / all day rather than "unknown") carrying `day_runs` — the days
+  folded back into `(first, last)` pairs, **wrapping the week** so a place shut
+  on Tuesdays reads `Wed–Mon` (the printed convention) instead of splitting into
+  `Mon, Wed–Sun` — and the language-neutral `hours_display` (`09:30–12:30, 14:00–18:00`,
+  digits only, hence computed once). Weekday *names* do need localizing, so each
+  renderer names the runs itself: `lang/dates.py`'s `fmt_weekday_runs` for the
+  PDF/validator/ICS, `render/format.ts`'s `fmtWeekdayRuns` (+ the `wdMon`…`wdSun`
+  keys, mirroring `_WEEKDAY_ABBR`) for the viewer — keep those two in step, and
+  `WEEKDAYS` in step with `_WEEKDAY_FULL["en"]` lowercased (a test pins that).
+  Both renderers draw one row under the address — `Open   Tue–Sun  ·  09:30–…`,
+  `pdf/days.py`'s `_opening_line` (top-level *and* nested POI) and `DayCard.tsx`'s
+  `Opening` / `.act-opening` — and the `.ics` packs an `Open:` detail line.
+  Neither renderer flags a visit falling **outside** the opening: that is the
+  validator's `_check_opening`, because the fix belongs in the JSON. It reads the
+  *resolved* timeline (a visit's start time is normally inferred, so checking the
+  raw JSON would catch almost nothing), via the new memoized `_model()` +
+  `_resolved_activities()` — which `_check_end_of_day` now shares, so the model
+  is built once. `covers()` requires the visit to fit inside a **single** range,
+  which is the whole reason a midday closure is kept as two. A **nested** stop is
+  never scheduled, so it gets the closed-day check but not the hours one.
+  `skills/build-full-json.md` insists these be kept whenever the source states
+  them, and — unlike `bank_holiday` — explicitly forbids looking them up.
 - **Guidebook pages.** The four activity types that carry a `description` —
   `road`, `point_of_interest`, `place`, `hike` — also carry an optional
   `guidebook_pages` string: page numbers only (`14` / `15-18` /

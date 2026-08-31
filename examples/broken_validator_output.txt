@@ -51,6 +51,8 @@
 ❌  line 42: field 'category' is invalid ('alien') — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other (must be one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other).
 ❌  line 42: field 'guidebook_pages' is invalid ('see pp. 12-14') — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30' (must be page numbers like '14', '15-18' or '16, 23, 25-30').
 ❌  line 42: field 'website' is invalid ('ftp://nope') — a link to the venue's website. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
+❌  line 42: field 'opening_days' is invalid ('funday') — the days it opens (the visit is checked against them). Expected weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun' (Invalid opening_days 'funday', expected weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun').
+❌  line 42: field 'opening_hours' is invalid ('09:30') — the hours it opens (the visit is checked against them). Expected time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00' (Invalid opening_hours '09:30', expected time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00').
 ❌  line 42: start time, end time and duration are incompatible — the three don't agree. Provide only two of start_time / end_time / duration, or make them consistent.
 ❌  line 42: this overlaps an earlier item on the day's timeline — their start/end times collide.
 ℹ️  line 42: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
@@ -96,12 +98,14 @@
 ℹ️  line 53: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ❌  line 54: a nested activity must be an object with a 'type' of one of: point_of_interest, hike, meal.
 ❌  line 56: a nested activity can't contain its own nested activities — nesting is only one level deep.
+❌  line 60: field 'opening_hours' is invalid ('10:00-10:00') — the hours it opens (the visit is checked against them). Expected time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00' (opening_hours range '10:00-10:00' opens and closes at the same time — give the closing time, or drop the range).
 ⚠️  line 60: the nested activities last 2h45 in total, longer than this activity's 1h — they can't all fit inside it.
 ℹ️  line 60: optional field 'category' is missing — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other. Defaulting to "other".
 ℹ️  line 60: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
 ℹ️  line 60: optional field 'description' is missing — a description. Expected any text. Defaulting to "".
 ℹ️  line 60: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 60: optional field 'website' is missing — a link to the venue's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 60: optional field 'opening_days' is missing — the days it opens (the visit is checked against them). Expected weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun'. Defaulting to every day (no closed-day check).
 ℹ️  line 60: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
 ℹ️  line 60: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
 ℹ️  line 60: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
@@ -248,4 +252,4 @@
 ❌  line 88: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 88: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-66 error(s), 19 warning(s), 164 info.
+69 error(s), 19 warning(s), 165 info.

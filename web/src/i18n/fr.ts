@@ -518,6 +518,12 @@ export const FR: Record<string, string> = {
   Website: "Site web",
   "Link to the venue's website, shown as a clickable link. Optional.":
     "Lien vers le site du lieu, affiché comme lien cliquable. Facultatif.",
+  "Opening days": "Jours d'ouverture",
+  "The days it opens — weekday names, single days and/or ranges (e.g. tue-sun, mon-fri, sun). Shown under the address, and you get a warning if the visit falls on another day. Defaults to every day.":
+    "Les jours d'ouverture — des noms de jours en anglais, jours seuls et/ou plages (ex. tue-sun, mon-fri, sun). Affichés sous l'adresse, avec un avertissement si la visite tombe un autre jour. Tous les jours par défaut.",
+  "Opening hours": "Horaires d'ouverture",
+  "The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day.":
+    "Les horaires d'ouverture — une ou plusieurs plages HH:MM-HH:MM, pour qu'une fermeture le midi reste deux plages (ex. 09:30-12:30, 14:00-18:00). Affichés sous l'adresse, avec un avertissement si la visite tombe en dehors. Toute la journée par défaut.",
 
   // Place
   "Place name": "Nom du lieu",

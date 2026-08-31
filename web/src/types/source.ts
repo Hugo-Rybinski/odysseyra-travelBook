@@ -91,6 +91,10 @@ export interface SrcPoi extends SrcScheduled {
   description?: string;
   guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   website?: string;
+  // When it opens, checked against the visit by the validator. Compact strings:
+  // "tue-sun" / "mon-fri, sun", and "09:30-18:00" / "09:30-12:30, 14:00-18:00".
+  opening_days?: string;
+  opening_hours?: string;
   coordinate?: SrcCoordinate;
   activities?: SrcNestedActivity[]; // poi | hike | meal
 }

@@ -27,7 +27,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
-from .lang import fmt_date, tr
+from .lang import fmt_date, fmt_weekday_runs, tr
 from .models import Itinerary
 from .models.currency import format_money
 
@@ -189,6 +189,7 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
             location = act.destination or act.start
         elif act.kind == "point_of_interest":
             _detail(lines, "Category", tr(act.category, lang), lang)
+            _detail(lines, "Open", _opening(act, lang), lang)
             _detail(lines, "Address", act.address, lang)
             _detail(lines, "Website", act.website, lang)
             _detail(lines, "Description", act.description, lang)
@@ -358,6 +359,21 @@ def _pages(act, lang: str) -> str:
     none). Only road / point_of_interest / place / hike carry the field."""
     pages = getattr(act, "guidebook_pages", "")
     return tr("p. {pages}", lang).format(pages=pages) if pages else ""
+
+
+def _opening(act, lang: str) -> str:
+    """A point of interest's opening days/hours on one line — ``Tue–Sun, 09:30–
+    12:30, 14:00–18:00`` ("" when it states neither). Only a point of interest
+    carries the field."""
+    opening = getattr(act, "opening", None)
+    if opening is None:
+        return ""
+    parts = []
+    if opening.day_runs:
+        parts.append(fmt_weekday_runs(opening.day_runs, lang))
+    if opening.hours:
+        parts.append(opening.hours_display)
+    return ", ".join(parts)
 
 
 def _km(value) -> str:

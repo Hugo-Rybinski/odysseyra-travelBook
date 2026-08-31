@@ -5,6 +5,7 @@ The model is split across submodules:
 * :mod:`.parsers` — scalar parsers and ``ItineraryError``;
 * :mod:`.activities` — the activity types and the day-scheduling pass;
 * :mod:`.gpx` — a hike's embedded GPX track (decode, parse, measure);
+* :mod:`.opening` — a point of interest's opening days and hours;
 * :mod:`.transport` — the ``Transport`` leg;
 * :mod:`.accommodation` — the ``Accommodation``;
 * :mod:`.itinerary` — the ``Day`` and ``Itinerary`` aggregates.
@@ -20,6 +21,13 @@ from .geo import (
     _parse_coordinate,
 )
 from .gpx import GpxTrack, decode_gpx, gpx_track, parse_gpx
+from .opening import (
+    WEEKDAYS,
+    Opening,
+    _parse_opening_days,
+    _parse_opening_hours,
+    parse_opening,
+)
 from .currency import (
     CURRENCY_SYMBOLS,
     SecondaryCurrency,
@@ -92,6 +100,9 @@ __all__ = [
     "MoonPhase",
     "moon_phase",
     "NESTED_ACTIVITY_TYPES",
+    "Opening",
+    "parse_opening",
+    "WEEKDAYS",
     "Place",
     "POI_CATEGORIES",
     "PointOfInterest",
@@ -111,5 +122,7 @@ __all__ = [
     "schedule_activities",
     "_parse_coordinate",
     "_parse_currency",
+    "_parse_opening_days",
+    "_parse_opening_hours",
     "_parse_price",
 ]

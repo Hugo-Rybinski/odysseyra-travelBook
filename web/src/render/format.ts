@@ -126,6 +126,18 @@ const LABELS = {
     // uppercase; here CSS uppercases it — keep the wordings in step.
     bankHoliday: "Bank holiday",
     bankHolidayNote: "Expect closures and reduced opening hours.",
+    // A point of interest's opening days/hours (its `opening`). The label is the
+    // same English source the PDF localizes via translations.py; the weekday
+    // abbreviations mirror lang/dates.py's `_WEEKDAY_ABBR`, Monday first — keep
+    // both in step. The hours need no key: `hours_display` is digits only.
+    open: "Open",
+    wdMon: "Mon",
+    wdTue: "Tue",
+    wdWed: "Wed",
+    wdThu: "Thu",
+    wdFri: "Fri",
+    wdSat: "Sat",
+    wdSun: "Sun",
     // Weather-forecast condition labels (WMO codes → text; see weather.ts wmo()).
     wxClear: "Clear sky",
     wxMainlyClear: "Mainly clear",
@@ -220,6 +232,14 @@ const LABELS = {
     sunTimesMoon: "☀️ Lever : {sunrise}, Coucher : {sunset}, {emoji} {moon}",
     bankHoliday: "Jour férié",
     bankHolidayNote: "Attendez-vous à des fermetures et à des horaires réduits.",
+    open: "Ouvert",
+    wdMon: "lun.",
+    wdTue: "mar.",
+    wdWed: "mer.",
+    wdThu: "jeu.",
+    wdFri: "ven.",
+    wdSat: "sam.",
+    wdSun: "dim.",
     wxClear: "Ciel dégagé",
     wxMainlyClear: "Plutôt dégagé",
     wxPartlyCloudy: "Partiellement nuageux",
@@ -241,6 +261,32 @@ export type LabelKey = keyof (typeof LABELS)["en"];
 
 export function tr(lang: Lang, key: LabelKey): string {
   return LABELS[lang][key];
+}
+
+// The canonical weekday keys an `Opening` speaks in (models/opening.py's
+// WEEKDAYS) → their label key here. Monday first, like the model's week order.
+const WEEKDAY_KEYS: Record<string, LabelKey> = {
+  monday: "wdMon",
+  tuesday: "wdTue",
+  wednesday: "wdWed",
+  thursday: "wdThu",
+  friday: "wdFri",
+  saturday: "wdSat",
+  sunday: "wdSun",
+};
+
+/** A point of interest's opening-day runs, localized: `[["tuesday","sunday"]]`
+ * → `Tue–Sun` / `mar.–dim.`, and a run of one day → that day alone. The runs
+ * arrive already folded by the model, so this only names them — the mirror of
+ * `lang/dates.py`'s `fmt_weekday_runs`, which the PDF uses. */
+export function fmtWeekdayRuns(runs: [string, string][], lang: Lang): string {
+  const name = (key: string) => {
+    const label = WEEKDAY_KEYS[key];
+    return label ? tr(lang, label) : key;
+  };
+  return runs
+    .map(([first, last]) => (first === last ? name(first) : `${name(first)}–${name(last)}`))
+    .join(", ");
 }
 
 /** Fill {placeholders} in a label template. */

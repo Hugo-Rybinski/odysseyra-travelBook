@@ -8,6 +8,7 @@ from datetime import time
 
 from .geo import Coordinate, _parse_coordinate
 from .gpx import GpxTrack, gpx_track
+from .opening import Opening, parse_opening
 from .parsers import (
     ItineraryError,
     _add_minutes,
@@ -174,7 +175,13 @@ POI_CATEGORIES = (
 
 @dataclass
 class PointOfInterest(Activity):
-    """A visit to a specific point of interest."""
+    """A visit to a specific point of interest.
+
+    ``opening`` is the optional ``opening_days`` / ``opening_hours`` pair reduced
+    to one :class:`.opening.Opening` (``None`` when neither is given): both
+    renderers print it under the address, and the validator warns when the visit
+    lands on a closed day or outside the hours.
+    """
 
     kind = "point_of_interest"
     name: str = ""
@@ -183,6 +190,7 @@ class PointOfInterest(Activity):
     guidebook_pages: str = ""
     category: str = "other"
     website: str = ""  # the venue's website
+    opening: Opening | None = None
     activities: list[Activity] = field(default_factory=list)
 
     @property
@@ -207,6 +215,7 @@ class PointOfInterest(Activity):
             guidebook_pages=_pages(d),
             category=category,
             website=str(d.get("website", "")),
+            opening=parse_opening(d),
             activities=_nested(d, "point_of_interest"),
         )
 

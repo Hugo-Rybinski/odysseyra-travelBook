@@ -39,8 +39,10 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // day's timeline is spread out to `defaults.end_time` (now 18:00 when unset) —
 // every activity moves and the buffers between them change length. v15: a day
 // gained `bank_holiday`, which draws the holiday banner — a v14-cached day
-// carries the flag nowhere, so the banner would never appear for it.
-const SCHEMA_VERSION = 15;
+// carries the flag nowhere, so the banner would never appear for it. v16: a
+// point of interest gained `opening` (its opening days/hours), drawn under the
+// address — a v15-cached day carries it nowhere.
+const SCHEMA_VERSION = 16;
 
 interface Entry {
   day: Day;

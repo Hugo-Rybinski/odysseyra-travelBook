@@ -4,7 +4,7 @@ tables in :mod:`.dates`."""
 
 from __future__ import annotations
 
-from .dates import fmt_date
+from .dates import fmt_date, fmt_weekday_runs, weekday_name
 from .translations import TRANSLATIONS
 
 LANGUAGES = ("en", "fr")
@@ -23,4 +23,5 @@ def tr(text: str, lang: str = DEFAULT_LANGUAGE) -> str:
     return TRANSLATIONS.get(_lang(lang), {}).get(text, text)
 
 
-__all__ = ["LANGUAGES", "DEFAULT_LANGUAGE", "tr", "fmt_date", "TRANSLATIONS"]
+__all__ = ["LANGUAGES", "DEFAULT_LANGUAGE", "tr", "fmt_date", "fmt_weekday_runs",
+           "weekday_name", "TRANSLATIONS"]

@@ -115,6 +115,11 @@ _FR = {
     "BANK HOLIDAY": "JOUR FÉRIÉ",
     "Expect closures and reduced opening hours.":
         "Attendez-vous à des fermetures et à des horaires réduits.",
+    # A point of interest's opening days/hours (poi 'opening_days' /
+    # 'opening_hours'): the label leading the row, and the same word as an ICS
+    # detail line. The weekday names come localized from lang/dates.py, and the
+    # hours are digits only — so this is the only string to translate.
+    "Open": "Ouvert",
     # Moon phases (in that line, or in the "tonight" section when the sun times
     # are off or don't fit).
     "New moon": "Nouvelle lune",
@@ -338,6 +343,29 @@ _FR = {
     "this activity ends at {end}, after the day's end_time ({day_end}).":
         "cette activité se termine à {end}, après l'heure de fin de journée "
         "({day_end}).",
+    # A point of interest visited when it's shut (poi 'opening_days' /
+    # 'opening_hours'). {weekday} and {days} arrive already localized; {hours} is
+    # digits only.
+    "this visit falls on a {weekday}, but '{name}' only opens {days} — it will "
+    "be closed.":
+        "cette visite tombe un {weekday}, alors que « {name} » n'ouvre que "
+        "{days} — ce sera fermé.",
+    "this visit ({visit}) falls outside the opening hours of '{name}' "
+    "({hours}).":
+        "cette visite ({visit}) est en dehors des horaires d'ouverture de "
+        "« {name} » ({hours}).",
+    "Invalid opening_days {value}, expected weekday names like 'tue-sun', "
+    "'monday, thursday' or 'mon-fri, sun'":
+        "opening_days invalide {value}, attendu des noms de jours comme "
+        "« tue-sun », « monday, thursday » ou « mon-fri, sun »",
+    "Invalid opening_hours {value}, expected time ranges like '09:30-18:00' "
+    "or '09:30-12:30, 14:00-18:00'":
+        "opening_hours invalide {value}, attendu des plages horaires comme "
+        "« 09:30-18:00 » ou « 09:30-12:30, 14:00-18:00 »",
+    "opening_hours range {value} opens and closes at the same time — give the "
+    "closing time, or drop the range":
+        "la plage opening_hours {value} ouvre et ferme à la même heure — "
+        "indiquez l'heure de fermeture, ou retirez la plage",
     "trip end_date ({ed}) is before start_date ({sd}).":
         "la date de fin du voyage ({ed}) est avant la date de début ({sd}).",
     "day date {d} is duplicated (also on day {other}).":
@@ -509,6 +537,20 @@ _FR = {
         "le type de lieu, affiché comme badge",
     "the address": "l'adresse",
     "a description": "une description",
+    "the days it opens (the visit is checked against them)":
+        "les jours d'ouverture (la visite est vérifiée par rapport à eux)",
+    "weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun'":
+        "des noms de jours comme « tue-sun », « monday, thursday » ou "
+        "« mon-fri, sun »",
+    "every day (no closed-day check)":
+        "tous les jours (pas de vérification des jours de fermeture)",
+    "the hours it opens (the visit is checked against them)":
+        "les horaires d'ouverture (la visite est vérifiée par rapport à eux)",
+    "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00'":
+        "des plages horaires comme « 09:30-18:00 » ou "
+        "« 09:30-12:30, 14:00-18:00 »",
+    "all day (no opening-hours check)":
+        "toute la journée (pas de vérification des horaires)",
     "the place name": "le nom du lieu",
     "a description of the place": "une description du lieu",
     "nested points of interest, hikes and meals":

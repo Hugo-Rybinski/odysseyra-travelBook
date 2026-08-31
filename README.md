@@ -143,8 +143,9 @@ are any errors (warnings alone exit zero).
   day's timeline, two accommodations booked for the same night, or a car rental
   picked up outside its booking window. (…and more.)
 - ⚠️ **warnings** — softer inconsistencies worth a look — e.g. a night with
-  nowhere to sleep, an activity ending after `defaults.end_time`, or a hike whose
-  `route` and `start`/`end` disagree. (…and more.)
+  nowhere to sleep, an activity ending after `defaults.end_time`, a point of
+  interest visited on a day it's closed (or outside its `opening_hours`), or a
+  hike whose `route` and `start`/`end` disagree. (…and more.)
 - ℹ️ **info** — low-priority notes (hidden unless `-v 3`) — e.g. an optional field
   missing (stating the default that will be used), or a night with both a hotel
   and an overnight transport (the accommodation wins).
@@ -631,7 +632,35 @@ is promoted to the road's chip rather than being lost.
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `website` |  | Link to the venue's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `opening_days` |  | The days it opens | string | weekday names / ranges (`tue-sun`, `mon-fri, sun`) | every day |
+| `opening_hours` |  | The hours it opens | string | `HH:MM-HH:MM` ranges (`09:30-18:00`, `09:30-12:30, 14:00-18:00`) | all day |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
+
+**Opening days and hours.** Both are compact strings, so a guidebook line
+transcribes as it stands rather than being taken apart into an object:
+
+* `opening_days` — single days and/or ranges, comma-separated, case-insensitive,
+  full English names or three-letter abbreviations: `"tue-sun"`,
+  `"monday-friday, sunday"`, `"wednesday"`. A range may wrap the week
+  (`"sat-mon"` is Sat, Sun, Mon). Leaving it out means **every day** — not
+  "unknown": a sight with no stated closing day is one you can turn up at.
+* `opening_hours` — one or more `HH:MM-HH:MM` ranges: `"09:30-18:00"`,
+  `"09:30-12:30, 14:00-18:00"`. Keep the midday closure as **two ranges**; that
+  is what lets a visit be caught straddling it. A range whose close is *before*
+  its open crosses midnight (`"18:00-02:00"`). Leaving it out means **all day**.
+
+Both renderers print what is known under the address, as `Open   Tue–Sun  ·
+09:30–12:30, 14:00–18:00` (localized weekday names; the hours are digits, so
+they read the same in both languages), and the calendar export packs it as an
+`Open:` line. Neither renderer flags a visit falling *outside* the opening —
+**validation** does, with two warnings that read the day's *resolved* timeline
+(so a visit whose start time was inferred is checked like any other):
+
+* the visit lands on a weekday the place doesn't open;
+* the visit doesn't fit inside a single opening range.
+
+A nested stop is never put on the timeline, so it has no resolved time — the
+closed-day check still applies to it, the hours check can't.
 
 #### `place` — a place (a town, say) grouping several nested activities
 

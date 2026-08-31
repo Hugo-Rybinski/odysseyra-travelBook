@@ -8,7 +8,7 @@ import type {
   RenderedMap,
   Transport,
 } from "../types/resolved";
-import { fill, fmtDate, tr, type Lang, type LabelKey } from "./format";
+import { fill, fmtDate, fmtWeekdayRuns, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
 import { ForecastChip } from "./forecast";
 import { GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
@@ -400,6 +400,28 @@ function ActivityRow({
   );
 }
 
+// A point of interest's opening days and hours, as one row led by an accent
+// label — `Open  Tue–Sun · 09:30–12:30, 14:00–18:00`. Mirrors the PDF's
+// `_opening_line` (pdf/days.py) and sits where it does, under the address line.
+// Either half may be missing: no days means every day, no hours means all day,
+// so only what is known is printed. Nothing here flags a visit that falls
+// *outside* the hours — that's the validator's warning, since the fix belongs in
+// the itinerary rather than in the page.
+function Opening({ act, lang }: { act: Activity; lang: Lang }) {
+  const opening = act.opening;
+  if (!opening) return null;
+  const parts: string[] = [];
+  if (opening.day_runs?.length) parts.push(fmtWeekdayRuns(opening.day_runs, lang));
+  if (opening.hours_display) parts.push(opening.hours_display);
+  if (!parts.length) return null;
+  return (
+    <p className="act-opening">
+      <span className="act-opening-label">{tr(lang, "open")}</span>
+      {parts.join("  ·  ")}
+    </p>
+  );
+}
+
 function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: string }) {
   const bits: string[] = [];
 
@@ -462,7 +484,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   if (act.type === "hike" && act.track?.gpx)
     chips.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
 
-  if (!chips.length && !trail && !description && !guidebook) return null;
+  if (!chips.length && !trail && !description && !guidebook && !act.opening) return null;
   return (
     <div className="act-details">
       {chips.length > 0 && (
@@ -475,6 +497,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
           ))}
         </p>
       )}
+      <Opening act={act} lang={lang} />
       {trail && <p className="trail">{trail}</p>}
       {description ? (
         <Clamp className="desc" text={description} trailing={pill} />

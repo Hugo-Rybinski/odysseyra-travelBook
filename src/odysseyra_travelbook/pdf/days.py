@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from datetime import time
 
+from ..lang import fmt_weekday_runs
 from ..models import Day, _format_duration, maps_url, moon_phase
 from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 
@@ -593,6 +594,37 @@ class DayMixin:
                           "  " + label2, link=url)
             self.ln(5)
 
+    def _opening_line(self, act, x: float, w: float, size: float = 9,
+                      h: float = 5) -> None:
+        """A point of interest's opening days and hours as one row led by a bold
+        accent label — ``Open   Tue–Sun  ·  09:30–12:30, 14:00–18:00``. Draws
+        nothing when the visit states neither (the common case).
+
+        Either half may be missing: no days means every day, no hours means all
+        day, so only what is known is printed. The viewer's `.act-opening` line
+        is the same row from the same fields — keep the two in step. Neither
+        renderer flags a visit that falls *outside* the hours; that is the
+        validator's warning, since the fix belongs in the JSON."""
+        opening = getattr(act, "opening", None)
+        if opening is None:
+            return
+        parts = []
+        if opening.day_runs:
+            parts.append(fmt_weekday_runs(opening.day_runs, self.lang))
+        if opening.hours:
+            parts.append(opening.hours_display)
+        label = self.t("Open") + "  "
+        self.set_x(x)
+        self.set_font(FONT, "B", size)
+        self.set_text_color(*self.accent)
+        lw = self.get_string_width(label)
+        self.cell(lw, h, label)
+        # multi_cell takes the cursor x as its left edge, so a wrapped second
+        # line hangs under the text rather than under the label.
+        self.set_font(FONT, "", size)
+        self.set_text_color(*MUTED)
+        self.multi_cell(w - lw, h, "  ·  ".join(parts))
+
     def _details_point_of_interest(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.address:
@@ -600,6 +632,7 @@ class DayMixin:
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name,
                             text_url=self._addr_url(act.coordinate, act.address))
+        self._opening_line(act, x, w)
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
         if act.website and not self.ink_saver:
             y = self.get_y()
@@ -694,6 +727,7 @@ class DayMixin:
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
                                 poi.name, size=8.5, h=4.5,
                                 text_url=self._addr_url(poi.coordinate, poi.address))
+        self._opening_line(poi, tx, tw, size=8.5, h=4.5)
         self._para_with_pill(tx, tw, poi.description, poi.guidebook_pages,
                              size=9, h=4.5)
         if poi.website and not self.ink_saver:

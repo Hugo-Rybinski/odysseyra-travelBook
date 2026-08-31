@@ -39,7 +39,7 @@
             { "coordinate": { "lat": 1, "long": 2 }, "duration": "8h" }
           ],
           "activities": [ { "type": "point_of_interest", "name": "Not allowed on a road" } ] },
-        { "type": "point_of_interest", "category": "alien", "website": "ftp://nope", "guidebook_pages": "see pp. 12-14", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
+        { "type": "point_of_interest", "category": "alien", "website": "ftp://nope", "guidebook_pages": "see pp. 12-14", "opening_days": "funday", "opening_hours": "09:30", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
         { "type": "spaceship", "start": "A", "end": "B" },
         { "type": "hike", "route": "zigzag", "duration": "0 min", "guidebook_pages": "88-91", "gpx": "not base64 at all!" },
         { "type": "buffer", "duration": "0 min" },
@@ -57,7 +57,7 @@
             { "type": "point_of_interest", "name": "Inner" }
           ] }
         ] },
-        { "type": "point_of_interest", "name": "Overstuffed", "duration": "1h", "activities": [
+        { "type": "point_of_interest", "name": "Overstuffed", "duration": "1h", "opening_hours": "10:00-10:00", "activities": [
           { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
           { "type": "meal", "restaurant": "Slow", "duration": "45 min" }
         ] },

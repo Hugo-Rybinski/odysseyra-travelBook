@@ -242,6 +242,8 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
     GUIDEBOOK_FIELD,
     { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the venue's website, shown as a clickable link. Optional." },
+    { key: "opening_days", label: "Opening days", kind: "text", placeholder: "tue-sun / mon-fri, sun", help: "The days it opens — weekday names, single days and/or ranges (e.g. tue-sun, mon-fri, sun). Shown under the address, and you get a warning if the visit falls on another day. Defaults to every day." },
+    { key: "opening_hours", label: "Opening hours", kind: "text", placeholder: "09:30-18:00 / 09:30-12:30, 14:00-18:00", help: "The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day." },
   ],
   place: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Place name", help: "Place name (e.g. a town) grouping the nested activities. Required." },

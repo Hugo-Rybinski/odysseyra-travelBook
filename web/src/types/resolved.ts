@@ -70,6 +70,19 @@ export interface HikeTrack {
   bounds: [[number, number], [number, number]]; // [[minLat,minLong],[maxLat,maxLong]]
 }
 
+// A point of interest's opening days and hours (its `opening_days` /
+// `opening_hours`), reduced by the Python model (models/opening.py). Either half
+// may be empty: no days means every day, no hours means all day — an object that
+// says neither is never emitted (the field is null instead).
+export interface Opening {
+  days: string[]; // canonical lowercase weekday names, week order
+  // `days` already folded into consecutive [first, last] runs, so the viewer
+  // only names the weekdays (see fmtWeekdayRuns) rather than re-deriving them.
+  day_runs: [string, string][];
+  hours: [string, string][]; // ["09:30", "12:30"] open/close pairs, in order
+  hours_display: string; // "09:30–12:30, 14:00–18:00" — digits only, so shared
+}
+
 export type ActivityType =
   | "road"
   | "point_of_interest"
@@ -115,6 +128,9 @@ export interface Activity extends Scheduled {
   address?: string;
   category?: string; // poi category, or the resolved meal category
   website?: string;
+  // poi — when it opens, drawn under the address. Optional/null: most sights
+  // state none, and a day cached before the field existed has none either.
+  opening?: Opening | null;
   // meal
   restaurant?: string;
   area?: string;

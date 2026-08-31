@@ -1499,6 +1499,18 @@ body {
   margin: 3px 0 0;
   color: var(--muted);
 }
+/* A point of interest's opening days/hours (its `opening`), sitting under the
+   address line as in the PDF (`_opening_line`): a bold accent label leading
+   muted text, both on one flowing line. */
+.act-details .act-opening {
+  margin: 3px 0 0;
+  color: var(--muted);
+}
+.act-opening-label {
+  margin-right: 7px;
+  color: var(--accent);
+  font-weight: 600;
+}
 
 /* inline external-link rows (Navigate / Website / Reservation) */
 .link-row {

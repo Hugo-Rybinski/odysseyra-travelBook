@@ -313,6 +313,49 @@ the *same* guidebook pages, leave each nested `guidebook_pages` empty and set it
 once on the container instead. Give a nested stop its own `guidebook_pages` only
 when the pages are *specific to that stop* and differ from the area's.
 
+**Opening days and hours: if the source states them, keep them.** A guidebook or
+website that bothers to print *"Tue–Sun 9.30–12.30 & 2–6pm"* is telling you the
+one thing that can waste a morning, so it must survive extraction. Whenever the
+source gives a sight's opening days or hours, put them in that
+`point_of_interest`'s **`opening_days` / `opening_hours`** — never drop them, and
+never bury them in the `description` instead (the tool checks the visit against
+these fields; prose it cannot read).
+
+| Source says | `opening_days` | `opening_hours` |
+|---|---|---|
+| "Tue–Sun 9.30am–6pm" | `"tue-sun"` | `"09:30-18:00"` |
+| "closed Mondays" | `"tue-sun"` | — |
+| "daily 9–12 & 2–6" | — | `"09:00-12:00, 14:00-18:00"` |
+| "open every day, 10am–7pm" | — | `"10:00-19:00"` |
+| "Mon–Fri and Sun, 8am–8pm" | `"mon-fri, sun"` | `"08:00-20:00"` |
+| "Wed only, 2pm–5pm" | `"wednesday"` | `"14:00-17:00"` |
+
+Rules for the two values:
+
+- **Convert to 24-hour `HH:MM`** — `2pm` is `14:00`, `9.30` is `09:30`.
+- **Keep a midday closure as two ranges** (`"09:00-12:00, 14:00-18:00"`). Never
+  flatten it into one long span: the whole point is that a visit can be caught
+  straddling the closure.
+- **A closing day becomes the days it *is* open.** The fields say when it opens,
+  so "closed Mondays" is `"tue-sun"`, not `"monday"`.
+- **Weekday names are English** (`monday`…`sunday`, or `mon`…`sun`) whatever
+  language the source and the trip are in — they are keys, and the renderers
+  localize them.
+- **Omit what the source doesn't state.** No `opening_days` means every day, no
+  `opening_hours` means all day; both are absences, not guesses.
+- **Never invent them, and never look them up.** Unlike a day's `bank_holiday`
+  (the one field you *are* asked to supply from your own knowledge), opening
+  hours change constantly and are wrong more often than they are useful — take
+  them from the documents or leave them out.
+- **Seasonal or complicated hours don't fit.** If the source gives per-season
+  hours, last-admission rules or "closed the first Sunday of the month", put the
+  simple year-round pair in the fields if there is one and put the nuance in the
+  `description` as prose for the traveller; if there is no simple pair, leave
+  both fields out and describe it. Don't try to encode it.
+- **Only `point_of_interest` has these fields.** A `place` (a town) or a `hike`
+  doesn't open and close; hours belonging to one sight inside an area go on that
+  nested `point_of_interest`.
+
 **A description is for the traveller, not a record of how you built the JSON.**
 Every `description` (and the trip `summary`) must earn its place on the day: what
 this is, what to see or do, what to watch out for, how to get in. **Never mention
@@ -449,6 +492,8 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 | `description` | no | text | |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering this sight. Numbers only — see *Guidebook page references*. |
 | `website` | no | a link like `https://example.com` | The venue's website — shown as a clickable link. |
+| `opening_days` | no | weekday names / ranges (`"tue-sun"`, `"mon-fri, sun"`) | The days it opens. **Keep these whenever the source states them** — see *Opening days and hours*. |
+| `opening_hours` | no | `HH:MM-HH:MM` ranges (`"09:30-18:00"`, `"09:30-12:30, 14:00-18:00"`) | The hours it opens. **Keep these whenever the source states them** — see *Opening days and hours*. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | Nested sights/hikes/meals (see nesting). |
 
 #### Type `place` — a town/area grouping several stops
@@ -778,6 +823,8 @@ the shape — real values come from your sources. The full version lives at
           "category": "museum",
           "address": "Rue de Rivoli, 75001 Paris",
           "guidebook_pages": "44-47",
+          "opening_days": "wed-mon",
+          "opening_hours": "09:00-18:00",
           "start_time": "15:30",
           "duration": "2h30",
           "website": "https://www.louvre.fr"
@@ -1039,6 +1086,11 @@ You cannot run the validator, so verify these by hand:
   `guidebook_pages` value is digits, commas and ranges only (`"15-18"`, not
   `"pp. 15-18"`). Pages shared by an area's nested stops sit once on the
   container.
+- **Every stated opening day/hour was kept:** each sight whose source printed
+  opening days or hours carries them in `opening_days` / `opening_hours`, in
+  24-hour time, with a midday closure left as two ranges — none of it dropped,
+  and none of it left as prose in the `description` instead. Nothing was invented
+  or looked up for these two fields.
 - **No flights or trains in `activities`:** every plane/train (and inter-city
   bus/ferry) leg sits in the top-level `transport` array, exactly once — not also
   as a `road` or a `point_of_interest` inside the day.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, time, timedelta
 
-from ..lang import DEFAULT_LANGUAGE, tr
+from ..lang import DEFAULT_LANGUAGE, fmt_weekday_runs, tr, weekday_name
 from ..models import (
     NESTED_ACTIVITY_TYPES,
     Itinerary,
@@ -76,6 +76,20 @@ _ERROR_TEMPLATES = [
     (re.compile(r"^(?P<name>.+)\.long must be between -180 and 180 "
                 r"\(got (?P<value>.+)\)$"),
      "{name}.long must be between -180 and 180 (got {value})"),
+    # a point of interest's opening days/hours (models/opening.py) — one template
+    # per field, with the (short) offending value echoed whole
+    (re.compile(r"^Invalid opening_days (?P<value>.+), expected weekday names "
+                r"like 'tue-sun', 'monday, thursday' or 'mon-fri, sun'$"),
+     "Invalid opening_days {value}, expected weekday names like 'tue-sun', "
+     "'monday, thursday' or 'mon-fri, sun'"),
+    (re.compile(r"^Invalid opening_hours (?P<value>.+), expected time ranges "
+                r"like '09:30-18:00' or '09:30-12:30, 14:00-18:00'$"),
+     "Invalid opening_hours {value}, expected time ranges like '09:30-18:00' "
+     "or '09:30-12:30, 14:00-18:00'"),
+    (re.compile(r"^opening_hours range (?P<value>.+) opens and closes at the "
+                r"same time — give the closing time, or drop the range$"),
+     "opening_hours range {value} opens and closes at the same time — give the "
+     "closing time, or drop the range"),
     (re.compile(r"^(?P<name>.+) must be a number, got (?P<value>.+)$"),
      "{name} must be a number, got {value}"),
     # a hike's embedded GPX (models/gpx.py) — the wrapper is ours, the
@@ -191,6 +205,9 @@ def _truthy(value):
     return str(value).strip().lower() in ("true", "yes", "1", "paid", "paid online")
 
 
+_UNBUILT = object()  # "the model hasn't been built yet" (None means "won't build")
+
+
 class _Validator:
     def __init__(self, data, lines, lang=DEFAULT_LANGUAGE):
         self.data = data
@@ -198,6 +215,7 @@ class _Validator:
         self.lang = lang
         self.findings: list[Finding] = []
         self._gpx_cache: dict[int, object] = {}  # id(hike dict) -> GpxTrack | None
+        self._model_cache = _UNBUILT
 
     def t(self, text):
         return tr(text, self.lang)
@@ -1196,13 +1214,83 @@ class _Validator:
         if day_end is not None:
             self._check_end_of_day(day_end)
 
+        # a point of interest visited when it's shut (needs the resolved times)
+        self._check_opening()
+
+    def _model(self):
+        """The built itinerary — the only place the *resolved* times and dates a
+        day's timeline assigns can be read — or ``None`` when the data won't
+        build (bigger errors exist, and they're already reported). Built at most
+        once: two checks want it, and building walks the whole document."""
+        if self._model_cache is _UNBUILT:
+            try:
+                self._model_cache = Itinerary.from_dict(self.data)
+            except ItineraryError:
+                self._model_cache = None
+        return self._model_cache
+
+    def _resolved_activities(self):
+        """Yield ``(built_day, raw_path, built_activity)`` for every non-buffer
+        activity of every day, nested ones included — resolved values matched
+        back to the line the raw JSON sits on.
+
+        The timeline walk neither drops nor reorders real activities (it only
+        inserts and merges buffers), and nested activities are never put on the
+        timeline at all, so zipping the raw and built lists lines them up."""
+        itinerary = self._model()
+        if itinerary is None:
+            return
+        days_raw = self.data.get("days") or []
+        for di, day in enumerate(itinerary.days):
+            if di >= len(days_raw) or not isinstance(days_raw[di], dict):
+                continue
+            raw_acts = days_raw[di].get("activities") or []
+            raw_idx = [j for j, a in enumerate(raw_acts)
+                       if isinstance(a, dict) and a.get("type") != "buffer"]
+            built_acts = [a for a in day.activities if a.kind != "buffer"]
+            for j, act in zip(raw_idx, built_acts):
+                path = ("days", di, "activities", j)
+                yield day, path, act
+                raw_nested = raw_acts[j].get("activities") or []
+                built_nested = getattr(act, "activities", None) or []
+                for k, sub in enumerate(built_nested):
+                    if k < len(raw_nested):
+                        yield day, path + ("activities", k), sub
+
+    def _check_opening(self):
+        """Warn when a point of interest is visited on a day it doesn't open, or
+        at an hour it isn't open.
+
+        Reads the resolved timeline rather than the raw JSON: a visit's start
+        time is usually *inferred* from the activities before it, so checking
+        what the file states would only catch the few stops that pin one. A
+        nested stop is never scheduled, so it has a time only if it says so —
+        the weekday check still applies to it either way."""
+        for day, path, act in self._resolved_activities():
+            opening = getattr(act, "opening", None)
+            if opening is None:
+                continue
+            if opening.closed_on(day.date):
+                self.add("warning", path,
+                         "this visit falls on a {weekday}, but '{name}' only "
+                         "opens {days} — it will be closed.",
+                         weekday=weekday_name(day.date, self.lang),
+                         name=act.title,
+                         days=fmt_weekday_runs(opening.day_runs, self.lang,
+                                               abbr=False))
+            if not opening.covers(act.start_time, act.end_time):
+                self.add("warning", path,
+                         "this visit ({visit}) falls outside the opening hours "
+                         "of '{name}' ({hours}).",
+                         visit=act.time_range or f"{act.start_time:%H:%M}",
+                         name=act.title, hours=opening.hours_display)
+
     def _check_end_of_day(self, day_end):
         """Warn about any activity whose computed end time is after the day's
         `default.end_time`. Needs the scheduled times, so it builds the model;
         skipped if the data can't be built (bigger errors exist)."""
-        try:
-            itinerary = Itinerary.from_dict(self.data)
-        except ItineraryError:
+        itinerary = self._model()
+        if itinerary is None:
             return
         days_raw = self.data.get("days") or []
         for di, built in enumerate(itinerary.days):

@@ -9,6 +9,8 @@ from ..models import (
     _parse_coordinate,
     _parse_date,
     _parse_duration,
+    _parse_opening_days,
+    _parse_opening_hours,
     _parse_paid,
     _parse_route,
     _parse_time,
@@ -44,6 +46,8 @@ V_DUR = _v(_parse_duration)
 V_TZ = _v(_parse_tz)
 V_ROUTE = _v(_parse_route)
 V_PAID = _v(_parse_paid)
+V_OPENING_DAYS = _v(_parse_opening_days)
+V_OPENING_HOURS = _v(_parse_opening_hours)
 
 
 def V_NUMBER(value):
@@ -307,6 +311,14 @@ ACTIVITY_SPECS = {
              V_PAGES),
         Spec("website", False, "a link to the venue's website",
              "a link like 'https://example.com'", "none (no link shown)", V_URL),
+        Spec("opening_days", False,
+             "the days it opens (the visit is checked against them)",
+             "weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun'",
+             "every day (no closed-day check)", V_OPENING_DAYS),
+        Spec("opening_hours", False,
+             "the hours it opens (the visit is checked against them)",
+             "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00'",
+             "all day (no opening-hours check)", V_OPENING_HOURS),
         Spec("activities", False, "nested points of interest, hikes and meals",
              "an array of point_of_interest, hike or meal objects, each with a 'type'",
              "[] (none nested)"),
