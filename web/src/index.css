@@ -8,6 +8,9 @@
   /* --accent 40% toward white; overridden per trip by paletteVars() */
   --accent-light: #718293;
   --topbar-h: 64px;
+  /* height of a single-line Edit-tab control (input/select), matched by a bool
+     field's switch so mixed grid rows stay aligned */
+  --edit-input-h: 32px;
   /* horizontal page gutter; full-bleed elements (top bar, toasts) cancel it with
      a negative margin, so they must all reference this one value */
   --gutter: 16px;
@@ -1916,10 +1919,10 @@ body {
   gap: 4px;
   font-size: 0.82rem;
 }
+/* A bool field keeps the shared column layout (label, then control) — see
+   .edit-toggle below. */
 .edit-field-bool {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  align-items: start;
 }
 .edit-field-label {
   color: var(--muted);
@@ -1954,6 +1957,13 @@ body {
   padding: 6px 8px;
   width: 100%;
 }
+/* One height for every single-line control, so a bool's switch can match it
+   exactly instead of approximating it from font metrics (textarea and the gpx
+   picker size themselves). */
+input.edit-input,
+select.edit-input {
+  height: var(--edit-input-h);
+}
 .edit-input:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
@@ -1962,9 +1972,57 @@ textarea.edit-input {
   resize: vertical;
   min-height: 56px;
 }
-.edit-field-bool input {
-  accent-color: var(--accent);
+
+/* A bool field's switch, sitting under its label where every other kind puts
+   its control and filling the same box, so a grid row that mixes a bool with
+   text inputs still lines up. The checkbox itself is hidden but present (it
+   carries focus and the space key); this is the track it drives. */
+.edit-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  height: var(--edit-input-h);
+}
+.edit-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.edit-toggle {
+  position: relative;
+  display: block;
+  width: 38px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg);
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.edit-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+.edit-toggle-input:checked + .edit-toggle {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.edit-toggle-input:checked + .edit-toggle::after {
+  transform: translateX(16px);
+}
+.edit-toggle-input:focus-visible + .edit-toggle {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* color field: swatch + hex text */
@@ -1974,8 +2032,8 @@ textarea.edit-input {
   align-items: center;
 }
 .edit-color input[type="color"] {
-  width: 34px;
-  height: 34px;
+  width: var(--edit-input-h);
+  height: var(--edit-input-h);
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -2067,13 +2125,29 @@ textarea.edit-input {
 .sub-array {
   margin: 12px 0 4px;
 }
-.sub-array > h4 {
+.sub-array > h4,
+.field-group > h4 {
   margin: 0 0 8px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+}
+/* A run of related settings under one title — `defaults` is rendered as several
+   of these, hairline-ruled apart, instead of one long list of inputs. */
+.defaults-form > section {
+  margin: 14px 0 4px;
+}
+.defaults-form > section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+/* Except between the money group and its secondary currencies: they are one
+   subject, so a rule there would read as a break in it. */
+.defaults-form > .field-group + .sub-array {
+  border-top: 0;
+  padding-top: 0;
 }
 /* Live two-way rate readout under a secondary currency's fields. */
 .currency-conversion {
@@ -2218,11 +2292,13 @@ textarea.edit-input {
   grid-column: 1 / -1;
 }
 .edit-field-wrap.has-error .edit-input,
-.edit-field-wrap.has-error .edit-color input[type="color"] {
+.edit-field-wrap.has-error .edit-color input[type="color"],
+.edit-field-wrap.has-error .edit-toggle {
   border-color: #c0392b;
 }
 .edit-field-wrap.has-warning .edit-input,
-.edit-field-wrap.has-warning .edit-color input[type="color"] {
+.edit-field-wrap.has-warning .edit-color input[type="color"],
+.edit-field-wrap.has-warning .edit-toggle {
   border-color: #d08b00;
 }
 .edit-field-wrap.has-error .edit-field-label,

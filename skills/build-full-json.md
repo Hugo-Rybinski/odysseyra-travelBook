@@ -154,7 +154,7 @@ setting (e.g. "all times are local Paris time (UTC+2)" or "we start at 9am").
 | `include_hike_maps` | no | boolean | `true` | Draw the trail map + elevation profile of any hike that carries a `gpx`. Independent of `include_maps_in_render` (attaching the GPX is the opt-in). Leave it out unless you are switching it off. |
 | `infer_coordinates_from_address` | no | boolean | `false` | Geocode activities that have no explicit `coordinate`. When false, only activities with a `coordinate` appear on the map. |
 | `inference_countries` | no | array of 2-letter ISO codes | `[]` (any) | Restrict geocoding to these countries, e.g. `["FR"]`. Only used when inference is on. |
-| `show_moon_phase` | no | boolean | `true` | Show the night's moon phase (emoji + name) in each day's "tonight" section. Set `false` to hide it. |
+| `show_moon_phase` | no | boolean | `true` | Show the night's moon phase (emoji + name). With `show_sun_times` on too it closes that line (`☀️ Sunrise: 07:12, Sunset: 20:27, 🌕 Full moon`); otherwise it sits in each day's "tonight" section. Set `false` to hide it. |
 | `show_sun_times` | no | boolean | `true` | Show each day's sun times (`☀️ Sunrise: 06:12, Sunset: 21:34`) in its header band. Computed offline and read in `timezone`'s wall clock, so it needs no extra data — set it to `false` only to hide the line. The sunset uses that night's accommodation `coordinate` (else the day's *last* located stop); the sunrise uses the *previous* night's stay (else the day's *first* located stop). A day whose location is more than 3 h of solar time from `timezone` shows none, so give a day abroad its real `start_tz`. |
 
 **`secondary_currencies`.** Each entry is `{"currency": "<ISO code>",

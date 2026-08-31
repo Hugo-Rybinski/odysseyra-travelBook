@@ -48,8 +48,8 @@ export interface FieldSpec {
   inheritsFrom?: string;
   required?: boolean;
   // `bool` only: this flag is ON when the key is absent (e.g. show_sun_times).
-  // The box then starts ticked and un-ticking writes an explicit `false` —
-  // whereas a default-off box writes `true` and clears the key when un-ticked.
+  // The switch then starts on and switching it off writes an explicit `false`
+  // — whereas a default-off switch writes `true` and clears the key when off.
   defaultOn?: boolean;
 }
 
@@ -118,25 +118,67 @@ export const TRAVEL_DESCRIPTION_FIELDS: FieldSpec[] = [
   { key: "summary", label: "Summary", kind: "textarea", placeholder: "Paragraph shown on the cover", help: "A paragraph shown on the cover. Optional — hidden when empty." },
 ];
 
-export const DEFAULTS_FIELDS: FieldSpec[] = [
-  { key: "start_time", label: "Start time", kind: "time", placeholder: "08:00", help: "The first activity's start time each day. Defaults to 08:00." },
-  { key: "end_time", label: "End time", kind: "time", placeholder: "18:00", help: "Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it. Defaults to 18:00." },
-  { key: "auto_sized_buffer", label: "Auto-sized buffer", kind: "bool", defaultOn: true, help: "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — un-tick to fall back to the fixed “Buffer” below." },
-  { key: "buffer", label: "Buffer", kind: "duration", placeholder: "0 (no fixed buffer)", help: "A fixed buffer inserted between consecutive activities. Ignored while “Auto-sized buffer” is on. Defaults to 0 (none)." },
-  { key: "timezone", label: "Time zone", kind: "tz", placeholder: "GMT", help: "Default UTC offset for all times (e.g. +02:00, UTC-3, Z). Defaults to GMT (UTC+0)." },
-  { key: "breakfast_until", label: "Breakfast until", kind: "time", placeholder: "10:00", help: "A meal starting before this is inferred as breakfast. Defaults to 10:00." },
-  { key: "lunch_until", label: "Lunch until", kind: "time", placeholder: "16:00", help: "A meal up to this (after breakfast) is lunch; later is dinner. Defaults to 16:00." },
-  { key: "meal_duration", label: "Meal duration", kind: "duration", placeholder: "0 (instant)", help: "Default length of a meal with no duration/end time. Defaults to 0 (instant)." },
-  { key: "accommodation_start_time", label: "Accommodation start time", kind: "time", placeholder: "22:00", help: "Clock time an accommodation booking starts on the calendar (ICS export). Defaults to 22:00." },
-  { key: "accommodation_end_time", label: "Accommodation end time", kind: "time", placeholder: "00:00", help: "Clock time each accommodation night ends on the calendar (ICS export). Defaults to 00:00 (midnight)." },
-  { key: "currency", label: "Currency", kind: "text", placeholder: "EUR", help: "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR." },
-  { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
-  { key: "include_hike_maps", label: "Include hike maps", kind: "bool", defaultOn: true, help: "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — un-tick to hide them." },
-  { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
-  { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
-  { key: "show_moon_phase", label: "Show moon phase", kind: "bool", defaultOn: true, help: "Show the night's moon phase in each day's “tonight” section. Defaults to on — un-tick to hide it." },
-  { key: "show_sun_times", label: "Show sunrise/sunset", kind: "bool", defaultOn: true, help: "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — un-tick to hide them." },
+// A run of fields shown under one small section title. `defaults` is a grab-bag
+// of seventeen unrelated switches, so the form renders it in groups rather than
+// as one wall of inputs (the titles look like "Secondary currencies").
+export interface FieldGroup {
+  title: string;
+  fields: FieldSpec[];
+}
+
+export const DEFAULTS_GROUPS: FieldGroup[] = [
+  {
+    title: "Day timing",
+    fields: [
+      { key: "start_time", label: "Start time", kind: "time", placeholder: "08:00", help: "The first activity's start time each day. Defaults to 08:00." },
+      { key: "end_time", label: "End time", kind: "time", placeholder: "18:00", help: "Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it. Defaults to 18:00." },
+      { key: "auto_sized_buffer", label: "Auto-sized buffer", kind: "bool", defaultOn: true, help: "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — switch it off to fall back to the fixed “Buffer” below." },
+      { key: "buffer", label: "Buffer", kind: "duration", placeholder: "0 (no fixed buffer)", help: "A fixed buffer inserted between consecutive activities. Ignored while “Auto-sized buffer” is on. Defaults to 0 (none)." },
+      { key: "timezone", label: "Time zone", kind: "tz", placeholder: "GMT", help: "Default UTC offset for all times (e.g. +02:00, UTC-3, Z). Defaults to GMT (UTC+0)." },
+    ],
+  },
+  {
+    title: "Meals",
+    fields: [
+      { key: "breakfast_until", label: "Breakfast until", kind: "time", placeholder: "10:00", help: "A meal starting before this is inferred as breakfast. Defaults to 10:00." },
+      { key: "lunch_until", label: "Lunch until", kind: "time", placeholder: "16:00", help: "A meal up to this (after breakfast) is lunch; later is dinner. Defaults to 16:00." },
+      { key: "meal_duration", label: "Meal duration", kind: "duration", placeholder: "0 (instant)", help: "Default length of a meal with no duration/end time. Defaults to 0 (instant)." },
+    ],
+  },
+  {
+    title: "Accommodation nights",
+    fields: [
+      { key: "accommodation_start_time", label: "Accommodation start time", kind: "time", placeholder: "22:00", help: "Clock time an accommodation booking starts on the calendar (ICS export). Defaults to 22:00." },
+      { key: "accommodation_end_time", label: "Accommodation end time", kind: "time", placeholder: "00:00", help: "Clock time each accommodation night ends on the calendar (ICS export). Defaults to 00:00 (midnight)." },
+    ],
+  },
+  {
+    title: "Money",
+    fields: [
+      { key: "currency", label: "Currency", kind: "text", placeholder: "EUR", help: "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR." },
+    ],
+  },
+  {
+    title: "Maps",
+    fields: [
+      { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
+      { key: "include_hike_maps", label: "Include hike maps", kind: "bool", defaultOn: true, help: "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — switch it off to hide them." },
+      { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
+      { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
+    ],
+  },
+  {
+    title: "Sun & moon",
+    fields: [
+      { key: "show_sun_times", label: "Show sunrise/sunset", kind: "bool", defaultOn: true, help: "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — switch it off to hide them." },
+      { key: "show_moon_phase", label: "Show moon phase", kind: "bool", defaultOn: true, help: "Show the night's moon phase — closing the sunrise/sunset line when that is shown too, otherwise in the day's “tonight” section. Defaults to on — switch it off to hide it." },
+    ],
+  },
 ];
+
+// Every `defaults` field, flattened. The finding index walks this rather than the
+// groups, so regrouping the form can never change which paths it knows about.
+export const DEFAULTS_FIELDS: FieldSpec[] = DEFAULTS_GROUPS.flatMap((g) => g.fields);
 
 export const SECONDARY_CURRENCY_FIELDS: FieldSpec[] = [
   { key: "currency", label: "Currency", kind: "text", required: true, placeholder: "USD", help: "The secondary currency's 3-letter ISO code. Required." },

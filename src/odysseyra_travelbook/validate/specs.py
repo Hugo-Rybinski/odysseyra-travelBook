@@ -233,7 +233,8 @@ DEFAULTS = [
          "ISO country codes to restrict geocoding to (when inferring coordinates)",
          "an array of 2-letter ISO codes like ['FR']", "[] (any country)"),
     Spec("show_moon_phase", False,
-         "whether to show the night's moon phase in each day's 'tonight' section",
+         "whether to show the night's moon phase — closing the sunrise/sunset "
+         "line when those are shown too, else in each day's 'tonight' section",
          "true or false", "true (moon phase shown)", V_BOOL),
     Spec("show_sun_times", False,
          "whether to show each day's sunrise/sunset, computed at that night's "

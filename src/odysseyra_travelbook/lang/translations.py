@@ -106,7 +106,12 @@ _FR = {
     # short — the full "Lever du soleil / Coucher du soleil" all but touches the
     # kicker on the longest day.
     "☀️ Sunrise: {sunrise}, Sunset: {sunset}": "☀️ Lever : {sunrise}, Coucher : {sunset}",
-    # Moon phases (shown in the "tonight" section when show_moon_phase is on).
+    # …and the same line closed by the night's moon phase, used when
+    # show_moon_phase is on too. `{moon}` arrives already localized.
+    "☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}":
+        "☀️ Lever : {sunrise}, Coucher : {sunset}, {emoji} {moon}",
+    # Moon phases (in that line, or in the "tonight" section when the sun times
+    # are off or don't fit).
     "New moon": "Nouvelle lune",
     "Waxing crescent": "Premier croissant",
     "First quarter": "Premier quartier",

@@ -60,14 +60,14 @@ class DayMixin:
         # the full "Lever du soleil"/"Coucher du soleil" leaves barely a
         # millimetre before the kicker on the longest day.
         sun = self.itinerary.sun_for(day)
-        sun_text = ""
-        if sun is not None:
-            sunrise, sunset = sun.hhmm
-            sun_text = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}").format(
-                sunrise=sunrise, sunset=sunset)
-        meta_bits = [b for b in (day.city, self.d(day.date, "wd_full_md"),
-                                 sun_text) if b]
+        moon = moon_phase(day.date) if self.itinerary.show_moon_phase and day.date else None
         kicker = self.t("DAY {index}").format(index=index)
+        head = [b for b in (day.city, self.d(day.date, "wd_full_md")) if b]
+        # With both switches on, the night's phase closes the same line — one
+        # "today's sky" reading instead of two. It then leaves the stay bar,
+        # rather than being printed twice on one page.
+        sun_text, band_moon = self._sun_moon_text(kicker, head, sun, moon)
+        meta_bits = head + [sun_text] if sun_text else head
         self._band_header(kicker, day.title, "   ".join(meta_bits))
 
         if day.description:
@@ -98,7 +98,43 @@ class DayMixin:
                     if item.kind == "place":
                         self.day_area_map(day_maps, item.title)
 
-        self._day_stay(day)
+        self._day_stay(day, moon=None if band_moon else moon)
+
+    # The narrowest gutter allowed between the band's kicker and its meta line:
+    # the two are drawn on the same row, from opposite margins.
+    _BAND_META_GAP = 4
+
+    def _band_meta_fits(self, kicker: str, bits: list[str]) -> bool:
+        """Whether the band's meta line still clears the kicker beside it."""
+        self.set_font(FONT, "B", 9)
+        used = self.get_string_width(kicker) + self._BAND_META_GAP
+        self.set_font(FONT, "", 10)
+        return used + self.get_string_width("   ".join(bits)) <= self.content_width
+
+    def _sun_moon_text(self, kicker: str, head: list[str], sun, moon):
+        """The band's sun times, closed by the night's moon phase when both
+        switches are on. Returns ``(text, moon_in_band)`` — the caller then
+        leaves the moon out of the stay bar, so the page never prints it twice.
+
+        The kicker and the meta line share one row, drawn from opposite margins,
+        so the phase only goes in if it fits beside the kicker: the named form
+        first, then the emoji alone (a French name like "Lune gibbeuse
+        décroissante" is a third of the line by itself), and if even that is too
+        wide the moon stays in the stay bar, where there is always room."""
+        if sun is None:
+            return "", None
+        sunrise, sunset = sun.hhmm
+        plain = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}").format(
+            sunrise=sunrise, sunset=sunset)
+        if moon is None:
+            return plain, None
+        template = self.t("☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}")
+        for name in (self.t(moon.name), ""):
+            candidate = template.format(sunrise=sunrise, sunset=sunset,
+                                        emoji=moon.emoji, moon=name).rstrip()
+            if self._band_meta_fits(kicker, head + [candidate]):
+                return candidate, moon
+        return plain, None
 
     def _day_items(self, day):
         """Activities, same-day transports and car pick-up/drop-off events,
@@ -109,11 +145,12 @@ class DayMixin:
         items.sort(key=lambda x: (x.start_time is None, x.start_time or time(0, 0)))
         return items
 
-    def _day_stay(self, day) -> None:
+    def _day_stay(self, day, moon=None) -> None:
         """A compact bar at the bottom of the day's page for that night — an
-        accommodation, or an overnight transport leg if you sleep aboard one."""
-        # The night's moon phase, unless opted out (defaults.show_moon_phase).
-        moon = moon_phase(day.date) if self.itinerary.show_moon_phase and day.date else None
+        accommodation, or an overnight transport leg if you sleep aboard one.
+
+        ``moon`` is the night's phase when the header band didn't already show
+        it beside the sun times (`day` decides, so the two never both print it)."""
         acc = self.itinerary.stay_for(day.date)
         if acc is not None:
             total, night = acc.nights, acc.night_of(day.date)

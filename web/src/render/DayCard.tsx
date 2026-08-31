@@ -618,11 +618,24 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
 // defaults.show_sun_times is off, and absent when there's no coordinate to
 // compute them for). The `sunTimes` template is the same one the PDF localizes,
 // so both read alike; it spells the labels out, so it needs no tooltip.
+//
+// With `show_moon_phase` on as well, the night's phase closes the same line —
+// today's sky in one reading. The stay bar then drops it (see `StayBar`), so the
+// day shows it once. The PDF does the same, bar a width fallback its header band
+// needs and this line doesn't.
 function SunTimes({ day, lang }: { day: Day; lang: Lang }) {
   if (!day.sun) return null;
+  const { sunrise, sunset } = day.sun;
   return (
     <p className="day-sun">
-      {fill(tr(lang, "sunTimes"), { sunrise: day.sun.sunrise, sunset: day.sun.sunset })}
+      {day.moon
+        ? fill(tr(lang, "sunTimesMoon"), {
+            sunrise,
+            sunset,
+            emoji: day.moon.emoji,
+            moon: tr(lang, day.moon.key as LabelKey),
+          })
+        : fill(tr(lang, "sunTimes"), { sunrise, sunset })}
     </p>
   );
 }
@@ -632,7 +645,10 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   // The night's moon phase (on by default; defaults.show_moon_phase opts out),
   // shown as just the emoji before "Tonight:", with the name on hover — via the
   // CSS `data-tip` bubble (the native `title` proved unreliable, see Options).
-  const moon = day.moon ? (
+  // Only when the sun-times line above isn't already naming it: with both
+  // switches on that line closes with the phase, and repeating it a few
+  // centimetres below would just be noise.
+  const moon = day.moon && !day.sun ? (
     <span className="moon-phase" data-tip={tr(lang, day.moon.key as LabelKey)}>
       {day.moon.emoji}
     </span>

@@ -365,7 +365,7 @@ override and validation cross-checks the itinerary against them.
 | `include_hike_maps` |  | Draw the trail map + elevation profile of a hike that embeds a `gpx` (independent of `include_maps_in_render`) | boolean | `true`/`false` | `true` (drawn) |
 | `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
 | `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
-| `show_moon_phase` |  | Show the night's moon phase (emoji + name) in each day's "tonight" section | boolean | `true`/`false` | `true` (shown) |
+| `show_moon_phase` |  | Show the night's moon phase (emoji + name) — appended to the sunrise/sunset line when `show_sun_times` is on too, else in each day's "tonight" section | boolean | `true`/`false` | `true` (shown) |
 | `show_sun_times` |  | Show each day's sunrise/sunset (`☀ 06:12 → 21:34`) in its header, computed at that night's accommodation | boolean | `true`/`false` | `true` (shown) |
 
 #### Auto-sized buffers — spreading a day out to `end_time`

@@ -117,6 +117,10 @@ const LABELS = {
     // The day's sun-times line. Same template the PDF localizes via
     // translations.py; the times themselves come resolved from the Python model.
     sunTimes: "☀️ Sunrise: {sunrise}, Sunset: {sunset}",
+    // …and the same line closed by the night's moon phase, used when
+    // show_moon_phase is on too (the phase then leaves the stay bar, so the day
+    // never shows it twice). `{moon}` is filled with the localized phase name.
+    sunTimesMoon: "☀️ Sunrise: {sunrise}, Sunset: {sunset}, {emoji} {moon}",
     // Weather-forecast condition labels (WMO codes → text; see weather.ts wmo()).
     wxClear: "Clear sky",
     wxMainlyClear: "Mainly clear",
@@ -208,6 +212,7 @@ const LABELS = {
     moonLastQuarter: "Dernier quartier",
     moonWaningCrescent: "Dernier croissant",
     sunTimes: "☀️ Lever : {sunrise}, Coucher : {sunset}",
+    sunTimesMoon: "☀️ Lever : {sunrise}, Coucher : {sunset}, {emoji} {moon}",
     wxClear: "Ciel dégagé",
     wxMainlyClear: "Plutôt dégagé",
     wxPartlyCloudy: "Partiellement nuageux",

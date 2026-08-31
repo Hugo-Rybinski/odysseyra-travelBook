@@ -3,6 +3,7 @@ import type { SrcCoordinate } from "../../types/source";
 import { useGeocode } from "../geocodeContext";
 import { useT } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
+import { Toggle } from "./Toggle";
 
 // A grouped editor for an optional coordinate ({lat, long, show_on_map}). Empty
 // lat & long collapse the whole coordinate to undefined so it's pruned from the
@@ -162,19 +163,17 @@ export function CoordinateField({
           <FieldFindings path={`${path}.long`} />
         </div>
         <label className="edit-field edit-field-bool">
-          <input
-            type="checkbox"
-            checked={hidden}
-            onChange={(e) =>
-              emit({ ...value, show_on_map: e.target.checked ? false : undefined })
-            }
-          />
           <span className="edit-field-label">
             {t("Hide on map")}
-            <span className="edit-help" data-tip={t("Plot this point on the map. Shown by default when a coordinate is set; tick to hide it while keeping the coordinate.")} tabIndex={0} role="img" aria-label={t("Hide this point on the map.")}>
+            <span className="edit-help" data-tip={t("Plot this point on the map. Shown by default when a coordinate is set; switch this on to hide it while keeping the coordinate.")} tabIndex={0} role="img" aria-label={t("Hide this point on the map.")}>
               ?
             </span>
           </span>
+          <Toggle
+            checked={hidden}
+            label={t("Hide on map")}
+            onChange={(next) => emit({ ...value, show_on_map: next ? false : undefined })}
+          />
         </label>
       </div>
       <FieldFindings path={`${path}.show_on_map`} />

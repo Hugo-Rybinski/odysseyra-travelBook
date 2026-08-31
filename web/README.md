@@ -314,12 +314,26 @@ README schema tables). It is being built in phases — see
   round-tripped file stays diff-clean).
 
 Most fields render from their registry `kind` as a plain control (text, number,
-date, time, enum, checkbox…). Two are their own components because the value
+date, time, enum…). A `bool` is a **switch** (`fields/Toggle.tsx`) drawn under
+its label like every other control and sized to `--edit-input-h`, the shared
+single-line control height — laid out any other way, a bool knocked its whole
+grid row out of alignment. The real checkbox is still there, visually hidden
+before the track it drives, so focus, the space key and screen readers keep the
+platform's behaviour. Two kinds are their own components because the value
 isn't a scalar: `coordinate` (`fields/CoordinateField.tsx`, with the paste and
-geocode helpers above) and a hike's `gpx` (`fields/GpxField.tsx`) — a **.gpx file
-picker** that gzips (via `CompressionStream`, where available) and base64-encodes
-the file into the draft, shows what's attached and how big it is encoded, and
-clears it again. Nobody types base64.
+geocode helpers above — its "hide on map" uses the same switch) and a hike's
+`gpx` (`fields/GpxField.tsx`) — a **.gpx file picker** that gzips (via
+`CompressionStream`, where available) and base64-encodes the file into the draft,
+shows what's attached and how big it is encoded, and clears it again. Nobody
+types base64.
+
+`defaults` is the one box whose fields don't form a single subject, so the
+registry splits it into `DEFAULTS_GROUPS` — *Day timing*, *Meals*, *Accommodation
+nights*, *Money* (followed by the secondary currencies, which belong to it),
+*Maps*, *Sun & moon* — each drawn as a hairline-ruled section under a small
+uppercase title, the same one the nested arrays use. `DEFAULTS_FIELDS` is the
+flattened list, which is what the finding index walks, so regrouping the form
+can't change which paths it knows about.
 
 Days and their (nested) activities start **collapsed** so a large itinerary is
 scannable; a collapsed tile that hides inline findings shows count pills on its

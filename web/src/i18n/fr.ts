@@ -261,8 +261,8 @@ export const FR: Record<string, string> = {
     "Longitude, −180 à 180. Laissez lat et long vides pour omettre la coordonnée.",
   "Longitude, −180 to 180.": "Longitude, −180 à 180.",
   "Hide on map": "Masquer sur la carte",
-  "Plot this point on the map. Shown by default when a coordinate is set; tick to hide it while keeping the coordinate.":
-    "Affiche ce point sur la carte. Affiché par défaut lorsqu'une coordonnée est définie ; cochez pour le masquer tout en gardant la coordonnée.",
+  "Plot this point on the map. Shown by default when a coordinate is set; switch this on to hide it while keeping the coordinate.":
+    "Affiche ce point sur la carte. Affiché par défaut lorsqu'une coordonnée est définie ; activez pour le masquer tout en gardant la coordonnée.",
   "Hide this point on the map.": "Masquer ce point sur la carte.",
   "Start coordinate": "Coordonnée de départ",
   "End coordinate": "Coordonnée d'arrivée",
@@ -274,6 +274,13 @@ export const FR: Record<string, string> = {
   Waypoints: "Points de passage",
   "Nested activities": "Activités imbriquées",
   Activities: "Activités",
+  // The `defaults` box's group titles
+  "Day timing": "Horaires de la journée",
+  Meals: "Repas",
+  "Accommodation nights": "Nuits d'hébergement",
+  Money: "Argent",
+  // "Maps" is already keyed in the Options section above.
+  "Sun & moon": "Soleil et lune",
   "Secondary currencies": "Devises secondaires",
   "1 {new} = {x} {main} and 1 {main} = {y} {new}":
     "1 {new} = {x} {main} et 1 {main} = {y} {new}",
@@ -382,8 +389,8 @@ export const FR: Record<string, string> = {
   "Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it. Defaults to 18:00.":
     "L'heure où devrait tomber la dernière activité de chaque journée : les pauses dimensionnées étalent la journée jusque-là, et la validation avertit au-delà. Par défaut 18:00.",
   "Auto-sized buffer": "Pause dimensionnée",
-  "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — un-tick to fall back to the fixed “Buffer” below.":
-    "Dimensionne les pauses entre les activités d'une journée pour l'étaler jusqu'à « Heure de fin », par pas de 5 min. Activé par défaut — décochez pour revenir à la « Pause » fixe ci-dessous.",
+  "Size the buffers between a day's activities so the day spreads out and ends on “End time”, in steps of 5 min. Defaults to on — switch it off to fall back to the fixed “Buffer” below.":
+    "Dimensionne les pauses entre les activités d'une journée pour l'étaler jusqu'à « Heure de fin », par pas de 5 min. Activé par défaut — désactivez pour revenir à la « Pause » fixe ci-dessous.",
   // "Buffer" is defined once in the activity-type labels above (→ "Pause").
   "0 (no fixed buffer)": "0 (aucune pause fixe)",
   "A fixed buffer inserted between consecutive activities. Ignored while “Auto-sized buffer” is on. Defaults to 0 (none).":
@@ -414,8 +421,8 @@ export const FR: Record<string, string> = {
   "Draw a per-day map with a pin for each located activity. Defaults to off.":
     "Dessiner une carte par jour avec une épingle pour chaque activité localisée. Désactivé par défaut.",
   "Include hike maps": "Inclure les cartes de randonnée",
-  "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — un-tick to hide them.":
-    "Dessiner le tracé et le profil altimétrique de toute randonnée à laquelle un fichier GPX est joint. Indépendant de « Inclure les cartes au rendu », puisque la trace accompagne la randonnée. Activé par défaut — décochez pour les masquer.",
+  "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — switch it off to hide them.":
+    "Dessiner le tracé et le profil altimétrique de toute randonnée à laquelle un fichier GPX est joint. Indépendant de « Inclure les cartes au rendu », puisque la trace accompagne la randonnée. Activé par défaut — désactivez pour les masquer.",
   "Infer coordinates from address": "Déduire les coordonnées depuis l'adresse",
   "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped).":
     "Géocoder les activités sans coordonnée explicite. Désactivé par défaut (seules les coordonnées explicites sont cartographiées).",
@@ -423,11 +430,11 @@ export const FR: Record<string, string> = {
   "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country.":
     "Limiter le géocodage à ces codes ISO à 2 lettres (ex. FR, ES). Par défaut, tous les pays.",
   "Show moon phase": "Afficher la phase de lune",
-  "Show the night's moon phase in each day's “tonight” section. Defaults to off.":
-    "Afficher la phase de lune de la nuit dans la section « cette nuit » de chaque jour. Désactivé par défaut.",
+  "Show the night's moon phase — closing the sunrise/sunset line when that is shown too, otherwise in the day's “tonight” section. Defaults to on — switch it off to hide it.":
+    "Afficher la phase de lune de la nuit — à la fin de la ligne lever/coucher du soleil quand celle-ci est affichée, sinon dans la section « cette nuit » du jour. Activé par défaut — désactivez pour la masquer.",
   "Show sunrise/sunset": "Afficher lever/coucher du soleil",
-  "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — un-tick to hide them.":
-    "Afficher le lever et le coucher du soleil de chaque jour dans son en-tête, calculés à l'hébergement de la nuit. Activé par défaut — décochez pour les masquer.",
+  "Show each day's sunrise and sunset in its header, computed at that night's accommodation. Defaults to on — switch it off to hide them.":
+    "Afficher le lever et le coucher du soleil de chaque jour dans son en-tête, calculés à l'hébergement de la nuit. Activé par défaut — désactivez pour les masquer.",
 
   // Secondary currency
   USD: "USD",

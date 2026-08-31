@@ -371,6 +371,19 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Placement differs on purpose: the PDF closes the day's header band with it,
   the viewer opens the day's body with it (`.day-sun`, above `.day-intro`), so
   in the viewer it's hidden while the day is collapsed.
+  **With both switches on, the phase closes that same line** (`☀️ Sunrise:
+  07:12, Sunset: 20:27, 🌕 Full moon`) — a second template,
+  `"…, {emoji} {moon}"` / `sunTimesMoon`, filled with the *already localized*
+  phase name. It then **leaves the stay bar** rather than printing twice on one
+  page, in both renderers: `pdf/days.py`'s `day()` decides and passes the
+  leftover to `_day_stay(day, moon=…)`, and `DayCard.tsx`'s `StayBar` shows its
+  emoji only when `!day.sun`. So the bar still carries the moon when the sun
+  times are off *or* unavailable (no usable reference — every `kyrgyzstan.json`
+  day, `france.json` day 1). The PDF has one extra wrinkle the viewer doesn't
+  need: the band's kicker and meta line share a row drawn from opposite margins,
+  so `_sun_moon_text` measures and degrades — named phase, then emoji alone,
+  then back to the stay bar (a long city name plus `Lune gibbeuse décroissante`
+  overruns; france day 5 and pyrenees day 4 land on emoji-only).
   The two ends are located separately by `sun_for` via mirrored chains, so a day
   you change town gets both right: the **sunset** at `sun_reference` (that
   night's accommodation → the day's own **last** located stop → the nearest dated
@@ -432,7 +445,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - **the Edit tab** (`web/src/edit/schema.ts`, plus the French label/help in
     `web/src/i18n/fr.ts`, and `SAFE_DEFAULTS` in `edit/serialize.ts` for a
     `defaults` switch — a boolean that defaults *on* needs `defaultOn: true` so
-    the checkbox reads and writes the right way round);
+    the checkbox reads and writes the right way round; a new `defaults` field
+    goes inside one of `DEFAULTS_GROUPS`, whose titles are the form's section
+    headings and need a French key too, and `DEFAULTS_FIELDS` flattens them);
   - both example JSONs;
   - the README tables;
   - the French `translations.py`;

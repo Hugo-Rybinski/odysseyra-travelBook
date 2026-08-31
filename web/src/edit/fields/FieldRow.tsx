@@ -5,6 +5,7 @@ import { useFieldFindings, worstLevel } from "../findings";
 import { useT, type TFn } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
 import { GpxField } from "./GpxField";
+import { Toggle } from "./Toggle";
 
 // Renders one registry field as a labelled control. The value is whatever the
 // draft holds for that key (string | number | boolean | string[] | undefined);
@@ -53,25 +54,22 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
 
   const levelClass = level ? `has-${level}` : "";
 
-  // Checkboxes read best with the label to the right of the box.
+  // A bool is a switch under its label — same shape and height as the controls
+  // around it, so a row of fields stays aligned whatever kinds it mixes.
   if (spec.kind === "bool") {
-    // A default-on flag is ON while its key is absent, so the box reflects
+    // A default-on flag is ON while its key is absent, so the switch reflects
     // "anything but an explicit false". Either way the key is cleared when the
-    // box matches the field's default, keeping the saved JSON free of no-ops.
+    // switch matches the field's default, keeping the saved JSON free of no-ops.
     const on = spec.defaultOn ? value !== false : value === true;
     return (
       <div className={`edit-field-wrap ${levelClass}`}>
         <label className="edit-field edit-field-bool" htmlFor={id}>
-          <input
-            id={id}
-            type="checkbox"
-            checked={on}
-            onChange={(e) => {
-              const next = e.target.checked;
-              onChange(next === !!spec.defaultOn ? undefined : next);
-            }}
-          />
           {label}
+          <Toggle
+            id={id}
+            checked={on}
+            onChange={(next) => onChange(next === !!spec.defaultOn ? undefined : next)}
+          />
         </label>
         <FieldFindings path={path} />
       </div>

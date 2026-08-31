@@ -127,7 +127,8 @@ class Itinerary:
     include_hike_maps: bool = True
     infer_coordinates_from_address: bool = False  # geocode missing coordinates
     inference_countries: list[str] = field(default_factory=list)  # ISO codes; [] = any
-    show_moon_phase: bool = True  # show the night's moon phase in "tonight" (opt-out)
+    show_moon_phase: bool = True  # show the night's moon phase (opt-out): on the
+    # sun-times line when those are shown too, else in "tonight"
     show_sun_times: bool = True  # show each day's sunrise/sunset (opt-out)
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date

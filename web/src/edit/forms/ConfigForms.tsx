@@ -1,6 +1,7 @@
+import { Fragment } from "react";
 import type { SrcDefaults, SrcSecondaryCurrency, SrcTravelDescription } from "../../types/source";
 import {
-  DEFAULTS_FIELDS,
+  DEFAULTS_GROUPS,
   newSecondaryCurrency,
   SECONDARY_CURRENCY_FIELDS,
   TRAVEL_DESCRIPTION_FIELDS,
@@ -11,6 +12,10 @@ import { FieldFindings } from "../fields/FieldFindings";
 import { FieldList } from "../fields/FieldList";
 
 type Rec = Record<string, unknown>;
+
+// The defaults group the secondary-currency editor is drawn under (its title in
+// the registry, untranslated — DEFAULTS_GROUPS holds English source strings).
+const MONEY_GROUP = "Money";
 
 // Round to 4 significant digits and drop trailing zeros (1.08, 0.9259, 150).
 function fmtRate(n: number): string {
@@ -86,33 +91,45 @@ export function DefaultsForm({
       <div className="box-findings">
         <FieldFindings path={path} />
       </div>
-      <FieldList specs={DEFAULTS_FIELDS} value={rec} path={path} onChange={set} />
-
-      <section className="sub-array">
-        <h4>{t("Secondary currencies")}</h4>
-        <ArrayEditor<SrcSecondaryCurrency>
-          items={value.secondary_currencies ?? []}
-          onChange={(list) => set({ ...rec, secondary_currencies: list })}
-          basePath={`${path}.secondary_currencies`}
-          itemTitle={(c, i) => c.currency || t("Currency {n}", { n: i + 1 })}
-          add={[{ label: t("currency"), make: newSecondaryCurrency }]}
-          emptyLabel={t("No secondary currencies.")}
-          renderItem={(c, _i, onItemChange, itemPath) => (
-            <>
-              <FieldList
-                specs={SECONDARY_CURRENCY_FIELDS}
-                value={c as unknown as Rec}
-                path={itemPath}
-                onChange={(next) => onItemChange(next as unknown as SrcSecondaryCurrency)}
+      {/* One titled section per group — `defaults` is a grab-bag of unrelated
+          switches, and as one flat list of seventeen inputs it read as a wall.
+          The secondary currencies belong to the money group, so they follow it
+          rather than sitting at the bottom of the box. */}
+      {DEFAULTS_GROUPS.map((group) => (
+        <Fragment key={group.title}>
+          <section className="field-group">
+            <h4>{t(group.title)}</h4>
+            <FieldList specs={group.fields} value={rec} path={path} onChange={set} />
+          </section>
+          {group.title === MONEY_GROUP && (
+            <section className="sub-array">
+              <h4>{t("Secondary currencies")}</h4>
+              <ArrayEditor<SrcSecondaryCurrency>
+                items={value.secondary_currencies ?? []}
+                onChange={(list) => set({ ...rec, secondary_currencies: list })}
+                basePath={`${path}.secondary_currencies`}
+                itemTitle={(c, i) => c.currency || t("Currency {n}", { n: i + 1 })}
+                add={[{ label: t("currency"), make: newSecondaryCurrency }]}
+                emptyLabel={t("No secondary currencies.")}
+                renderItem={(c, _i, onItemChange, itemPath) => (
+                  <>
+                    <FieldList
+                      specs={SECONDARY_CURRENCY_FIELDS}
+                      value={c as unknown as Rec}
+                      path={itemPath}
+                      onChange={(next) => onItemChange(next as unknown as SrcSecondaryCurrency)}
+                    />
+                    <ConversionHint
+                      secondary={c}
+                      defaultCurrency={(value.currency ?? "").trim().toUpperCase() || "EUR"}
+                    />
+                  </>
+                )}
               />
-              <ConversionHint
-                secondary={c}
-                defaultCurrency={(value.currency ?? "").trim().toUpperCase() || "EUR"}
-              />
-            </>
+            </section>
           )}
-        />
-      </section>
+        </Fragment>
+      ))}
     </div>
   );
 }
