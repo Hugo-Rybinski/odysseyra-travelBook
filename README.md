@@ -96,7 +96,7 @@ installed entry point, use `python -m odysseyra_travelbook.cli <command> …`.
 odysseyra-travelBook build examples/france.json -o france.pdf
 odysseyra-travelBook examples/france.json                      # implies build; writes <input>.pdf
 odysseyra-travelBook build examples/france.json --ink-saver -o france.pdf
-odysseyra-travelBook build examples/france.json --maps --map-country FR -o france.pdf
+odysseyra-travelBook build examples/france.json --maps -o france.pdf
 ```
 
 Validation runs first (errors are printed to stderr), then it builds regardless.
@@ -106,7 +106,6 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 | `-o`, `--output PATH` | Output PDF path (default: `<input>.pdf`) |
 | `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing |
 | `--maps` / `--no-maps` | Force per-day maps on/off, overriding `defaults.include_maps_in_render` |
-| `--map-country CODE` | ISO country code(s) to restrict geocoding to, e.g. `FR` |
 | `--map-provider google\|apple\|osm\|waze\|mapsme` | Which app the inline **(Navigate)** links open (default `google`) |
 | `--cache-dir PATH` | Where to cache map tiles / geocode / route results |
 | `-l`, `--lang en\|fr` | Language of the generated PDF (default `en`) |
@@ -471,7 +470,9 @@ through to the arrival (see below).
 With `infer_coordinates_from_address` off (the default) only objects with an
 explicit `coordinate` appear on the map, so builds stay deterministic and offline.
 Turn it on to geocode the rest from their `name`/`address` at build time
-(restricted to `inference_countries` when set).
+(restricted to `inference_countries` when set). Both are trip data, set in
+`defaults` — there is no build flag or export toggle for them, so the CLI and the
+viewer always produce the same map for a given file.
 
 #### Sunrise & sunset
 

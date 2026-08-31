@@ -196,8 +196,9 @@ export function buildIcs(text: string, lang = "en"): Promise<string> {
 }
 
 /** Build the PDF. `maps` overrides the file's `include_maps_in_render` for this
- * export (undefined leaves the file's own setting in force). Returns the bytes
- * for download. */
+ * export (undefined leaves the file's own setting in force). Address inference
+ * and its country scope have no override — they come from the file's `defaults`.
+ * Returns the bytes for download. */
 export function buildPdf(
   text: string,
   opts: {
@@ -205,8 +206,6 @@ export function buildPdf(
     inkSaver?: boolean;
     maps?: boolean;
     mapProvider?: string;
-    mapCountry?: string;
-    inferCoords?: boolean;
   } = {},
 ): Promise<Uint8Array> {
   return call("build", [
@@ -215,7 +214,5 @@ export function buildPdf(
     opts.inkSaver ?? false,
     opts.maps ?? null,
     opts.mapProvider ?? "google",
-    opts.mapCountry ?? "",
-    opts.inferCoords ?? null,
   ]);
 }

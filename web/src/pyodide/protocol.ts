@@ -37,8 +37,6 @@ export interface OpMap {
       inkSaver: boolean,
       maps: boolean | null,
       mapProvider: string,
-      mapCountry: string,
-      inferCoords: boolean | null,
     ];
     result: Uint8Array;
   };

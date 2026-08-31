@@ -16,7 +16,7 @@ odysseyra-travelBook build examples/pyrenees.json -o out.pdf
 odysseyra-travelBook examples/pyrenees.json -o out.pdf            # implies build
 odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
 odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
-odysseyra-travelBook build examples/pyrenees.json --maps --map-country FR -o out.pdf   # per-day maps
+odysseyra-travelBook build examples/pyrenees.json --maps -o out.pdf   # per-day maps
 odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
 odysseyra-travelBook ics examples/pyrenees.json -o trip.ics        # export a calendar (.ics) for Google Calendar
 
@@ -164,7 +164,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
 - `cli.py` — argparse CLI (`build` / `validate` / `ics` / `stitch` / `geocode` /
   `create-skeleton`, `--lang`, `--verbose`). `build` also takes `--maps/--no-maps`,
-  `--map-country`, `--cache-dir`; `geocode` fills coordinates and writes them back.
+  `--map-provider`, `--cache-dir`; `geocode` fills coordinates and writes them back
+  (its `--country` defaults to `defaults.inference_countries`).
 
 ## Key design decisions
 
@@ -202,7 +203,18 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Overview *does* let legs widen its initial view — you can zoom out there.
   `infer_coordinates_from_address` (default off → deterministic/offline, only
   explicit coordinates are mapped) geocodes the rest, restricted to
-  `inference_countries` (2-letter ISO codes). Main-map pins are numbered, the
+  `inference_countries` (2-letter ISO codes). Those two are **`defaults` fields
+  only** — deliberately *not* overridable at build time. They used to be a
+  `build --map-country` flag and two controls in the viewer's Options → PDF
+  export (which mutated `itinerary.inference_countries` /
+  `.infer_coordinates_from_address` in `cli.py` and `web/.../bridge.py`), so the
+  same file could yield a differently-geocoded book depending on which renderer
+  ran it, and the viewer's on-screen maps — which never read the overrides —
+  disagreed with the PDF it exported. What gets geocoded is trip data, so it
+  belongs in the file; edit it in the Edit tab's Defaults section
+  (`infer_coordinates_from_address` / `inference_countries`). `--maps/--no-maps`
+  and the Options *Include maps* toggle remain overridable: whether to *print*
+  maps is a print choice, not data. Main-map pins are numbered, the
   night's accommodation is pinned with `*`, and area detail-map pins are lettered
   A/B/C…; each pin's label is shown as a small accent disc next to that activity's
   title in the itinerary (no separate legend). That night's `*` is also pinned on

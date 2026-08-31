@@ -8,7 +8,10 @@ real logic stays in the Python package.
 - render_day(text, index)-> JSON string {day: <that day, with map images + pin
                             labels merged in>}; called per day after resolve so
                             the (blocking) tile fetches don't hold up the text
-- build(text, lang, ink_saver, maps) -> PDF bytes (maps embedded when on)
+- build(text, lang, ink_saver, maps, map_provider)
+                         -> PDF bytes (maps embedded when on). Address inference
+                            has no override here: it is read from the file's
+                            `defaults`, like everything else about the trip.
 
 Each returns {"error": "..."} (validate/resolve) or raises (build) on failure;
 the JS wrappers surface it.
@@ -275,16 +278,11 @@ def ics(text, lang="en"):
         return json.dumps({"error": str(exc)})
 
 
-def build(text, lang="en", ink_saver=False, maps=None, map_provider="google",
-          map_country="", infer_coordinates=None):
+def build(text, lang="en", ink_saver=False, maps=None, map_provider="google"):
+    # Address inference and its country scope are read from the file's
+    # `defaults` (`infer_coordinates_from_address` / `inference_countries`) —
+    # there is no export-time override, so edit them in the Edit tab.
     itinerary = Itinerary.from_dict(json.loads(text))
-    # Export-time overrides of the file's `defaults`, mirroring the CLI's
-    # `--map-country` / `infer_coordinates_from_address` (only affect maps).
-    if map_country:
-        itinerary.inference_countries = [c.strip().upper()
-                                         for c in map_country.split(",") if c.strip()]
-    if infer_coordinates is not None:
-        itinerary.infer_coordinates_from_address = infer_coordinates
     out = "/tmp/odysseyra-out.pdf"
     # `maps=None` leaves the file's own `include_maps_in_render` in force; the
     # browser HTTP seam (installed above) lets tiles/routes/geocoding work.

@@ -133,14 +133,6 @@ export const FR: Record<string, string> = {
   "Embed the per-day maps in the exported PDF (fetches map tiles; slower)":
     "Intégrer les cartes journalières dans le PDF exporté (télécharge les tuiles ; plus lent)",
   "Include maps": "Inclure les cartes",
-  "Geocode activities that have an address but no coordinate so they appear on the maps":
-    "Géocoder les activités qui ont une adresse mais pas de coordonnée pour qu'elles apparaissent sur les cartes",
-  "Map countries": "Pays des cartes",
-  "Restrict address geocoding to these countries (2-letter ISO codes, comma-separated)":
-    "Limiter le géocodage des adresses à ces pays (codes ISO à 2 lettres, séparés par des virgules)",
-  "Turn on “Include maps” to use this":
-    "Activez « Inclure les cartes » pour utiliser ceci",
-  "e.g. FR, ES": "ex. FR, ES",
   "Maps are embedded in the PDF": "Les cartes sont intégrées au PDF",
   "Maps are omitted from the PDF": "Les cartes sont exclues du PDF",
   "Exporting…": "Export…",
