@@ -103,6 +103,7 @@
           "start_time": "15:30",
           "duration": "2h30",
           "description": "The world's most-visited museum — pick a wing (Denon for the Italian paintings) rather than trying to see it all.",
+          "guidebook_pages": "44-47",
           "website": "https://www.louvre.fr",
           "price": 22,
           "coordinate": {
@@ -171,6 +172,7 @@
           "start_time": "14:00",
           "duration": "3h",
           "description": "The student quarter on the Left Bank — the explicit 14:00 start leaves a short buffer after lunch, shown on the timeline.",
+          "guidebook_pages": "52, 54-58",
           "coordinate": {
             "lat": 48.8462,
             "long": 2.3464
@@ -182,6 +184,7 @@
               "category": "building",
               "duration": "45 min",
               "description": "Neoclassical mausoleum of the Republic's great figures, with a Foucault pendulum under the dome.",
+              "guidebook_pages": "56",
               "website": "https://www.paris-pantheon.fr",
               "coordinate": {
                 "lat": 48.8462,
@@ -453,6 +456,7 @@
           "duration": "1h",
           "off_road": false,
           "description": "A slow riverside run along the Dordogne rather than the faster inland road.",
+          "guidebook_pages": "132",
           "coordinate": {
             "lat": 44.8397,
             "long": 1.1456
@@ -498,6 +502,7 @@
           "route": "one_way",
           "duration": "1h30",
           "description": "An easy, mostly flat towpath along the Vézère — a one-way walk with a short taxi back.",
+          "guidebook_pages": "118-119",
           "coordinate": {
             "lat": 45.064,
             "long": 1.156

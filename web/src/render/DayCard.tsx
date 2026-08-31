@@ -424,13 +424,20 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   // and hike (the PDF prints all four; the hike was once missed here). It
   // follows the trail line, so a hike reads title → chips → trailhead → prose;
   // a road's lands above its VIA legs, as in the PDF.
-  const description =
+  const described =
     act.type === "point_of_interest" ||
     act.type === "place" ||
     act.type === "hike" ||
-    act.type === "road"
-      ? act.description
-      : "";
+    act.type === "road";
+  const description = described ? act.description : "";
+  // The guidebook page reference rides along with the description, on the same
+  // four types. It's a pill appended at the *end of the description text* (as in
+  // the PDF's `_para_with_pill`), falling back to a line of its own when the
+  // activity has pages but no prose.
+  const guidebook = described ? act.guidebook_pages : "";
+  const pill = guidebook ? (
+    <span className="chip guidebook">{fill(tr(lang, "guidebook"), { pages: guidebook })}</span>
+  ) : null;
 
   // Compose the meta line from nodes so the address stays a link amid the
   // text bits and the Navigate link, all "·"-separated.
@@ -439,7 +446,7 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   if (address) chips.push(<AddressLink key="addr" address={address} />);
   if (nav) chips.push(<NavLink key="nav" lang={lang} href={nav} />);
 
-  if (!chips.length && !trail && !description) return null;
+  if (!chips.length && !trail && !description && !guidebook) return null;
   return (
     <div className="act-details">
       {chips.length > 0 && (
@@ -453,7 +460,11 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
         </p>
       )}
       {trail && <p className="trail">{trail}</p>}
-      {description && <Clamp className="desc" text={description} />}
+      {description ? (
+        <Clamp className="desc" text={description} trailing={pill} />
+      ) : (
+        pill && <p className="desc">{pill}</p>
+      )}
     </div>
   );
 }

@@ -72,6 +72,7 @@ export interface SrcRoad extends SrcScheduled {
   distance_km?: number;
   off_road?: boolean;
   description?: string;
+  guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   waypoints?: SrcWaypoint[];
   activities?: SrcMeal[]; // nested meals only
 }
@@ -82,6 +83,7 @@ export interface SrcPoi extends SrcScheduled {
   category?: string;
   address?: string;
   description?: string;
+  guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   website?: string;
   coordinate?: SrcCoordinate;
   activities?: SrcNestedActivity[]; // poi | hike | meal
@@ -91,6 +93,7 @@ export interface SrcPlace extends SrcScheduled {
   type: "place";
   name?: string;
   description?: string;
+  guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   coordinate?: SrcCoordinate;
   activities?: SrcNestedActivity[]; // poi | hike | meal
 }
@@ -99,6 +102,7 @@ export interface SrcHike extends SrcScheduled {
   type: "hike";
   name?: string;
   description?: string;
+  guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   distance_km?: number;
   elevation_m?: number;
   start?: string;

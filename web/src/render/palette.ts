@@ -4,6 +4,7 @@
 export interface Palette {
   accent: string; // the cover color itself
   accentDark: string; // for hovers / deep bands
+  accentLight: string; // de-emphasized accent *text* (mirrors the PDF's _tint(accent, 0.4))
   accentSoft: string; // pale tint for card/band backgrounds
   onAccent: string; // readable text on the accent (white or near-black)
 }
@@ -29,9 +30,12 @@ export function palette(coverColor: string): Palette {
   const [r, g, b] = parseHex(coverColor);
   const accent = toHex(r, g, b);
   const accentDark = toHex(mix(r, 0, 0.2), mix(g, 0, 0.2), mix(b, 0, 0.2));
+  // 40% toward white — the same blend pdf/base.py's `_tint(accent, 0.4)` uses for
+  // the VIA header and the guidebook line, so both renderers lighten alike.
+  const accentLight = toHex(mix(r, 255, 0.4), mix(g, 255, 0.4), mix(b, 255, 0.4));
   const accentSoft = toHex(mix(r, 255, 0.9), mix(g, 255, 0.9), mix(b, 255, 0.9));
   const onAccent = luminance([r, g, b]) > 150 ? "#1a1a1a" : "#ffffff";
-  return { accent, accentDark, accentSoft, onAccent };
+  return { accent, accentDark, accentLight, accentSoft, onAccent };
 }
 
 /** The palette as CSS custom properties, to spread onto a wrapper's style. */
@@ -40,6 +44,7 @@ export function paletteVars(coverColor: string): Record<string, string> {
   return {
     "--accent": p.accent,
     "--accent-dark": p.accentDark,
+    "--accent-light": p.accentLight,
     "--accent-soft": p.accentSoft,
     "--on-accent": p.onAccent,
   };

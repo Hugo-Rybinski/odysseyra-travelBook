@@ -164,6 +164,43 @@ def test_road_description_is_optional_and_round_trips():
     assert road2["description"] == "Narrow above Pierrefitte; slow in season."
 
 
+def test_guidebook_pages_on_every_described_type():
+    # `guidebook_pages` rides along with `description`: the same four types carry
+    # it, it defaults to "" and it reaches the serialized dict verbatim (the
+    # renderers add the "p." themselves), whitespace-trimmed.
+    acts = [
+        {"type": "road", "start": "Sarlat", "guidebook_pages": " 132 ",
+         "waypoints": [{"coordinate": {"lat": 43.0, "long": 0.1},
+                        "location": "Cauterets"}]},
+        {"type": "point_of_interest", "name": "Louvre",
+         "guidebook_pages": "44-47"},
+        {"type": "place", "name": "Latin Quarter",
+         "guidebook_pages": "16, 23, 25-30"},
+        {"type": "hike", "name": "Lac de Gaube"},  # none given → ""
+    ]
+    it = Itinerary.from_dict({"travel_description": {"title": "T"},
+                              "days": [{"title": "D", "activities": acts}]})
+    pages = [a["guidebook_pages"] for a in to_dict(it)["days"][0]["activities"]
+             if a["type"] != "buffer"]
+    assert pages == ["132", "44-47", "16, 23, 25-30", ""]
+
+
+def test_guidebook_pages_on_a_nested_activity():
+    # A stop nested under a container keeps its own pages (the area's are
+    # independent), so the viewer's nested rows can show them.
+    it = Itinerary.from_dict({"travel_description": {"title": "T"},
+                              "days": [{"title": "D", "activities": [
+                                  {"type": "place", "name": "Area",
+                                   "guidebook_pages": "52",
+                                   "activities": [
+                                       {"type": "point_of_interest",
+                                        "name": "Panthéon",
+                                        "guidebook_pages": "56"}]}]}]})
+    place = to_dict(it)["days"][0]["activities"][0]
+    assert place["guidebook_pages"] == "52"
+    assert place["activities"][0]["guidebook_pages"] == "56"
+
+
 def test_map_pin_defaults_to_none_and_reflects_stamp():
     # Every activity/accommodation carries a `map_pin` key; it is None unless a
     # caller (the PWA bridge, from the rendered day maps) stamps `_map_pin` on

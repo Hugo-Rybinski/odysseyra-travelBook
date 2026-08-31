@@ -466,6 +466,12 @@ export const FR: Record<string, string> = {
   "End time zone (UTC offset). Defaults to defaults.timezone (GMT).":
     "Fuseau horaire de fin (décalage UTC). Par défaut defaults.timezone (GMT).",
 
+  // Guidebook pages — one wording shared by road / POI / place / hike
+  "Guidebook pages": "Pages du guide",
+  "14 / 15-18 / 16, 23, 25-30": "14 / 15-18 / 16, 23, 25-30",
+  "The guidebook page(s) covering this activity — a single page, a range, or a comma-separated list (e.g. 14, 15-18, 16, 23, 25-30). Shown as a light-accent pill at the end of the description. Optional.":
+    "La ou les pages du guide qui traitent de cette activité — une page, une plage, ou une liste séparée par des virgules (ex. 14, 15-18, 16, 23, 25-30). Affichées dans une pastille d'accent clair à la fin de la description. Facultatif.",
+
   // Road
   "Start (departure)": "Départ",
   "Departure address": "Adresse de départ",

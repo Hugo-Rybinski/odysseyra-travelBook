@@ -123,6 +123,21 @@ def V_CURRENCY(value):
     return "must be a 3-letter currency code like 'EUR'"
 
 
+def V_PAGES(value):
+    """A guidebook page reference: single pages and/or ranges, comma-separated —
+    '14', '15-18', '16, 23, 25-30'. En/em dashes count as range separators, so a
+    reference pasted from a book ('88–91') passes."""
+    s = str(value).strip()
+    if not s:
+        return None
+    bad = "must be page numbers like '14', '15-18' or '16, 23, 25-30'"
+    for part in s.split(","):
+        bounds = part.replace("–", "-").replace("—", "-").split("-")
+        if len(bounds) > 2 or not all(b.strip().isdigit() for b in bounds):
+            return bad
+    return None
+
+
 def V_URL(value):
     s = str(value).strip()
     if s.startswith(("http://", "https://", "www.", "mailto:")):
@@ -217,6 +232,11 @@ SCHEDULE = [
          "the trip's default timezone", V_TZ),
 ]
 
+# The guidebook page reference sits on all four activity types that have a
+# `description`, with the same wording everywhere.
+GUIDEBOOK_DESC = "the guidebook page(s) covering this activity"
+GUIDEBOOK_FORMAT = "page numbers like '14', '15-18' or '16, 23, 25-30'"
+
 ACTIVITY_SPECS = {
     "road": [
         Spec("start", True, "the departure address", "any text"),
@@ -226,6 +246,8 @@ ACTIVITY_SPECS = {
              "true or false", "false", V_BOOL),
         Spec("description", False, "anything about the drive the other fields "
              "don't cover", "any text", '""'),
+        Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
+             V_PAGES),
         Spec("waypoints", True, "the ordered stops the route runs through "
              "(the last is the arrival)",
              "a non-empty array of {coordinate, location, duration, distance_km, "
@@ -239,6 +261,8 @@ ACTIVITY_SPECS = {
              "one of: " + ", ".join(POI_CATEGORIES), '"other"', V_CATEGORY),
         Spec("address", False, "the address", "any text", '""'),
         Spec("description", False, "a description", "any text", '""'),
+        Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
+             V_PAGES),
         Spec("website", False, "a link to the venue's website",
              "a link like 'https://example.com'", "none (no link shown)", V_URL),
         Spec("activities", False, "nested points of interest, hikes and meals",
@@ -248,6 +272,8 @@ ACTIVITY_SPECS = {
     "place": [
         Spec("name", True, "the place name", "any text"),
         Spec("description", False, "a description of the place", "any text", '""'),
+        Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
+             V_PAGES),
         Spec("activities", False, "nested points of interest, hikes and meals",
              "an array of point_of_interest, hike or meal objects, each with a 'type'",
              "[] (none nested)"),
@@ -255,6 +281,8 @@ ACTIVITY_SPECS = {
     "hike": [
         Spec("name", True, "the hike name", "any text"),
         Spec("description", False, "a description of the hike", "any text", '""'),
+        Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
+             V_PAGES),
         Spec("distance_km", False, "the hike distance in km", "a number",
              "none", V_NUMBER),
         Spec("elevation_m", False, "the elevation gain in m", "a number",

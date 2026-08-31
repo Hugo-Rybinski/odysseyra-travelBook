@@ -81,6 +81,10 @@ export interface Activity extends Scheduled {
   // road / poi / place / hike — free prose for whatever the other fields don't
   // carry (a road's is drawn above its VIA legs, in both renderers)
   description?: string;
+  // road / poi / place / hike — the guidebook page(s) covering it ("14",
+  // "15-18", "16, 23, 25-30"), drawn under the description in a light accent.
+  // Optional: a day cached before the field existed has none.
+  guidebook_pages?: string;
   // poi
   address?: string;
   category?: string; // poi category, or the resolved meal category

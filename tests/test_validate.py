@@ -645,6 +645,33 @@ def test_road_waypoint_durations_exceeding_road_warns():
         _warnings(validate_text(json.dumps(doc))))
 
 
+def _pages_doc(kind: str, pages):
+    extra = {"road": {"start": "A",
+                      "waypoints": [{"coordinate": {"lat": 1, "long": 2}}]}}
+    act = {"type": kind, "name": "N", "guidebook_pages": pages}
+    act.update(extra.get(kind, {}))
+    return json.dumps({"travel_description": {"title": "T"},
+                       "days": [{"title": "d", "activities": [act]}]})
+
+
+def test_guidebook_pages_accepts_pages_and_ranges():
+    # A page, a range, a comma-separated list, and a range typed with the
+    # en-dash a book would print — all valid, on every type that has the field.
+    for kind in ("road", "point_of_interest", "place", "hike"):
+        for pages in ("14", "15-18", "16, 23, 25-30", "88–91"):
+            findings = validate_text(_pages_doc(kind, pages))
+            assert _errors(findings) == [], (kind, pages, _messages(_errors(findings)))
+
+
+def test_guidebook_pages_rejects_prose():
+    # The value holds page numbers only — the renderers add the "p." themselves,
+    # so a pasted "see pp. 12-14" is an error, not silently printed.
+    for pages in ("see pp. 12-14", "p. 12", "chapter 4", "12-", "1-2-3"):
+        messages = _messages(_errors(validate_text(
+            _pages_doc("point_of_interest", pages))))
+        assert "must be page numbers like '14', '15-18' or '16, 23, 25-30'" in messages, pages
+
+
 def test_kyrgyzstan_example_has_no_errors():
     findings = validate_text((EXAMPLES / "kyrgyzstan.json").read_text(encoding="utf-8"))
     assert _errors(findings) == []

@@ -183,6 +183,7 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
                 _detail(lines, "Off-road", tr("Yes", lang), lang)
             names = [w.location for w in act.waypoints if w.location]
             _detail(lines, "Via", ", ".join(names), lang)
+            _detail(lines, "Guidebook", _pages(act, lang), lang)
             # the arrival (final named waypoint) is the useful map target;
             # fall back to the departure when the drive has no named arrival.
             location = act.destination or act.start
@@ -191,14 +192,17 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
             _detail(lines, "Address", act.address, lang)
             _detail(lines, "Website", act.website, lang)
             _detail(lines, "Description", act.description, lang)
+            _detail(lines, "Guidebook", _pages(act, lang), lang)
             location = act.address
         elif act.kind == "place":
             _detail(lines, "Description", act.description, lang)
+            _detail(lines, "Guidebook", _pages(act, lang), lang)
         elif act.kind == "hike":
             _detail(lines, "Distance", _km(act.distance_km), lang)
             _detail(lines, "Elevation", _m(act.elevation_m), lang)
             _detail(lines, "Route", tr(act.route_label, lang), lang)
             _detail(lines, "Description", act.description, lang)
+            _detail(lines, "Guidebook", _pages(act, lang), lang)
             location = act.start
         elif act.kind == "meal":
             _detail(lines, "Type", tr(act.category or "meal", lang), lang)
@@ -345,6 +349,13 @@ def _accommodation_events(itin: Itinerary, uid_base: str, lang: str,
 
 
 # --- value formatters -------------------------------------------------------
+
+def _pages(act, lang: str) -> str:
+    """An activity's guidebook page reference as ``p. 15-18`` ("" when it has
+    none). Only road / point_of_interest / place / hike carry the field."""
+    pages = getattr(act, "guidebook_pages", "")
+    return tr("p. {pages}", lang).format(pages=pages) if pages else ""
+
 
 def _km(value) -> str:
     return "" if value is None else f"{value:g} km"

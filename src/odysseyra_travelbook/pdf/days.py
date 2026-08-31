@@ -459,8 +459,7 @@ class DayMixin:
         # otherwise the only off-road marking on that road would be invisible.
         if act.off_road or (not multi and legs and legs[0][5]):
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
-        if act.description:
-            self._para(x, w, act.description)
+        self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self._road_waypoints(x, w, act)
         self._render_nested(x, w, act.activities)
 
@@ -518,8 +517,7 @@ class DayMixin:
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name,
                             text_url=self._addr_url(act.coordinate, act.address))
-        if act.description:
-            self._para(x, w, act.description)
+        self._para_with_pill(x, w, act.description, act.guidebook_pages)
         if act.website and not self.ink_saver:
             y = self.get_y()
             self._link_row(x, y, [(self.t("Website"), act.website)])
@@ -528,8 +526,7 @@ class DayMixin:
 
     def _details_place(self, act, x: float, w: float) -> None:
         self._line_with_nav(x, w, act.duration_display, act.coordinate, act.name)
-        if act.description:
-            self._para(x, w, act.description)
+        self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self._render_nested(x, w, act.activities)
 
     def _render_nested(self, x: float, w: float, activities) -> None:
@@ -564,8 +561,7 @@ class DayMixin:
         self._line_with_nav(x, w, meta, act.coordinate, act.start, act.name)
         if act.name and act.start and act.end:
             self._para(x, w, f"{act.start} → {act.end}")
-        if act.description:
-            self._para(x, w, act.description)
+        self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self._render_nested(x, w, act.activities)
 
     def _nested_badge_width(self, label: str) -> float:
@@ -614,11 +610,8 @@ class DayMixin:
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
                                 poi.name, size=8.5, h=4.5,
                                 text_url=self._addr_url(poi.coordinate, poi.address))
-        if poi.description:
-            self.set_x(tx)
-            self.set_font(FONT, "", 9)
-            self.set_text_color(*MUTED)
-            self.multi_cell(tw, 4.5, poi.description)
+        self._para_with_pill(tx, tw, poi.description, poi.guidebook_pages,
+                             size=9, h=4.5)
         if poi.website and not self.ink_saver:
             y = self.get_y()
             self._link_row(tx, y, [(self.t("Website"), poi.website)], size=8.5)
@@ -658,11 +651,8 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(tw, 4.5, f"{hike.start} → {hike.end}")
-        if hike.description:
-            self.set_x(tx)
-            self.set_font(FONT, "", 9)
-            self.set_text_color(*MUTED)
-            self.multi_cell(tw, 4.5, hike.description)
+        self._para_with_pill(tx, tw, hike.description, hike.guidebook_pages,
+                             size=9, h=4.5)
         self.ln(1)
 
     def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:

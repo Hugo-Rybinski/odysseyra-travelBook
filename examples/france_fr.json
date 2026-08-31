@@ -98,6 +98,7 @@
         {
           "type": "point_of_interest",
           "name": "Musée du Louvre",
+          "guidebook_pages": "44-47",
           "category": "museum",
           "address": "Rue de Rivoli, 75001 Paris",
           "start_time": "15:30",
@@ -168,6 +169,7 @@
         {
           "type": "place",
           "name": "Le Quartier latin",
+          "guidebook_pages": "52, 54-58",
           "start_time": "14:00",
           "duration": "3h",
           "description": "Le quartier étudiant de la rive gauche — le départ fixé à 14:00 laisse un court battement après le déjeuner, visible sur la frise.",
@@ -179,6 +181,7 @@
             {
               "type": "point_of_interest",
               "name": "Panthéon",
+              "guidebook_pages": "56",
               "category": "building",
               "duration": "45 min",
               "description": "Mausolée néoclassique des grandes figures de la République, avec un pendule de Foucault sous la coupole.",
@@ -449,6 +452,7 @@
         {
           "type": "road",
           "start": "Beynac-et-Cazenac",
+          "guidebook_pages": "132",
           "distance_km": 55,
           "duration": "1h",
           "off_road": false,
@@ -491,6 +495,7 @@
         {
           "type": "hike",
           "name": "Sentier au bord de la Vézère",
+          "guidebook_pages": "118-119",
           "start": "Montignac",
           "end": "Thonac",
           "distance_km": 5,

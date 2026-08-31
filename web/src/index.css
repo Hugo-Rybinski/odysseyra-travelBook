@@ -5,6 +5,8 @@
   --card: #fff;
   --border: #e2e5e8;
   --accent: #122e4b;
+  /* --accent 40% toward white; overridden per trip by paletteVars() */
+  --accent-light: #718293;
   --topbar-h: 64px;
   /* horizontal page gutter; full-bleed elements (top bar, toasts) cancel it with
      a negative margin, so they must all reference this one value */
@@ -1472,6 +1474,24 @@ body {
 .act-details .desc {
   margin: 4px 0 0;
   line-height: 1.45;
+}
+/* Guidebook page pointer: a light-accent pill appended inline at the end of the
+   description text (mirrors the PDF's `_guidebook_pill`). Not bold and not
+   uppercased — unlike the flag chips — since it carries a readable reference.
+   `white-space: nowrap` keeps "p. 16, 23, 25-30" from breaking mid-pill. */
+.chip.guidebook {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-light);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 400;
+  white-space: nowrap;
+  vertical-align: baseline;
+  cursor: default; /* .chip's base rule is for the clickable filter chips */
 }
 
 /* clamped descriptions (cover summary / day intro / activity desc) */

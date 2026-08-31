@@ -19,6 +19,16 @@ def test_tr_identity_and_fallback():
     assert tr("not a known string", "fr") == "not a known string"  # missing key
 
 
+def test_guidebook_template_is_translated_and_keeps_its_placeholder():
+    # The PDF and the viewer fill the *same* English template from two code
+    # paths (translations.py / render/format.ts), so the placeholder must
+    # survive translation — translate first, then .format.
+    for lang, expected in (("en", "Guidebook p. 15-18"), ("fr", "Guide p. 15-18")):
+        template = tr("Guidebook p. {pages}", lang)
+        assert "{pages}" in template
+        assert template.format(pages="15-18") == expected
+
+
 def test_fmt_date_localized():
     d = date(2026, 6, 8)
     assert fmt_date(d, "long", "en") == "Jun 08, 2026"

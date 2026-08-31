@@ -227,6 +227,86 @@ class _PDFBase(FPDF):
         self.set_text_color(*MUTED)
         self.multi_cell(w, 5, text)
 
+    def _guidebook_pill(self, x: float, y: float, pages: str,
+                        size: float = 7.5) -> float:
+        """The activity's guidebook page reference ("Guidebook p. 15-18") as a
+        **rounded pill** drawn at ``(x, y)``; returns its width. A soft accent
+        fill with accent text at normal weight — lighter than the solid
+        ``_chip``/``_inline_chip`` flags, so it reads as a pointer appended to the
+        prose rather than as a marker. Ink-saver drops the fill for an outline.
+
+        Leaves the cursor **on the pill's own line** (like ``_chip``, unlike
+        ``_para``); callers that drew text above it must restore y themselves."""
+        label = self.t("Guidebook p. {pages}").format(pages=pages)
+        self.set_font(FONT, "", size)
+        tw = self.get_string_width(label) + 4
+        ph = size * 0.56
+        self.set_line_width(0.2)
+        if self.ink_saver:
+            self.set_draw_color(*_tint(self.accent, 0.4))
+            style = "D"
+        else:
+            self.set_fill_color(*_tint(self.accent, 0.86))
+            self.set_draw_color(*_tint(self.accent, 0.6))
+            style = "DF"
+        self.rect(x, y, tw, ph, style=style, round_corners=True,
+                  corner_radius=ph / 2)
+        self.set_xy(x, y + 0.15)
+        self.set_text_color(*self.accent)
+        self.cell(tw, ph - 0.3, label, align="C")
+        return tw
+
+    def _para_with_pill(self, x: float, w: float, text: str, pages: str,
+                        size: float = 10, h: float = 5) -> None:
+        """A description paragraph with the guidebook pill appended **after its
+        last line**, dropping to a line of its own only when it wouldn't fit.
+        Either part may be empty: no pages draws a plain paragraph, no text draws
+        the pill alone, and neither draws nothing. Advances the cursor below."""
+        if not text and not pages:
+            return
+        pill_size = max(6.5, size - 2.5)
+        # vertically centre the pill on the text line it trails
+        dy = (h - pill_size * 0.56) / 2
+
+        def pill_alone() -> None:
+            """The pill on a line of its own, breaking the page first if needed."""
+            if self.get_y() + h > self.page_break_trigger:
+                self.add_page()
+            y = self.get_y()
+            self._guidebook_pill(x, y + dy, pages, pill_size)
+            self.set_y(y + h)
+
+        if not text:
+            pill_alone()
+            return
+
+        self.set_font(FONT, "", size)
+        lines = self.multi_cell(w, h, text, dry_run=True, output="LINES") or [text]
+        last_w = self.get_string_width(lines[-1])
+        gap = self.get_string_width("  ")
+        self.set_x(x)
+        self.set_text_color(*MUTED)
+        self.multi_cell(w, h, text)
+        if not pages:
+            return
+        # where the paragraph left the cursor — restored below, since drawing the
+        # pill moves it back up onto the last text line
+        end_y = self.get_y()
+        # measure the pill in its own (smaller) face before placing it
+        self.set_font(FONT, "", pill_size)
+        pill_w = self.get_string_width(
+            self.t("Guidebook p. {pages}").format(pages=pages)) + 4
+        if last_w + gap + pill_w > w:
+            pill_alone()
+            return
+        # Derive the last line's y from the *live* cursor rather than from
+        # y + (n-1)*h: the paragraph above may have triggered an auto page
+        # break, which would leave that arithmetic pointing at the previous
+        # page — drawing the pill's box off-sheet while its text broke onto the
+        # next one (exactly what a nested activity near a page end did).
+        self._guidebook_pill(x + last_w + gap, end_y - h + dy, pages, pill_size)
+        self.set_y(end_y)
+
     def _nav_geom(self, text: str, w: float, size: float, style: str) -> tuple:
         """Shared geometry for the ``text`` + inline "(Navigate)" block: the
         wrapped text lines, the width of the last one (in the text font), the

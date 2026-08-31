@@ -33,6 +33,7 @@
 ⚠️  line 30: this road's leg (A → No coordinate) should give a duration and a 'distance_km' — missing: duration, distance_km.
 ℹ️  line 30: optional field 'off_road' is missing — whether part of the drive is off-road. Expected true or false. Defaulting to false.
 ℹ️  line 30: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 30: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 30: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
 ℹ️  line 30: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ℹ️  line 30: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
@@ -45,6 +46,7 @@
 ❌  line 39: field 'coordinate' is invalid — coordinate.long must be a number, got 'west'.
 ❌  line 39: required field 'name' is missing — the point-of-interest name. Expected any text.
 ❌  line 39: field 'category' is invalid ('alien') — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other (must be one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other).
+❌  line 39: field 'guidebook_pages' is invalid ('see pp. 12-14') — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30' (must be page numbers like '14', '15-18' or '16, 23, 25-30').
 ❌  line 39: field 'website' is invalid ('ftp://nope') — a link to the venue's website. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
 ❌  line 39: start time, end time and duration are incompatible — the three don't agree. Provide only two of start_time / end_time / duration, or make them consistent.
 ❌  line 39: this overlaps an earlier item on the day's timeline — their start/end times collide.
@@ -81,6 +83,7 @@
 ℹ️  line 46: optional field 'description' is missing — an intro paragraph for the day. Expected any text. Defaulting to "".
 ⚠️  line 50: this activity (Nested demo) has no duration and none can be inferred from its start/end times — add a 'duration', or a 'start_time' and 'end_time'.
 ℹ️  line 50: optional field 'description' is missing — a description of the place. Expected any text. Defaulting to "".
+ℹ️  line 50: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 50: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
 ℹ️  line 50: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
 ℹ️  line 50: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
@@ -92,6 +95,7 @@
 ℹ️  line 57: optional field 'category' is missing — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other. Defaulting to "other".
 ℹ️  line 57: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
 ℹ️  line 57: optional field 'description' is missing — a description. Expected any text. Defaulting to "".
+ℹ️  line 57: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 57: optional field 'website' is missing — a link to the venue's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
 ℹ️  line 57: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
 ℹ️  line 57: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
@@ -104,6 +108,7 @@
 ℹ️  line 61: optional field 'distance_km' is missing — the driving distance in km. Expected a number. Defaulting to none (not shown).
 ℹ️  line 61: optional field 'off_road' is missing — whether part of the drive is off-road. Expected true or false. Defaulting to false.
 ℹ️  line 61: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 61: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 61: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
 ℹ️  line 61: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
 ℹ️  line 61: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
@@ -231,4 +236,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-63 error(s), 18 warning(s), 151 info.
+64 error(s), 18 warning(s), 155 info.

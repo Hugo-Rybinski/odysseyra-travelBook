@@ -1,4 +1,11 @@
-import { createContext, useContext, useLayoutEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useT } from "../i18n";
 
 // Whether long descriptions are truncated (with a "Show more" toggle) or shown
@@ -12,7 +19,20 @@ export const ClampProvider = ClampContext.Provider;
 // offers a "Show more" / "Show less" toggle — but only when the text actually
 // overflows those lines. `className` carries the original styling hook
 // (cover-summary / day-intro / desc), so the look is unchanged.
-export function Clamp({ text, className }: { text: string; className?: string }) {
+//
+// `trailing` is inline content appended **inside** the text flow, after the last
+// word — the guidebook pill. It therefore sits at the end of the final visible
+// line, and is clipped along with the text when the paragraph is clamped (the
+// "Show more" toggle brings it back).
+export function Clamp({
+  text,
+  className,
+  trailing,
+}: {
+  text: string;
+  className?: string;
+  trailing?: ReactNode;
+}) {
   const clamp = useContext(ClampContext);
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
@@ -37,6 +57,7 @@ export function Clamp({ text, className }: { text: string; className?: string })
     <div className={className}>
       <div ref={ref} className={`clamp-text${clamped ? " clamped" : ""}`}>
         {text}
+        {trailing}
       </div>
       {clamp && (overflowing || expanded) && (
         <button type="button" className="clamp-toggle" onClick={() => setExpanded((e) => !e)}>

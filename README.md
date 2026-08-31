@@ -498,6 +498,18 @@ starts at `defaults.start_time`, each next one at the previous item's end.
 
 A tz label is only shown in the PDF when it differs from `defaults.timezone`.
 
+**Guidebook pages.** The four types that carry a `description` — `road`,
+`point_of_interest`, `place` and `hike` — also accept an optional
+`guidebook_pages`: the page(s) of the trip's guidebook covering that activity, as
+a single page (`"14"`), a range (`"15-18"`) or a comma-separated list
+(`"16, 23, 25-30"`). Validation errors on anything that isn't page numbers, so
+keep the `p.` out of the value. Both renderers append it to the **end of the
+description text** as a light-accent pill reading `Guidebook p. 15-18` — a soft
+accent fill with accent text, not bold and not uppercased, so it trails the prose
+as a pointer instead of taking a row of its own. It drops to its own line only
+when it wouldn't fit after the last line, or when the activity has pages but no
+description. It works the same on a nested activity.
+
 #### `road` — a drive/transfer
 
 | Field | Required | Description | Type | Format | Default |
@@ -507,6 +519,7 @@ A tz label is only shown in the PDF when it differs from `defaults.timezone`.
 | `distance_km` |  | Driving distance | number | positive number | none |
 | `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
 | `description` |  | Anything the other fields don't cover | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the drive | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `waypoints` | ✅ | Ordered stops the route runs through (last = arrival) | array | non-empty array of `waypoint` objects (see below) | — |
 | `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
@@ -555,6 +568,7 @@ is promoted to the road's chip rather than being lost.
 | `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `lake` \| `beach` \| `waterfall` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `website` |  | Link to the venue's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
@@ -564,6 +578,7 @@ is promoted to the road's chip rather than being lost.
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Place name | string | any text | — |
 | `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the area | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
 `road`, `hike`, `place` and `point_of_interest` may each carry an `activities`
@@ -580,6 +595,7 @@ a validation error.
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Hike name | string | any text | — |
 | `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the hike | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `distance_km` |  | Distance | number | positive number | none |
 | `elevation_m` |  | Elevation gain | number | positive number | none |
 | `start` |  | Trailhead address | string | any text | `""` |

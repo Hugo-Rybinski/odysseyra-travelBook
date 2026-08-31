@@ -63,6 +63,9 @@ const LABELS = {
     navigate: "Navigate",
     website: "Website",
     reservation: "Reservation",
+    // the same template pdf/base.py's `_guidebook` fills (translations.py holds
+    // the PDF's French twin) — keep the two wordings in step
+    guidebook: "Guidebook p. {pages}",
     via: "Via",
     includes: "Includes",
     overnight: "Overnight",
@@ -150,6 +153,7 @@ const LABELS = {
     navigate: "Y aller",
     website: "Site web",
     reservation: "Réservation",
+    guidebook: "Guide p. {pages}",
     via: "Via",
     includes: "Comprend",
     overnight: "De nuit",

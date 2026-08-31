@@ -158,6 +158,17 @@ def test_descriptions_carry_detail():
     assert all("Price: " in e for e in nights)
 
 
+def test_guidebook_pages_reach_the_event_description():
+    # An activity's guidebook pages ride along in its event detail, so the
+    # calendar entry points at the same page the book does.
+    louvre = _unfold(next(e for e in _events(_ics("france.json"))
+                          if "Musée du Louvre" in e))
+    assert "Guidebook: p. 44-47" in louvre
+    fr = _unfold(next(e for e in _events(_ics("france_fr.json", lang="fr"))
+                      if "Musée du Louvre" in e))
+    assert "Guide: p. 44-47" in fr
+
+
 def test_french_localizes_labels():
     ics = _ics("france_fr.json", lang="fr")
     flight = _unfold(next(e for e in _events(ics) if "Avion:" in e))

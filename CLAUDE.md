@@ -191,6 +191,22 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   other four are explicit-only). The
   inference thresholds and a default meal duration live in `defaults`
   (`breakfast_until` 10:00, `lunch_until` 16:00, `meal_duration` 0).
+- **Guidebook pages.** The four activity types that carry a `description` —
+  `road`, `point_of_interest`, `place`, `hike` — also carry an optional
+  `guidebook_pages` string: page numbers only (`14` / `15-18` /
+  `16, 23, 25-30`), validated by `V_PAGES` in `validate/specs.py`, which
+  **errors** on prose like `pp. 15-18`. Both renderers append it as a
+  **light-accent pill at the end of the description text** (soft accent fill,
+  accent text, not bold), dropping to its own line only when it won't fit or when
+  there is no description: the PDF via `_para_with_pill` / `_guidebook_pill` in
+  `pdf/base.py` (which derives the pill's y from the **live cursor** after the
+  paragraph — computing `y + (n-1)*h` puts the box on the previous page when the
+  prose auto-breaks), the viewer via `Clamp`'s `trailing` prop plus
+  `.chip.guidebook` on `--accent-light` (added by `render/palette.ts`).
+  The label is a template each renderer fills from the same English source —
+  `"Guidebook p. {pages}"` in `translations.py` / the `guidebook` key in
+  `render/format.ts` — so the two wordings must move together. The `.ics` export
+  packs it as a `Guidebook:` detail line.
 - **Prices & currency.** A `price` is a bare `float` (no symbol); its `currency`
   is a 3-letter ISO code that defaults to `defaults.currency` (EUR). Conversion
   lives in `models/currency.py` (`SecondaryCurrency`, `to_default`,

@@ -254,18 +254,28 @@ it in both **double-books** the day. The same goes for an inter-city bus or
 ferry. A short local transfer *may* stay a `road` activity — the taxi across town
 to the airport, say — but the flight it delivers you to is a `transport` entry.
 
-**Guidebook page references.** If the source cites guidebook pages for a place,
-activity, or zone (e.g. "Lonely Planet p. 142" or "see pp. 88–91"), keep that
-reference verbatim in that activity's `description` (append it if a description
-already exists). It carries over to any `point_of_interest`, `place`, or `hike`
-that has a `description` field.
+**Guidebook page references go in `guidebook_pages`, never in the prose.** If the
+source cites guidebook pages for a place, activity, or zone (e.g. "Lonely Planet
+p. 142" or "see pp. 88–91"), put the **page numbers alone** in that activity's
+`guidebook_pages` field — the four types that have a `description` (`road`,
+`point_of_interest`, `place`, `hike`) all accept it. The value holds nothing but
+digits, commas and ranges:
+
+| Source says | `guidebook_pages` |
+|---|---|
+| "Lonely Planet p. 142" | `"142"` |
+| "see pp. 88–91" | `"88-91"` |
+| "pp. 16, 23 and 25–30" | `"16, 23, 25-30"` |
+
+Drop the `p.`, the guidebook's name and any "see" — the renderers add the
+`p.` themselves, and validation **errors** on a value that isn't page numbers.
+Never restate the pages in the `description` too: that prints them twice.
 
 **Lift a shared page reference up to the area.** When several stops nested under
 one container (a `place`, or a `point_of_interest` with sub-activities) all cite
-the *same* guidebook pages, drop that reference from each nested `description`
-and put it once in the container's `description` instead. Keep a page reference
-on a nested stop only when it is *specific to that stop* and differs from the
-area's.
+the *same* guidebook pages, leave each nested `guidebook_pages` empty and set it
+once on the container instead. Give a nested stop its own `guidebook_pages` only
+when the pages are *specific to that stop* and differ from the area's.
 
 **A description is for the traveller, not a record of how you built the JSON.**
 Every `description` (and the trip `summary`) must earn its place on the day: what
@@ -274,9 +284,9 @@ your sources or your process** — no "GPX track", "figures taken from the GPX",
 "information processed from source X", "per the booking email", "transcribed from
 the screenshot", "estimated from the guidebook", no `[to be checked]`. Someone
 reading *"Ridge walk above the valley (GPX track)"* learns nothing from that
-parenthesis; it is noise printed in their book. The **one** deliberate exception
-is the guidebook page reference above — `p. 142` is a pointer the reader can use
-on the day, not provenance. Everything you want to say about where a value came
+parenthesis; it is noise printed in their book. There is **no exception** — not
+even a guidebook page, which has its own `guidebook_pages` field (above) and must
+never appear in the prose. Everything you want to say about where a value came
 from, how confident you are, or which document you trusted belongs in the
 end-of-run gaps and inconsistency report, never in the JSON.
 
@@ -311,6 +321,7 @@ a road.
 | `distance_km` | recommended | positive number | Driving distance. A road should carry a duration (its own/inferred times, or waypoint durations) **and** a `distance_km`; `validate` warns naming either that's missing. |
 | `off_road` | no | boolean | `true` if part is off-road. |
 | `description` | no | text | Free prose for what the other fields can't say — see below. |
+| `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the drive. Numbers only — see *Guidebook page references*. |
 | `waypoints` | **yes** | non-empty array of **waypoint** objects | Ordered stops through to the arrival. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
 
@@ -400,6 +411,7 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 | `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `street`, `natural park`, `mountain`, `lake`, `beach`, `waterfall`, `other`. |
 | `address` | no | text | |
 | `description` | no | text | |
+| `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering this sight. Numbers only — see *Guidebook page references*. |
 | `website` | no | a link like `https://example.com` | The venue's website — shown as a clickable link. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | Nested sights/hikes/meals (see nesting). |
 
@@ -409,6 +421,7 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 |---|---|---|---|
 | `name` | **yes** | text | The place name. |
 | `description` | no | text | |
+| `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the area — the right home for pages shared by its nested stops. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | The things you do there. |
 
 **Group co-located stops under a `place`.** When several activities happen in the
@@ -426,6 +439,8 @@ located sub-activities.
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `name` | **yes** | text | Trail/hike name. |
+| `description` | no | text | |
+| `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the hike. Numbers only — see *Guidebook page references*. |
 | `distance_km` | recommended | number | Length. A hike (top-level **or nested** under a place/point of interest) should carry a duration, a `distance_km` **and** an `elevation_m`; `validate` warns naming any of the three that's missing. |
 | `elevation_m` | recommended | number | Elevation gain in metres (see `distance_km`). |
 | `start` | no | text | Trailhead. |
@@ -680,6 +695,7 @@ the shape — real values come from your sources. The full version lives at
           "name": "Musée du Louvre",
           "category": "museum",
           "address": "Rue de Rivoli, 75001 Paris",
+          "guidebook_pages": "44-47",
           "start_time": "15:30",
           "duration": "2h30",
           "website": "https://www.louvre.fr"
@@ -932,7 +948,12 @@ You cannot run the validator, so verify these by hand:
   place as a named waypoint (see *Never chain roads*).
 - **No provenance in the prose:** no `description`/`summary` mentions a GPX, a
   KML, an email, a screenshot, a source name, your own uncertainty, or
-  `[to be checked]`. Guidebook page references are the only exception.
+  `[to be checked]` — no exceptions.
+- **Guidebook pages are in `guidebook_pages`, not the prose:** no `description`
+  contains a `p.`/`pp.` page reference or a guidebook's name, and every
+  `guidebook_pages` value is digits, commas and ranges only (`"15-18"`, not
+  `"pp. 15-18"`). Pages shared by an area's nested stops sit once on the
+  container.
 - **No flights or trains in `activities`:** every plane/train (and inter-city
   bus/ferry) leg sits in the top-level `transport` array, exactly once — not also
   as a `road` or a `point_of_interest` inside the day.

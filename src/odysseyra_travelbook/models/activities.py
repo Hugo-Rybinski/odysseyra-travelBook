@@ -42,6 +42,14 @@ def _sched(d: dict) -> dict:
     }
 
 
+def _pages(d: dict) -> str:
+    """The optional ``guidebook_pages`` of an activity — the page(s) of the trip's
+    guidebook covering it, kept as free text so any of ``14`` / ``15-18`` /
+    ``16, 23, 25-30`` round-trips untouched (the validator checks the shape; the
+    model only normalizes the whitespace)."""
+    return str(d.get("guidebook_pages", "")).strip()
+
+
 @dataclass
 class Buffer(Activity):
     """Free time between two activities (travel, rest, a meal).
@@ -116,6 +124,7 @@ class Road(Activity):
     kind = "road"
     start: str = ""
     description: str = ""
+    guidebook_pages: str = ""
     distance_km: float | None = None
     off_road: bool = False
     waypoints: list[Waypoint] = field(default_factory=list)  # ordered stops; last = arrival
@@ -148,6 +157,7 @@ class Road(Activity):
             **_sched(d),  # 'coordinate' here is the departure point
             start=str(d["start"]),
             description=str(d.get("description", "")),
+            guidebook_pages=_pages(d),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=_parse_bool(d.get("off_road", False)),
             waypoints=waypoints,
@@ -169,6 +179,7 @@ class PointOfInterest(Activity):
     name: str = ""
     address: str = ""
     description: str = ""
+    guidebook_pages: str = ""
     category: str = "other"
     website: str = ""  # the venue's website
     activities: list[Activity] = field(default_factory=list)
@@ -192,6 +203,7 @@ class PointOfInterest(Activity):
             name=str(d["name"]),
             address=str(d.get("address", "")),
             description=str(d.get("description", "")),
+            guidebook_pages=_pages(d),
             category=category,
             website=str(d.get("website", "")),
             activities=_nested(d, "point_of_interest"),
@@ -205,6 +217,7 @@ class Place(Activity):
     kind = "place"
     name: str = ""
     description: str = ""
+    guidebook_pages: str = ""
     activities: list[Activity] = field(default_factory=list)
 
     @property
@@ -219,6 +232,7 @@ class Place(Activity):
             **_sched(d),
             name=str(d["name"]),
             description=str(d.get("description", "")),
+            guidebook_pages=_pages(d),
             activities=_nested(d, "place"),
         )
 
@@ -270,6 +284,7 @@ class Hike(Activity):
     kind = "hike"
     name: str = ""
     description: str = ""
+    guidebook_pages: str = ""
     distance_km: float | None = None
     elevation_m: float | None = None
     start: str = ""
@@ -301,6 +316,7 @@ class Hike(Activity):
             **_sched(d),
             name=str(d["name"]),
             description=str(d.get("description", "")),
+            guidebook_pages=_pages(d),
             distance_km=_parse_float(d.get("distance_km"), "hike distance_km"),
             elevation_m=_parse_float(d.get("elevation_m"), "hike elevation_m"),
             start=str(d.get("start", "")),

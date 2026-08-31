@@ -33,6 +33,9 @@ _FR = {
     # the same flag as a small pill on a single VIA leg's row
     "OFF-ROAD": "HORS-ROUTE",
     "VIA": "VIA",
+    # an activity's guidebook page reference, drawn in a lightened accent under
+    # its description (the viewer mirrors this template in render/format.ts)
+    "Guidebook p. {pages}": "Guide p. {pages}",
     "arrival": "arrivée",
     "OVERNIGHT": "DE NUIT",
     "INCLUDES": "COMPREND",
@@ -734,6 +737,9 @@ _FR = {
     "Category": "Catégorie",
     "Address": "Adresse",
     "Description": "Description",
+    # the .ics detail label; its value is the shared "p. {pages}" reference
+    "Guidebook": "Guide",
+    "p. {pages}": "p. {pages}",
     "Distance": "Distance",
     "Elevation": "Dénivelé",
     "Route": "Parcours",

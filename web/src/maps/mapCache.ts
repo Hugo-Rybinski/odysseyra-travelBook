@@ -26,8 +26,9 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // sunrise → its first). v5: `sun.display` dropped — the viewer localizes it now.
 // v6: `road` activities gained a `description`. v7: road waypoints gained a
 // per-leg `off_road`. v8: `show_moon_phase` now defaults on, so `day.moon` is
-// populated for docs that never set it.
-const SCHEMA_VERSION = 8;
+// populated for docs that never set it. v9: road / point_of_interest / place /
+// hike activities gained `guidebook_pages`.
+const SCHEMA_VERSION = 9;
 
 interface Entry {
   day: Day;

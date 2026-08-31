@@ -145,6 +145,7 @@ def _activity(itin: Itinerary, act) -> dict:
             "start": act.start,
             "destination": act.destination,
             "description": act.description,
+            "guidebook_pages": act.guidebook_pages,
             "distance_km": act.distance_km,
             "off_road": act.off_road,
             "waypoints": [_waypoint(w) for w in act.waypoints],
@@ -155,17 +156,23 @@ def _activity(itin: Itinerary, act) -> dict:
             "name": act.name,
             "address": act.address,
             "description": act.description,
+            "guidebook_pages": act.guidebook_pages,
             "category": act.category,
             "website": act.website,
         })
 
     elif act.kind == "place":
-        out.update({"name": act.name, "description": act.description})
+        out.update({
+            "name": act.name,
+            "description": act.description,
+            "guidebook_pages": act.guidebook_pages,
+        })
 
     elif act.kind == "hike":
         out.update({
             "name": act.name,
             "description": act.description,
+            "guidebook_pages": act.guidebook_pages,
             "distance_km": act.distance_km,
             "elevation_m": act.elevation_m,
             "start": act.start,

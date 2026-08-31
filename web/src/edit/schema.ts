@@ -156,6 +156,16 @@ export const SCHEDULED_FIELDS: FieldSpec[] = [
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "End time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
 ];
 
+// The guidebook page reference, offered on every activity type that has a
+// `description` (road / point_of_interest / place / hike) with one wording.
+const GUIDEBOOK_FIELD: FieldSpec = {
+  key: "guidebook_pages",
+  label: "Guidebook pages",
+  kind: "text",
+  placeholder: "14 / 15-18 / 16, 23, 25-30",
+  help: "The guidebook page(s) covering this activity — a single page, a range, or a comma-separated list (e.g. 14, 15-18, 16, 23, 25-30). Shown as a light-accent pill at the end of the description. Optional.",
+};
+
 // Per-activity-type fields (excluding the shared scheduling ones and nested
 // `activities`/`waypoints`/`coordinate`, which the form renders specially).
 export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
@@ -164,21 +174,25 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km. Optional." },
     { key: "off_road", label: "Off-road", kind: "bool", help: "Highlight off-road sections. Defaults to off." },
     { key: "description", label: "Description", kind: "textarea", help: "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional." },
+    GUIDEBOOK_FIELD,
   ],
   point_of_interest: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Point-of-interest name", help: "Point-of-interest name. Required." },
     { key: "category", label: "Category", kind: "enum", enum: POI_CATEGORIES, placeholder: "other", help: "The kind of place, shown as a badge. Defaults to 'other'." },
     { key: "address", label: "Address", kind: "text", help: "Street address. Optional." },
     { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+    GUIDEBOOK_FIELD,
     { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the venue's website, shown as a clickable link. Optional." },
   ],
   place: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Place name", help: "Place name (e.g. a town) grouping the nested activities. Required." },
     { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+    GUIDEBOOK_FIELD,
   ],
   hike: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Hike name", help: "Hike name. Required." },
     { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
+    GUIDEBOOK_FIELD,
     { key: "distance_km", label: "Distance (km)", kind: "number", help: "Distance in km. Optional." },
     { key: "elevation_m", label: "Elevation (m)", kind: "number", help: "Elevation gain in m. Optional." },
     { key: "start", label: "Start (trailhead)", kind: "text", help: "Trailhead address. Optional." },
