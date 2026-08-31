@@ -1,0 +1,695 @@
+# JSON file format
+
+The complete Odysseyra TravelBook itinerary format, field by field: one table per
+object, each giving **Required / Type / Format / Default**. This file is
+authoritative — see [`README.md`](README.md) for what the tool does with it, and
+[`skills/build-full-json.md`](skills/build-full-json.md) for the self-contained
+guide an LLM uses to write one of these from raw notes.
+
+## Contents
+
+- [Global structure](#global-structure)
+- [`travel_description`](#travel_description)
+- [`defaults`](#defaults)
+- [`days[]` — a day](#days--a-day)
+- [`activities[]` — common fields](#activities--common-fields)
+- [`transport[]`](#transport)
+- [`accommodations[]`](#accommodations)
+- [`car_rentals[]`](#car_rentals)
+
+Each day needs a `title`, each day needs at least one activity, and `days` must
+be non-empty; everything else is optional and falls back to a sensible default.
+
+## Global structure
+
+The top-level object has two config groups and three content arrays:
+
+- **`travel_description`** *(object)* — what the trip is: cover title, summary,
+  accent color, and an optional date range (inferred from the earliest/latest
+  date across days, transport and accommodation when not set).
+- **`defaults`** *(object)* — fallback settings applied across the trip: the
+  day start and end time, how the buffers between activities are sized, time
+  zone.
+- **`days`** *(array, required, non-empty)* — the itinerary, one per day.
+- **`transport`** *(array, optional)* — travel bookings, each with its `legs`
+  (the legs are also woven into the days).
+- **`accommodations`** *(array, optional)* — where you sleep.
+- **`car_rentals`** *(array, optional)* — rental-car bookings.
+
+```json
+{
+  "travel_description": {
+    "title": "Grand Tour of France",
+    "subtitle": "Paris, the Loire, the Dordogne and the Pyrenees",
+    "cover_color": "#2f5d8c",
+    "summary": "A short paragraph shown on the cover."
+  },
+  "defaults": {
+    "start_time": "08:30",
+    "end_time": "21:00",
+    "timezone": "+02:00"
+  },
+  "days": [ /* day objects */ ],
+  "transport": [ /* transport bookings, each with its "legs" */ ],
+  "accommodations": [ /* accommodation objects */ ],
+  "car_rentals": [ /* car rental objects */ ]
+}
+```
+
+Throughout, dates use `YYYY-MM-DD`, times use `HH:MM`, durations look like
+`"1h30"` / `"45 min"` / `"1:30"`, and UTC offsets like `+02:00` / `UTC-3` /
+`Z`. The descriptive and config keys may live either in their groups
+(`travel_description` / `defaults`) or at the top level, but the old renamed
+aliases (`default_start_time` / `default_end_time` / `default_buffer`,
+`start_timezone` / `end_timezone`, transport `date`, `transports`, `default`)
+are no longer accepted — use the canonical names.
+
+## `travel_description`
+
+`start_date` / `end_date` are optional: if omitted they are **inferred** as the
+earliest / latest date across days, transport and accommodation; if set, they
+override and validation cross-checks the itinerary against them.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `title` | ✅ | Trip title shown on the cover | string | any text | — |
+| `subtitle` |  | Line under the title | string | any text | `""` (hidden) |
+| `start_date` |  | Trip start date (overrides inference) | string | `YYYY-MM-DD` | inferred (earliest date) |
+| `end_date` |  | Trip end date (overrides inference) | string | `YYYY-MM-DD` | inferred (latest date) |
+| `cover_color` |  | Accent color driving the whole palette | string | hex `#RRGGBB` | `"#1f4e5f"` |
+| `summary` |  | Paragraph shown on the cover | string | any text | `""` (hidden) |
+
+## `defaults`
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `start_time` |  | First activity's start time each day | string | `HH:MM` | `"08:00"` |
+| `end_time` |  | Where each day's last activity should land: auto-sized buffers spread the day out to it, and validation warns past it | string | `HH:MM` | `"18:00"` |
+| `auto_sized_buffer` |  | Size the buffers between a day's activities so the day ends on `end_time` (supersedes `buffer`) | boolean | `true`/`false` | `true` (auto-sized) |
+| `buffer` |  | Fixed buffer inserted between consecutive activities — ignored while `auto_sized_buffer` is on | string | duration | `0` (no fixed buffer) |
+| `timezone` |  | Default UTC offset for all times | string | offset (`+02:00`, `UTC-3`, `Z`) | `GMT` (UTC+0) |
+| `breakfast_until` |  | A meal starting before this is inferred as breakfast | string | `HH:MM` | `"10:00"` |
+| `lunch_until` |  | A meal starting up to this (after breakfast) is lunch; later, dinner | string | `HH:MM` | `"16:00"` |
+| `meal_duration` |  | Default length of a meal with no duration/end time | string | duration | `0` (instant) |
+| `accommodation_start_time` |  | Evening clock time each accommodation night starts on the calendar (`ics` export) | string | `HH:MM` | `"22:00"` |
+| `accommodation_end_time` |  | Clock time each accommodation night ends on the calendar (`ics` export) | string | `HH:MM` | `"00:00"` (midnight) |
+| `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
+| `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
+| `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |
+| `include_hike_maps` |  | Draw the trail map + elevation profile of a hike that embeds a `gpx` (independent of `include_maps_in_render`) | boolean | `true`/`false` | `true` (drawn) |
+| `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
+| `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
+| `show_moon_phase` |  | Show the night's moon phase (emoji + name) — appended to the sunrise/sunset line when `show_sun_times` is on too, else in each day's "tonight" section | boolean | `true`/`false` | `true` (shown) |
+| `show_sun_times` |  | Show each day's sunrise/sunset (`☀ 06:12 → 21:34`) in its header, computed at that night's accommodation | boolean | `true`/`false` | `true` (shown) |
+
+### Auto-sized buffers — spreading a day out to `end_time`
+
+By default (`defaults.auto_sized_buffer`) the pauses between a day's activities
+aren't a fixed length: they're **sized** so the day spreads out and its last
+activity lands on `defaults.end_time` (`18:00` unless you set it). Four visits of
+an hour each from `09:00` don't finish at `13:00` and leave five empty hours —
+they get about 1h40 of breathing room between them, which is what the day
+actually looks like.
+
+The rules:
+
+- The slack is shared out **evenly** over the gaps between consecutive
+  activities, in whole steps of **5 minutes** (a leftover of under 5 minutes
+  isn't spent, so a day can end up to 4 minutes early).
+- **A `start_time` you wrote is never moved.** It cuts the day in two: what comes
+  before it is spread out only as far as that time, and what comes after starts
+  there. An explicit `end_time` is a promise too — the activity carrying one ends
+  the stretch it's in, so padding never shortens it.
+- A gap you filled with a **`buffer` activity** is left alone — it already says
+  how long that pause is — and its length counts against the slack.
+- A day with **more** in it than fits before `end_time` is left packed as it is
+  (and validation warns about the overrun); so is a single activity with no gap
+  to spread into.
+- A day where **nothing** gives a duration is left alone too: there's no
+  schedule to space out, and spreading would invent one. Fill in the durations
+  validation is asking for and the spacing follows.
+
+`defaults.buffer` — a *fixed* pause between every two activities — is the
+alternative, not a floor underneath it: with auto-sizing on, `buffer` is ignored
+and validation warns that you set both. Switch `auto_sized_buffer` off to go back
+to the fixed buffer and a day that stays packed.
+
+Each `secondary_currencies` entry is `{"currency": "<ISO code>", "change_rate":
+<number>}`, where `change_rate` is **units of that currency per one unit of the
+default currency** (with a `EUR` default, a `USD` rate of `1.09` means
+1 € = $1.09). On the PDF every price prints in the default currency followed by
+each secondary conversion in parentheses, e.g. `€612 ($667, £520)` — converted
+amounts show two decimals below 25 and are rounded to whole numbers at or above
+25. Major currencies (`EUR`, `USD`, `GBP`, `JPY`) print with their symbol; others
+show the ISO code.
+
+### Maps & coordinates
+
+When `defaults.include_maps_in_render` is `true`, each day page gets a small
+OpenStreetMap with a numbered pin for every located activity and the day's drives
+drawn as routes. The night's accommodation, if it has a coordinate, is pinned with
+a `*`. A place (an `area`) is shown as a single pin, and — when it has two or more
+located sub-activities — a second map zoomed to those points is drawn right after
+it, with those pins lettered **A, B, C…** plus that night's `*`. The zoom map's
+framing comes from the area's own points alone, so adding the `*` never shifts or
+widens it — which does mean a hotel that falls outside the rendered frame isn't
+visible there. Each pin's label (number, `*`, or area letter) also appears as a
+small disc next to that activity's title in the itinerary, so there's no separate
+map key.
+
+The book also opens with a **whole-trip map page**, right after the cover: one
+full-page map holding every day's located points, each pinned with its **day
+number** (not the per-day `1..N` / `*` / `A, B, C…`, which only mean something
+inside one day), plus every day's drives as routes and every transport leg as a
+dotted line. Points of the same day within about 4 km share one pin — at that
+zoom a city day's dozen sights would just be a pinwheel of identical numbers.
+It's the same map the viewer's 🗺️ **Overview** tab draws, and it's skipped when
+maps are off or nothing on the trip is located.
+
+**Every locatable object may carry a `coordinate`:**
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `lat` | ✅ | Latitude | number | −90…90 | — |
+| `long` | ✅ | Longitude | number | −180…180 | — |
+| `show_on_map` |  | Whether to plot this point | boolean | `true`/`false` | `true` when a coordinate is set |
+
+```json
+"coordinate": { "lat": 43.0974, "long": -0.0583 }
+```
+
+Segment objects that go from A→B carry endpoint coordinates: a `transport`
+**leg** accepts `start_coordinate` / `end_coordinate` (they belong to the leg,
+which is what has a departure and an arrival — not to its booking), and
+`car_rentals` accept `pickup_coordinate` / `dropoff_coordinate`. Give a transport
+leg both endpoints and it's drawn as a **dotted straight line** between them — on the per-day maps
+(PDF and viewer alike), on the PDF's whole-trip page and on the viewer's
+whole-trip 🗺️ **Overview** map. It's dotted because the real path isn't known,
+and for a flight isn't a path on the ground at all. A leg is drawn on every day
+map it's *in progress* on, so an **overnight** leg appears on both its departure
+and its arrival day. Legs never widen the extent of a **printed** map — a
+transatlantic flight would zoom the page out to the ocean — so the line simply
+runs off the edge toward where it goes; only a map with nothing else locatable is
+framed on its legs. (The viewer's Overview does let them widen its initial view:
+there you can zoom out, on paper you can't.) A `road` instead uses its
+own `coordinate` as the departure point and its `waypoints` as the ordered stops
+through to the arrival (see below).
+
+With `infer_coordinates_from_address` off (the default) only objects with an
+explicit `coordinate` appear on the map, so builds stay deterministic and offline.
+Turn it on to geocode the rest from their `name`/`address` at build time
+(restricted to `inference_countries` when set). Both are trip data, set in
+`defaults` — there is no build flag or export toggle for them, so the CLI and the
+viewer always produce the same map for a given file.
+
+### Sunrise & sunset
+
+Every day carries `☀️ Sunrise: 06:12, Sunset: 21:34` (in French,
+`☀️ Lever : 06:12, Coucher : 21:34`). Both renderers open the day's body with it,
+just above the intro (and below the bank-holiday banner, when there is one).
+It's on by default; set `defaults.show_sun_times` to `false` to hide it.
+
+The two ends are located **separately**, because on a day you change town they
+happen in different places — the sunset where you'll sleep, the sunrise where you
+woke. Each has its own chain, mirroring the other:
+
+| | **Sunrise** (start of day) | **Sunset** (end of day) |
+| --- | --- | --- |
+| 1 | the stay covering the **previous** night — where you woke | **that** night's accommodation `coordinate` — where you'll watch it go down |
+| 2 | the day's own **first** located activity | the day's own **last** located activity |
+| 3 | the nearest dated located stay | the nearest dated located stay |
+
+`show_on_map` is ignored throughout: it hides a pin, it doesn't move where you
+are. Step 2 covers a night with no stay listed — aboard an overnight leg, or a
+day you fly out — and reads a drive's `coordinate` as its departure and its final
+`waypoint` as its arrival, so a day's opening and closing positions are both
+real. It's why arriving from another continent doesn't print a sunrise from the
+far side of it: France day 2 wakes at Roissy, where the flight lands, not in
+New York. If the sunrise chain yields nothing usable it settles for the sunset's
+reference rather than dropping the line.
+
+Times are read in the day's wall clock — the `start_tz` of its first activity
+when one is set explicitly, otherwise `defaults.timezone` — so set `timezone` to
+the trip's actual offset (a trip in France left on the `GMT` default reads two
+hours early in summer). If the reference point turns out to be more than three
+hours of solar time from that clock, **nothing is shown**: a New York morning
+printed on Paris time would be honest (`☀ 12:57 → 01:33`) but read as a bug, so
+it's left out. Tag that day's activities with their real `start_tz` and the times
+come back. That's why day 1 of `examples/france.json` — an afternoon in New York
+before the night flight — carries no sun times while every later day does.
+
+Nothing is shown either when the trip has no dates, no coordinate is reachable,
+or the sun never crosses the horizon there that day (polar day / night). An
+accommodation with only an `address` has no coordinate to compute from; run
+[`geocode`](README.md#geocode--bake-in-coordinates) to fill them in and the times appear.
+
+**Navigation links.** Every locatable object gets a clickable **(Navigate)**
+link (labelled *(S'y rendre)* in French) right next to its address / location
+line — activities, transport, accommodation and car rentals alike. Opening it on
+a phone launches the maps / navigation app with the destination pre-filled; in a
+browser it opens the chosen provider's web map. The target app is Google Maps by
+default, or Apple Maps / OpenStreetMap / Waze / MAPS.ME — pick it with
+`--map-provider` (the web viewer has a matching **Navigate links open in** option
+that also drives its PDF export). The link points at the object's `coordinate` when
+it has one, otherwise it falls back to its `address` / place name, so it appears
+even when maps are off and independently of `show_on_map`. A multi-leg `road`
+gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's
+destination (its named waypoint).
+
+## `days[]` — a day
+
+Every day needs a `title` and a non-empty `activities` array.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `title` | ✅ | The day's title | string | any text | — |
+| `city` |  | City/region label | string | any text | `""` |
+| `date` |  | The day's date (matched to stays & transport) | string | `YYYY-MM-DD` | trip start date + the day's index |
+| `description` |  | Intro paragraph for the day | string | any text | `""` |
+| `bank_holiday` |  | The day is a public holiday where you are | bool | `true` / `false` | `false` |
+| `activities` | ✅ | The day's items (at least one) | array | activity objects | — |
+
+**Bank holidays.** Set `bank_holiday` on a day that falls on a public holiday in
+the country you're in — what's open, and how transport runs, changes. Both
+renderers then open the day with a call-out banner (⚠️ **BANK HOLIDAY** — *Expect
+closures and reduced opening hours.*), ahead of the intro and the day map, so it's
+the first thing you read. It's a flag, not a name: the banner is the same whichever
+holiday it is. Nothing infers it — the dates differ by country and by year, so
+they have to be looked up (`skills/build-full-json.md` tells the assistant filling
+in a trip to do exactly that).
+
+## `activities[]` — common fields
+
+Every activity carries a `type`. All types except `buffer` share the scheduling
+fields below: provide any two of `start_time` / `end_time` / `duration` and the
+third is inferred (`end = start + duration`). Times chain — the first activity
+starts at `defaults.start_time`, each next one at the previous item's end.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `type` | ✅ | The activity kind | string | `road` \| `point_of_interest` \| `place` \| `hike` \| `meal` \| `buffer` | — |
+| `start_time` |  | Clock time it starts | string | `HH:MM` | previous item's end, else `defaults.start_time` |
+| `end_time` |  | Clock time it ends | string | `HH:MM` | `start_time` + `duration` |
+| `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`; for a `place`, its nested activities' total; else 0 |
+| `start_tz` |  | Start time zone | string | UTC offset | `defaults.timezone` |
+| `end_tz` |  | End time zone | string | UTC offset | `defaults.timezone` |
+
+A tz label is only shown in the PDF when it differs from `defaults.timezone`.
+
+**Guidebook pages.** The four types that carry a `description` — `road`,
+`point_of_interest`, `place` and `hike` — also accept an optional
+`guidebook_pages`: the page(s) of the trip's guidebook covering that activity, as
+a single page (`"14"`), a range (`"15-18"`) or a comma-separated list
+(`"16, 23, 25-30"`). Validation errors on anything that isn't page numbers, so
+keep the `p.` out of the value. Both renderers append it to the **end of the
+description text** as a light-accent pill reading `Guidebook p. 15-18` — a soft
+accent fill with accent text, not bold and not uppercased, so it trails the prose
+as a pointer instead of taking a row of its own. It drops to its own line only
+when it wouldn't fit after the last line, or when the activity has pages but no
+description. It works the same on a nested activity.
+
+### `road` — a drive/transfer
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `start` | ✅ | Departure address | string | any text | — |
+| `coordinate` |  | The departure point (for the map route) | object | `{ "lat": .., "long": .. }` | none |
+| `distance_km` |  | Driving distance | number | positive number | none |
+| `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
+| `description` |  | Anything the other fields don't cover | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the drive | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
+| `waypoints` | ✅ | Ordered stops the route runs through (last = arrival) | array | non-empty array of `waypoint` objects (see below) | — |
+| `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
+
+A road departs from `start` (its `coordinate` is the departure point) and runs
+through its `waypoints`, in order — the **last waypoint is the arrival**. There
+is no separate `end`. The map draws `coordinate → waypoint 1 → … → last
+waypoint`, with a full-opacity accent disc on the departure and every waypoint.
+
+`description` is free prose for what the structured fields can't say — the state
+of the road, a scenic stretch, a pass that closes in winter, a toll or a ferry
+crossing. Both renderers print it under the drive's meta line and **above** the
+`VIA` leg list; leave it out when the legs already tell the story.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `coordinate` | ✅ | The point on the route | object | `{ "lat": .., "long": .. }` | — |
+| `location` |  | The waypoint's name | string | any text | `""` |
+| `duration` |  | Time for the leg reaching it | string | duration (`1h30`, `45 min`) | none |
+| `distance_km` |  | Distance for the leg reaching it | number | positive number | none |
+| `off_road` |  | The leg reaching it runs off-road | boolean | `true` / `false` | `false` |
+
+The waypoints are listed under the road in the PDF (in a lower accent), one row
+per leg (`previous → this waypoint`) — but the list is omitted for a road with a
+single leg (a plain departure→arrival), since the title already shows it. An
+**unnamed** waypoint (no `location`) still gets a map disc but has no row of its
+own — it merges forward into the next named waypoint, its `duration`/`distance_km`
+summed into that leg and its `off_road` OR-ed into it. If the waypoint
+`duration`s sum to more than the road's own `duration`, validation warns (the
+segment times can't fit the drive).
+
+**Off-road, per drive or per leg.** The road's own `off_road` says the drive as a
+whole leaves the tarmac and prints the `OFF-ROAD SECTIONS` chip beside the title.
+A waypoint's `off_road` marks **only the leg reaching it**, so a drive that is
+paved to the village and rough for the last 5 km needs no road-level flag: that
+leg's row in the `VIA` list carries a small `OFF-ROAD` chip after its
+duration/distance, in the PDF and the viewer alike. The two are independent —
+setting one never sets the other. The one
+special case: a **single-leg** drive has no `VIA` list, so a flag on its only leg
+is promoted to the road's chip rather than being lost.
+
+### `point_of_interest` — a specific place
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `name` | ✅ | Point-of-interest name | string | any text | — |
+| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `lake` \| `beach` \| `waterfall` \| `other` | `"other"` |
+| `address` |  | Address | string | any text | `""` |
+| `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
+| `website` |  | Link to the venue's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `opening_days` |  | The days it opens | string | weekday names / ranges (`tue-sun`, `mon-fri, sun`) | every day |
+| `opening_hours` |  | The hours it opens | string | `HH:MM-HH:MM` ranges (`09:30-18:00`, `09:30-12:30, 14:00-18:00`) | all day |
+| `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
+
+**Opening days and hours.** Both are compact strings, so a guidebook line
+transcribes as it stands rather than being taken apart into an object:
+
+* `opening_days` — single days and/or ranges, comma-separated, case-insensitive,
+  full English names or three-letter abbreviations: `"tue-sun"`,
+  `"monday-friday, sunday"`, `"wednesday"`. A range may wrap the week
+  (`"sat-mon"` is Sat, Sun, Mon). Leaving it out means **every day** — not
+  "unknown": a sight with no stated closing day is one you can turn up at.
+* `opening_hours` — one or more `HH:MM-HH:MM` ranges: `"09:30-18:00"`,
+  `"09:30-12:30, 14:00-18:00"`. Keep the midday closure as **two ranges**; that
+  is what lets a visit be caught straddling it. A range whose close is *before*
+  its open crosses midnight (`"18:00-02:00"`). Leaving it out means **all day**.
+
+Both renderers print what is known under the address, as `Open   Tue–Sun  ·
+09:30–12:30, 14:00–18:00` (localized weekday names; the hours are digits, so
+they read the same in both languages), and the calendar export packs it as an
+`Open:` line. Neither renderer flags a visit falling *outside* the opening —
+**validation** does, with two warnings that read the day's *resolved* timeline
+(so a visit whose start time was inferred is checked like any other):
+
+* the visit lands on a weekday the place doesn't open;
+* the visit doesn't fit inside a single opening range.
+
+A nested stop is never put on the timeline, so it has no resolved time — the
+closed-day check still applies to it, the hours check can't.
+
+### `place` — a place (a town, say) grouping several nested activities
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `name` | ✅ | Place name | string | any text | — |
+| `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the area | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
+| `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
+
+**A place lasts what it contains.** A place has no length of its own — it *is*
+what you do there — so when it gives neither a `duration` nor an `end_time`, its
+duration defaults to the **sum of its nested activities'** durations (each taken
+from its own `duration`, or from its `start_time`/`end_time` span; nested items
+that say nothing add nothing). That total then chains into the day's timeline
+like any other duration, so a town with three timed visits no longer collapses to
+a zero-minute row. It's a default, not a cap: an explicit `duration` (or an
+`end_time`) still wins — but set one *below* the nested total and validation
+warns, since the nested activities can't all fit inside it. This applies to
+`place` alone; a `point_of_interest` has a visit length of its own beyond
+whatever is nested under it.
+
+`road`, `hike`, `place` and `point_of_interest` may each carry an `activities`
+array of nested activities. Every entry must be an object with an explicit
+`type`, and the allowed types depend on the container: `place` and
+`point_of_interest` accept `point_of_interest`, `hike` or `meal`; `road` and
+`hike` accept `meal` only. A missing or disallowed `type` is an error. Nesting is
+only **one level deep** — a nested activity that carries its own `activities` is
+a validation error.
+
+### `hike`
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `name` | ✅ | Hike name | string | any text | — |
+| `description` |  | Description | string | any text | `""` |
+| `guidebook_pages` |  | Guidebook page(s) covering the hike | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
+| `distance_km` |  | Distance | number | positive number | none |
+| `elevation_m` |  | Elevation gain | number | positive number | none |
+| `start` |  | Trailhead address | string | any text | `""` |
+| `end` |  | End address | string | any text | `""` |
+| `route` |  | Route shape | string | `loop` \| `back_and_forth` \| `one_way` | `"back_and_forth"` |
+| `gpx` |  | The trail's GPX file, drawn as a trail map + elevation profile | string | the `.gpx` file base64-encoded (gzip allowed) | none |
+| `activities` |  | Nested meals (a stop along the hike) | array | `meal` objects, each with a `type` (see below) | `[]` |
+
+For a `loop` / `back_and_forth` hike, `end` should equal `start` (or be omitted)
+— validation warns otherwise; for a `one_way` hike, `end` should differ from
+`start` — validation warns if it's missing or the same.
+
+#### A hike's GPX track
+
+Attach the trail itself and both renderers draw it: a **trail map** over the same
+basemap the other maps use, and an **elevation profile** under it. `gpx` holds the
+`.gpx` file base64-encoded, so the track travels inside the itinerary — nothing is
+fetched, and the profile works offline.
+
+```bash
+base64 -i gaube.gpx | tr -d '\n'          # paste the result as "gpx"
+gzip -9 -c gaube.gpx | base64 | tr -d '\n'  # ~10× smaller, also accepted
+```
+
+A `data:` URI prefix is stripped and line-wrapped base64 is fine, so most ways of
+producing the string work. In the viewer's **Edit** tab the `gpx` field is a file
+picker that does the encoding (and the gzipping) for you.
+
+Track points (`<trkpt>`) are preferred; a file with none falls back to route
+points (`<rtept>`), then plain waypoints (`<wpt>`), and multiple `<trkseg>`s are
+one continuous trail. The distance and the elevation gain are measured off the
+**full-resolution** recording and **fill in** `distance_km` / `elevation_m` when
+you leave those out — give them explicitly and yours win, so you can quote the
+guidebook's round numbers over the GPS's. Elevation gain is smoothed and
+accumulated with hysteresis, so an altimeter's metre-scale wobble doesn't add up
+to phantom climb. A file without elevations still draws its map; it just has no
+profile.
+
+`defaults.include_hike_maps` (default **on**) switches the pair off. It is
+deliberately independent of `include_maps_in_render`: that one governs the maps
+inferred for the whole trip, while a GPX is a file you attached to one hike —
+attaching it *is* the opt-in. With the switch off the track isn't even sent to the
+viewer, so the geometry costs nothing.
+
+One difference between the two renderers, and it's on purpose: the PDF embeds a
+rendered raster map, the viewer draws the interactive one (the geometry is already
+in hand, so it appears with the text rather than with the per-day map render) and
+follows the **Options → interactive maps** toggle — with that off, the profile
+stands alone.
+
+In the viewer the hike also gets a **`(Get GPX track)`** link beside its other
+inline links, which downloads the `.gpx` — the bytes you attached, byte-for-byte
+(inflated back from gzip where it was stored that way), not a re-export of the
+simplified line the map draws. So the file can go straight to a watch, a GPS or
+another app. It's screen-only: paper can't hand back a file.
+
+### `meal` — a stop to eat
+
+A meal is scheduled like any other activity (the shared `start_time` /
+`end_time` / `duration` fields above) but rendered compactly, like a slightly
+accented buffer row rather than a full card — e.g. **Lunch at Le Magret**. A
+named restaurant is also listed in the cover overview's highlights.
+
+`meal_type` is optional. If omitted it is inferred from the start time —
+**breakfast** before `defaults.breakfast_until` (10:00), **lunch** up to
+`defaults.lunch_until` (16:00), **dinner** after (lunch when there's no start
+time at all). Those two thresholds are configurable per trip in the `defaults`
+object. `brunch`, `snack`, `picnic` and `meal` are also valid but are **never
+inferred** — set them explicitly.
+
+If a meal gives no `duration`/`end_time`, it uses `defaults.meal_duration` (0 —
+instant — unless you set one).
+
+The head shows the restaurant when named (**Lunch at Les Deux Palais**); otherwise it
+falls back to `area` (**Picnic near Limoges**), or just the meal type. Setting
+both `restaurant` and `area` triggers a validation warning — `area` is ignored
+when a restaurant is named.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `meal_type` |  | Which meal it is | string | `breakfast` \| `lunch` \| `dinner` \| `brunch` \| `snack` \| `picnic` \| `meal` (last four explicit-only) | inferred from `start_time` |
+| `restaurant` |  | Restaurant name | string | any text | `""` |
+| `area` |  | Town/region to eat in (used when no `restaurant` is named) | string | any text | `""` |
+| `address` |  | Address | string | any text | `""` |
+
+### `buffer` — free time between activities
+
+A `0 min` buffer only suppresses the trip's default buffer at that spot (no line
+drawn). A default buffer and an inferred gap that meet are merged into one. A
+buffer you write yourself is never resized by `defaults.auto_sized_buffer`: it
+states how long that particular pause is, so the spreading skips that gap.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `duration` | ✅ | Length of the free time | string | duration | — |
+
+## `transport[]`
+
+One **booking** and the **legs** it moves you over. What you reserve once — the
+type, the reference, the price, the links, the status — sits on the booking;
+where and when you actually travel sits in `legs`, one entry per hop. A
+single-hop booking is a one-leg booking, not a special case: `legs` is required
+and must hold at least one entry.
+
+That split is what lets a round trip, or a flight with a connection, be the one
+thing it is: one PNR, one price, one "Reservation" link, several movements.
+
+Both renderers draw a booking as one card, in one of **two shapes**:
+
+- **Several legs** — everything the reservation covers first (its `name`, type
+  badge, status/payment, reference, `description`, price and links), then, under
+  a grey rule, **one inset block per leg**, each badged `Leg 1`, `Leg 2`… beside
+  its route. Shared information and per-hop information can't be mistaken for
+  each other.
+- **One leg** — a single flat block: no rule, no inset, no badge, because there
+  is nothing to tell apart and the booking *is* that movement. Its route line is
+  dropped when it would only repeat the heading, which is the usual case since an
+  unnamed booking is headed with its route.
+
+Each day's itinerary, meanwhile, shows only the legs that depart that day,
+**enriched with the booking's shared fields**, so a day's row still carries its
+type badge, reference and source without the booking around it.
+
+**Two levels, two notes.** The booking's `description` is about the reservation —
+a baggage allowance, a fare condition, a check-in window — and shows on the
+transport card (and on every one of that booking's calendar events, as
+`Booking note`). A leg's `description` is about that hop — a seat, a terminal, a
+coach number — and shows under that leg, on the day's row and, for a sleep-aboard
+leg, in the stay bar. Put each fact where it belongs and neither renderer repeats
+it.
+
+**The `name`** is what the card is headed with. Left out, it defaults to the
+route through every leg — `New York JFK → Paris CDG → Toulouse-Blagnac → Paris
+CDG → New York JFK` — where a connection is named once (leg 2 starting where leg
+1 ended) but a break is not, since dropping either end would misdescribe the
+booking. Set it to something shorter and truer when the chain gets long
+("Round trip New York ↔ France").
+
+A leg that spans midnight is treated as that night's accommodation (stay bar +
+"sleep" column, `+1` on the arrival time). Its `start_time` is required; provide
+one of `end_time` / `duration` and the other is inferred, across time zones when
+they differ. A field written on the wrong side of the split is not read by the
+model, so the validator warns and names the level it belongs to.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `type` |  | Transport kind, shown as the badge on the booking and its legs | string | `plane` \| `train` \| `bus` \| `taxi` \| `ferry` \| `other` | `"other"` |
+| `name` |  | What to call the whole booking, shown as the card's heading | string | any text | the route through its legs (`A → B → C`) |
+| `booking_number` |  | Reservation reference / PNR, covering every leg | string | any text | `""` |
+| `booking_source` |  | Where it was booked | string | any text | `""` |
+| `website` |  | Link to the carrier's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note about the **whole booking** (a baggage allowance, a fare condition) | string | any text | `""` |
+| `price` |  | Price of the whole booking, every leg included (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `legs` | ✅ | The hops this booking moves you over | array | non-empty array of leg objects | — |
+
+### `transport[].legs[]`
+
+One hop: where it goes, when, its own number and its own note. An optional
+`description` carries a short note the structured fields don't — a seat, a
+terminal, a baggage allowance — drawn as prose under that leg's number, both on
+the transport page and on the day's row. It is per leg because an outbound and a
+return rarely share a seat. An overnight leg also fills that night's stay bar,
+which leaves the note to the itinerary row above rather than printing it twice.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `start` | ✅ | Departure address | string | any text | — |
+| `end` | ✅ | Arrival address | string | any text | — |
+| `start_date` | ✅ | Departure date; slots the leg into that day | string | `YYYY-MM-DD` | — |
+| `end_date` |  | Arrival date | string | `YYYY-MM-DD` | inferred (+1 day if it crosses midnight) |
+| `start_time` | ✅ | Departure time | string | `HH:MM` | — |
+| `end_time` |  | Arrival time | string | `HH:MM` | inferred (`start_time + duration`) |
+| `start_tz` |  | Departure time zone | string | UTC offset | `defaults.timezone` |
+| `end_tz` |  | Arrival time zone | string | UTC offset | `defaults.timezone` |
+| `duration` |  | Travel time | string | duration | inferred from the two times |
+| `flight_number` |  | Flight number of this leg (planes only) | string | any text | `""` |
+| `train_number` |  | Train number of this leg (trains only) | string | any text | `""` |
+| `description` |  | A short note about this leg (a seat, a terminal, a baggage allowance) | string | any text | `""` |
+| `start_coordinate` |  | Departure point, for the maps | object | `{lat, long}` | none (never geocoded) |
+| `end_coordinate` |  | Arrival point, for the maps | object | `{lat, long}` | none (never geocoded) |
+
+## `accommodations[]`
+
+Where you sleep, rendered as a summary page plus a bottom bar on each covered
+day. A stay covers nights from `arrival` up to (but not including) `departure`,
+so the checkout day shows no bar. An optional `description` carries a short note
+the structured fields don't — drawn in full under the contact line on the
+summary page, and in the day's stay bar (capped at two lines in the PDF, since
+the bar is pinned near the page foot; the viewer clamps it instead).
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `name` | ✅ | Accommodation name | string | any text | — |
+| `arrival` | ✅ | Check-in date | string | `YYYY-MM-DD` | — |
+| `departure` | ✅ | Check-out date | string | `YYYY-MM-DD` | — |
+| `city` | ✅ | Town shown in the cover overview | string | any text | — |
+| `type` |  | Kind of accommodation | string | `hotel` \| `camping` \| `b&b` \| `other` | `"hotel"` |
+| `address` |  | Street address | string | any text | `""` |
+| `contact` |  | Phone or email | string | any text | `""` |
+| `booking_source` |  | Where it was booked | string | any text | `""` |
+| `website` |  | Link to the property's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note for whatever the other fields don't cover (a door code, where to park, which bell to ring) | string | any text | `""` |
+| `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |
+
+## `car_rentals[]`
+
+A rental-car booking, rendered under the transport page, with its **pick-up**
+and **drop-off** also woven into their days' itineraries (on `pickup_date` /
+`dropoff_date`, at their times). The booking runs from a start datetime to an
+end datetime; the pick-up and drop-off datetimes must fall inside that window —
+validation errors otherwise (and the drop-off must not precede the pick-up). A
+pick-up or drop-off that overlaps an activity or transport on the same day is a
+validation warning. Each of the four times takes an optional UTC offset that
+falls back to `defaults.timezone`; a tz label is only shown when it differs. The
+drop-off location defaults to the pick-up location. An optional `description`
+carries a short note the structured fields don't — drawn under the card's meta
+line, and repeated on **both** the pick-up and drop-off rows woven into their
+days, since that is where you read it.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `booking_start_date` | ✅ | Booking start date | string | `YYYY-MM-DD` | — |
+| `booking_start_time` | ✅ | Booking start time | string | `HH:MM` | — |
+| `booking_end_date` | ✅ | Booking end date | string | `YYYY-MM-DD` | — |
+| `booking_end_time` | ✅ | Booking end time | string | `HH:MM` | — |
+| `pickup_date` | ✅ | Pick-up date (must be within the booking period) | string | `YYYY-MM-DD` | — |
+| `pickup_time` | ✅ | Pick-up time | string | `HH:MM` | — |
+| `dropoff_date` | ✅ | Drop-off date (must be within the booking period) | string | `YYYY-MM-DD` | — |
+| `dropoff_time` | ✅ | Drop-off time | string | `HH:MM` | — |
+| `pickup_location` | ✅ | Where you pick up the car | string | any text | — |
+| `dropoff_location` |  | Where you drop off the car | string | any text | the pick-up location |
+| `booking_start_tz` |  | Booking-start time zone | string | UTC offset | `defaults.timezone` |
+| `booking_end_tz` |  | Booking-end time zone | string | UTC offset | `defaults.timezone` |
+| `pickup_tz` |  | Pick-up time zone | string | UTC offset | `defaults.timezone` |
+| `dropoff_tz` |  | Drop-off time zone | string | UTC offset | `defaults.timezone` |
+| `company` |  | Rental company | string | any text | `""` |
+| `booking_number` |  | Reservation reference | string | any text | `""` |
+| `website` |  | Link to the rental company's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
+| `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
+| `description` |  | A short note for whatever the other fields don't cover (the insurance excess, a fuel policy, where the desk is) | string | any text | `""` |
+| `price` |  | Rental price (amount only, no symbol) | number | number | none (not shown) |
+| `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
+| `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
+| `car_type` |  | Car category, shown as the badge | string | `regular` \| `small` \| `SUV` \| `4x4` | `"regular"` |
+| `car_model` |  | Car make/model | string | any text | `""` |
+| `contact` |  | Phone or email for the rental company | string | any text | `""` |
+| `additional_drivers` |  | Number of additional drivers | number | whole number ≥ 0 | `0` |
+| `pickup_duration` |  | How long the pick-up takes | string | duration | none (not shown) |
+| `dropoff_duration` |  | How long the drop-off takes | string | duration | none (not shown) |

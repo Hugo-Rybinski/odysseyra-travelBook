@@ -595,7 +595,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     goes inside one of `DEFAULTS_GROUPS`, whose titles are the form's section
     headings and need a French key too, and `DEFAULTS_FIELDS` flattens them);
   - both example JSONs;
-  - the README tables;
+  - the `file_format.md` tables (**not** the README — it only links there now);
   - the French `translations.py`;
   - **`skills/build-full-json.md`** (the field tables/examples an LLM uses to
     extract JSON);
@@ -642,11 +642,17 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     table, value format and rule) that turns raw text/screenshots into the
     **entire** itinerary as one `<title>.json`, needing no other file, no source
     code, and no tool. **Any JSON-format change must be mirrored here** — it is
-    authoritative alongside the README.
+    authoritative alongside `file_format.md`.
   - `fix-missing-duration-distance.md` — from a JSON + a list of validator
     warnings about missing duration/distance/elevation, builds a fill-in-the-blank
     Markdown worksheet (Google Maps links for road distances; web-inferred hike
     figures tagged `[to be checked]`). If the magnitude-warning messages change,
     update its warning-patterns table.
-- `README.md` documents the JSON schema field-by-field (one table per object,
-  with Required/Type/Format/Default) — keep it authoritative.
+- **`file_format.md`** (repo root) documents the JSON schema field-by-field (one
+  table per object, with Required/Type/Format/Default) — keep it authoritative.
+  It used to be the README's `## JSON format` section, which grew to two thirds
+  of the file; the README now keeps a short pointer section linking each object's
+  table, so add new fields to `file_format.md` and only touch the README when a
+  whole *object* or top-level section appears. Anchors are unchanged by the move
+  (GitHub slugs on heading text, not level), so old `#field` links still work —
+  but they now need a `file_format.md` prefix from any other file.
