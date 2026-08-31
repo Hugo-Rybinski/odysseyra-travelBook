@@ -173,9 +173,61 @@ list of **activities**.
 |---|---|---|---|---|
 | `title` | **yes** | text | — | The day's headline (e.g. "Renaissance châteaux"). |
 | `date` | no | date `YYYY-MM-DD` | trip start + this day's index | Set it if the source states the date; otherwise it's inferred from position. |
-| `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda"). |
-| `description` | no | text | none | An intro paragraph for the day. |
+| `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda") — **always fill it**, see below. |
+| `description` | no | text | none | An intro paragraph for the day — **always write one**, see below. |
 | `activities` | **yes** | array (non-empty) | — | The ordered timeline — see below. |
+
+**How to fill a day's `city`.** It is printed in the day's header band beside the
+date, so it must be short — a place label, never a sentence. Fill it on **every**
+day:
+
+- **A day in one place** → that place alone: `"Paris"`.
+- **A day you move** → `"Origin → Destination"` with a real arrow (`→`, U+2192),
+  where the **destination is where you sleep**: `"Amboise → Sarlat-la-Canéda"`.
+  Name only those two even if the drive passes through others — the road's
+  waypoints carry the rest. Never chain three (`"A → B → C"`).
+- **A day out of town that returns to the same base** → keep the **base town**,
+  not the excursion: a day hiking in Ala Archa out of Bishkek is `"Bishkek"`, not
+  `"Ala Archa National Park"`. Use an **area** name only when the day genuinely
+  belongs to it rather than to a town (`"Cirque de Gavarnie"`).
+- **A travel-only day** (you fly out and sleep aboard, or in transit) → where the
+  day *starts*: france.json's departure day is `"New York"`.
+
+**The night's accommodation city must appear inside it, spelled identically.**
+`validate` compares the two as a *substring*, case-insensitively, and warns
+`the day's city (…) doesn't match the accommodation city (…)` when the stay's
+`city` is not contained in the day's. So if the stay's `city` is
+`"Sarlat-la-Canéda"`, the day must say `Sarlat-la-Canéda` — `"Sarlat"` alone
+triggers the warning. Only the arrival end is checked, so shortening the
+*origin* is free: `"Sarlat → Cauterets"` is fine on the night you sleep in
+Cauterets. A day with no stay at all (an overnight leg, a night train) is never
+checked.
+
+Keep out of `city`: dates, times, activity or hotel names, the country, and
+region padding when a town name exists.
+
+**Always give every day a `description`.** The field is optional to the tool, but
+write one for **every** day: **1–2 sentences** that set the day up for the reader
+at a glance. When the source supplies a day intro, use it. When it doesn't —
+usually — **compose one from that day's own activities**: where the day goes, its
+two or three anchors, and how it ends up.
+
+> `"Morning in the châteaux above the Loire, then the long drive south to the
+> Dordogne, arriving in Sarlat for dinner."`
+
+Rules for the sentence you compose:
+
+- **Only re-state what the day already contains.** It is a summary of the
+  activities, transport legs and stay you have written — not a place to add a
+  fact that appears nowhere else. Names, towns and times are fair game; opening
+  hours, prices or history you happen to know are not.
+- **No verdicts on the day.** Don't call it busy, packed, relaxed, ambitious,
+  long, or well balanced, and don't advise pacing — unless a source says so in
+  those terms.
+- **Don't just list the titles.** The activities are printed right underneath;
+  the intro should read like a sentence, not a comma-separated index of them.
+- The language rule at the top of this document applies to it like any other
+  prose, as does *A description is for the traveller* below.
 
 ### Activities
 
@@ -192,6 +244,16 @@ types. **Timing is usually inferred** — you rarely give every time:
 Capture the **order** and whatever concrete times/durations the source gives;
 leave the rest out.
 
+**Flights and trains are never activities.** A plane or train leg belongs in the
+top-level **`transport`** array (see its section below), never in a day's
+`activities` — there is no activity type for it, and a `road` means a ground
+drive, not a flight. Give the leg its `start_date`/`start_time` and the tool
+places it in that day's timeline automatically, so the reader still sees it in
+the right slot: you lose nothing by keeping it out of `activities`, and putting
+it in both **double-books** the day. The same goes for an inter-city bus or
+ferry. A short local transfer *may* stay a `road` activity — the taxi across town
+to the airport, say — but the flight it delivers you to is a `transport` entry.
+
 **Guidebook page references.** If the source cites guidebook pages for a place,
 activity, or zone (e.g. "Lonely Planet p. 142" or "see pp. 88–91"), keep that
 reference verbatim in that activity's `description` (append it if a description
@@ -204,6 +266,19 @@ the *same* guidebook pages, drop that reference from each nested `description`
 and put it once in the container's `description` instead. Keep a page reference
 on a nested stop only when it is *specific to that stop* and differs from the
 area's.
+
+**A description is for the traveller, not a record of how you built the JSON.**
+Every `description` (and the trip `summary`) must earn its place on the day: what
+this is, what to see or do, what to watch out for, how to get in. **Never mention
+your sources or your process** — no "GPX track", "figures taken from the GPX",
+"information processed from source X", "per the booking email", "transcribed from
+the screenshot", "estimated from the guidebook", no `[to be checked]`. Someone
+reading *"Ridge walk above the valley (GPX track)"* learns nothing from that
+parenthesis; it is noise printed in their book. The **one** deliberate exception
+is the guidebook page reference above — `p. 142` is a pointer the reader can use
+on the day, not provenance. Everything you want to say about where a value came
+from, how confident you are, or which document you trusted belongs in the
+end-of-run gaps and inconsistency report, never in the JSON.
 
 **Scheduling fields (any non-`buffer` activity may include these):**
 
@@ -225,7 +300,9 @@ from their `name`/`address`; otherwise only explicit coordinates appear.
 #### Type `road` — a drive or transfer
 
 A road departs from `start` and runs through its `waypoints`, in order — the
-**last waypoint is the arrival**. There is no `end` field.
+**last waypoint is the arrival**. There is no `end` field. A road is always a
+**ground** leg you drive or ride; a flight or train is a `transport` entry, never
+a road.
 
 | Field | Required | Format | Notes |
 |---|---|---|---|
@@ -271,6 +348,33 @@ happen in different places (a different town, area, or trailhead), insert a
 `road` whose `start` is the first place and whose final waypoint is the second.
 Skip it only when the two stops share the same area (nested under one `place`,
 or clearly in one town) — there's no leg to draw within a single place.
+
+**Never chain roads — merge them into one.** When back-to-back roads form
+`A → B` then `B → C`, do **not** emit two road objects. Emit **one** road
+`A → C`, and let its waypoints carry the detail of each original leg:
+
+- `start` is `A`, and the road's `coordinate` is A's departure coordinate.
+- `B` becomes a **named** waypoint (`location: "B"`) carrying the `A → B` leg's
+  own `duration` and `distance_km`; `C` is the final named waypoint, carrying the
+  `B → C` leg's. Each original road's shaping (unnamed) waypoints stay in place,
+  in order, ahead of the named waypoint they lead to.
+- The merged road's `distance_km` is the **sum** of the legs, and its
+  `duration`/times span the whole drive: its `start_time` is the first leg's, its
+  `end_time` the last leg's.
+- `off_road` is `true` if it was true on **any** leg, and the merged
+  `activities` are every leg's nested meals, in order.
+
+A longer chain collapses the same way: `A → B`, `B → C`, `C → D` becomes a single
+road `A → D` with three named waypoints. This is exactly what waypoints are for —
+the PDF and the viewer display each named waypoint as its own leg, so nothing is
+lost by merging, while two chained road objects read as two separate drives and
+double-count the transition.
+
+**The one exception: something happens at `B`.** If an activity sits *between*
+the two roads (you stop at `B` to visit, eat, or hike), the roads are not
+back-to-back — keep them as two roads, so the timeline reads
+drive → activity → drive. Merge only when the two roads are adjacent in the
+`activities` array with nothing between them.
 
 #### Type `point_of_interest` — a specific sight
 
@@ -694,11 +798,80 @@ the shape — real values come from your sources. The full version lives at
 - **A KML/KMZ file is the principal source of truth for coordinates.** When one
   is provided, take every `coordinate` from it. If another document states
   different coordinates for the same place, trust the KML/KMZ.
+- **Nearby coordinates aren't a conflict.** Two sources pinning the same place
+  **less than 1 km apart** are describing the same spot — a car park vs. the
+  entrance, a town centroid vs. a specific address. Keep the authoritative one
+  (the KML/KMZ, then the GPX, then the more precise-looking source) and do **not**
+  list it in the inconsistency report. Only report a coordinate conflict when the
+  two points are at least 1 km apart — which usually means they are genuinely
+  different places, or one is a typo (a flipped sign, a transposed digit, swapped
+  lat/long), and that is worth naming. To judge the gap without computing it
+  exactly: 0.01° of latitude is ~1.1 km everywhere, and 0.01° of longitude is
+  ~1.1 km at the equator shrinking toward the poles (~0.8 km at 45°). So a
+  difference of **0.005° or less in both** is safely under 1 km, more than
+  **0.02° in either** is safely over, and in between it is worth estimating
+  properly.
 - **A GPX track is the principal source of truth for a hike's (or off-road
   drive's) figures.** When a GPX is provided for a hike, take its `distance_km`,
   `elevation_m` and start/end from the track. If the prose text states different
   numbers, use the GPX values in the JSON — but flag the discrepancy in the
-  end-of-run inconsistency report (below), naming both figures.
+  end-of-run inconsistency report (below), naming both figures. **Unless the gap
+  is within the tolerances just below** — then it is not a discrepancy at all.
+- **Small size differences aren't a conflict.** Two sources rarely agree to the
+  metre on a distance, a climb or a duration, and reporting every such gap buries
+  the conflicts that matter. Treat the values as **equal** — and leave them out
+  of the inconsistency report entirely — when they differ by no more than:
+
+  | Figure | Tolerance |
+  |---|---|
+  | a road's `distance_km` | 5 km |
+  | a hike's `distance_km` | 1 km |
+  | a hike's `elevation_m` | 50 m |
+  | any `duration` (road, hike, activity, transport) | 5 min |
+
+  Within the tolerance, write the **roundest** of the values: the whole number
+  over the decimal, the multiple of 10 or 5 over the awkward figure — `12` over
+  `12.4` km, `400` over `380` m, `"1h30"` over `"1h27"`. This is the one case
+  where a round prose figure outranks the GPX track. If two values are equally
+  round, keep the one from the more authoritative source (the GPX first, then the
+  KML/KMZ). Past the tolerance nothing changes: take the authoritative figure and
+  report the conflict, naming both.
+- **One place, one name — normalise every name across the whole file.** Sources
+  disagree on spelling far more often than on facts: `Sarlat-la-Caneda` vs
+  `Sarlat-la-Canéda`, `St-Malo` vs `Saint-Malo`, `Florence` vs `Firenze`, `CDG`
+  vs `Paris Charles de Gaulle`, `Lac de Gaube` vs `lac du Gaube`. Before you
+  emit, sweep the file and make each real-world place appear under **one** form
+  everywhere — day `city`, accommodation `city`, transport `start`/`end`, a road's
+  `start` and its waypoint `location`s, `place`/`point_of_interest`/`hike` names,
+  a meal's `area`, car-rental pick-up/drop-off locations, and the prose in every
+  `description`.
+  - **Choosing the form to keep**, in order: the trip's language (per the
+    language rule at the top); then the local/official full spelling **with its
+    diacritics** (`Sarlat-la-Canéda`, not `Sarlat-la-Caneda`); then the form most
+    of the sources use; then, for a place that is also in a KML/KMZ, the name that
+    file gives it.
+  - Prefer the **full** name over an abbreviation or a code, except where the
+    short form is what the traveller will actually look for on a sign or a board
+    (an airport terminal, a station). Never invent a fuller name you are not sure
+    of.
+  - **Don't normalise what identifies a booking:** a hotel/company name, a flight
+    or train number and a booking reference stay exactly as printed, even when the
+    surrounding place name is canonicalised.
+  - **Never touch an `address`.** Copy every `address` exactly as its source
+    writes it — do not re-spell it, expand it, translate it, add or drop a
+    postcode or country, or align it with the name you canonicalised elsewhere. An
+    address is machine-consumed, not decorative: the viewer turns the raw string
+    into a map search link, and `infer_coordinates_from_address` / the `geocode`
+    command feed it to a geocoder, so an "improved" address is one that stops
+    resolving. A town canonicalised to `Sarlat-la-Canéda` in `city` therefore sits
+    happily beside an `address` that still reads `24200 Sarlat la Caneda` — that
+    is not an inconsistency and needs no report.
+  - This is not cosmetic. A day's `city` must contain that night's accommodation
+    `city` *spelled identically* or `validate` warns (see the `city` rules), and a
+    reader can only match a stay to its day when the two agree.
+  - **List every name you unified in the inconsistency report** — the variants you
+    saw, the form you kept, and why. This one *is* reported, unlike the price,
+    size and coordinate tolerances above.
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
@@ -708,7 +881,10 @@ the shape — real values come from your sources. The full version lives at
   says 14:00, voucher says 14:30"), *which value you chose* for the JSON, and
   *why* (which source you trusted). Cover every conflict you found between the
   source documents — a place, date, time, price, coordinate, hike figure…
-  stated differently in two places.
+  stated differently in two places. Three exceptions, all above — a price gap of
+  1 unit or less, a distance/elevation/duration gap inside its tolerance, and two
+  coordinates less than 1 km apart — are not conflicts and belong nowhere in this
+  list.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
@@ -735,3 +911,21 @@ You cannot run the validator, so verify these by hand:
 - **Currency:** any object-level `currency` is the default or one of
   `defaults.secondary_currencies`.
 - **Coordinates** only where you actually know them — never guessed.
+- **No chained roads:** no day holds two adjacent `road`s where the first's
+  arrival is the second's `start`. Those are one road, with the intermediate
+  place as a named waypoint (see *Never chain roads*).
+- **No provenance in the prose:** no `description`/`summary` mentions a GPX, a
+  KML, an email, a screenshot, a source name, your own uncertainty, or
+  `[to be checked]`. Guidebook page references are the only exception.
+- **No flights or trains in `activities`:** every plane/train (and inter-city
+  bus/ferry) leg sits in the top-level `transport` array, exactly once — not also
+  as a `road` or a `point_of_interest` inside the day.
+- **Every day has a `description`** — 1–2 sentences drawn from that day's own
+  activities, with no verdict on how busy it is.
+- **Every day has a `city`**, and that night's accommodation `city` appears
+  inside it spelled identically (`"Amboise → Sarlat-la-Canéda"` for a stay in
+  `"Sarlat-la-Canéda"`).
+- **Names are consistent:** each place appears under one spelling throughout —
+  search the file for each town/site name and confirm there is no second variant
+  (missing accent, abbreviation, translated form) left behind. **Every `address`
+  is exempt** — those stay byte-for-byte as the source wrote them.

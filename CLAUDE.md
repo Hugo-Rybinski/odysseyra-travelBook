@@ -275,11 +275,28 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   .venv/bin/odysseyra-travelBook build examples/kyrgyzstan.json -o examples/kyrgyzstan.pdf
   ```
   (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
-- When adding/renaming a field or message, update: the model `from_dict`, the
-  validator `specs.py` (+ any coherence check), the PDF renderer, both example
-  JSONs, the README tables, the French `translations.py`, **`skills/build-full-json.md`**
-  (the field tables/examples an LLM uses to extract JSON),
-  regenerate the snapshot, and re-render the example PDFs.
+- When adding/renaming a field or message, update **all** of:
+  - the model `from_dict`;
+  - the validator `specs.py` (+ any coherence check);
+  - the PDF renderer;
+  - `serialize.py` and its TS mirrors (`web/src/types/resolved.ts`, and
+    `source.ts` for an input field) — without this the value never reaches the
+    browser at all;
+  - **the viewer's renderer** (`web/src/render/`, usually `DayCard.tsx` + a label
+    key in `render/format.ts` for both languages). The PDF and the viewer render
+    the *same* resolved field from two independent code paths, so adding it to one
+    and not the other is a silent divergence — that is exactly how a `hike`'s
+    `description` printed in the book for months while the viewer dropped it;
+  - **the Edit tab** (`web/src/edit/schema.ts`, plus the French label/help in
+    `web/src/i18n/fr.ts`, and `SAFE_DEFAULTS` in `edit/serialize.ts` for a
+    `defaults` switch — a boolean that defaults *on* needs `defaultOn: true` so
+    the checkbox reads and writes the right way round);
+  - both example JSONs;
+  - the README tables;
+  - the French `translations.py`;
+  - **`skills/build-full-json.md`** (the field tables/examples an LLM uses to
+    extract JSON);
+  - then regenerate the snapshot and re-render the example PDFs.
 - **Changing the resolved `Day` — a new field, or a new way of computing an
   existing one — must bump `SCHEMA_VERSION` in `web/src/maps/mapCache.ts`.**
   That IndexedDB cache stores the *whole* resolved
