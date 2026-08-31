@@ -90,6 +90,42 @@ def _price(itin: Itinerary, amount: float | None, currency: str,
     }
 
 
+def _track(itin: Itinerary, act) -> dict | None:
+    """A hike's embedded GPX: the simplified trail line, the resampled elevation
+    profile and the figures measured off the full-resolution recording — plus the
+    original base64 ``gpx`` itself.
+
+    ``None`` when the hike carries no ``gpx`` — or when the trip switched the
+    hike maps off (``defaults.include_hike_maps``), the way ``moon`` and ``sun``
+    go absent for theirs. The point is that the (kilobytes of) geometry doesn't
+    ride into a consumer that isn't going to draw it.
+
+    ``gpx`` is carried verbatim so the viewer can offer the file for **download**
+    (its "(Get GPX track)" link) — the bytes you attached, not a re-export of the
+    simplified line. It rides along rather than being matched back to the source
+    JSON: the resolved timeline has buffers woven into it, so a resolved hike has
+    no index into the input to look itself up by.
+    """
+    track = getattr(act, "track", None)
+    if track is None or not itin.include_hike_maps:
+        return None
+    (min_lat, min_long), (max_lat, max_long) = track.bounds
+    return {
+        "gpx": act.gpx,
+        "points": [[lat, long] for lat, long in track.points],
+        "profile": [[km, m] for km, m in track.profile],
+        "distance_km": round(track.distance_km, 3),
+        "ascent_m": None if track.ascent_m is None else round(track.ascent_m),
+        "descent_m": None if track.descent_m is None else round(track.descent_m),
+        "min_elevation_m": (None if track.min_elevation_m is None
+                            else round(track.min_elevation_m)),
+        "max_elevation_m": (None if track.max_elevation_m is None
+                            else round(track.max_elevation_m)),
+        "point_count": track.point_count,
+        "bounds": [[min_lat, min_long], [max_lat, max_long]],
+    }
+
+
 def _sched(obj, default_tz: int | None) -> dict:
     """The shared timeline fields carried by every scheduled object. The UTC
     offsets are emitted as ``start_tz``/``end_tz`` (integer minutes) with a
@@ -179,6 +215,7 @@ def _activity(itin: Itinerary, act) -> dict:
             "end": act.end,
             "route": act.route,
             "route_label": act.route_label,
+            "track": _track(itin, act),
         })
 
     elif act.kind == "meal":
@@ -365,6 +402,9 @@ def to_dict(itinerary: Itinerary) -> dict:
         "accommodation_end_time": _time(itinerary.default_accommodation_end_time),
         "maps": {
             "include_in_render": itinerary.include_maps_in_render,
+            # Independent of `include_in_render`: a hike's map comes from the GPX
+            # the hike itself carries, not from the trip-wide map inference.
+            "include_hike_maps": itinerary.include_hike_maps,
             "infer_from_address": itinerary.infer_coordinates_from_address,
             "inference_countries": list(itinerary.inference_countries),
         },

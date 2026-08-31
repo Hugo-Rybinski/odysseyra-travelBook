@@ -53,7 +53,12 @@ import {
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
 import { I18nProvider, translate } from "./i18n";
-import type { Day, Finding, Itinerary } from "./types/resolved";
+import type {
+  Activity as ResolvedActivity,
+  Day,
+  Finding,
+  Itinerary,
+} from "./types/resolved";
 import type { SrcItinerary } from "./types/source";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/france.json`;
@@ -103,6 +108,18 @@ type View =
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
 type Source = OpenedFile;
+
+// Whether any hike in the trip carries an embedded GPX. Those draw an
+// interactive trail map of their own, independently of
+// `include_maps_in_render` — so the Options "Interactive maps" toggle must stay
+// live for a maps-off itinerary that has one.
+function hasResolvedHikeTracks(itinerary: Itinerary | null): boolean {
+  const any = (acts: ResolvedActivity[] | undefined): boolean =>
+    (acts ?? []).some(
+      (a) => (a.type === "hike" && !!a.track) || any(a.activities),
+    );
+  return (itinerary?.days ?? []).some((d) => any(d.activities));
+}
 
 export function App() {
   const [progress, setProgress] = useState<BootProgress>({ stage: "idle" });
@@ -800,6 +817,7 @@ export function App() {
           onToggleLang={onToggleLang}
           hasItinerary={!!itinerary}
           mapsInRender={!!itinerary?.maps.include_in_render}
+          hasHikeTracks={hasResolvedHikeTracks(itinerary)}
           engineReady={engineReady}
           engineStageLabel={t(STAGE_LABEL[progress.stage])}
           currentFile={source?.name}

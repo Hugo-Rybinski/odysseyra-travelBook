@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
 import { tr, type Lang } from "./format";
 import { todayISO, type CollapseView } from "./collapse";
-import { paletteVars } from "./palette";
+import { AccentContext, paletteVars } from "./palette";
 import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
@@ -136,6 +136,7 @@ export function Book({
 
   if (show === "overview") {
     return (
+      <AccentContext.Provider value={itinerary.cover_color}>
       <MapProviderContext.Provider value={mapProvider}>
         <ClampProvider value={clampDescriptions}>
           <div className="book" style={style}>
@@ -149,12 +150,14 @@ export function Book({
           </div>
         </ClampProvider>
       </MapProviderContext.Provider>
+      </AccentContext.Provider>
     );
   }
 
   if (show === "transport") {
     const empty = !itinerary.transports.length && !itinerary.car_rentals.length;
     return (
+      <AccentContext.Provider value={itinerary.cover_color}>
       <MapProviderContext.Provider value={mapProvider}>
         <div className="book" style={style}>
           {empty ? (
@@ -164,11 +167,13 @@ export function Book({
           )}
         </div>
       </MapProviderContext.Provider>
+      </AccentContext.Provider>
     );
   }
 
   if (show === "accommodations") {
     return (
+      <AccentContext.Provider value={itinerary.cover_color}>
       <MapProviderContext.Provider value={mapProvider}>
         <div className="book" style={style}>
           {itinerary.accommodations.length ? (
@@ -178,10 +183,12 @@ export function Book({
           )}
         </div>
       </MapProviderContext.Provider>
+      </AccentContext.Provider>
     );
   }
 
   return (
+    <AccentContext.Provider value={itinerary.cover_color}>
     <MapProviderContext.Provider value={mapProvider}>
     <ClampProvider value={clampDescriptions}>
     <ForecastProvider value={forecasts}>
@@ -204,5 +211,6 @@ export function Book({
     </ForecastProvider>
     </ClampProvider>
     </MapProviderContext.Provider>
+    </AccentContext.Provider>
   );
 }

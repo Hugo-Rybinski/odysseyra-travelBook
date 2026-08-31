@@ -16,6 +16,7 @@ from ..models import (
     _parse_route,
     _parse_time,
     _parse_tz,
+    gpx_track,
 )
 from .findings import Finding
 from .jsonpos import JSONPositionError, load_with_lines
@@ -76,6 +77,15 @@ _ERROR_TEMPLATES = [
      "{name}.long must be between -180 and 180 (got {value})"),
     (re.compile(r"^(?P<name>.+) must be a number, got (?P<value>.+)$"),
      "{name} must be a number, got {value}"),
+    # a hike's embedded GPX (models/gpx.py) — the wrapper is ours, the
+    # parenthesised {detail} is the stdlib decoder's and stays English
+    (re.compile(r"^'gpx' is not valid base64 \((?P<detail>.+)\) — encode the "
+                r"\.gpx file with base64$"),
+     "'gpx' is not valid base64 ({detail}) — encode the .gpx file with base64"),
+    (re.compile(r"^'gpx' is gzip data but won't inflate \((?P<detail>.+)\)$"),
+     "'gpx' is gzip data but won't inflate ({detail})"),
+    (re.compile(r"^'gpx' is not parseable XML \((?P<detail>.+)\)$"),
+     "'gpx' is not parseable XML ({detail})"),
 ]
 
 
@@ -157,6 +167,23 @@ def _transport_dates(t):
     return sd, ed
 
 
+# Longest value echoed back in a finding. A field like a hike's base64 `gpx` runs
+# to tens of thousands of characters, and quoting the whole blob would bury the
+# message it belongs to (and every finding after it).
+_MAX_SHOWN = 60
+
+
+def _shown(value) -> str:
+    """``repr(value)``, elided in the middle when it's too long to quote — the
+    two ends are what identifies a value, and they're what a reader compares
+    against their file."""
+    text = repr(value)
+    if len(text) <= _MAX_SHOWN:
+        return text
+    keep = (_MAX_SHOWN - 3) // 2
+    return f"{text[:keep]}...{text[-keep:]}"
+
+
 def _truthy(value):
     if isinstance(value, bool):
         return value
@@ -169,6 +196,7 @@ class _Validator:
         self.lines = lines
         self.lang = lang
         self.findings: list[Finding] = []
+        self._gpx_cache: dict[int, object] = {}  # id(hike dict) -> GpxTrack | None
 
     def t(self, text):
         return tr(text, self.lang)
@@ -219,7 +247,7 @@ class _Validator:
                         self.findings.append(Finding("error", self.line(fpath), self.t(
                             "field '{name}' is invalid ({value}) — {description}. "
                             "Expected {expected} ({error}).").format(
-                            name=spec.name, value=repr(value), description=desc,
+                            name=spec.name, value=_shown(value), description=desc,
                             expected=expected, error=self._terr(err))))
             elif spec.required:
                 self.findings.append(Finding("error", obj_line, self.t(
@@ -335,6 +363,7 @@ class _Validator:
                          "suppresses the trip's default buffer here and draws no line.")
         if kind == "hike":
             self._hike_route_endpoints(act, path)
+            self._hike_gpx(act, path)
         if kind == "road":
             self._road_waypoints(act, path)
         if kind == "meal" and act.get("restaurant") and act.get("area"):
@@ -386,10 +415,15 @@ class _Validator:
                                  "{missing}.", route=self._leg_label(src, dest),
                                  missing=", ".join(missing))
         elif kind == "hike":
+            # An embedded GPX measured the walk, so it stands in for the figures
+            # it supplies: the distance always, the elevation gain only when the
+            # file actually carries elevations.
+            track = self._gpx_of(act)
             missing = [] if dur_known else ["duration"]
-            if act.get("distance_km") is None:
+            if act.get("distance_km") is None and track is None:
                 missing.append("distance_km")
-            if act.get("elevation_m") is None:
+            if act.get("elevation_m") is None and (
+                    track is None or not track.has_elevation):
                 missing.append("elevation_m")
             if missing:
                 self.add("warning", path, "this hike ({name}) should give a "
@@ -497,6 +531,7 @@ class _Validator:
             self.check_object(sub, spath, ACTIVITY_SPECS[kind], skip_optional=True)
             if kind == "hike":
                 self._hike_route_endpoints(sub, spath)
+                self._hike_gpx(sub, spath)
                 self._magnitude_warning(sub, spath, kind)
             if kind == "meal" and sub.get("restaurant") and sub.get("area"):
                 self.add("warning", spath, "both 'restaurant' and 'area' are set — "
@@ -882,6 +917,37 @@ class _Validator:
                 self.add("error", path + ("duration",),
                          "duration must be a positive length (got {value}).",
                          value=repr(dur))
+
+    def _gpx_of(self, act):
+        """The parsed :class:`GpxTrack` behind a hike's ``gpx``, or ``None`` when
+        it has none or it doesn't parse (the field check reports that). Memoized
+        per activity object: a recorded track is thousands of points, and both
+        the coherence check and the magnitude warning want to know about it."""
+        raw = act.get("gpx")
+        if raw in (None, ""):
+            return None
+        key = id(act)
+        if key not in self._gpx_cache:
+            try:
+                self._gpx_cache[key] = gpx_track(raw)
+            except ItineraryError:
+                self._gpx_cache[key] = None
+        return self._gpx_cache[key]
+
+    def _hike_gpx(self, act, path):
+        """What an embedded GPX does and doesn't give the hike. The field's own
+        check reports a blob that won't decode; this reports the two things a
+        *valid* one can still leave out."""
+        track = self._gpx_of(act)
+        if track is None:
+            return
+        if not track.has_elevation:
+            self.add("info", path + ("gpx",), "this GPX carries no elevations — "
+                     "the trail map is drawn, but not the elevation profile.")
+        if not _truthy(self._defaults().get("include_hike_maps", True)):
+            self.add("info", path + ("gpx",), "'include_hike_maps' is off, so this "
+                     "GPX is parsed but neither the trail map nor the profile is "
+                     "drawn.")
 
     def _hike_route_endpoints(self, act, path):
         try:

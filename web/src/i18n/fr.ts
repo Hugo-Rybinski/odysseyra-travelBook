@@ -411,6 +411,9 @@ export const FR: Record<string, string> = {
   "Include maps in render": "Inclure les cartes au rendu",
   "Draw a per-day map with a pin for each located activity. Defaults to off.":
     "Dessiner une carte par jour avec une épingle pour chaque activité localisée. Désactivé par défaut.",
+  "Include hike maps": "Inclure les cartes de randonnée",
+  "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — un-tick to hide them.":
+    "Dessiner le tracé et le profil altimétrique de toute randonnée à laquelle un fichier GPX est joint. Indépendant de « Inclure les cartes au rendu », puisque la trace accompagne la randonnée. Activé par défaut — décochez pour les masquer.",
   "Infer coordinates from address": "Déduire les coordonnées depuis l'adresse",
   "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped).":
     "Géocoder les activités sans coordonnée explicite. Désactivé par défaut (seules les coordonnées explicites sont cartographiées).",
@@ -519,6 +522,14 @@ export const FR: Record<string, string> = {
   Route: "Parcours",
   "Route shape. Defaults to back_and_forth.":
     "Forme du parcours. Par défaut back_and_forth.",
+  "GPX track": "Trace GPX",
+  "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional.":
+    "Un fichier .gpx du sentier, enregistré dans l'itinéraire lui-même. Dessiné sous forme de tracé et de profil altimétrique, et il complète la distance et le dénivelé si vous les laissez vides. Facultatif.",
+  "GPX attached ({kb} KB encoded)": "GPX joint ({kb} Ko encodés)",
+  "No GPX attached": "Aucun GPX joint",
+  Clear: "Retirer",
+  "That file is too large (over {mb} MB).": "Ce fichier est trop volumineux (plus de {mb} Mo).",
+  "That file could not be read.": "Ce fichier n'a pas pu être lu.",
 
   // Meal
   "Meal type": "Type de repas",
@@ -902,8 +913,8 @@ export const FR: Record<string, string> = {
     "Vos documents de voyage — un brief, un programme jour par jour, des e-mails de confirmation, des bons d'hôtel/location, des captures d'écran, un PDF de guide, des liens vers des articles de blog, une trace KML/KMZ (par ex. exportée depuis une carte Google personnalisée), une trace GPX pour une randonnée ou une piste hors route, ou un export MBOX (par ex. un libellé Gmail exporté via Google Takeout).",
   "The more concrete the sources, the fewer gaps the LLM has to leave blank.":
     "Plus les sources sont concrètes, moins l'IA laisse de champs vides.",
-  "A single <title>.json you can open here (Options → Open JSON…), plus a report of the gaps and any conflicts it found between your sources.":
-    "Un seul fichier <titre>.json que vous pouvez ouvrir ici (Options → Ouvrir JSON…), ainsi qu'un rapport des manques et des éventuels conflits entre vos sources.",
+  "A single <title>.json you can open here (Options → Open JSON…), plus a report of the gaps and any conflicts it found between your sources. A hike's GPX is embedded in the file itself, so its trail map and elevation profile come along with it.":
+    "Un seul fichier <titre>.json que vous pouvez ouvrir ici (Options → Ouvrir JSON…), ainsi qu'un rapport des manques et des éventuels conflits entre vos sources. Le GPX d'une randonnée est intégré au fichier lui-même : son tracé et son profil altimétrique voyagent avec lui.",
 
   "Build a Google My Maps KML from a guidebook PDF":
     "Créer un KML Google My Maps à partir d'un PDF de guide",

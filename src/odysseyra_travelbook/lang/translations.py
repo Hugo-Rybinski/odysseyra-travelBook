@@ -20,6 +20,14 @@ _FR = {
     # the `tripMapCaption` key in web/src/render/format.ts)
     "MAP": "CARTE",
     "Whole trip": "L'ensemble du voyage",
+    # a hike's GPX block: the trail map's caption and the elevation profile's
+    # header. The viewer fills the same three templates from its own table —
+    # the `hikeMapCaption` / `hikeProfile` / `hikeAscent` / `hikeDescent` keys in
+    # web/src/render/format.ts — so the two wordings must move together.
+    "Trail — {name}": "Tracé — {name}",
+    "Elevation profile": "Profil altimétrique",
+    "↑ {m} m": "↑ {m} m",
+    "↓ {m} m": "↓ {m} m",
     "Geocoded {filled} coordinate(s), {missed} not found → {path}":
         "{filled} coordonnée(s) géocodée(s), {missed} introuvable(s) → {path}",
     "this area has no 'coordinate' of its own — its map pin will be placed at "
@@ -380,6 +388,31 @@ _FR = {
     "missing: {missing}.":
         "l'étape de cette route ({route}) devrait indiquer une durée et "
         "« distance_km » — manquant : {missing}.",
+    "this GPX carries no elevations — the trail map is drawn, but not the "
+    "elevation profile.":
+        "ce GPX ne contient pas d'altitudes — le tracé est dessiné, mais pas le "
+        "profil altimétrique.",
+    "'include_hike_maps' is off, so this GPX is parsed but neither the trail "
+    "map nor the profile is drawn.":
+        "« include_hike_maps » est désactivé : ce GPX est bien lu, mais ni le "
+        "tracé ni le profil ne sont dessinés.",
+    "'gpx' must be a base64 string holding a GPX file":
+        "« gpx » doit être une chaîne base64 contenant un fichier GPX",
+    "'gpx' is empty — expected a base64-encoded GPX file":
+        "« gpx » est vide — un fichier GPX encodé en base64 est attendu",
+    "'gpx' does not decode as UTF-8 text — is it really a GPX file?":
+        "« gpx » ne se décode pas en texte UTF-8 — est-ce bien un fichier GPX ?",
+    "'gpx' holds no track — expected at least two <trkpt>, <rtept> or <wpt> "
+    "points with lat/lon":
+        "« gpx » ne contient aucune trace — au moins deux points <trkpt>, "
+        "<rtept> ou <wpt> avec lat/lon sont attendus",
+    "'gpx' is not valid base64 ({detail}) — encode the .gpx file with base64":
+        "« gpx » n'est pas du base64 valide ({detail}) — encodez le fichier .gpx "
+        "en base64",
+    "'gpx' is gzip data but won't inflate ({detail})":
+        "« gpx » est un flux gzip mais ne se décompresse pas ({detail})",
+    "'gpx' is not parseable XML ({detail})":
+        "« gpx » n'est pas du XML analysable ({detail})",
     "this hike ({name}) should give a duration, a 'distance_km' and an "
     "'elevation_m' — missing: {missing}.":
         "cette randonnée ({name}) devrait indiquer une durée, « distance_km » et "
@@ -475,6 +508,11 @@ _FR = {
     "the trailhead address": "l'adresse du départ de rando",
     "the end address": "l'adresse d'arrivée",
     "the route shape": "la forme de l'itinéraire",
+    "a GPX file of the trail, drawn as a map plus an elevation profile":
+        "un fichier GPX du sentier, dessiné en carte et en profil altimétrique",
+    "the .gpx file base64-encoded (gzip allowed)":
+        "le fichier .gpx encodé en base64 (gzip accepté)",
+    "none (no trail map or profile)": "aucun (ni tracé ni profil)",
     "which meal it is": "de quel repas il s'agit",
     "the restaurant name": "le nom du restaurant",
     "the town/region to eat in (used when no restaurant is named)":
@@ -661,6 +699,12 @@ _FR = {
     # -- validation: default descriptions (maps + links) --
     "none (no link shown)": "aucun (pas de lien affiché)",
     "false (no maps)": "false (aucune carte)",
+    "whether to draw the trail map and elevation profile of a hike that embeds "
+    "a 'gpx'":
+        "s'il faut dessiner le tracé et le profil altimétrique d'une randonnée "
+        "qui embarque un « gpx »",
+    "true (drawn whenever a hike has a 'gpx')":
+        "true (dessinés dès qu'une randonnée a un « gpx »)",
     "false (only activities with an explicit coordinate are mapped)":
         "false (seules les activités avec une coordonnée explicite sont "
         "cartographiées)",

@@ -664,3 +664,85 @@ def test_dashes_splits_a_line_into_alternating_pieces():
     assert dashes([(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)], dash=10, gap=10)[0] == (
         (0.0, 0.0), (5.0, 0.0))
     assert dashes([(0.0, 0.0)], dash=10, gap=10) == []  # nothing to walk
+
+
+# -- a hike's GPX track ------------------------------------------------------
+
+def _gpx_hike_itinerary(gpx_b64, **defaults):
+    """A one-day trip whose only activity is a hike carrying ``gpx_b64``."""
+    return _itin([{"title": "D", "date": "2026-06-01", "activities": [
+        {"type": "hike", "name": "Ridge", "duration": "3h", "gpx": gpx_b64}]}],
+        **defaults)
+
+
+def _ridge_b64(n=40):
+    import base64
+    pts = "".join(f'<trkpt lat="{42.7 + i * 0.001:.6f}" lon="-0.14">'
+                  f'<ele>{1000 + 5 * i}</ele></trkpt>' for i in range(n))
+    xml = f'<?xml version="1.0"?><gpx><trk><trkseg>{pts}</trkseg></trk></gpx>'
+    return base64.b64encode(xml.encode()).decode()
+
+
+def test_a_hike_map_is_framed_on_its_own_track(monkeypatch, tmp_path):
+    """Nothing to resolve: the geometry came with the itinerary, so the extent,
+    the route and the two end discs are all the track itself."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_hike_map
+
+    seen = _trip_map_capture(monkeypatch)
+    it = _gpx_hike_itinerary(_ridge_b64())
+    track = it.days[0].activities[0].track
+    assert render_hike_map(track, it.cover_color, Cache.open(tmp_path)) is not None
+
+    call = seen[-1]
+    line = [(lat, long) for lat, long in track.points]
+    assert call["extent"] == line
+    assert call["routes"] == [line]
+    assert call["points"] == []          # one trail — a pin would label it twice
+    assert call["legs"] == []
+
+
+def test_a_hike_map_needs_two_points_to_draw(tmp_path):
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_hike_map
+
+    assert render_hike_map(None, "#2f6b4f", Cache.open(tmp_path)) is None
+
+
+def test_the_hike_block_is_drawn_next_to_the_hike_and_follows_its_switch(
+        monkeypatch, tmp_path):
+    """The trail map + profile land on the hike's own page, and
+    `defaults.include_hike_maps` switches the pair off without touching the rest
+    of the day."""
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    _trip_map_capture(monkeypatch)
+
+    def rendered(it):
+        pdf = TravelPDF(it, "en")
+        pdf.map_cache_dir = tmp_path
+        pdf.day(1, it.days[0])
+        return pdf
+
+    on = rendered(_gpx_hike_itinerary(_ridge_b64()))
+    off = rendered(_gpx_hike_itinerary(_ridge_b64(), include_hike_maps=False))
+    # The block adds height, so the switched-on book is the taller of the two.
+    assert on.get_y() > off.get_y()
+
+
+def test_the_hike_block_survives_a_map_failure(monkeypatch, tmp_path):
+    """A tile failure loses the map, not the build — and not the profile either,
+    which needs no network at all."""
+    from odysseyra_travelbook.maps import build as buildmod
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    def boom(*a, **kw):
+        raise RuntimeError("tiles unreachable")
+
+    monkeypatch.setattr(buildmod, "render_map", boom)
+    it = _gpx_hike_itinerary(_ridge_b64())
+    pdf = TravelPDF(it, "en")
+    pdf.map_cache_dir = tmp_path
+    before = pdf.get_y()
+    pdf.day(1, it.days[0])
+    assert pdf.get_y() > before   # the profile still drew

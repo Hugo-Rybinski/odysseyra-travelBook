@@ -562,6 +562,7 @@ class DayMixin:
         if act.name and act.start and act.end:
             self._para(x, w, f"{act.start} → {act.end}")
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
+        self.hike_track(act, x, w)  # no-op without an embedded `gpx`
         self._render_nested(x, w, act.activities)
 
     def _nested_badge_width(self, label: str) -> float:
@@ -653,6 +654,7 @@ class DayMixin:
             self.multi_cell(tw, 4.5, f"{hike.start} → {hike.end}")
         self._para_with_pill(tx, tw, hike.description, hike.guidebook_pages,
                              size=9, h=4.5)
+        self.hike_track(hike, tx, tw)  # no-op without an embedded `gpx`
         self.ln(1)
 
     def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:

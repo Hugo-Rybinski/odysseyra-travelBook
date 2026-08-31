@@ -29,6 +29,9 @@ export interface OptionsProps {
   // Context
   hasItinerary: boolean;
   mapsInRender: boolean;
+  // Any hike carries an embedded GPX — those draw an interactive trail map of
+  // their own, whatever `include_maps_in_render` says.
+  hasHikeTracks: boolean;
   engineReady: boolean;
   // The translated engine boot-stage label, shown while the engine isn't ready.
   engineStageLabel: string;
@@ -184,6 +187,7 @@ export function Options(props: OptionsProps) {
     onToggleLang,
     hasItinerary,
     mapsInRender,
+    hasHikeTracks,
     engineReady,
     engineStageLabel,
     currentFile,
@@ -234,9 +238,17 @@ export function Options(props: OptionsProps) {
   const noFile = t("Open an itinerary first");
   const engineReason = engineReady ? "" : t("The engine is still starting…");
   const fileReason = hasItinerary ? "" : noFile;
+  // Two different questions. "Redraw maps" only rebuilds the per-day images, so
+  // it needs `include_maps_in_render`; the interactive toggle also governs a
+  // hike's own GPX trail map, which is drawn independently of that switch.
   const mapsReason = !hasItinerary
     ? noFile
     : !mapsInRender
+      ? t("This itinerary doesn't enable maps (include_maps_in_render is off)")
+      : "";
+  const interactiveReason = !hasItinerary
+    ? noFile
+    : !mapsInRender && !hasHikeTracks
       ? t("This itinerary doesn't enable maps (include_maps_in_render is off)")
       : "";
   const installReason = canInstall
@@ -340,17 +352,17 @@ export function Options(props: OptionsProps) {
         <div className="opt-row">
           <Tip
             text={
-              mapsReason ||
+              interactiveReason ||
               t(
                 "Interactive (pan/zoom) maps; each day's area is prefetched for offline use, and falls back to the static image if it can't load",
               )
             }
           >
-            <label className={`opt-check ${mapsReason ? "disabled" : ""}`}>
+            <label className={`opt-check ${interactiveReason ? "disabled" : ""}`}>
               <input
                 type="checkbox"
                 checked={interactiveMaps}
-                disabled={!!mapsReason}
+                disabled={!!interactiveReason}
                 onChange={(e) => setInteractiveMaps(e.target.checked)}
               />
               {t("Interactive maps")}

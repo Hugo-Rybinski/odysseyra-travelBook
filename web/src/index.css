@@ -1358,6 +1358,63 @@ body {
   cursor: pointer;
 }
 
+/* a hike's embedded GPX (HikeTrack.tsx): the interactive trail map — a shorter
+   .gl-canvas than a day map, since it frames one trail — then the elevation
+   profile under it, both capped to the same width so they stack as one figure
+   (mirroring pdf/hike_map.py, which aligns the profile to the drawn map's box) */
+.hike-track {
+  margin: 8px 0 4px;
+}
+.hike-track .day-map-gl .gl-canvas {
+  height: 260px;
+}
+.hike-profile {
+  max-width: 620px;
+  margin: 6px auto 4px;
+}
+.hike-profile figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+.hike-profile-title {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.hike-profile-climb {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+/* The plot: the SVG stretches to the column (preserveAspectRatio="none"), with
+   the high mark laid over its top-left corner where the curve can't reach. */
+.hike-profile-plot {
+  position: relative;
+}
+.hike-profile-plot svg {
+  display: block;
+  width: 100%;
+  height: 74px;
+  border-bottom: 1px solid var(--accent-soft);
+}
+.hike-profile-high {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+/* the low mark and the length, sharing the axis row under the baseline */
+.hike-profile-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 3px 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
 /* placeholder while a day's map images are still being fetched/built */
 .day-map-loading {
   display: flex;
@@ -1429,6 +1486,27 @@ body {
 .nav-inline {
   white-space: nowrap;
   font-weight: 600;
+}
+/* "(Get GPX track)": a <button>, because the file has to be decoded (and often
+   inflated) on click — there is no href to point at until then. Stripped back to
+   look like the .link siblings it sits among. */
+.gpx-link {
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--accent);
+  white-space: nowrap;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gpx-link:hover {
+  text-decoration: underline;
+}
+.gpx-error {
+  font-size: 0.82rem;
+  color: #b3261e;
 }
 
 /* road VIA breakdown */
@@ -1889,6 +1967,43 @@ textarea.edit-input {
   flex: none;
 }
 
+/* gpx field: a .gpx file picker + what's currently attached (see GpxField.tsx) */
+.edit-gpx {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.edit-gpx-file {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  max-width: 100%;
+}
+.edit-gpx-state {
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.edit-gpx-state.muted {
+  color: var(--muted);
+}
+.edit-gpx-clear {
+  font: inherit;
+  font-size: 0.78rem;
+  margin-left: 6px;
+  padding: 2px 8px;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.edit-gpx-error {
+  font-size: 0.78rem;
+  color: #b3261e;
+  flex-basis: 100%;
+}
+
 /* coordinate group */
 .edit-coord {
   grid-column: 1 / -1;
@@ -2307,6 +2422,9 @@ textarea.edit-input {
   /* a little less tall so the map + surrounding content fit a phone screen */
   .day-map-gl .gl-canvas {
     height: 300px;
+  }
+  .hike-track .day-map-gl .gl-canvas {
+    height: 220px;
   }
   .trip-map {
     padding: 12px;

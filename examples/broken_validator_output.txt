@@ -9,6 +9,7 @@
 ℹ️  line 8: optional field 'meal_duration' is missing — the default length of a meal that gives no duration or end time. Expected a duration like '1h'. Defaulting to 0 (instant).
 ℹ️  line 8: optional field 'accommodation_start_time' is missing — the clock time an accommodation booking starts on the calendar (ICS export). Expected a time HH:MM. Defaulting to "22:00".
 ℹ️  line 8: optional field 'accommodation_end_time' is missing — the clock time an accommodation night ends on the calendar (ICS export). Expected a time HH:MM. Defaulting to "00:00" (midnight).
+ℹ️  line 8: optional field 'include_hike_maps' is missing — whether to draw the trail map and elevation profile of a hike that embeds a 'gpx'. Expected true or false. Defaulting to true (drawn whenever a hike has a 'gpx').
 ℹ️  line 8: optional field 'infer_coordinates_from_address' is missing — whether to geocode activities that lack an explicit coordinate. Expected true or false. Defaulting to false (only activities with an explicit coordinate are mapped).
 ℹ️  line 8: optional field 'show_moon_phase' is missing — whether to show the night's moon phase in each day's 'tonight' section. Expected true or false. Defaulting to true (moon phase shown).
 ℹ️  line 8: optional field 'show_sun_times' is missing — whether to show each day's sunrise/sunset, computed at that night's accommodation. Expected true or false. Defaulting to true (sunrise/sunset shown).
@@ -58,6 +59,7 @@
 ❌  line 40: field 'type' is invalid ('spaceship') — the activity type. Expected one of: road, point_of_interest, place, hike, meal, buffer.
 ❌  line 41: required field 'name' is missing — the hike name. Expected any text.
 ❌  line 41: field 'route' is invalid ('zigzag') — the route shape. Expected 'loop', 'back_and_forth' or 'one_way' (hike route must be 'loop', 'back_and_forth' or 'one_way', got 'zigzag').
+❌  line 41: field 'gpx' is invalid ('not base64 at all!') — a GPX file of the trail, drawn as a map plus an elevation profile. Expected the .gpx file base64-encoded (gzip allowed) ('gpx' is not valid base64 (Only base64 data is allowed) — encode the .gpx file with base64).
 ❌  line 41: duration must be a positive length (got '0 min').
 ⚠️  line 41: this hike (?) should give a duration, a 'distance_km' and an 'elevation_m' — missing: distance_km, elevation_m.
 ℹ️  line 41: optional field 'description' is missing — a description of the hike. Expected any text. Defaulting to "".
@@ -236,4 +238,4 @@
 ❌  line 85: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 85: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-64 error(s), 18 warning(s), 155 info.
+65 error(s), 18 warning(s), 156 info.

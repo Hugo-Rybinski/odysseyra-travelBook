@@ -15,14 +15,18 @@ One itinerary file gets you:
 
 - **A print-ready PDF** — a colored cover with a day-by-day overview table, a
   whole-trip map page (with maps on), one page per day (a timeline of typed
-  activity cards, nested stops, a "tonight's stay" bar), and transport +
-  accommodation summary pages, all themed from a single `cover_color`.
+  activity cards, nested stops, a hike's trail map + elevation profile, a
+  "tonight's stay" bar), and transport + accommodation summary pages, all themed
+  from a single `cover_color`.
 - **Precise validation** — line-numbered, localized diagnostics at three levels
   (errors / warnings / info): missing fields, bad values, and whole-trip
   incoherences (overlaps, nowhere-to-sleep nights, reversed date ranges…).
 - **Maps** — optional OpenStreetMap maps with numbered pins, drawn driving routes
   and dotted transport legs: one per day plus a whole-trip overview, in both the
   PDF and the browser (interactive pan/zoom there).
+- **Hikes with a GPX** — embed a trail's `.gpx` in the hike and both renderers
+  draw the **trail map** and its **elevation profile**, with the distance and
+  climb measured off the recording.
 - **Smart inference** — trip dates, each day's date, activity schedules and
   durations are inferred, so you only write what's interesting.
 - **English & French** output, an **ink-saver** print mode, and a **stitch** mode
@@ -357,6 +361,7 @@ override and validation cross-checks the itinerary against them.
 | `currency` |  | Currency every price is in unless a price sets its own | string | 3-letter ISO code | `"EUR"` |
 | `secondary_currencies` |  | Extra currencies each price is also shown in on the PDF | array | `{currency, change_rate}` objects | `[]` (none) |
 | `include_maps_in_render` |  | Draw a per-day OpenStreetMap with a pin for each located activity | boolean | `true`/`false` | `false` (no maps) |
+| `include_hike_maps` |  | Draw the trail map + elevation profile of a hike that embeds a `gpx` (independent of `include_maps_in_render`) | boolean | `true`/`false` | `true` (drawn) |
 | `infer_coordinates_from_address` |  | Geocode activities that lack an explicit `coordinate` (else only ones with a coordinate are mapped) | boolean | `true`/`false` | `false` |
 | `inference_countries` |  | Restrict geocoding to these countries when inferring coordinates | array | 2-letter ISO codes, e.g. `["FR"]` | `[]` (any) |
 | `show_moon_phase` |  | Show the night's moon phase (emoji + name) in each day's "tonight" section | boolean | `true`/`false` | `true` (shown) |
@@ -614,11 +619,56 @@ a validation error.
 | `start` |  | Trailhead address | string | any text | `""` |
 | `end` |  | End address | string | any text | `""` |
 | `route` |  | Route shape | string | `loop` \| `back_and_forth` \| `one_way` | `"back_and_forth"` |
+| `gpx` |  | The trail's GPX file, drawn as a trail map + elevation profile | string | the `.gpx` file base64-encoded (gzip allowed) | none |
 | `activities` |  | Nested meals (a stop along the hike) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
 For a `loop` / `back_and_forth` hike, `end` should equal `start` (or be omitted)
 — validation warns otherwise; for a `one_way` hike, `end` should differ from
 `start` — validation warns if it's missing or the same.
+
+##### A hike's GPX track
+
+Attach the trail itself and both renderers draw it: a **trail map** over the same
+basemap the other maps use, and an **elevation profile** under it. `gpx` holds the
+`.gpx` file base64-encoded, so the track travels inside the itinerary — nothing is
+fetched, and the profile works offline.
+
+```bash
+base64 -i gaube.gpx | tr -d '\n'          # paste the result as "gpx"
+gzip -9 -c gaube.gpx | base64 | tr -d '\n'  # ~10× smaller, also accepted
+```
+
+A `data:` URI prefix is stripped and line-wrapped base64 is fine, so most ways of
+producing the string work. In the viewer's **Edit** tab the `gpx` field is a file
+picker that does the encoding (and the gzipping) for you.
+
+Track points (`<trkpt>`) are preferred; a file with none falls back to route
+points (`<rtept>`), then plain waypoints (`<wpt>`), and multiple `<trkseg>`s are
+one continuous trail. The distance and the elevation gain are measured off the
+**full-resolution** recording and **fill in** `distance_km` / `elevation_m` when
+you leave those out — give them explicitly and yours win, so you can quote the
+guidebook's round numbers over the GPS's. Elevation gain is smoothed and
+accumulated with hysteresis, so an altimeter's metre-scale wobble doesn't add up
+to phantom climb. A file without elevations still draws its map; it just has no
+profile.
+
+`defaults.include_hike_maps` (default **on**) switches the pair off. It is
+deliberately independent of `include_maps_in_render`: that one governs the maps
+inferred for the whole trip, while a GPX is a file you attached to one hike —
+attaching it *is* the opt-in. With the switch off the track isn't even sent to the
+viewer, so the geometry costs nothing.
+
+One difference between the two renderers, and it's on purpose: the PDF embeds a
+rendered raster map, the viewer draws the interactive one (the geometry is already
+in hand, so it appears with the text rather than with the per-day map render) and
+follows the **Options → interactive maps** toggle — with that off, the profile
+stands alone.
+
+In the viewer the hike also gets a **`(Get GPX track)`** link beside its other
+inline links, which downloads the `.gpx` — the bytes you attached, byte-for-byte
+(inflated back from gzip where it was stored that way), not a re-export of the
+simplified line the map draws. So the file can go straight to a watch, a GPS or
+another app. It's screen-only: paper can't hand back a file.
 
 #### `meal` — a stop to eat
 
@@ -813,18 +863,11 @@ they reuse of what's already here.
   PDF summary page and in the viewer.
 - **Contacts / emergency info** — an optional section for embassy, insurance,
   host and per-country emergency numbers, rendered as its own page.
-- **Hike maps from a GPX track** — let a `hike` carry a GPX track and draw its
-  real route on the day map, plus its own zoomed map, instead of the single pin
-  it gets today. `maps/render.py` already paints polylines over tiles (the
-  translucent route overlay, `dashes()`), so most of the drawing exists; the new
-  parts are a JSON field pointing at the track, a small GPX parser and track
-  simplification. Note that GPX is today only *source material an LLM reads*
-  (`skills/build-full-json.md` takes a hike's figures from it) — nothing in the
-  tool itself ingests a track.
-- **Elevation profile for hikes** — an elevation chart per `hike`, built from
-  the routing geometry, alongside the existing distance/duration figures. A GPX
-  track (above) usually carries elevation per point, which would feed this
-  directly instead of needing a new elevation service.
+- **A hike's GPX track on the day map** — a `hike` with a `gpx` gets its own
+  trail map and elevation profile today, but on the *day* map it is still a
+  single pin. Drawing the track there too (as a second polyline beside the
+  drives) would show how the walk sits in the day, and `resolve_day` already
+  returns routes the renderer paints.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.

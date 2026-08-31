@@ -4,6 +4,7 @@ import { useEditDefaults } from "../defaultsContext";
 import { useFieldFindings, worstLevel } from "../findings";
 import { useT, type TFn } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
+import { GpxField } from "./GpxField";
 
 // Renders one registry field as a labelled control. The value is whatever the
 // draft holds for that key (string | number | boolean | string[] | undefined);
@@ -78,7 +79,11 @@ export function FieldRow({ spec, value, path, onChange }: FieldRowProps) {
   }
 
   return (
-    <div className={`edit-field-wrap ${levelClass} ${spec.kind === "textarea" ? "full" : ""}`}>
+    <div
+      className={`edit-field-wrap ${levelClass} ${
+        spec.kind === "textarea" || spec.kind === "gpx" ? "full" : ""
+      }`}
+    >
       <label className="edit-field" htmlFor={id}>
         {label}
         {renderControl(id, spec, placeholder, value, onChange, t)}
@@ -99,6 +104,10 @@ function renderControl(
   const str = value === undefined || value === null ? "" : String(value);
 
   switch (spec.kind) {
+    // A hike's trail file: a file picker that base64-encodes into the draft.
+    case "gpx":
+      return <GpxField id={id} value={value} onChange={onChange} />;
+
     case "textarea":
       return (
         <textarea

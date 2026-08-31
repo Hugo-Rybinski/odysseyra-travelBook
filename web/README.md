@@ -200,6 +200,26 @@ by the Python engine (`validate(text, lang)`).
   static PNG automatically if it can't load. MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
+- **A hike's GPX** (`render/HikeTrack.tsx`) — a `hike` that embeds a `gpx` gets
+  its **trail map** and **elevation profile** under it, drawn from the `track` the
+  Python model derived (a simplified line + a distance-resampled profile; the
+  original file inside it, for the download below). Both come with the resolved
+  text, *not* with the per-day map render, so they appear immediately and work
+  with `include_maps_in_render` off. The map is the interactive MapLibre one with
+  **no static-PNG fallback** — there's nothing pre-rendered to fall back to, and
+  the geometry is already in hand — so it follows the **Interactive** toggle; with
+  it off, the profile stands alone. The profile is inline SVG (it scales with the
+  column and reflows on a phone) where the PDF draws vector primitives; the two
+  read the same because they read the same samples, so keep `HikeTrack.tsx` in
+  step with `pdf/hike_map.py`. `defaults.include_hike_maps` (default **on**)
+  switches the pair off, and does it by leaving `track` out of the payload
+  entirely — so the geometry never enters the IndexedDB day cache either.
+  Beside the hike's other inline links sits **`(Get GPX track)`**, which
+  downloads the `.gpx` itself: `track.gpx` decoded (and inflated, where the Edit
+  tab gzipped it) so what you load into a watch or another app is the file that
+  was attached, not a re-export of the simplified line. It's a `<button>` rather
+  than an `<a href>` because the decode is async — there is no URL to point at
+  until the click.
 - **Overview** tab (`render/TripMap.tsx` + `render/tripGeo.ts`) reuses the book's
   cover — trip title / dates / summary and the day-by-day table, always expanded,
   with each row jumping into that day in the Travel view (the app carries the day
@@ -281,6 +301,14 @@ README schema tables). It is being built in phases — see
   launch, and **normalize-on-save** (prune empty values + safe defaults so a
   round-tripped file stays diff-clean).
 
+Most fields render from their registry `kind` as a plain control (text, number,
+date, time, enum, checkbox…). Two are their own components because the value
+isn't a scalar: `coordinate` (`fields/CoordinateField.tsx`, with the paste and
+geocode helpers above) and a hike's `gpx` (`fields/GpxField.tsx`) — a **.gpx file
+picker** that gzips (via `CompressionStream`, where available) and base64-encodes
+the file into the draft, shows what's attached and how big it is encoded, and
+clears it again. Nobody types base64.
+
 Days and their (nested) activities start **collapsed** so a large itinerary is
 scannable; a collapsed tile that hides inline findings shows count pills on its
 header (`❌ 3`, `⚠️ 2`) for the errors/warnings anchored inside it. Field/button
@@ -300,6 +328,7 @@ src/
   App.tsx                  top-level state + layout (header, book, findings)
   Options.tsx              the themed Options panel (all controls live here)
   edit/                    the ✏️ Edit tab: form editor over the input JSON
+  edit/fields/GpxField.tsx a hike's .gpx picker → gzip + base64 into the draft
     schema.ts              field registry (mirrors the README schema tables)
     EditPanel.tsx          stacked collapsible sections (config + content arrays)
     serialize.ts           jsonToDraft / serializeWithPaths / serializeForSave
@@ -321,6 +350,7 @@ src/
   pwa/PwaProvider.tsx      single SW registration; auto-applies updates
   maps/mapCache.ts         IndexedDB cache of rendered day maps (30-day TTL)
   render/DayMapGL.tsx      interactive MapLibre day map (lazy-loaded, online)
+  render/HikeTrack.tsx     a hike's GPX: trail map (DayMapGL) + SVG profile
   render/tripGeo.ts        merge every day into one whole-trip MapGeo
   render/TripMap.tsx       the Overview tab's whole-trip map (reuses DayMapGL)
 scripts/check-wheel.mjs    prebuild guard: fail if the wheel is older than src/

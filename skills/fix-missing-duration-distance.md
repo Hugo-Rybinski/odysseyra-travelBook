@@ -72,7 +72,10 @@ get warned here:
 - `point_of_interest` / `place` — have a **`name`**. A warning
   `this activity (NAME) …` points to the object whose `name` is *NAME*.
 - `hike` — has a **`name`** (and optional `start`/`end` trailhead text). A warning
-  `this hike (NAME) …` points to the hike whose `name` is *NAME*.
+  `this hike (NAME) …` points to the hike whose `name` is *NAME*. A hike that
+  embeds a `gpx` is never warned about `distance_km` (the track measures it), nor
+  about `elevation_m` when the track carries elevations — so if such a hike *is*
+  warned, the missing field is genuinely missing and the estimate is still wanted.
 - `road` — a drive; see below. Has no `name`; it is identified by its route.
 
 **Nesting (important for hikes).** A `place` or `point_of_interest` may hold its

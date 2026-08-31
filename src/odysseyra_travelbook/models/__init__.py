@@ -4,6 +4,7 @@ The model is split across submodules:
 
 * :mod:`.parsers` — scalar parsers and ``ItineraryError``;
 * :mod:`.activities` — the activity types and the day-scheduling pass;
+* :mod:`.gpx` — a hike's embedded GPX track (decode, parse, measure);
 * :mod:`.transport` — the ``Transport`` leg;
 * :mod:`.accommodation` — the ``Accommodation``;
 * :mod:`.itinerary` — the ``Day`` and ``Itinerary`` aggregates.
@@ -18,6 +19,7 @@ from .geo import (
     maps_url,
     _parse_coordinate,
 )
+from .gpx import GpxTrack, decode_gpx, gpx_track, parse_gpx
 from .currency import (
     CURRENCY_SYMBOLS,
     SecondaryCurrency,
@@ -72,6 +74,10 @@ __all__ = [
     "CURRENCY_SYMBOLS",
     "Day",
     "format_money",
+    "GpxTrack",
+    "decode_gpx",
+    "gpx_track",
+    "parse_gpx",
     "SecondaryCurrency",
     "to_default",
     "Hike",

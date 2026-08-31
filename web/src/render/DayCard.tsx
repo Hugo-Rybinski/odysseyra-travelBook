@@ -11,6 +11,7 @@ import type {
 import { fill, fmtDate, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
 import { ForecastChip } from "./forecast";
+import { GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import {
@@ -363,13 +364,22 @@ function ActivityRow({
         {act.type === "road" && <RoadVia act={act} lang={lang} />}
         {act.type === "point_of_interest" && <Links lang={lang} website={act.website} />}
       </div>
+      {/* A hike's embedded GPX: the trail map + elevation profile, sitting in
+          the .act grid (like the nested list and the area map) rather than in
+          .act-body, so it goes full width under the badge on a phone. Renders
+          nothing unless the hike has a `track`. */}
+      {act.type === "hike" && act.track && (
+        <div className="act-map">
+          <HikeTrackFigure act={act} lang={lang} interactive={interactive} />
+        </div>
+      )}
       {/* Nested sub-activities and the area map live outside .act-body so they
           sit in the .act grid: in the content column on desktop, and full-width
           below the badge on mobile (see the mobile block). */}
       {act.activities && act.activities.length > 0 && (
         <ol className="nested">
           {act.activities.map((sub, i) => (
-            <ActivityRow key={i} act={sub} lang={lang} />
+            <ActivityRow key={i} act={sub} lang={lang} interactive={interactive} />
           ))}
         </ol>
       )}
@@ -445,6 +455,10 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   if (bits.length) chips.push(bits.join("  ·  "));
   if (address) chips.push(<AddressLink key="addr" address={address} />);
   if (nav) chips.push(<NavLink key="nav" lang={lang} href={nav} />);
+  // A hike carrying a GPX offers the file itself, alongside its other inline
+  // links (renders nothing for every other activity).
+  if (act.type === "hike" && act.track?.gpx)
+    chips.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
 
   if (!chips.length && !trail && !description && !guidebook) return null;
   return (

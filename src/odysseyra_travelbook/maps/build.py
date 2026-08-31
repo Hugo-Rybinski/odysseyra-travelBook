@@ -7,6 +7,10 @@ splits out per-area detail maps.
 
 :func:`render_trip_map` does the same for the **whole trip** at once — one map
 holding every day's points, pinned with their day number.
+
+:func:`render_hike_map` is the odd one out: it draws a single hike's **GPX
+track**, which needs no resolving at all (the geometry came with the itinerary)
+and so needs nothing but tiles.
 """
 
 from __future__ import annotations
@@ -429,3 +433,26 @@ def render_trip_map(itinerary, cache, ink_saver: bool = False,
     return render_map(extent, routes, points, _hex_to_rgb(itinerary.cover_color),
                       cache.tiles, map_w=map_w, map_h=map_h, ink_saver=ink_saver,
                       labels=labels, legs=legs)
+
+
+# ------------------------------------------------------------- hike track ---
+
+def render_hike_map(track, accent_hex: str, cache, ink_saver: bool = False,
+                    map_w: int = 900, map_h: int = 560):
+    """One hike's GPX track as a PIL image, framed on the track itself.
+
+    Unlike every other map here there is nothing to resolve: the geometry is the
+    recording the itinerary carries (see ``models/gpx.py``), so no geocoding and
+    no routing happen — only the basemap tiles are fetched. That is also why this
+    takes a ``GpxTrack`` rather than an itinerary object.
+
+    The trail is drawn as a route line, with a small accent disc at each end
+    (a ``route_node``, the same marker a drive's named stops get). There are no
+    numbered pins: on a map of one trail a pin would label the only thing on it.
+    """
+    if track is None or len(track.points) < 2:
+        return None
+    line = [(lat, long) for lat, long in track.points]
+    return render_map(line, [line], [], _hex_to_rgb(accent_hex), cache.tiles,
+                      map_w=map_w, map_h=map_h, ink_saver=ink_saver,
+                      route_nodes=[line[0], line[-1]])

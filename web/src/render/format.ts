@@ -86,6 +86,20 @@ const LABELS = {
     dayMapCaption: "Day {index} overview",
     areaMapCaption: "Zoom — {area}",
     tripMapCaption: "Whole trip",
+    // A hike's embedded GPX: the trail map's caption and the elevation profile.
+    // The first four are the same templates the PDF localizes via
+    // translations.py ("Trail — {name}" / "Elevation profile" / "↑ {m} m" /
+    // "↓ {m} m") — keep the wordings in step. `hikeProfileAlt` is screen-only
+    // (the chart's accessible description; paper needs no alt text).
+    hikeMapCaption: "Trail — {name}",
+    hikeProfile: "Elevation profile",
+    hikeAscent: "↑ {m} m",
+    hikeDescent: "↓ {m} m",
+    hikeProfileAlt: "Elevation profile over {km} km, from {low} m to {high} m",
+    // Screen-only: hands back the .gpx the hike carries. Paper can't download a
+    // file, so this has no PDF twin.
+    getGpx: "(Get GPX track)",
+    gpxFailed: "The GPX file couldn't be read.",
     buildingMap: "Building map…",
     noTripMap: "No coordinates on file — add coordinates (or turn maps on) to map the trip.",
     tripMapUnavailable: "The trip map couldn't be loaded.",
@@ -172,6 +186,13 @@ const LABELS = {
     dayMapCaption: "Aperçu du jour {index}",
     areaMapCaption: "Zoom — {area}",
     tripMapCaption: "L'ensemble du voyage",
+    hikeMapCaption: "Tracé — {name}",
+    hikeProfile: "Profil altimétrique",
+    hikeAscent: "↑ {m} m",
+    hikeDescent: "↓ {m} m",
+    hikeProfileAlt: "Profil altimétrique sur {km} km, de {low} m à {high} m",
+    getGpx: "(Obtenir la trace GPX)",
+    gpxFailed: "Le fichier GPX n'a pas pu être lu.",
     buildingMap: "Génération de la carte…",
     noTripMap:
       "Aucune coordonnée enregistrée — ajoutez des coordonnées (ou activez les cartes) pour cartographier le voyage.",

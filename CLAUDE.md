@@ -48,7 +48,8 @@ A PDF with: a **cover** (title, inferred date range, day count, summary, and a
 day-by-day overview table), a **whole-trip map** page (maps on only), one **page
 per day** (colored header band with the
 city / date / sunrise→sunset, intro,
-a merged time-ordered itinerary, and a bottom "tonight's stay" bar), a
+a merged time-ordered itinerary — including a **trail map + elevation profile**
+under any hike that embeds a `gpx` — and a bottom "tonight's stay" bar), a
 **transport** page, and an **accommodation** summary page. The whole palette is
 derived from one `cover_color`.
 
@@ -74,6 +75,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
     optional map location attached to activities, transport, accommodation and
     car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
+  - `gpx.py` — a hike's embedded GPX: `decode_gpx` (base64, optionally gzipped,
+    `data:` prefix tolerated) → `parse_gpx` → `GpxTrack`, holding the simplified
+    map line (RDP, capped at `MAP_MAX_POINTS`), the distance-resampled
+    `profile` (`PROFILE_POINTS` samples), and the measured
+    distance/ascent/descent/min/max. Pure stdlib, no network. Ascent is smoothed
+    + accumulated with hysteresis so altimeter jitter isn't counted as climb.
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
@@ -88,7 +95,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `specs.py` — `Spec` field descriptors, value validators (`V_*`), spec tables.
   - `validator.py` — `_Validator` walks the data and emits findings; `validate_text`.
 - **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin,
-  TransportMixin, AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
+  HikeMapMixin, TransportMixin, AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
   shared drawing primitives; each section is a mixin. `build_pdf(itinerary, output,
   lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
   `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
@@ -101,6 +108,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `trip_map.py`'s `TripMapMixin.trip_map()` adds the **whole-trip map page** right
   after the cover (`build_pdf` calls it unconditionally; it's a no-op with maps
   off, with nothing located, or on a render failure — same graceful degradation).
+  `hike_map.py`'s `HikeMapMixin.hike_track(hike, x, w)` is called from
+  `days.py`'s `_details_hike` / `_nested_hike` and draws a hike's GPX block: the
+  trail map as a **raster** (`maps.render_hike_map`) then the elevation profile as
+  **native fpdf vector** (`polygon`/`polyline`) — so the profile needs no tiles,
+  stays crisp, and still appears when the map can't be fetched. The profile takes
+  the drawn map's box, not the column's, so the two stack as one figure.
 - **`maps/`** — map rendering, imported only when maps are on. `geocode.py`
   (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
   cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → dotted
@@ -111,7 +124,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `build.py` (`resolve_day` → points/routes/area-details,
   `day_legs` → a day's transport legs as straight endpoint pairs,
   `render_day_maps` → PIL images, plus `resolve_trip`/`_trip_extent`/
-  `render_trip_map` for the whole-trip map), `writeback.py` (`fill_coordinates` for the
+  `render_trip_map` for the whole-trip map and `render_hike_map(track, …)` for a
+  hike's GPX — the one map with nothing to resolve, so it geocodes and routes
+  nothing and needs only tiles), `writeback.py` (`fill_coordinates` for the
   `geocode` command),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
   `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
@@ -146,7 +161,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `lunch_until` 16:00, `meal_duration` 0, `currency` EUR,
   `secondary_currencies`, the accommodation calendar-event times
   `accommodation_start_time` 22:00 / `accommodation_end_time` 00:00 (midnight), the maps
-  switches `include_maps_in_render` false / `infer_coordinates_from_address`
+  switches `include_maps_in_render` false / `include_hike_maps` **true** /
+  `infer_coordinates_from_address`
   false / `inference_countries` [], and `show_moon_phase` / `show_sun_times`
   both **true**) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
@@ -192,6 +208,32 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   — a city day would otherwise fan into a pinwheel of identical numbers. The
   viewer's own note naming what it left out was removed (the user found it noise),
   so neither renderer discloses trimmed geometry now.
+- **A hike's GPX.** A `hike` may carry `gpx`: the `.gpx` file base64-encoded
+  (gzip transparently inflated, a `data:` prefix stripped, line wrapping fine).
+  `models/gpx.py` reduces it to a `GpxTrack` — a simplified map line plus a
+  distance-resampled elevation profile — which `serialize.py` emits as `track`,
+  **with the original base64 inside it** (`track.gpx`): the viewer's
+  `(Get GPX track)` link hands the file back, and a resolved hike has no index
+  into the source JSON to look itself up by (buffers are woven into the
+  timeline), so the blob rides along rather than being matched back. That track
+  also **fills in** a missing `distance_km` / `elevation_m` (explicit values
+  win).
+  `defaults.include_hike_maps` (**true** by default) gates both the drawing *and*
+  the serialization, so switching it off keeps kilobytes of geometry out of the
+  resolved doc (and out of the browser's IndexedDB day cache). It is deliberately
+  **independent of `include_maps_in_render`**: that governs the maps we *infer*
+  for the trip, while attaching a GPX to a hike is itself the opt-in — a
+  default-true switch gated behind a default-false one would never fire.
+  Both renderers draw map-then-profile from the same `track`, with two deliberate
+  differences: the PDF's map is a raster and its profile is drawn vector, while
+  the viewer's map is the interactive MapLibre one (no static PNG — the geometry
+  arrives with the text, not with the per-day map render) honouring the Options
+  interactive-maps toggle, and its profile is inline SVG. The viewer alone offers
+  `(Get GPX track)` (`GpxDownloadLink`, drawn in the hike's chips line next to
+  `(Navigate)`) — a `<button>`, not an `<a href>`, because inflating the payload
+  is async so there is nothing to point at until the click; paper can't download
+  a file, so it has no PDF twin. Keep `pdf/hike_map.py` and
+  `web/src/render/HikeTrack.tsx` in step.
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).

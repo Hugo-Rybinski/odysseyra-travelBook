@@ -115,6 +115,11 @@ class Itinerary:
     default_currency: str = "EUR"  # all prices are in this unless they say otherwise
     secondary_currencies: list[SecondaryCurrency] = field(default_factory=list)
     include_maps_in_render: bool = False  # draw a per-day map (opt-in)
+    # Draw the trail map + elevation profile of a hike that embeds a `gpx`
+    # (opt-out). Deliberately independent of `include_maps_in_render`: that one
+    # governs the maps we *infer* for the whole trip, while a GPX is a file you
+    # attached to one hike — having attached it is the opt-in.
+    include_hike_maps: bool = True
     infer_coordinates_from_address: bool = False  # geocode missing coordinates
     inference_countries: list[str] = field(default_factory=list)  # ISO codes; [] = any
     show_moon_phase: bool = True  # show the night's moon phase in "tonight" (opt-out)
@@ -161,6 +166,7 @@ class Itinerary:
             defaults.get("secondary_currencies")
         )
         include_maps = _parse_bool(defaults.get("include_maps_in_render", False))
+        include_hike_maps = _parse_bool(defaults.get("include_hike_maps", True))
         infer_coords = _parse_bool(defaults.get("infer_coordinates_from_address", False))
         show_moon = _parse_bool(defaults.get("show_moon_phase", True))
         show_sun = _parse_bool(defaults.get("show_sun_times", True))
@@ -185,6 +191,7 @@ class Itinerary:
             default_currency=default_currency,
             secondary_currencies=secondary_currencies,
             include_maps_in_render=include_maps,
+            include_hike_maps=include_hike_maps,
             infer_coordinates_from_address=infer_coords,
             inference_countries=inference_countries,
             show_moon_phase=show_moon,

@@ -64,7 +64,9 @@ const SKILLS: Skill[] = [
     ],
     output:
       "A single <title>.json you can open here (Options → Open JSON…), plus a " +
-      "report of the gaps and any conflicts it found between your sources.",
+      "report of the gaps and any conflicts it found between your sources. A " +
+      "hike's GPX is embedded in the file itself, so its trail map and " +
+      "elevation profile come along with it.",
   },
   {
     file: "build-guidebook-kml.md",

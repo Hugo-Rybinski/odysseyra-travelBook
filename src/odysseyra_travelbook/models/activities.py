@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import time
 
 from .geo import Coordinate, _parse_coordinate
+from .gpx import GpxTrack, gpx_track
 from .parsers import (
     ItineraryError,
     _add_minutes,
@@ -279,7 +280,14 @@ def _nested_activity(entry, container_kind: str) -> Activity:
 
 @dataclass
 class Hike(Activity):
-    """A hike between two points (or a loop)."""
+    """A hike between two points (or a loop).
+
+    An optional ``gpx`` — a base64-encoded GPX file, carried inside the JSON —
+    is parsed into ``track``, which is what the renderers draw the trail map and
+    the elevation profile from (see :mod:`.gpx`). The track also *fills in* a
+    missing ``distance_km`` / ``elevation_m``: it measured them, so making you
+    retype them would only be a chance to disagree with it.
+    """
 
     kind = "hike"
     name: str = ""
@@ -290,6 +298,8 @@ class Hike(Activity):
     start: str = ""
     end: str = ""
     route: str = "back_and_forth"  # "loop" or "back_and_forth"
+    gpx: str = ""                       # base64 GPX file, as given
+    track: GpxTrack | None = None       # parsed from `gpx`
     activities: list[Activity] = field(default_factory=list)
 
     @property
@@ -312,7 +322,9 @@ class Hike(Activity):
     def from_dict(cls, d: dict) -> "Hike":
         if "name" not in d:
             raise ItineraryError("A 'hike' activity needs a 'name'")
-        return cls(
+        raw_gpx = d.get("gpx")
+        track = gpx_track(raw_gpx) if raw_gpx not in (None, "") else None
+        hike = cls(
             **_sched(d),
             name=str(d["name"]),
             description=str(d.get("description", "")),
@@ -322,8 +334,18 @@ class Hike(Activity):
             start=str(d.get("start", "")),
             end=str(d.get("end", "")),
             route=_parse_route(d.get("route"), default="back_and_forth"),
+            gpx=str(raw_gpx) if raw_gpx else "",
+            track=track,
             activities=_nested(d, "hike"),
         )
+        if track is not None:
+            # The recording measured the walk; an explicit figure still wins, so
+            # you can quote the guidebook's round numbers over the GPS's.
+            if hike.distance_km is None:
+                hike.distance_km = round(track.distance_km, 1)
+            if hike.elevation_m is None and track.ascent_m is not None:
+                hike.elevation_m = float(round(track.ascent_m))
+        return hike
 
 
 # Valid ``meal_type`` values. Only the first three are ever inferred from the

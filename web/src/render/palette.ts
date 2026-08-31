@@ -1,6 +1,8 @@
 // Derive a small display palette from the trip's single `cover_color`, mirroring
 // the idea behind the PDF's palette (one accent drives everything). Display-only.
 
+import { createContext, useContext } from "react";
+
 export interface Palette {
   accent: string; // the cover color itself
   accentDark: string; // for hovers / deep bands
@@ -49,3 +51,10 @@ export function paletteVars(coverColor: string): Record<string, string> {
     "--on-accent": p.onAccent,
   };
 }
+
+// The trip's raw `cover_color`, for the few places that need the accent as a
+// *value* rather than as a CSS variable — MapLibre paints its layers from a
+// colour string, and a hike's trail map builds its geo client-side (unlike a day
+// map, whose geo arrives from Python with the accent already in it).
+export const AccentContext = createContext<string>("#1f4e5f");
+export const useAccent = (): string => useContext(AccentContext);

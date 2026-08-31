@@ -27,8 +27,11 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // v6: `road` activities gained a `description`. v7: road waypoints gained a
 // per-leg `off_road`. v8: `show_moon_phase` now defaults on, so `day.moon` is
 // populated for docs that never set it. v9: road / point_of_interest / place /
-// hike activities gained `guidebook_pages`.
-const SCHEMA_VERSION = 9;
+// hike activities gained `guidebook_pages`. v10: a `hike` gained the `track`
+// derived from its embedded `gpx` (the trail line + elevation profile). v11:
+// `track.gpx` carries the original file, for the "(Get GPX track)" download —
+// without the bump a v10-cached day would draw the trail but hide the link.
+const SCHEMA_VERSION = 11;
 
 interface Entry {
   day: Day;

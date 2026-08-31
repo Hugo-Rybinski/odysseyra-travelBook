@@ -13,6 +13,7 @@ from ..models import (
     _parse_route,
     _parse_time,
     _parse_tz,
+    gpx_track,
 )
 
 
@@ -148,6 +149,18 @@ def V_URL(value):
 V_COORDINATE = _v(_parse_coordinate)
 
 
+def V_GPX(value):
+    """A hike's embedded GPX: base64 (optionally gzipped) holding a GPX file with
+    at least two points. Decoding and parsing it here is what lets the validator
+    tell a mistyped blob from a file with no track in it — and it is the same
+    call the model makes, so the two can't disagree."""
+    try:
+        gpx_track(value)
+        return None
+    except ItineraryError as exc:
+        return str(exc)
+
+
 def V_ISO_COUNTRY(value):
     s = str(value).strip()
     if len(s) == 2 and s.isalpha():
@@ -202,6 +215,10 @@ DEFAULTS = [
     Spec("include_maps_in_render", False,
          "whether to draw a per-day OpenStreetMap with a pin for each activity",
          "true or false", "false (no maps)", V_BOOL),
+    Spec("include_hike_maps", False,
+         "whether to draw the trail map and elevation profile of a hike that "
+         "embeds a 'gpx'",
+         "true or false", "true (drawn whenever a hike has a 'gpx')", V_BOOL),
     Spec("infer_coordinates_from_address", False,
          "whether to geocode activities that lack an explicit coordinate",
          "true or false",
@@ -291,6 +308,10 @@ ACTIVITY_SPECS = {
         Spec("end", False, "the end address", "any text", '""'),
         Spec("route", False, "the route shape",
              "'loop', 'back_and_forth' or 'one_way'", '"back_and_forth"', V_ROUTE),
+        Spec("gpx", False,
+             "a GPX file of the trail, drawn as a map plus an elevation profile",
+             "the .gpx file base64-encoded (gzip allowed)",
+             "none (no trail map or profile)", V_GPX),
         Spec("activities", False, "nested meals (a stop along the hike)",
              "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],

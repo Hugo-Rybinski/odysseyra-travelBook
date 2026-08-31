@@ -42,6 +42,9 @@ export interface SrcDefaults {
   currency?: string; // 3-letter ISO
   secondary_currencies?: SrcSecondaryCurrency[];
   include_maps_in_render?: boolean;
+  // Draw the trail map + elevation profile of a hike that embeds a `gpx`.
+  // Defaults to **true** and is independent of include_maps_in_render.
+  include_hike_maps?: boolean;
   infer_coordinates_from_address?: boolean;
   inference_countries?: string[]; // 2-letter ISO codes
   show_moon_phase?: boolean;
@@ -108,6 +111,9 @@ export interface SrcHike extends SrcScheduled {
   start?: string;
   end?: string;
   route?: string;
+  // The trail's GPX file, base64-encoded (gzip allowed). Drawn as a trail map
+  // plus an elevation profile, and it fills in a missing distance/elevation.
+  gpx?: string;
   coordinate?: SrcCoordinate;
   activities?: SrcMeal[]; // nested meals only
 }

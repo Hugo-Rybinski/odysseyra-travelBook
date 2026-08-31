@@ -1,8 +1,8 @@
 """Render an :class:`~odysseyra_travelbook.models.Itinerary` to a polished PDF.
 
 ``TravelPDF`` is assembled from per-section mixins: :mod:`.cover`, :mod:`.days`,
-:mod:`.trip_map`, :mod:`.transport` and :mod:`.accommodation`, on top of
-:mod:`.base`.
+:mod:`.trip_map`, :mod:`.hike_map`, :mod:`.transport` and :mod:`.accommodation`,
+on top of :mod:`.base`.
 """
 
 from __future__ import annotations
@@ -17,12 +17,13 @@ from .car_rental import CarRentalMixin
 from .cover import CoverMixin
 from .day_map import DayMapMixin
 from .days import DayMixin
+from .hike_map import HikeMapMixin
 from .transport import TransportMixin
 from .trip_map import TripMapMixin
 
 
-class TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin, TransportMixin,
-                AccommodationMixin, CarRentalMixin, _PDFBase):
+class TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin, HikeMapMixin,
+                TransportMixin, AccommodationMixin, CarRentalMixin, _PDFBase):
     """The travel-book PDF, assembled from per-section mixins."""
 
 

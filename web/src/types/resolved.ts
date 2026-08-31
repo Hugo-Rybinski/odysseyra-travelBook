@@ -47,6 +47,29 @@ export interface Waypoint {
   off_road?: boolean;
 }
 
+// A hike's embedded GPX, reduced by the Python model (models/gpx.py) to what
+// gets drawn: the simplified trail line, the resampled elevation profile, and
+// the figures measured off the *full*-resolution recording. Present only when
+// the hike carries a `gpx` and `defaults.include_hike_maps` is on (it defaults
+// on) — the base64 blob itself never reaches the browser.
+export interface HikeTrack {
+  // The original file, base64 (and possibly gzipped), exactly as the itinerary
+  // carries it — this is what the "(Get GPX track)" link hands back, so the
+  // download is the bytes that were attached rather than a re-export of the
+  // simplified line below. Optional: a day cached before the link existed has
+  // the geometry but not the file.
+  gpx?: string;
+  points: [number, number][]; // [lat, long] along the trail, in walking order
+  profile: [number, number][]; // [km walked, elevation m]; empty without elevations
+  distance_km: number;
+  ascent_m: number | null; // null when the file carries no elevations
+  descent_m: number | null;
+  min_elevation_m: number | null;
+  max_elevation_m: number | null;
+  point_count: number; // points in the source file, before simplification
+  bounds: [[number, number], [number, number]]; // [[minLat,minLong],[maxLat,maxLong]]
+}
+
 export type ActivityType =
   | "road"
   | "point_of_interest"
@@ -76,6 +99,9 @@ export interface Activity extends Scheduled {
   end?: string;
   route?: string;
   route_label?: string;
+  // The embedded GPX track (see HikeTrack). Optional/null: most hikes have no
+  // `gpx`, and a day cached before the field existed has none either.
+  track?: HikeTrack | null;
   // poi / place / hike
   name?: string;
   // road / poi / place / hike — free prose for whatever the other fields don't
@@ -267,6 +293,10 @@ export interface Itinerary {
   timezone_label: string;
   maps: {
     include_in_render: boolean;
+    // Draw a hike's trail map + elevation profile from its `gpx`. Defaults on
+    // and independent of `include_in_render`. Optional: a doc resolved before
+    // the switch existed has none (treat a missing value as on).
+    include_hike_maps?: boolean;
     infer_from_address: boolean;
     inference_countries: string[];
   };

@@ -150,6 +150,7 @@ setting (e.g. "all times are local Paris time (UTC+2)" or "we start at 9am").
 | `currency` | no | 3-letter ISO code | `"EUR"` | The currency every price is in unless the price sets its own `currency`. |
 | `secondary_currencies` | no | array of `{currency, change_rate}` | `[]` | Extra currencies each price is *also* shown in on the PDF (converted from the default). |
 | `include_maps_in_render` | no | boolean | `false` | Draw a per-day OpenStreetMap with a pin for each located activity. |
+| `include_hike_maps` | no | boolean | `true` | Draw the trail map + elevation profile of any hike that carries a `gpx`. Independent of `include_maps_in_render` (attaching the GPX is the opt-in). Leave it out unless you are switching it off. |
 | `infer_coordinates_from_address` | no | boolean | `false` | Geocode activities that have no explicit `coordinate`. When false, only activities with a `coordinate` appear on the map. |
 | `inference_countries` | no | array of 2-letter ISO codes | `[]` (any) | Restrict geocoding to these countries, e.g. `["FR"]`. Only used when inference is on. |
 | `show_moon_phase` | no | boolean | `true` | Show the night's moon phase (emoji + name) in each day's "tonight" section. Set `false` to hide it. |
@@ -446,7 +447,31 @@ located sub-activities.
 | `start` | no | text | Trailhead. |
 | `end` | no | text | End point. |
 | `route` | no | enum (default `back_and_forth`) | One of `loop`, `back_and_forth`, `one_way`. For `loop`/`back_and_forth`, `end` should match `start` (or be omitted); for `one_way`, `end` should differ. |
+| `gpx` | no | base64 string | The trail's `.gpx` file, base64-encoded (gzip accepted). Drawn as a trail map + elevation profile. **Only emit this when you were given the actual GPX file** — see *Embedding a GPX track* below. |
 | `activities` | no | array of **meal** objects | Meal stops along the hike. |
+
+**Embedding a GPX track.** When a hike's GPX file is available to you *as a file*,
+put it in the hike's `gpx` field, base64-encoded, so the trail travels inside the
+itinerary and both renderers can draw it:
+
+```bash
+gzip -9 -c trail.gpx | base64 | tr -d '\n'    # preferred: ~10× smaller
+base64 -i trail.gpx | tr -d '\n'              # plain, also fine
+```
+
+Rules:
+
+- **Never invent or reconstruct a GPX.** If you only have prose, a screenshot or
+  a list of waypoints, leave `gpx` out — a fabricated track is a wrong map, which
+  is worse than no map. Only a real file you were handed goes in.
+- **Copy it byte-for-byte.** Don't trim, resample or reformat the XML; the tool
+  simplifies the line and resamples the profile itself.
+- With a `gpx` present you may **omit** `distance_km` and `elevation_m` — the
+  tool measures both off the track. Write them only when a source gives a figure
+  you trust more (see *A GPX track is the principal source of truth*, below); a
+  written figure always wins over the measured one.
+- A GPX without `<ele>` elevations is fine: the trail map still draws, there is
+  just no profile, and `elevation_m` stays unmeasured (so give it if you know it).
 
 #### Type `meal` — a stop to eat
 
@@ -845,7 +870,8 @@ the shape — real values come from your sources. The full version lives at
   properly.
 - **A GPX track is the principal source of truth for a hike's (or off-road
   drive's) figures.** When a GPX is provided for a hike, take its `distance_km`,
-  `elevation_m` and start/end from the track. If the prose text states different
+  `elevation_m` and start/end from the track — or, better, embed the file itself
+  in the hike's `gpx` and let the tool measure them (see *Embedding a GPX track*). If the prose text states different
   numbers, use the GPX values in the JSON — but flag the discrepancy in the
   end-of-run inconsistency report (below), naming both figures. **Unless the gap
   is within the tolerances just below** — then it is not a discrepancy at all.

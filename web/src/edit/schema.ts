@@ -32,6 +32,7 @@ export type FieldKind =
   | "bool"
   | "paid"
   | "csv" // comma-separated string[] (e.g. inference_countries)
+  | "gpx" // a .gpx file picker, stored base64 (hike.gpx)
   | "coordinate";
 
 export interface FieldSpec {
@@ -129,6 +130,7 @@ export const DEFAULTS_FIELDS: FieldSpec[] = [
   { key: "accommodation_end_time", label: "Accommodation end time", kind: "time", placeholder: "00:00", help: "Clock time each accommodation night ends on the calendar (ICS export). Defaults to 00:00 (midnight)." },
   { key: "currency", label: "Currency", kind: "text", placeholder: "EUR", help: "The currency every price is in unless it sets its own. 3-letter ISO code. Defaults to EUR." },
   { key: "include_maps_in_render", label: "Include maps in render", kind: "bool", help: "Draw a per-day map with a pin for each located activity. Defaults to off." },
+  { key: "include_hike_maps", label: "Include hike maps", kind: "bool", defaultOn: true, help: "Draw the trail map and elevation profile of any hike that attaches a GPX file. Independent of “Include maps in render”, since the track comes with the hike. Defaults to on — un-tick to hide them." },
   { key: "infer_coordinates_from_address", label: "Infer coordinates from address", kind: "bool", help: "Geocode activities that lack an explicit coordinate. Defaults to off (only explicit coordinates are mapped)." },
   { key: "inference_countries", label: "Inference countries", kind: "csv", placeholder: "FR, ES", help: "Restrict geocoding to these 2-letter ISO codes (e.g. FR, ES). Defaults to any country." },
   { key: "show_moon_phase", label: "Show moon phase", kind: "bool", defaultOn: true, help: "Show the night's moon phase in each day's “tonight” section. Defaults to on — un-tick to hide it." },
@@ -198,6 +200,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "start", label: "Start (trailhead)", kind: "text", help: "Trailhead address. Optional." },
     { key: "end", label: "End", kind: "text", help: "End address. For a loop/back-and-forth it should equal (or omit) start; for one-way it should differ. Optional." },
     { key: "route", label: "Route", kind: "enum", enum: HIKE_ROUTES, placeholder: "back_and_forth", help: "Route shape. Defaults to back_and_forth." },
+    { key: "gpx", label: "GPX track", kind: "gpx", help: "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional." },
   ],
   meal: [
     { key: "meal_type", label: "Meal type", kind: "enum", enum: MEAL_TYPES, placeholder: "inferred from start_time", help: "Which meal it is. Inferred from the start time when unset (breakfast/lunch/dinner); the others are explicit-only." },
