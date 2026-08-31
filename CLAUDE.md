@@ -45,7 +45,8 @@ convenience layer over the raw commands above — both still work.
 ## What it produces
 
 A PDF with: a **cover** (title, inferred date range, day count, summary, and a
-day-by-day overview table), one **page per day** (colored header band with the
+day-by-day overview table), a **whole-trip map** page (maps on only), one **page
+per day** (colored header band with the
 city / date / sunrise→sunset, intro,
 a merged time-ordered itinerary, and a bottom "tonight's stay" bar), a
 **transport** page, and an **accommodation** summary page. The whole palette is
@@ -86,8 +87,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `findings.py` — `Finding` (level/line/message), icons, `format_findings`.
   - `specs.py` — `Spec` field descriptors, value validators (`V_*`), spec tables.
   - `validator.py` — `_Validator` walks the data and emits findings; `validate_text`.
-- **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, DayMapMixin, TransportMixin,
-  AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
+- **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin,
+  TransportMixin, AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
   shared drawing primitives; each section is a mixin. `build_pdf(itinerary, output,
   lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
   `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
@@ -97,14 +98,20 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   render outlines + accent-colored text + thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
   map (from `maps/`) after the intro plus a numbered legend, and each area's zoom
   map inline after it; it degrades gracefully (a map failure never breaks the build).
-- **`maps/`** — per-day map rendering, imported only when maps are on. `geocode.py`
+  `trip_map.py`'s `TripMapMixin.trip_map()` adds the **whole-trip map page** right
+  after the cover (`build_pdf` calls it unconditionally; it's a no-op with maps
+  off, with nothing located, or on a render failure — same graceful degradation).
+- **`maps/`** — map rendering, imported only when maps are on. `geocode.py`
   (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
   cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → dotted
   transport legs → translucent theme-colored route → rotated numbered teardrop
   pins → label sandwich; pure Pillow, with `dashes()` splitting a polyline into
-  dash pieces), `build.py` (`resolve_day` → points/routes/area-details,
+  dash pieces, and `_tile_bytes` retrying a transient tile failure — one
+  rate-limited tile mid-stitch otherwise silently costs the whole map),
+  `build.py` (`resolve_day` → points/routes/area-details,
   `day_legs` → a day's transport legs as straight endpoint pairs,
-  `render_day_maps` → PIL images), `writeback.py` (`fill_coordinates` for the
+  `render_day_maps` → PIL images, plus `resolve_trip`/`_trip_extent`/
+  `render_trip_map` for the whole-trip map), `writeback.py` (`fill_coordinates` for the
   `geocode` command),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
   `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
@@ -156,10 +163,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   with both endpoints mapped is drawn as a **dotted straight line** (its real
   path is unknown; a flight has none on the ground) on every day map it's in
   progress on — so an overnight leg appears on both its departure and arrival
-  day — and on the viewer's whole-trip Overview map. Leg endpoints are never
-  geocoded, and legs never widen a day map's extent (a transatlantic flight would
-  zoom it out to the ocean): the line is clipped at the edge, and only a day with
-  nothing else locatable is framed on its legs.
+  day — and on the PDF's whole-trip page + the viewer's Overview map. Leg
+  endpoints are never
+  geocoded, and legs never widen a **printed** map's extent (a transatlantic
+  flight would zoom it out to the ocean): the line is clipped at the edge, and
+  only a map with nothing else locatable is framed on its legs. The viewer's
+  Overview *does* let legs widen its initial view — you can zoom out there.
   `infer_coordinates_from_address` (default off → deterministic/offline, only
   explicit coordinates are mapped) geocodes the rest, restricted to
   `inference_countries` (2-letter ISO codes). Main-map pins are numbered, the
@@ -169,6 +178,20 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   the day's **zoom (area) maps** — as a pin only, never part of their extent,
   which is fixed by the area's own points, so the zoom/centering is identical
   with or without it (a stay outside the rendered frame simply isn't visible).
+- **The whole-trip map** (`maps/build.py`'s `render_trip_map`, drawn by
+  `pdf/trip_map.py` on its own page after the cover) is a **port of the viewer's
+  🗺️ Overview map** (`web/src/render/tripGeo.ts`) — every day's points merged into
+  one map, pinned with the **day number** (the per-day `1..N`/`★`/`A-B-C` mean
+  nothing across days), the days' drives as routes, one dotted line per transport
+  leg. The outlier trimming is the same: a stray far-off anchor (>6× the median
+  distance from the pins' median center *and* >400 km, at most a third of the
+  anchors) stops driving the framing but is still drawn. **Keep the two in step**,
+  bar two deliberate print-only differences, both because paper can't be zoomed:
+  legs never widen the extent (above), and points of the same day closer than
+  `_TRIP_PIN_GRID` (~4 km) share one pin, since a page pin says only *which day*
+  — a city day would otherwise fan into a pinwheel of identical numbers. The
+  viewer's own note naming what it left out was removed (the user found it noise),
+  so neither renderer discloses trimmed geometry now.
 - **Inference is central.**
   - Trip `start_date`/`end_date` are inferred as the earliest/latest date across
     days, transport and accommodation — unless set manually (then they're checked).

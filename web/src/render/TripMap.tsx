@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { Itinerary } from "../types/resolved";
-import { fill, tr, type Lang, type LabelKey } from "./format";
+import { tr, type Lang, type LabelKey } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { tripGeo } from "./tripGeo";
 
@@ -16,7 +16,7 @@ const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMa
 // geo is rebuilt as the per-day maps stream in, which remounts the map; that
 // only happens while the initial map build is running.
 export function TripMap({ itinerary, lang }: { itinerary: Itinerary; lang: Lang }) {
-  const trip = useMemo(() => tripGeo(itinerary, lang), [itinerary, lang]);
+  const geo = useMemo(() => tripGeo(itinerary, lang), [itinerary, lang]);
   const [failed, setFailed] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const onFail = useCallback(() => setFailed(true), []);
@@ -25,16 +25,12 @@ export function TripMap({ itinerary, lang }: { itinerary: Itinerary; lang: Lang 
   useEffect(() => {
     setFailed(false);
     setMapKey((k) => k + 1);
-  }, [trip]);
+  }, [geo]);
 
   const note = (key: LabelKey) => <p className="section-empty">{tr(lang, key)}</p>;
 
-  if (!trip) return note("noTripMap");
+  if (!geo) return note("noTripMap");
   if (failed) return note("tripMapUnavailable");
-
-  // Far-off pins and drives are still on the map but outside its initial view;
-  // name the farthest so they're discoverable rather than silently off-screen.
-  const { outliers } = trip;
 
   return (
     <div className="trip-map">
@@ -47,17 +43,9 @@ export function TripMap({ itinerary, lang }: { itinerary: Itinerary; lang: Lang 
             </div>
           }
         >
-          <DayMapGL geo={trip.geo} caption={tr(lang, "tripMapCaption")} onFail={onFail} />
+          <DayMapGL geo={geo} caption={tr(lang, "tripMapCaption")} onFail={onFail} />
         </Suspense>
       </MapErrorBoundary>
-      {outliers.length > 0 && (
-        <p className="trip-map-note">
-          {fill(tr(lang, outliers.length > 1 ? "tripMapOutliers" : "tripMapOutlier"), {
-            example: outliers[0],
-            n: outliers.length - 1,
-          })}
-        </p>
-      )}
     </div>
   );
 }

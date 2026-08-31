@@ -1,6 +1,7 @@
-"""Per-day map rendering: geocoding, routing, tiles and drawing.
+"""Map rendering: geocoding, routing, tiles and drawing.
 
-Public entry point: :func:`build.render_day_maps`. The whole package is only
+Public entry points: :func:`build.render_day_maps` (a day's overview + area maps)
+and :func:`build.render_trip_map` (one map of the whole trip). The package is only
 imported when ``defaults.include_maps_in_render`` is on, so a build with maps off
 touches no network and needs nothing beyond the core deps.
 """
@@ -68,7 +69,7 @@ class Cache:
         return self.dir / "tiles"
 
 
-from .build import DayMaps, render_day_maps  # noqa: E402
+from .build import DayMaps, render_day_maps, render_trip_map  # noqa: E402
 
-__all__ = ["Cache", "DayMaps", "render_day_maps", "default_cache_dir",
-           "USER_AGENT", "http_get"]
+__all__ = ["Cache", "DayMaps", "render_day_maps", "render_trip_map",
+           "default_cache_dir", "USER_AGENT", "http_get"]

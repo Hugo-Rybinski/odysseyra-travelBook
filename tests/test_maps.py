@@ -258,6 +258,42 @@ def test_fetch_tile_uses_http_get_seam(monkeypatch, tmp_path):
     assert img.mode == "RGBA"
 
 
+def test_tile_fetch_retries_transient_failures_but_not_a_4xx(monkeypatch, tmp_path):
+    """A rate-limited tile is retried (one blip mid-stitch would otherwise cost
+    the whole map), while a definitive 4xx fails straight away."""
+    import io
+    import urllib.error
+
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import render
+
+    monkeypatch.setattr(render.time, "sleep", lambda s: None)  # no real backoff
+    buf = io.BytesIO()
+    Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(buf, "PNG")
+    calls = []
+
+    def flaky(url, timeout=20):
+        calls.append(url)
+        if len(calls) < 3:
+            raise urllib.error.HTTPError(url, 429, "slow down", None, None)
+        return buf.getvalue()
+
+    monkeypatch.setattr(maps, "http_get", flaky)
+    assert render._fetch_tile(render.BASE_URL, "nolabels", 6, 1, 1, tmp_path)
+    assert len(calls) == 3
+
+    calls.clear()
+
+    def gone(url, timeout=20):
+        calls.append(url)
+        raise urllib.error.HTTPError(url, 404, "nope", None, None)
+
+    monkeypatch.setattr(maps, "http_get", gone)
+    with pytest.raises(urllib.error.HTTPError):
+        render._fetch_tile(render.BASE_URL, "nolabels", 6, 2, 2, tmp_path)
+    assert len(calls) == 1
+
+
 def test_geocode_uses_http_get_seam(monkeypatch):
     """Geocoding goes through the same seam and parses Nominatim's JSON body."""
     import odysseyra_travelbook.maps as maps
@@ -403,6 +439,219 @@ def test_legs_frame_a_day_with_nothing_else_locatable(monkeypatch, tmp_path):
 
     assert seen["extent"] == [(40.0, -70.0), (49.0, 2.5)]
     assert maps.main is not None
+
+
+# -- the whole-trip map (one map, pins labeled by day) -----------------------
+def _trip_map_capture(monkeypatch):
+    """Stub out render_map (and routing) and return the list it records into."""
+    from odysseyra_travelbook.maps import build as buildmod
+
+    seen = []
+    monkeypatch.setattr(buildmod, "route", lambda a, b, cache: [a, b])
+
+    def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
+        seen.append({"extent": list(all_coords), "routes": list(routes),
+                     "points": list(points), "labels": list(kw.get("labels") or []),
+                     "legs": list(kw.get("legs") or []), "size": (kw.get("map_w"), kw.get("map_h"))})
+        return Image.new("RGB", (10, 10))
+
+    monkeypatch.setattr(buildmod, "render_map", fake_render_map)
+    return seen
+
+
+def test_resolve_trip_labels_every_pin_with_its_day_number(tmp_path):
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_trip
+
+    it = _trip_with_leg(start_date="2026-06-01")
+    points, labels, routes, legs = resolve_trip(it, Cache.open(tmp_path))
+    assert points == [(43.1, 0.1), (43.2, 0.2), (43.3, 0.30000000000000004)]
+    assert labels == ["1", "2", "3"]           # the day number, not 1..N per day
+    assert routes == []
+    assert legs == [[(40.0, -70.0), (49.0, 2.5)]]   # once, not per day it spans
+
+
+def test_resolve_trip_collapses_a_days_neighbours_into_one_pin(tmp_path):
+    """Two sights a few hundred metres apart are one dot at trip zoom, where a
+    pin says only which day it is — so one pin, not a pinwheel of identical
+    numbers. Far enough apart and they each keep their own."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_trip
+
+    def pins(second):
+        doc = {
+            "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+            "defaults": {"include_maps_in_render": True},
+            "days": [{"title": "d", "date": "2026-06-01", "city": "Paris", "activities": [
+                {"type": "point_of_interest", "name": "Louvre",
+                 "coordinate": {"lat": 48.861, "long": 2.336}},
+                {"type": "point_of_interest", "name": "other", "coordinate": second},
+            ]}],
+        }
+        return resolve_trip(Itinerary.from_dict(doc), Cache.open(tmp_path))[0]
+
+    assert len(pins({"lat": 48.860, "long": 2.333})) == 1    # ~300 m away
+    assert len(pins({"lat": 48.887, "long": 2.343})) == 2    # ~3 km away
+
+
+def test_resolve_trip_dedupes_a_spot_within_a_day_only(tmp_path):
+    """The same spot twice in one day is one pin; revisited on another day it
+    keeps its own, since the pin carries the day number."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_trip
+
+    spot = {"lat": 43.0, "long": 0.0}
+    doc = {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [
+            {"title": "d1", "date": "2026-06-01", "city": "X", "activities": [
+                {"type": "point_of_interest", "name": "A", "coordinate": spot},
+                {"type": "point_of_interest", "name": "A again", "coordinate": spot},
+            ]},
+            {"title": "d2", "date": "2026-06-02", "city": "X", "activities": [
+                {"type": "point_of_interest", "name": "A", "coordinate": spot},
+            ]},
+        ],
+    }
+    it = Itinerary.from_dict(doc)
+    points, labels, _routes, _legs = resolve_trip(it, Cache.open(tmp_path))
+    assert points == [(43.0, 0.0), (43.0, 0.0)]
+    assert labels == ["1", "2"]
+
+
+def test_resolve_trip_pins_the_nights_stay(tmp_path):
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_trip
+
+    doc = {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [{"title": "d", "date": "2026-06-01", "city": "X", "activities": [
+            {"type": "point_of_interest", "name": "A", "coordinate": {"lat": 43.0, "long": 0.0}},
+        ]}],
+        "accommodations": [{"name": "H", "city": "X", "arrival": "2026-06-01",
+                            "departure": "2026-06-02",
+                            "coordinate": {"lat": 43.5, "long": 0.5}}],
+    }
+    points, labels, _r, _l = resolve_trip(Itinerary.from_dict(doc), Cache.open(tmp_path))
+    assert points == [(43.0, 0.0), (43.5, 0.5)]
+    assert labels == ["1", "1"]   # the stay is day 1's pin too — no ★ at this zoom
+
+
+def test_trip_map_is_never_framed_on_a_leg_but_still_draws_it(monkeypatch, tmp_path):
+    """A transatlantic departure must not frame a France tour on the ocean: like
+    a day map, the trip map ignores legs when framing and lets the dotted line
+    run off the edge. Paper can't be zoomed out; the viewer's Overview can."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_trip_map
+
+    seen = _trip_map_capture(monkeypatch)
+    it = _trip_with_leg(start_date="2026-06-01", end_date="2026-06-02")
+    assert render_trip_map(it, Cache.open(tmp_path)) is not None
+
+    call = seen[-1]
+    assert call["extent"] == [(43.1, 0.1), (43.2, 0.2), (43.3, 0.30000000000000004)]
+    assert call["legs"] == [[(40.0, -70.0), (49.0, 2.5)]]   # drawn all the same
+    assert call["labels"] == ["1", "2", "3"]
+
+
+def test_trip_map_sets_aside_a_far_off_drive(monkeypatch, tmp_path):
+    """A whole drive on the other side of the world (the ride to the departure
+    airport) is drawn but doesn't drag the framing across an ocean, while the
+    trip's own drives keep framing it."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_trip_map
+
+    seen = _trip_map_capture(monkeypatch)
+    doc = {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [
+            {"title": "d1", "date": "2026-06-01", "city": "New York", "activities": [
+                {"type": "road", "start": "Manhattan", "destination": "JFK",
+                 "coordinate": {"lat": 40.75, "long": -73.99},
+                 "waypoints": [{"location": "JFK", "coordinate": {"lat": 40.64, "long": -73.78}}]}]},
+            {"title": "d2", "date": "2026-06-02", "city": "Paris", "activities": [
+                {"type": "point_of_interest", "name": "Louvre",
+                 "coordinate": {"lat": 48.86, "long": 2.34}}]},
+            {"title": "d3", "date": "2026-06-03", "city": "Amboise", "activities": [
+                {"type": "point_of_interest", "name": "Château",
+                 "coordinate": {"lat": 47.41, "long": 0.98}},
+                {"type": "road", "start": "Paris", "destination": "Amboise",
+                 "coordinate": {"lat": 48.86, "long": 2.34},
+                 "waypoints": [{"location": "Amboise", "coordinate": {"lat": 47.41, "long": 0.98}}]}]},
+        ],
+    }
+    render_trip_map(Itinerary.from_dict(doc), Cache.open(tmp_path))
+
+    call = seen[-1]
+    assert (40.75, -73.99) not in call["extent"]     # the US drive: out of frame
+    assert (48.86, 2.34) in call["extent"]           # the French one: in frame
+    assert [(40.75, -73.99), (40.64, -73.78)] in call["routes"]   # drawn all the same
+
+
+def test_trip_map_frames_a_trip_of_pure_travel_on_its_legs(monkeypatch, tmp_path):
+    """With nothing else locatable there is no frame to keep, so the legs get it
+    (mirroring the day maps' same last resort)."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_trip_map
+
+    seen = _trip_map_capture(monkeypatch)
+    it = _trip_with_leg(start_date="2026-06-01")
+    for day in it.days:
+        day.activities = [a for a in day.activities if a.kind == "buffer"]
+    assert render_trip_map(it, Cache.open(tmp_path)) is not None
+    assert seen[-1]["extent"] == [(40.0, -70.0), (49.0, 2.5)]
+
+
+def test_render_trip_map_is_none_when_nothing_is_located(monkeypatch, tmp_path):
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import render_trip_map
+
+    _trip_map_capture(monkeypatch)
+    doc = {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [{"title": "d", "date": "2026-06-01", "city": "X", "activities": [
+            {"type": "point_of_interest", "name": "unlocated"}]}],
+    }
+    assert render_trip_map(Itinerary.from_dict(doc), Cache.open(tmp_path)) is None
+
+
+def test_trip_map_page_follows_the_cover_only_with_maps_on(monkeypatch, tmp_path):
+    """`TripMapMixin.trip_map` adds exactly one page when maps are on, and is a
+    silent no-op otherwise (so a maps-off book is unchanged)."""
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    _trip_map_capture(monkeypatch)
+    it = _trip_with_leg(start_date="2026-06-01")
+
+    pdf = TravelPDF(it, "en")
+    pdf.map_cache_dir = tmp_path
+    pdf.trip_map()
+    assert pdf.page_no() == 1
+
+    it.include_maps_in_render = False
+    off = TravelPDF(it, "en")
+    off.map_cache_dir = tmp_path
+    off.trip_map()
+    assert off.page_no() == 0
+
+
+def test_trip_map_survives_a_render_failure(monkeypatch, tmp_path):
+    """A map problem must never break the build — no page, no exception."""
+    from odysseyra_travelbook.maps import build as buildmod
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    def boom(*a, **kw):
+        raise RuntimeError("tiles unreachable")
+
+    monkeypatch.setattr(buildmod, "render_map", boom)
+    pdf = TravelPDF(_trip_with_leg(start_date="2026-06-01"), "en")
+    pdf.map_cache_dir = tmp_path
+    pdf.trip_map()
+    assert pdf.page_no() == 0
 
 
 def test_dashes_splits_a_line_into_alternating_pieces():

@@ -1340,14 +1340,6 @@ body {
   height: 62vh;
   min-height: 420px;
 }
-/* discloses the pins left outside the initial view (see render/tripGeo.ts) */
-.trip-map-note {
-  margin: 10px 2px 0;
-  color: var(--muted);
-  font-size: 0.8rem;
-  text-align: center;
-}
-
 /* numbered pin marker on the interactive map (mirrors the static pins/discs) */
 .map-marker {
   display: flex;

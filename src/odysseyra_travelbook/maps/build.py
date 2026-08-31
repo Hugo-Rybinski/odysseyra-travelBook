@@ -4,10 +4,14 @@ This is the bridge from the data model to :mod:`.render`. It decides which
 objects are located (explicit ``coordinate`` first; geocoded from name/address
 only when ``infer_coordinates_from_address`` is on), builds the drive routes, and
 splits out per-area detail maps.
+
+:func:`render_trip_map` does the same for the **whole trip** at once — one map
+holding every day's points, pinned with their day number.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from .geocode import geocode
@@ -263,3 +267,165 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
         result.areas.append((title, RenderedMap(img, [p.label for p in pts])))
 
     return result
+
+
+# ----------------------------------------------------------- whole-trip map ---
+# Ported from the viewer's 🗺️ Overview tab (web/src/render/tripGeo.ts): every
+# day's located points and drives merged into a single map, each pin labeled with
+# its **day number** rather than the day map's 1..N / ★ / A-B-C (which only mean
+# something inside one day). Keep the two in step — with one deliberate
+# difference, documented on `render_trip_map`: transport legs never widen the
+# printed map's extent, because paper can't be zoomed out.
+
+# A pin/drive stops driving the framing once it sits both >_FACTOR× the median
+# distance from the trip's median center *and* >_FLOOR_KM away — the factor alone
+# would trim a legitimate day trip out of a tight city stay, the floor alone the
+# far end of a genuinely wide trip. At most _MAX_SHARE of the anchors can be
+# trimmed: beyond that they are a real second cluster, not strays, and both stay
+# in frame. Trimmed geometry is still *drawn*, clipped at the canvas edge — the
+# alternative is zooming a whole France tour out to the Atlantic to reach the
+# departure airport.
+_OUTLIER_FACTOR = 6
+_OUTLIER_FLOOR_KM = 400
+_OUTLIER_MAX_SHARE = 1 / 3
+_OUTLIER_MIN_ANCHORS = 4  # below this there is no "cluster" to speak of
+_KM_PER_DEG = 111.32
+
+# How far apart two of a day's points must be to earn their own pin, in degrees
+# (~4-5 km). On paper a trip-zoom pin says only which day it is, so a city day's
+# dozen sights would fan into an unreadable pinwheel of identical numbers where
+# one or two dots carry the same information. The viewer keeps them all — there
+# you zoom in and click a pin for its title.
+_TRIP_PIN_GRID = 0.05
+
+
+def _median(values: list[float]) -> float:
+    s = sorted(values)
+    mid = len(s) // 2
+    return s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2
+
+
+def _center_of(sample):
+    """``(lat, long, km per degree of longitude)`` at the sample's median point."""
+    lat = _median([c[0] for c in sample])
+    return (lat, _median([c[1] for c in sample]),
+            _KM_PER_DEG * math.cos(math.radians(lat)))
+
+
+def _km_from(center, lat: float, long: float) -> float:
+    """Equirectangular km — ample for an "is this in another part of the world"
+    test, and it needs no projection."""
+    clat, clong, kx = center
+    return math.hypot((long - clong) * kx, (lat - clat) * _KM_PER_DEG)
+
+
+def resolve_trip(itinerary, cache):
+    """Merge the whole trip into one map's geometry.
+
+    Returns ``(points, labels, routes, legs)``:
+
+    * ``points`` / ``labels`` — every day's located points, each labeled with its
+      **day number**. Points closer than ``_TRIP_PIN_GRID`` share one pin *within
+      a day*; a place revisited on another day keeps its own pin, since the pin
+      carries the day. That night's accommodation is a point like any other — the
+      trip map has no ★, since at this zoom the day number is what matters.
+    * ``routes`` — each day's drive geometries.
+    * ``legs`` — one straight ``[origin, destination]`` pair per transport leg
+      with both endpoints mapped. Taken from the trip's own transport list, so an
+      overnight leg is drawn once rather than on both of its day maps.
+
+    Area detail points are skipped: an area's nested points collapse into its
+    single main pin at trip zoom, where they would only add clutter.
+    """
+    points: list[tuple[float, float]] = []
+    labels: list[str] = []
+    routes: list[list[tuple[float, float]]] = []
+    seen: set[tuple[str, int, int]] = set()
+
+    for n, day in enumerate(itinerary.days, start=1):
+        label = str(n)
+        main, day_routes, _nodes, _areas = resolve_day(day, itinerary, cache)
+        spots = [(p.lat, p.long) for p in main]
+        stay = itinerary.stay_for(getattr(day, "date", None))
+        if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+            spots.append((stay.coordinate.lat, stay.coordinate.long))
+        for lat, long in spots:
+            key = (label, round(lat / _TRIP_PIN_GRID), round(long / _TRIP_PIN_GRID))
+            if key in seen:
+                continue
+            seen.add(key)
+            points.append((lat, long))
+            labels.append(label)
+        routes.extend(day_routes)
+
+    legs = []
+    for t in itinerary.transports:
+        a, b = _leg_coord(t.start_coordinate), _leg_coord(t.end_coordinate)
+        if a and b:
+            legs.append([a, b])
+    return points, labels, routes, legs
+
+
+def _trip_extent(points, lines):
+    """The coordinates the trip map is framed on: everything but the far-off
+    strays (see the ``_OUTLIER_*`` constants). Empty when nothing is located.
+
+    ``lines`` are the drives. Each is weighed as a single unit, and counts as far
+    off only when it lies *entirely* beyond the cutoff — so a drive reaching into
+    the trip still counts as part of it, while a whole drive to a distant airport
+    can be set aside the way one stray pin is. That matters because with maps on
+    a "Manhattan → JFK" departure day is a route and no pin at all.
+    """
+    # The statistics come from the pins alone: route vertices are hundreds per
+    # drive and would drag the center toward whichever day drove furthest. With
+    # no pins at all (a trip of pure drives/legs) the vertices are all there is.
+    sample = list(points) or [c for line in lines for c in line]
+    if not sample:
+        return []
+    everything = list(points) + [c for line in lines for c in line]
+    center = _center_of(sample)
+    cutoff = max(_median([_km_from(center, lat, long) for lat, long in sample])
+                 * _OUTLIER_FACTOR, _OUTLIER_FLOOR_KM)
+
+    far_pin = [_km_from(center, lat, long) > cutoff for lat, long in points]
+    far_line = [bool(line) and all(_km_from(center, lat, long) > cutoff
+                                   for lat, long in line) for line in lines]
+    anchors = len(points) + len(lines)
+    far = far_pin.count(True) + far_line.count(True)
+    # Trim only when there is something to set aside, enough of a trip to judge
+    # against, and the far-off anchors are a small minority.
+    if not (far and anchors >= _OUTLIER_MIN_ANCHORS
+            and far <= anchors * _OUTLIER_MAX_SHARE):
+        return everything
+    # Once trimming is on it applies per *vertex*, as in the viewer: a drive
+    # running from far away into the trip keeps the part that's inside the frame
+    # and simply enters from off-page.
+    extent = [c for c in everything if _km_from(center, c[0], c[1]) <= cutoff]
+    return extent or everything
+
+
+def render_trip_map(itinerary, cache, ink_saver: bool = False,
+                    map_w: int = 940, map_h: int = 1240):
+    """One map of the whole trip as a PIL image, or ``None`` when nothing on the
+    trip is located. Portrait by default, to fill a book page.
+
+    Same inputs as the day maps (so a warm cache makes it nearly free), same
+    drawing: numbered teardrop pins, translucent accent drive routes, dotted
+    transport legs.
+
+    Like a day map, and unlike the viewer's Overview, **legs do not widen the
+    extent**: an intercontinental flight would frame a France tour on the
+    Atlantic and squash the trip into a corner. Its dotted line simply runs off
+    the edge. On screen that's fine — you zoom out — but a page can't be zoomed,
+    so the print stays framed on where the trip actually happens. Only a trip
+    with nothing else locatable is framed on its legs.
+    """
+    points, labels, routes, legs = resolve_trip(itinerary, cache)
+    extent = _trip_extent(points, routes)
+    if not extent:
+        extent = [c for line in legs for c in line]   # a trip of pure travel
+    if not extent:
+        return None
+    return render_map(extent, routes, points, _hex_to_rgb(itinerary.cover_color),
+                      cache.tiles, map_w=map_w, map_h=map_h, ink_saver=ink_saver,
+                      labels=labels, legs=legs)

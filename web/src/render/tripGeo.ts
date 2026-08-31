@@ -61,7 +61,10 @@ function modelPoints(day: Day): RawPoint[] {
 // far end of a genuinely wide trip. At most `MAX_SHARE` of the points can be
 // trimmed: beyond that they're a real second cluster, not strays, and the map
 // shows both. Trimmed geometry is still drawn — the map just starts zoomed on
-// the trip, and TripMap names what it left out underneath.
+// the trip, one zoom out away from the rest.
+//
+// The PDF's whole-trip map page ports this same trimming (see
+// `maps/build.py`'s `_trip_extent`); keep the two in step.
 const OUTLIER_FACTOR = 6;
 const OUTLIER_FLOOR_KM = 400;
 const OUTLIER_MAX_SHARE = 1 / 3;
@@ -96,19 +99,6 @@ function kmFrom(c: Center, lat: number, long: number): number {
   return Math.hypot((long - c.long) * c.kx, (lat - c.lat) * KM_PER_DEG);
 }
 
-export interface TripMapGeo {
-  /** The merged geometry. Its `legs` are the trip's transport legs as straight
-   *  `[origin, destination]` pairs — flights, trains, ferries — drawn dotted,
-   *  since the real path isn't known (and for a flight isn't a path on the
-   *  ground at all). Only legs whose JSON gives both a `start_coordinate` and an
-   *  `end_coordinate` appear: nothing infers them, here or in Python. */
-  geo: MapGeo;
-  /** What the initial view deliberately leaves out, farthest first: pin titles,
-   *  "Day N · Road" for whole drives, and a leg's own title. Still drawn on the
-   *  map (one zoom out away), and disclosed in a note under it. */
-  outliers: string[];
-}
-
 // An endpoint pair for one transport leg, when both ends are mapped.
 function legOf(t: Itinerary["transports"][number]): LatLng[] | null {
   const a = t.start_coordinate;
@@ -120,11 +110,16 @@ function legOf(t: Itinerary["transports"][number]): LatLng[] | null {
   ];
 }
 
-/** Merge the trip into one map geometry, or `null` when nothing is located. */
-export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
+/** Merge the trip into one map geometry, or `null` when nothing is located.
+ *
+ * Its `legs` are the trip's transport legs as straight `[origin, destination]`
+ * pairs — flights, trains, ferries — drawn dotted, since the real path isn't
+ * known (and for a flight isn't a path on the ground at all). Only legs whose
+ * JSON gives both a `start_coordinate` and an `end_coordinate` appear: nothing
+ * infers them, here or in Python. */
+export function tripGeo(itinerary: Itinerary, lang: Lang): MapGeo | null {
   const points: MapPoint[] = [];
   const routes: LatLng[][] = [];
-  const routeDescs: string[] = []; // parallel to `routes`, for the outlier note
   const seen = new Set<string>();
   let accent = "";
 
@@ -141,10 +136,7 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
     const geo = day.map?.geo ?? null;
     if (geo) {
       if (!accent) accent = geo.accent;
-      for (const line of geo.routes) {
-        routes.push(line);
-        routeDescs.push(`${tr(lang, "day")} ${label} · ${tr(lang, "road")}`);
-      }
+      for (const line of geo.routes) routes.push(line);
       // `geo.areas` is skipped: an area's nested points collapse into its single
       // main pin at trip zoom, where they'd only be clutter.
       for (const p of geo.points) add(p);
@@ -153,30 +145,17 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
     }
   }
 
-  // Transport legs: one straight dotted line per leg, labeled with the day it
-  // departs on (the legs are the trip's own list, so an overnight one is drawn
-  // once rather than on both of its days).
-  const dayOf = new Map<string, number>();
-  for (const d of itinerary.days) if (d.date) dayOf.set(d.date, d.day_number);
-  const legs: LatLng[][] = [];
-  const legDescs: string[] = [];
-  for (const t of itinerary.transports) {
-    const line = legOf(t);
-    if (!line) continue;
-    const title = t.title || tr(lang, "transport");
-    const day = t.start_date ? dayOf.get(t.start_date) : undefined;
-    legs.push(line);
-    legDescs.push(day ? `${tr(lang, "day")} ${day} · ${title}` : title);
-  }
+  // Transport legs: one straight dotted line per leg. The legs are the trip's
+  // own list, so an overnight one is drawn once rather than on both of its days.
+  const legs = itinerary.transports
+    .map(legOf)
+    .filter((line): line is LatLng[] => line !== null);
 
   if (!points.length && !routes.length && !legs.length) return null;
 
   // --- what the initial view is fitted to ----------------------------------
   // Drives and transport legs are both polylines from here on.
-  const lines = [
-    ...routes.map((line, i) => ({ line, desc: routeDescs[i] })),
-    ...legs.map((line, i) => ({ line, desc: legDescs[i] })),
-  ];
+  const lines = [...routes, ...legs];
 
   // The center/scale statistics come from the pins alone — route vertices are
   // hundreds per drive and would drag the center toward whichever day drove
@@ -184,7 +163,7 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
   // all there is to go on.
   const sample: LatLng[] = points.length
     ? points.map((p) => [p.lat, p.long])
-    : lines.flatMap((l) => l.line);
+    : lines.flat();
   const center = centerOf(sample);
   const cutoff = Math.max(
     median(sample.map(([lat, long]) => kmFrom(center, lat, long))) * OUTLIER_FACTOR,
@@ -196,16 +175,10 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
   // the trip (an inbound flight, say) still counts as part of it. Weighing lines
   // matters: with maps on, a "Manhattan → JFK" departure day is a route and no
   // pin at all, so a pin-only rule would let it drag the view across the Atlantic.
-  const pinKm = points.map((p) => kmFrom(center, p.lat, p.long));
-  const lineKm = lines.map(({ line }) =>
-    line.reduce((worst, [lat, long]) => Math.max(worst, kmFrom(center, lat, long)), 0),
-  );
-  const farPin = pinKm.map((km) => km > cutoff);
+  const farPin = points.map((p) => kmFrom(center, p.lat, p.long) > cutoff);
   const farLine = lines.map(
-    ({ line }, i) =>
-      line.length > 0 &&
-      lineKm[i] > cutoff &&
-      line.every(([lat, long]) => kmFrom(center, lat, long) > cutoff),
+    (line) =>
+      line.length > 0 && line.every(([lat, long]) => kmFrom(center, lat, long) > cutoff),
   );
   const anchors = points.length + lines.length;
   const far = farPin.filter(Boolean).length + farLine.filter(Boolean).length;
@@ -227,30 +200,18 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): TripMapGeo | null {
     maxLng = Math.max(maxLng, long);
   };
   for (const p of points) grow(p.lat, p.long);
-  for (const { line } of lines) for (const [lat, long] of line) grow(lat, long);
-
-  // Name what's off-view, farthest first, one entry per distinct description.
-  const named: { desc: string; km: number }[] = [];
-  if (trim) {
-    points.forEach((p, i) => farPin[i] && named.push({ desc: p.title, km: pinKm[i] }));
-    lines.forEach((l, i) => farLine[i] && named.push({ desc: l.desc, km: lineKm[i] }));
-    named.sort((a, b) => b.km - a.km);
-  }
-  const outliers = named.map((o) => o.desc).filter((d, i, all) => all.indexOf(d) === i);
+  for (const line of lines) for (const [lat, long] of line) grow(lat, long);
 
   return {
-    geo: {
-      points,
-      routes,
-      route_nodes: [], // the day maps' route stops are noise under the day pins
-      areas: [],
-      legs,
-      accent: accent || palette(itinerary.cover_color).accent,
-      bounds: [
-        [minLat, minLng],
-        [maxLat, maxLng],
-      ],
-    },
-    outliers,
+    points,
+    routes,
+    route_nodes: [], // the day maps' route stops are noise under the day pins
+    areas: [],
+    legs,
+    accent: accent || palette(itinerary.cover_color).accent,
+    bounds: [
+      [minLat, minLng],
+      [maxLat, maxLng],
+    ],
   };
 }

@@ -13,16 +13,16 @@ browser via Pyodide.
 
 One itinerary file gets you:
 
-- **A print-ready PDF** — a colored cover with a day-by-day overview table, one
-  page per day (a timeline of typed activity cards, nested stops, a "tonight's
-  stay" bar), and transport + accommodation summary pages, all themed from a
-  single `cover_color`.
+- **A print-ready PDF** — a colored cover with a day-by-day overview table, a
+  whole-trip map page (with maps on), one page per day (a timeline of typed
+  activity cards, nested stops, a "tonight's stay" bar), and transport +
+  accommodation summary pages, all themed from a single `cover_color`.
 - **Precise validation** — line-numbered, localized diagnostics at three levels
   (errors / warnings / info): missing fields, bad values, and whole-trip
   incoherences (overlaps, nowhere-to-sleep nights, reversed date ranges…).
-- **Per-day maps** — optional OpenStreetMap maps with numbered pins, drawn
-  driving routes and dotted transport legs, in both the PDF and the browser
-  (interactive pan/zoom there), plus a whole-trip map in the viewer.
+- **Maps** — optional OpenStreetMap maps with numbered pins, drawn driving routes
+  and dotted transport legs: one per day plus a whole-trip overview, in both the
+  PDF and the browser (interactive pan/zoom there).
 - **Smart inference** — trip dates, each day's date, activity schedules and
   durations are inferred, so you only write what's interesting.
 - **English & French** output, an **ink-saver** print mode, and a **stitch** mode
@@ -114,7 +114,9 @@ intro, the merged time-ordered timeline of typed activity cards — including an
 car pick-up/drop-off — and a bottom "tonight's stay" bar), then a transport page
 and an accommodation summary. The whole palette is derived from `cover_color`.
 With maps on, each day page also carries an OpenStreetMap with numbered pins,
-drawn driving routes and a dotted straight line per transport leg.
+drawn driving routes and a dotted straight line per transport leg — and a
+full-page **whole-trip map** follows the cover, holding every day's points at
+once, each pinned with its **day number** (see [Maps](#maps--coordinates)).
 `--ink-saver` keeps the layout but swaps the big solid accent
 areas (cover banner, header bands, card backgrounds) for accent-colored text,
 outlined badges and thin rules — ideal for a home printer.
@@ -258,9 +260,9 @@ The header's burger menu switches between views:
   pre-rendered image of the whole trip to fall back to. A stray far-off cluster
   (an intercontinental departure airport, or the drive to it) doesn't get to
   squash the trip into a corner: the initial view is fitted to the trip's main
-  cluster and a note under the map names what it left out — the pins and routes
-  are still there, one zoom out away. Two genuinely distant clusters both stay
-  in view.
+  cluster — the pins and routes are still there, one zoom out away. Two
+  genuinely distant clusters both stay in view. The PDF's whole-trip map page
+  (above) is built from the same logic.
 - **🔎 Findings** — every validation ❌ / ⚠️ / ℹ️ finding with its line number and a
   level filter (the same engine as `odysseyra-travelBook validate`).
 - **✏️ Edit** — a structured form editor over the input JSON. Every field is
@@ -383,6 +385,15 @@ visible there. Each pin's label (number, `*`, or area letter) also appears as a
 small disc next to that activity's title in the itinerary, so there's no separate
 map key.
 
+The book also opens with a **whole-trip map page**, right after the cover: one
+full-page map holding every day's located points, each pinned with its **day
+number** (not the per-day `1..N` / `*` / `A, B, C…`, which only mean something
+inside one day), plus every day's drives as routes and every transport leg as a
+dotted line. Points of the same day within about 4 km share one pin — at that
+zoom a city day's dozen sights would just be a pinwheel of identical numbers.
+It's the same map the viewer's 🗺️ **Overview** tab draws, and it's skipped when
+maps are off or nothing on the trip is located.
+
 **Every locatable object may carry a `coordinate`:**
 
 | Field | Required | Description | Type | Format | Default |
@@ -399,13 +410,15 @@ Segment objects that go from A→B carry endpoint coordinates: `transport`
 accepts `start_coordinate` / `end_coordinate`, and `car_rentals` accept
 `pickup_coordinate` / `dropoff_coordinate`. Give a transport leg both endpoints
 and it's drawn as a **dotted straight line** between them — on the per-day maps
-(PDF and viewer alike) and on the viewer's whole-trip 🗺️ **Overview** map. It's
-dotted because the real path isn't known, and for a flight isn't a path on the
-ground at all. A leg is drawn on every day map it's *in progress* on, so an
-**overnight** leg appears on both its departure and its arrival day. Legs never
-widen a day map's extent — a transatlantic flight would zoom the day out to the
-ocean — so the line simply runs off the edge toward where it goes; only a day
-with nothing else locatable is framed on its legs. A `road` instead uses its
+(PDF and viewer alike), on the PDF's whole-trip page and on the viewer's
+whole-trip 🗺️ **Overview** map. It's dotted because the real path isn't known,
+and for a flight isn't a path on the ground at all. A leg is drawn on every day
+map it's *in progress* on, so an **overnight** leg appears on both its departure
+and its arrival day. Legs never widen the extent of a **printed** map — a
+transatlantic flight would zoom the page out to the ocean — so the line simply
+runs off the edge toward where it goes; only a map with nothing else locatable is
+framed on its legs. (The viewer's Overview does let them widen its initial view:
+there you can zoom out, on paper you can't.) A `road` instead uses its
 own `coordinate` as the departure point and its `waypoints` as the ordered stops
 through to the arrival (see below).
 
@@ -755,8 +768,8 @@ Itinerary` stays stable):
 
 - `models/` — the data model + JSON parsing (`parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `geo`, `itinerary`)
 - `validate/` — the read-only checker (`jsonpos` line-tracking parser, `findings`, `specs`, `validator`)
-- `pdf/` — `base` + one mixin per section (cover, days, day maps, transport, accommodation, car rental)
-- `maps/` — per-day map rendering (geocode → routing → tiles → image), imported only when maps are on
+- `pdf/` — `base` + one mixin per section (cover, days, day maps, trip map, transport, accommodation, car rental)
+- `maps/` — map rendering, per day and for the whole trip (geocode → routing → tiles → image), imported only when maps are on
 - `lang/` — localization (`dates`, `translations`)
 - `cli.py` — the command-line entry point; `stitch.py` — fragment assembly
 
@@ -812,9 +825,6 @@ they reuse of what's already here.
   the routing geometry, alongside the existing distance/duration figures. A GPX
   track (above) usually carries elevation per point, which would feed this
   directly instead of needing a new elevation service.
-- **Whole-trip map in the PDF** — the viewer's 🗺️ Overview tab already draws one
-  (every day's points plus the rendered drive routes, in one map); the printed
-  book still only carries the per-day maps.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.

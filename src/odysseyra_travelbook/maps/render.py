@@ -5,6 +5,8 @@ route and numbered pins, and keep the basemap's own labels on top. Pure Pillow.
 from __future__ import annotations
 
 import math
+import time
+import urllib.error
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
@@ -45,10 +47,36 @@ def _pick_zoom(bbox, map_w, map_h) -> int:
     return 2
 
 
+TILE_RETRIES = 3      # attempts on a transient tile failure
+TILE_BACKOFF = 0.4    # base seconds between attempts; grows 0.4, 0.8, 1.6 …
+
+
+def _tile_bytes(url: str) -> bytes:
+    """One tile's bytes, retrying transient failures (network, timeout, HTTP
+    429/5xx) with a short backoff — the same treatment routing gives OSRM.
+
+    A map is stitched from dozens of tiles and any single failure loses the whole
+    image (the caller swallows it), so one rate-limited tile in a burst would
+    silently cost a day's map — or, for the whole-trip map, a whole page."""
+    last: Exception | None = None
+    for attempt in range(TILE_RETRIES):
+        try:
+            return _maps.http_get(url)
+        except urllib.error.HTTPError as exc:
+            if not (exc.code == 429 or exc.code >= 500):
+                raise           # 4xx: definitive (bad URL, key required, …)
+            last = exc
+        except Exception as exc:  # URLError, timeout, the browser's fetch shim …
+            last = exc
+        if attempt < TILE_RETRIES - 1:
+            time.sleep(TILE_BACKOFF * (2 ** attempt))
+    raise last  # type: ignore[misc]
+
+
 def _fetch_tile(url, style, z, x, y, tiles_dir: Path) -> Image.Image:
     f = tiles_dir / f"{style}_{z}_{x}_{y}.png"
     if not f.exists():
-        f.write_bytes(_maps.http_get(url.format(z=z, x=x, y=y)))
+        f.write_bytes(_tile_bytes(url.format(z=z, x=x, y=y)))
     return Image.open(f).convert("RGBA")
 
 

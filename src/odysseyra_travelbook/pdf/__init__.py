@@ -1,7 +1,8 @@
 """Render an :class:`~odysseyra_travelbook.models.Itinerary` to a polished PDF.
 
 ``TravelPDF`` is assembled from per-section mixins: :mod:`.cover`, :mod:`.days`,
-:mod:`.transport` and :mod:`.accommodation`, on top of :mod:`.base`.
+:mod:`.trip_map`, :mod:`.transport` and :mod:`.accommodation`, on top of
+:mod:`.base`.
 """
 
 from __future__ import annotations
@@ -17,9 +18,10 @@ from .cover import CoverMixin
 from .day_map import DayMapMixin
 from .days import DayMixin
 from .transport import TransportMixin
+from .trip_map import TripMapMixin
 
 
-class TravelPDF(CoverMixin, DayMixin, DayMapMixin, TransportMixin,
+class TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin, TransportMixin,
                 AccommodationMixin, CarRentalMixin, _PDFBase):
     """The travel-book PDF, assembled from per-section mixins."""
 
@@ -44,6 +46,7 @@ def build_pdf(itinerary: Itinerary, output: str | Path,
     if cache_dir is not None:
         pdf.map_cache_dir = cache_dir
     pdf.cover()
+    pdf.trip_map()   # a no-op unless maps are on (and something is located)
     for i, day in enumerate(itinerary.days, start=1):
         pdf.day(i, day)
     if itinerary.transports or itinerary.car_rentals:

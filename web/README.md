@@ -227,8 +227,9 @@ by the Python engine (`validate(text, lang)`).
   cluster and both stay in view) and off entirely below four. The center/scale
   statistics come from the pins only — route vertices are hundreds per drive and
   would drag the center toward whichever day drove furthest. Trimmed geometry is
-  still drawn, with a note under the map naming the farthest thing it left out
-  (a pin's title, or "Day N · Road" for a drive).
+  still drawn — one zoom out away, and undisclosed (a note naming what was left
+  out read as noise). The PDF's whole-trip map page ports this same trimming, so
+  keep `maps/build.py`'s `_trip_extent` in step with `render/tripGeo.ts`.
 - **Warnings** tab lists every validation ❌/⚠️/ℹ️ finding with line numbers and a
   level filter; **EN/FR** (in Options) toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and

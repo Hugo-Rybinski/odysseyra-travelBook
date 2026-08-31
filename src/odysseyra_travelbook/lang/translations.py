@@ -16,6 +16,10 @@ _FR = {
     "Itinerary": "Itinéraire",
     "Zoom — {area}": "Zoom — {area}",
     "Day {index} overview": "Aperçu du jour {index}",
+    # the whole-trip map page's band (the viewer's Overview map says the same —
+    # the `tripMapCaption` key in web/src/render/format.ts)
+    "MAP": "CARTE",
+    "Whole trip": "L'ensemble du voyage",
     "Geocoded {filled} coordinate(s), {missed} not found → {path}":
         "{filled} coordonnée(s) géocodée(s), {missed} introuvable(s) → {path}",
     "this area has no 'coordinate' of its own — its map pin will be placed at "
