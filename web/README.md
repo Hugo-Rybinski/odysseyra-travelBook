@@ -8,16 +8,33 @@ local JSON file.
 
 See [`../docs/pwa-migration-plan.md`](../docs/pwa-migration-plan.md) for the full
 plan and [`../README.md`](../README.md) → *Future iterations* for what's still
-deferred (notably: in-UI JSON editing, and moving the maps fetch off the main
-thread). Per-day maps now render both in the book view and in the exported PDF.
+deferred. Per-day maps render both in the book view and in the exported PDF, and
+the Python engine runs in a **Web Worker**, so building a PDF or a map no longer
+freezes the page.
 
 ## How it works
 
 ```
-React + TS  ──►  Pyodide (CPython → WASM)  ──►  odysseyra_travelbook package (the wheel)
-   UI            loaded from a pinned CDN,        validate_text / to_dict / build_pdf
-                 cached by the service worker     via src/pyodide/bridge.py
+React + TS  ──►  Web Worker  ──►  Pyodide (CPython → WASM)  ──►  odysseyra_travelbook (wheel)
+   UI           postMessage      loaded from a pinned CDN,       validate_text / to_dict
+              (src/pyodide/       cached by the service worker      / build_pdf, via
+               runtime.ts ↔                                       src/pyodide/bridge.py
+               worker.ts)
 ```
+
+- **The engine lives in a Web Worker.** Every call into Python is synchronous,
+  and rendering a map fetches its tiles over a *blocking* XHR (Pyodide has no
+  sockets, and sync Python can't await a JS promise) — on the main thread that
+  stopped the browser painting for the whole of a PDF build or a map render, so
+  even a spinner sat still. Off-thread the calls take just as long and cost the
+  UI nothing: the book stays scrollable while its maps stream in, and the loader
+  (`src/ActivityIndicator.tsx`) names what's running. `runtime.ts` is the RPC
+  client (unchanged API — `boot()` plus one async function per operation),
+  `worker.ts` the host, `engine.ts` the host-agnostic implementation and
+  `protocol.ts` the typed message contract. Calls never overlap (Python is
+  single-threaded), so a long export simply delays the next validate.
+  If a Worker can't be created at all, `runtime.ts` boots the engine on the main
+  thread instead — the app works, and freezes during a call as it used to.
 
 - The `odysseyra_travelbook` wheel (fonts bundled) plus its pure-Python deps (`fpdf2`,
   `defusedxml`) are built locally into `public/py/` and precached by the service
@@ -346,8 +363,7 @@ scannable; a collapsed tile that hides inline findings shows count pills on its
 header (`❌ 3`, `⚠️ 2`) for the errors/warnings anchored inside it. Field/button
 tooltips float above neighbouring tiles and aren't clipped by a tile's edges.
 
-The Edit tab is feature-complete for now. Separately, moving Pyodide into a Web
-Worker so the first map render doesn't block the main thread remains deferred.
+The Edit tab is feature-complete for now.
 
 ## Layout
 
@@ -375,8 +391,12 @@ src/
     index.tsx              I18nProvider + useT/useTx hooks + translate()
     fr.ts                  English→French table (keyed by the English source)
   index.css
+  ActivityIndicator.tsx    the loader: names what the engine is busy with
   pyodide/
-    runtime.ts             boot Pyodide, install wheel, typed validate/resolve/renderDayMap/buildPdf
+    runtime.ts             RPC client: boot() + typed validate/resolve/renderDayMap/buildPdf
+    worker.ts              module Web Worker hosting the one Python interpreter
+    engine.ts              boot Pyodide, install the wheel, dispatch one call
+    protocol.ts            the typed UI ↔ worker message contract
     bridge.py              JSON-in/out glue over the odysseyra_travelbook package (+ maps)
     netbridge.ts           synchronous fetch exposed to Python for the maps seam
   pwa/PwaProvider.tsx      single SW registration; auto-applies updates

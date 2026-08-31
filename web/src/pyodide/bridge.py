@@ -18,6 +18,9 @@ Maps: the `odysseyra_travelbook.maps` package reaches the network through a sing
 with a browser ``fetch`` (a synchronous XHR exposed from JS as ``tb_js``). All
 three map endpoints (Carto tiles, OSRM, Nominatim) send ``ACAO: *``, so the
 fetch works cross-origin with no proxy — the app stays local-only.
+
+This module runs inside a Web Worker (web/src/pyodide/worker.ts), so the blocking
+calls below occupy that worker and not the page.
 """
 
 import base64
@@ -195,9 +198,9 @@ def validate(text, lang="en"):
 
 def resolve(text):
     # Deliberately maps-free: rendering maps fetches tiles synchronously (there
-    # are no sockets under Pyodide, so the browser seam blocks the main thread),
-    # so we hand back the text at once and let the UI request each day's map
-    # afterwards via render_day.
+    # are no sockets under Pyodide, so the browser seam blocks its thread), so we
+    # hand back the text at once and let the UI request each day's map afterwards
+    # via render_day — which also lets the book paint before any tile arrives.
     try:
         data = to_dict(_parsed(text))
     except Exception as exc:  # noqa: BLE001

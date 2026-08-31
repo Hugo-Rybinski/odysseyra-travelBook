@@ -601,6 +601,30 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   viewer doesn't, and a hard reload doesn't help (the data is in IndexedDB, not
   the HTTP cache). This is also why Python changes need `npm run wheel` — the
   browser runs the wheel, not `src/`.
+- **The viewer's Python engine runs in a Web Worker**
+  (`web/src/pyodide/worker.ts`), not on the main thread. Every bridge call is
+  synchronous Python and a map render fetches its tiles over a *blocking* XHR
+  (`netbridge.ts` — Pyodide has no sockets and sync Python can't await a JS
+  promise), so in-thread a PDF build or a day's map froze the page outright,
+  spinner included. The split is: `runtime.ts` the RPC client (same public API as
+  before — `boot()` + one async function per op), `worker.ts` the host,
+  `engine.ts` the host-agnostic Pyodide boot + `dispatch`, `protocol.ts` the typed
+  message contract. **A new bridge function therefore needs an entry in
+  `protocol.ts`'s `OpMap`, a `case` in `engine.ts`'s `dispatch` and a wrapper in
+  `runtime.ts`** — the wrapper alone no longer reaches Python. Keep `engine.ts`
+  DOM-free (`document`/`window` don't exist in a worker); it is also the
+  main-thread fallback used when a Worker can't be created, which is why it is
+  imported dynamically (a chunk nobody normally downloads). Long calls are now
+  surfaced by the loader, `web/src/ActivityIndicator.tsx` — non-blocking by
+  design (no backdrop, `pointer-events: none`), since the page stays usable.
+- **Interactive and static maps are alternatives, not a fallback chain.** With
+  Options → interactive maps **on**, a viewer map slot is the MapLibre map or a
+  short "couldn't be loaded" note; the pre-rendered PNG is drawn *only* with the
+  toggle off (`DayCard.tsx`'s `MapView`). Substituting the PNG on a GL failure
+  silently returns the rendering the user switched away from — one with no pan or
+  zoom — so it reads as the map having lost its controls. A slot with nothing
+  locatable stays empty either way rather than claiming a failure. `TripMap.tsx`
+  and `HikeTrack.tsx` were already interactive-only (they have no PNG twin).
 - **`skills/`** holds LLM-facing docs:
   - `build-full-json.md` — a self-contained guide (it duplicates every field
     table, value format and rule) that turns raw text/screenshots into the

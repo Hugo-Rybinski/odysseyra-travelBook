@@ -37,6 +37,14 @@ export const FR: Record<string, string> = {
   Ready: "Prêt",
   "Engine failed to start": "Échec du démarrage du moteur",
 
+  // The loader (ActivityIndicator) — what the engine is busy with
+  "Reading the itinerary…": "Lecture de l'itinéraire…",
+  "Applying changes…": "Application des modifications…",
+  "Building the PDF…": "Génération du PDF…",
+  "Building the calendar…": "Génération du calendrier…",
+  "Drawing maps — day {day} of {total}": "Tracé des cartes — jour {day} sur {total}",
+  "Redrawing the maps…": "Régénération des cartes…",
+
   // Empty / error states
   "Can't render this itinerary yet": "Impossible d'afficher cet itinéraire pour l'instant",
   "The itinerary couldn't be built.": "L'itinéraire n'a pas pu être construit.",

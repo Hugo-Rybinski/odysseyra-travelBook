@@ -52,6 +52,7 @@ import {
 } from "./edit/autosave";
 import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
+import { ActivityIndicator, type ActivityItem } from "./ActivityIndicator";
 import { I18nProvider, translate } from "./i18n";
 import type {
   Activity as ResolvedActivity,
@@ -196,6 +197,9 @@ export function App() {
   // A restorable autosaved draft found at startup (P6), offered on the empty
   // state until the user restores or discards it.
   const [restorable, setRestorable] = useState<AutosaveRecord | null>(null);
+  // Which day's map is being drawn right now, for the loader. Only set for days
+  // we actually render — a cache hit is instant and shouldn't flash a line.
+  const [mapProgress, setMapProgress] = useState<{ day: number; total: number } | null>(null);
 
   // Close the burger menu on an outside click or Escape.
   useEffect(() => {
@@ -264,25 +268,32 @@ export function App() {
           return { ...prev, days };
         });
 
-      for (let i = 0; i < dayCount; i++) {
-        if (!force) {
-          const cached = await getCachedDay(hash, i);
+      try {
+        for (let i = 0; i < dayCount; i++) {
+          if (!force) {
+            const cached = await getCachedDay(hash, i);
+            if (mapRunRef.current !== token) return;
+            if (cached) {
+              swapIn(i, cached);
+              continue;
+            }
+          }
+          setMapProgress({ day: i + 1, total: dayCount });
+          await new Promise((r) => setTimeout(r, 0));
           if (mapRunRef.current !== token) return;
-          if (cached) {
-            swapIn(i, cached);
-            continue;
+          try {
+            const day = await renderDayMap(text, i);
+            if (mapRunRef.current !== token) return;
+            swapIn(i, day);
+            await putCachedDay(hash, i, day);
+          } catch {
+            // leave that day mapless and carry on with the rest
           }
         }
-        await new Promise((r) => setTimeout(r, 0));
-        if (mapRunRef.current !== token) return;
-        try {
-          const day = await renderDayMap(text, i);
-          if (mapRunRef.current !== token) return;
-          swapIn(i, day);
-          await putCachedDay(hash, i, day);
-        } catch {
-          // leave that day mapless and carry on with the rest
-        }
+      } finally {
+        // Only the current run may clear the loader — a superseded loop bailing
+        // out mustn't hide the one that replaced it.
+        if (mapRunRef.current === token) setMapProgress(null);
       }
     },
     [],
@@ -702,10 +713,38 @@ export function App() {
     [source],
   );
 
+  // What the engine is busy with, for the loader. The engine runs off-thread
+  // (see pyodide/runtime.ts), so this list is the only sign of a long call —
+  // nothing freezes any more, and several of these can be true at once (the PDF
+  // exports while the day maps are still coming in).
+  const activities = useMemo(() => {
+    const items: ActivityItem[] = [];
+    if (progress.stage !== "ready" && progress.stage !== "error") {
+      items.push({ id: "boot", label: t(STAGE_LABEL[progress.stage]) });
+    }
+    if (busy) items.push({ id: "open", label: t("Reading the itinerary…") });
+    if (applying) items.push({ id: "apply", label: t("Applying changes…") });
+    if (exporting) items.push({ id: "pdf", label: t("Building the PDF…") });
+    if (exportingIcs) items.push({ id: "ics", label: t("Building the calendar…") });
+    if (mapProgress) {
+      items.push({
+        id: "maps",
+        label: t("Drawing maps — day {day} of {total}", {
+          day: mapProgress.day,
+          total: mapProgress.total,
+        }),
+      });
+    } else if (redrawing) {
+      items.push({ id: "redraw", label: t("Redrawing the maps…") });
+    }
+    return items;
+  }, [progress.stage, busy, applying, exporting, exportingIcs, mapProgress, redrawing, t]);
+
   return (
     <I18nProvider lang={lang}>
     <main className="shell">
       <PwaStatus />
+      <ActivityIndicator items={activities} />
       <header className="topbar">
         <button
           className="logo-btn"

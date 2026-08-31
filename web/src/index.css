@@ -827,6 +827,56 @@ body {
   }
 }
 
+/* The engine loader (ActivityIndicator): a floating card naming what the worker
+   is busy with. Non-blocking on purpose — no backdrop, and it never eats a click
+   (the page stays usable while the PDF/maps are built off-thread), so it must
+   stay out of the way rather than dim the app. */
+.activity {
+  position: fixed;
+  right: var(--gutter);
+  bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(320px, calc(100vw - 2 * var(--gutter)));
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--fg);
+  background: var(--card);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+.activity-spin {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.activity-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* A second concurrent task (e.g. maps drawing while the PDF exports) is
+   secondary information — the first line is what the user just asked for. */
+.activity-list li + li {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-spin {
+    animation-duration: 2.4s;
+  }
+}
+
 .report {
   display: grid;
   gap: 20px;

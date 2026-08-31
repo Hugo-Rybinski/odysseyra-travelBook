@@ -241,6 +241,10 @@ real Odysseyra TravelBook engine locally through Pyodide — **everything stays 
 device**, it works fully offline once loaded, and it's installable as an app.
 Start it with `make dev` or `make preview` (see [Setup](#setup)).
 
+That engine runs in a **Web Worker**, so the long jobs — building the PDF,
+drawing a day's map — don't freeze the page: a small loader names whatever is in
+flight while the book stays scrollable.
+
 The header's burger menu switches between views:
 
 - **⚙️ Options** — open a local JSON file (or reopen the last, or load the bundled
