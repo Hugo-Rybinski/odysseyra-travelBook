@@ -29,6 +29,30 @@
       "FR"
     ]
   },
+  "misc": {
+    "emergency_contacts": [
+      {
+        "name": "Emergency — any service (EU-wide)",
+        "contact": "112"
+      },
+      {
+        "name": "SAMU — medical emergencies",
+        "contact": "15"
+      },
+      {
+        "name": "Police / Gendarmerie",
+        "contact": "17"
+      },
+      {
+        "name": "Sapeurs-pompiers — fire & mountain rescue",
+        "contact": "18"
+      },
+      {
+        "name": "Emergency by SMS (deaf & hard of hearing)",
+        "contact": "114"
+      }
+    ]
+  },
   "days": [
     {
       "date": "2026-06-08",

@@ -84,6 +84,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `opening.py` — a point of interest's `opening_days` / `opening_hours` parsed
     into one `Opening` (`WEEKDAYS`, `parse_opening`, `day_runs`/`hours_display`,
     `closed_on`/`covers`). Pure data: the localized naming lives in `lang/dates.py`.
+  - `misc.py` — the `misc` group: `EmergencyContact` (`name`/`contact`, both
+    optional free text) + `parse_emergency_contacts`, flattened onto
+    `Itinerary.emergency_contacts`.
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
@@ -105,7 +108,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `specs.py` — `Spec` field descriptors, value validators (`V_*`), spec tables.
   - `validator.py` — `_Validator` walks the data and emits findings; `validate_text`.
 - **`pdf/`** — `TravelPDF(CoverMixin, DayMixin, DayMapMixin, TripMapMixin,
-  HikeMapMixin, TransportMixin, AccommodationMixin, CarRentalMixin, _PDFBase)`. `base.py` holds fonts/colors and
+  HikeMapMixin, TransportMixin, AccommodationMixin, CarRentalMixin, MiscMixin,
+  _PDFBase)`. `base.py` holds fonts/colors and
   shared drawing primitives; each section is a mixin. `build_pdf(itinerary, output,
   lang, ink_saver, maps, cache_dir)` is the entry point. The `ink_saver` flag (CLI
   `--ink-saver`) is stored on `_PDFBase` and read by the primitives that draw large
@@ -125,6 +129,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   **native fpdf vector** (`polygon`/`polyline`) — so the profile needs no tiles,
   stays crisp, and still appears when the map can't be fetched. The profile takes
   the drawn map's box, not the column's, so the two stack as one figure.
+  `misc.py`'s `MiscMixin.emergency_contacts()` draws the **last page** of the
+  book — the `misc` group's contacts as a plain hairline-ruled directory (name
+  left, number right in accent), not cards: it's a list read in a hurry, and a
+  contact has two fields where a booking has a dozen.
 - **`maps/`** — map rendering, imported only when maps are on. `geocode.py`
   (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
   cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → dotted
@@ -156,7 +164,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Descriptions are packed with each object's detail, localized via `lang.tr`.
   Pure stdlib (RFC 5545 line-folding + text escaping), no dependencies.
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
-  dict from a fragment directory (`travel_description.json`, `defaults.json`, and
+  dict from a fragment directory (`travel_description.json`, `defaults.json`,
+  `misc.json`, and
   `days/` `transports/` `accommodations/` `car-rentals/` folders — one array
   entry per JSON file, ordered by filename; alternate folder spellings accepted).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
@@ -169,7 +178,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 
 ## Key design decisions
 
-- **JSON shape.** Two config groups — `travel_description` (title/summary/color,
+- **JSON shape.** Three config groups — `travel_description` (title/summary/color,
   optional manual `start_date`/`end_date`) and `defaults` (`start_time` 08:00,
   `end_time` **18:00**, `auto_sized_buffer` **true** / `buffer` 0 (alternatives,
   not layers), `timezone` GMT, meal thresholds `breakfast_until` 10:00 /
@@ -179,13 +188,16 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   switches `include_maps_in_render` false / `include_hike_maps` **true** /
   `infer_coordinates_from_address`
   false / `inference_countries` [], and `show_moon_phase` / `show_sun_times`
-  both **true**) — plus
+  both **true**) and `misc` (`emergency_contacts`, see below) — plus
   content arrays `days` (required, non-empty), `transport` (bookings, each with
   a required non-empty `legs`), `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/
   `default_buffer`, `start_timezone`/`end_timezone`, transport `date`,
-  `transports`, `default`) — use the canonical names.
+  `transports`, `default`) — use the canonical names. **`misc` is the one
+  exception to the top-level fallback**: it is read from its own object only,
+  since it's new (no older shape to support) and a bare top-level
+  `emergency_contacts` would read as a fifth content array.
 - **Maps & coordinates.** Every locatable object may carry an optional
   `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
   segments use `start_/end_coordinate` (road, a transport **leg**) or
@@ -431,6 +443,39 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   real French holiday, and `kyrgyzstan.json` is dateless, so flagging one would
   contradict that skill guidance. `broken.json` carries an invalid value for the
   validator's `V_BOOL`, and `tests/test_bank_holiday.py` covers the rest.
+- **The `misc` group and its `emergency_contacts`.** A third top-level config
+  group for trip-wide reference data that belongs to no point on the timeline —
+  so it has nowhere to live among the days, bookings or stays. It holds one list
+  so far: `emergency_contacts`, each `{name, contact}`. Deliberately a **group,
+  not a bare top-level array**, so the next such list has an obvious home
+  instead of becoming a fifth content array beside `days`; and read from its own
+  object only (see the JSON-shape bullet). **Everything in it is optional,
+  including both halves of a contact** — `contact` is free text, *never parsed*
+  (emergency numbering is local: `112`, `15`, `999`, `+996 312 …`, and an entry
+  may hold an email or an address instead), and a half-filled entry renders as
+  the half it has. That is the point rather than laxness: the whole feature
+  hangs on *leaving an unknown number out being better than inventing one*, so
+  failing the build over a missing half would push the user to fabricate. The
+  validator carries the burden instead — `warn_if_missing` on both fields, plus
+  a warning on an entry with neither (the model drops those, so it would
+  otherwise vanish silently). Both renderers draw the same list and must stay in
+  step (`pdf/misc.py` / `web/src/render/EmergencyContacts.tsx`): the PDF gives it
+  the **book's last page** with a *Jump to → Emergency* shortcut on the cover
+  (`cover.py`'s `_cover_section_links`), the viewer closes the **🗺️ Overview**
+  tab with it (`Book.tsx`'s `show === "overview"` branch, `.emergency` in
+  `index.css`). One deliberate divergence, of the same kind as the hike's
+  `(Get GPX track)`: the viewer sniffs a dialable/mailable `contact` and wraps it
+  in a `tel:`/`mailto:` link, which paper has no twin for. **Not in the `.ics`** —
+  a phone number is not an event. `stitch` reads it from a `misc.json` fragment
+  (`_OBJECT_SECTIONS`, shared with `defaults.json`, plus a `misc` fragment kind
+  in `validate/validator.py`), the Edit tab from a **Misc** section
+  (`MiscForm` in `edit/forms/ConfigForms.tsx`). The resolved doc carries it
+  flattened at the top level (`emergency_contacts`), *not* on a `Day` — so this
+  needed **no `SCHEMA_VERSION` bump**: the IndexedDB cache stores days only.
+  `skills/build-full-json.md` makes this the second field an LLM may look up
+  online (after `bank_holiday`) — and the first that must be **cited**: every
+  value taken from the web is listed in the inconsistency report with its source
+  URL.
 - **A point of interest's opening days & hours.** Two optional strings on
   `point_of_interest` alone — `opening_days` (`tue-sun` / `mon-fri, sun`; single
   days and/or ranges, English names or 3-letter prefixes, a range may wrap the

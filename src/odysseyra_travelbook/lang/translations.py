@@ -155,6 +155,12 @@ _FR = {
     "Small": "Petite",
     "SUV": "SUV",
     "4x4": "4x4",
+    # -- PDF: emergency contacts (the `misc` group) --
+    # The band's kicker and title on the book's last page, plus the cover's
+    # "Jump to" shortcut to it — which is why that one is a single short word.
+    "IN CASE OF EMERGENCY": "EN CAS D'URGENCE",
+    "Emergency contacts": "Numéros d'urgence",
+    "Emergency": "Urgences",
     # -- validation: message templates --
     "required field '{name}' is missing — {description}. Expected {expected}.":
         "champ obligatoire « {name} » manquant — {description}. Attendu : {expected}.",
@@ -297,6 +303,20 @@ _FR = {
     "usually has a reference.":
         "« status » est défini mais « booking_source » manque — un séjour "
         "réservé/confirmé a en général une référence.",
+    # the `misc` group and its emergency contacts
+    "'misc' must be an object holding 'emergency_contacts'.":
+        "« misc » doit être un objet contenant « emergency_contacts ».",
+    "'emergency_contacts' must be an array of objects, each with a 'name' and a "
+    "'contact'.":
+        "« emergency_contacts » doit être un tableau d'objets, chacun avec un "
+        "« name » et un « contact ».",
+    "each emergency contact must be an object with a 'name' and a 'contact'.":
+        "chaque numéro d'urgence doit être un objet avec un « name » et un "
+        "« contact ».",
+    "this emergency contact is empty — give it a 'name', a 'contact', or both, "
+    "or drop it.":
+        "ce numéro d'urgence est vide — donnez-lui un « name », un « contact », "
+        "ou les deux, ou supprimez-le.",
     "'secondary_currencies' must be an array of {currency, change_rate} "
     "objects.":
         "« secondary_currencies » doit être un tableau d'objets "
@@ -672,6 +692,12 @@ _FR = {
     "the number of additional drivers": "le nombre de conducteurs supplémentaires",
     "how long the pick-up takes": "la durée de la prise en charge",
     "how long the drop-off takes": "la durée de la restitution",
+    # the `misc` group and its emergency contacts
+    "who to call in an emergency where you're going":
+        "qui appeler en cas d'urgence là où vous allez",
+    "who this contact reaches": "qui ce numéro permet de joindre",
+    "how to reach them — a phone number, an email or an address":
+        "comment les joindre — un numéro, un email ou une adresse",
     # -- validation: expected values --
     "any text": "un texte",
     "a date YYYY-MM-DD": "une date AAAA-MM-JJ",
@@ -691,6 +717,8 @@ _FR = {
     "a 3-letter ISO code like 'USD'": "un code ISO à 3 lettres comme « USD »",
     "an array of {currency, change_rate} objects":
         "un tableau d'objets {currency, change_rate}",
+    "an array of objects with a 'name' and a 'contact', inside 'misc'":
+        "un tableau d'objets avec un « name » et un « contact », dans « misc »",
     "true or false": "true ou false",
     "'loop', 'back_and_forth' or 'one_way'":
         "« loop », « back_and_forth » ou « one_way »",
@@ -743,6 +771,10 @@ _FR = {
     "false": "false",
     '"other"': "« other »",
     "[] (none listed)": "[] (aucun listé)",
+    "[] (no emergency contacts section)": "[] (aucune page de numéros d'urgence)",
+    '"" (the number is listed on its own)': "« » (le numéro est listé seul)",
+    '"" (nothing to call — the entry is a label only)':
+        "« » (rien à appeler — l'entrée n'est qu'un libellé)",
     "none": "aucune",
     '"back_and_forth"': "« back_and_forth »",
     '"" (badge shows TRANSPORT)': "« » (le badge affiche TRANSPORT)",

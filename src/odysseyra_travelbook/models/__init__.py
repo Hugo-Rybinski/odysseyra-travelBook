@@ -6,6 +6,7 @@ The model is split across submodules:
 * :mod:`.activities` — the activity types and the day-scheduling pass;
 * :mod:`.gpx` — a hike's embedded GPX track (decode, parse, measure);
 * :mod:`.opening` — a point of interest's opening days and hours;
+* :mod:`.misc` — the ``misc`` group (the trip's emergency contacts);
 * :mod:`.transport` — the ``Transport`` booking and its ``TransportLeg``s;
 * :mod:`.accommodation` — the ``Accommodation``;
 * :mod:`.itinerary` — the ``Day`` and ``Itinerary`` aggregates.
@@ -51,6 +52,7 @@ from .activities import (
     schedule_activities,
 )
 from .itinerary import Day, Itinerary
+from .misc import EmergencyContact, parse_emergency_contacts
 from .moon import MoonPhase, moon_phase
 from .serialize import to_dict
 from .scheduling import Scheduled, Stamp
@@ -87,6 +89,8 @@ __all__ = [
     "Coordinate",
     "CURRENCY_SYMBOLS",
     "Day",
+    "EmergencyContact",
+    "parse_emergency_contacts",
     "format_money",
     "GpxTrack",
     "decode_gpx",

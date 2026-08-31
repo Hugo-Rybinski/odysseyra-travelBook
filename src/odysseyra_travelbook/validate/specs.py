@@ -246,6 +246,30 @@ DEFAULTS = [
          "true or false", "true (sunrise/sunset shown)", V_BOOL),
 ]
 
+# The `misc` group — trip-wide reference data that sits nowhere on the timeline.
+# Only one field so far, and it is a list, so the table is here for the info note
+# and the walk lives in validator._misc.
+MISC = [
+    Spec("emergency_contacts", False,
+         "who to call in an emergency where you're going",
+         "an array of objects with a 'name' and a 'contact', inside 'misc'",
+         "[] (no emergency contacts section)"),
+]
+
+# One entry of `misc.emergency_contacts`. Both halves are free text (a country's
+# own conventions for an emergency number are none of our business) and both are
+# **optional** — the model renders whichever half it has. A missing one is still
+# worth saying out loud, though, so these warn rather than merely inform: an
+# unlabelled number, or a label with nothing to call, is a gap you meant to fill.
+EMERGENCY_CONTACT_SPECS = [
+    Spec("name", False, "who this contact reaches", "any text",
+         '"" (the number is listed on its own)', warn_if_missing=True),
+    Spec("contact", False,
+         "how to reach them — a phone number, an email or an address",
+         "any text", '"" (nothing to call — the entry is a label only)',
+         warn_if_missing=True),
+]
+
 # Activity scheduling fields (shared by every non-buffer activity)
 SCHEDULE = [
     Spec("start_time", False, "the clock time the activity starts", "a time HH:MM",

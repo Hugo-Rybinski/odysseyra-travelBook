@@ -1420,6 +1420,52 @@ body {
   height: 62vh;
   min-height: 420px;
 }
+/* the trip's emergency contacts, closing the Overview tab (the twin of the PDF's
+   final page). A directory, not a card deck: name left, number right in accent,
+   hairline-separated — deliberately the plainest block in the app, because it is
+   read in a hurry. The number wraps under the name on a narrow screen. */
+.emergency {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px 6px;
+}
+.emergency h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.emergency ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.emergency li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.emergency li:last-child {
+  border-bottom: 0;
+}
+.emergency-name {
+  font-weight: 600;
+}
+.emergency-contact {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.05rem;
+  /* Never break a number across lines — it has to stay readable/dialable. */
+  white-space: nowrap;
+}
+/* An address (or anything else we can't hand to an app) isn't a link and may be
+   long, so it is the one contact allowed to wrap. */
+.emergency-contact:not([href]) {
+  white-space: normal;
+}
 /* numbered pin marker on the interactive map (mirrors the static pins/discs) */
 .map-marker {
   display: flex;
@@ -2276,6 +2322,14 @@ textarea.edit-input {
 .defaults-form > .field-group + .sub-array {
   border-top: 0;
   padding-top: 0;
+}
+/* A one-line note under a sub-array's title, saying what the list is for and
+   where it shows up (the emergency contacts). */
+.field-note {
+  margin: -2px 0 10px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
 }
 /* Live two-way rate readout under a secondary currency's fields. */
 .currency-conversion {

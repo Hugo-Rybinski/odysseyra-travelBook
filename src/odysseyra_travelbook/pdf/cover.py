@@ -83,6 +83,11 @@ class CoverMixin:
         if it.accommodations:
             self.accommodation_link = self.add_link()
             entries.append((self.t("Accommodation"), self.accommodation_link))
+        if it.emergency_contacts:
+            # The one page you may need to reach in seconds, and it is the last
+            # one in the book — so it earns a shortcut off the cover.
+            self.emergency_link = self.add_link()
+            entries.append((self.t("Emergency"), self.emergency_link))
         if not entries:
             return
         self.ln(6)

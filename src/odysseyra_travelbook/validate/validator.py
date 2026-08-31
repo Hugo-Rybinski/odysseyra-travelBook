@@ -26,6 +26,8 @@ from .specs import (
     CAR_RENTAL_SPECS,
     DAY_SPECS,
     DEFAULTS,
+    EMERGENCY_CONTACT_SPECS,
+    MISC,
     PLACE_SCHEDULE,
     SCHEDULE,
     TRANSPORT_LEG_SPECS,
@@ -334,6 +336,7 @@ class _Validator:
         self._walk_coordinates(data, ())
         self._maps_coherence(df_obj, df_path or ())
         self._buffer_coherence(df_obj, df_path or ())
+        self._misc(data)
 
         days = data.get("days")
         if not isinstance(days, list) or not days:
@@ -827,6 +830,58 @@ class _Validator:
                 self.add("error", base_path + ("inference_countries", i),
                          "inference country {value} is invalid — {error}.",
                          value=repr(code), error=self._terr(err))
+
+    def _misc(self, data):
+        """Locate the ``misc`` group and check it.
+
+        Read only from its own object (the model does the same), so a stray
+        top-level ``emergency_contacts`` is invisible here — which is why the
+        absent-group note names the nesting explicitly."""
+        misc = data.get("misc")
+        if misc is None:
+            self._misc_group({}, (), skip_optional=False)
+            return
+        if not isinstance(misc, dict):
+            self.add("error", ("misc",),
+                     "'misc' must be an object holding 'emergency_contacts'.")
+            return
+        self._misc_group(misc, ("misc",))
+
+    def _misc_group(self, misc, base_path, *, skip_optional=False):
+        """Check one ``misc`` object sitting at ``base_path`` — the whole group,
+        so a stitch fragment (where it is the file's root, ``base_path=()``) and
+        a full document share the walk and each keeps its own line numbers."""
+        self.check_object(misc, base_path, MISC, skip_optional=skip_optional)
+        contacts = misc.get("emergency_contacts")
+        if contacts is None:
+            return
+        cpath = tuple(base_path) + ("emergency_contacts",)
+        if not isinstance(contacts, list):
+            self.add("error", cpath,
+                     "'emergency_contacts' must be an array of objects, each "
+                     "with a 'name' and a 'contact'.")
+            return
+        for i, contact in enumerate(contacts):
+            path = cpath + (i,)
+            if not isinstance(contact, dict):
+                self.add("error", path, "each emergency contact must be an "
+                         "object with a 'name' and a 'contact'.")
+                continue
+            filled = {
+                key: str(contact[key]).strip()
+                for key in ("name", "contact")
+                if contact.get(key) is not None
+                and str(contact[key]).strip()
+            }
+            if not filled:
+                # Both halves blank: nothing to draw, so the model drops the
+                # entry entirely. Say so, or it vanishes without a word.
+                self.add("warning", path, "this emergency contact is empty — "
+                         "give it a 'name', a 'contact', or both, or drop it.")
+                continue
+            # An empty string is "present" as far as check_object is concerned,
+            # so the blank halves are folded into the missing ones here.
+            self.check_object(filled, path, EMERGENCY_CONTACT_SPECS)
 
     def _buffer_coherence(self, df, df_path):
         """``buffer`` and ``auto_sized_buffer`` are two answers to the same
@@ -1400,7 +1455,7 @@ def validate_text(text: str, lang: str = DEFAULT_LANGUAGE) -> list[Finding]:
 
 # The "kind" of each stitch fragment file, used to pick which per-object check
 # to run when validating one file on its own.
-FRAGMENT_KINDS = ("travel_description", "defaults", "day", "transport",
+FRAGMENT_KINDS = ("travel_description", "defaults", "misc", "day", "transport",
                   "accommodation", "car_rental")
 
 
@@ -1413,6 +1468,10 @@ def _check_fragment(v: _Validator, obj, base, kind: str) -> None:
         v.check_object(obj, base, DEFAULTS)
         v._secondary_currencies(obj, base)
         v._inference_countries(obj, base)
+    elif kind == "misc":
+        # The fragment *is* the group, so it is checked at the file's root —
+        # keeping every finding's line number inside this very file.
+        v._misc_group(obj, base)
     elif kind == "day":
         v._day(obj, base)
     elif kind == "transport":
@@ -1428,7 +1487,7 @@ def _check_fragment(v: _Validator, obj, base, kind: str) -> None:
 def validate_fragment(text: str, kind: str, lang: str = DEFAULT_LANGUAGE,
                       defaults: dict | None = None) -> list[Finding]:
     """Validate a single stitch fragment file (a ``travel_description`` /
-    ``defaults`` object, or one entry of a ``day`` / ``transport`` /
+    ``defaults`` / ``misc`` object, or one entry of a ``day`` / ``transport`` /
     ``accommodation`` / ``car_rental`` array) *in isolation*.
 
     Line numbers in the returned findings are relative to ``text`` — the
@@ -1446,7 +1505,7 @@ def validate_fragment(text: str, kind: str, lang: str = DEFAULT_LANGUAGE,
                         tr("invalid JSON — {error}", lang).format(error=exc))]
     seed = {"defaults": defaults} if isinstance(defaults, dict) else {}
     v = _Validator(seed, lines, lang)
-    if kind in ("travel_description", "defaults"):
+    if kind in ("travel_description", "defaults", "misc"):
         if not isinstance(data, dict):
             v.add("error", (), "this fragment must be a JSON object.")
         else:

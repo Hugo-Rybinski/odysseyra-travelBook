@@ -18,6 +18,15 @@
     "include_maps_in_render": "maybe",
     "inference_countries": ["France", "FR"]
   },
+  "misc": {
+    "emergency_contacts": [
+      { "name": "SAMU", "contact": "15" },
+      { "contact": "112" },
+      { "name": "Police" },
+      { "name": "   ", "contact": "" },
+      "17"
+    ]
+  },
   "days": [
     {
       "title": "Day one",

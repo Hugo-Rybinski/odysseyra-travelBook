@@ -16,6 +16,15 @@
     "infer_coordinates_from_address": false,
     "inference_countries": ["KG"]
   },
+  "misc": {
+    "emergency_contacts": [
+      { "name": "Emergency — unified number", "contact": "112" },
+      { "name": "Ambulance", "contact": "103" },
+      { "name": "Police", "contact": "102" },
+      { "name": "Fire & rescue", "contact": "101" },
+      { "name": "Your embassy in Bishkek" }
+    ]
+  },
   "days": [
     {
       "city": "Bishkek",

@@ -23,7 +23,8 @@ def test_example_pieces_reassemble_the_example():
     assert aggregate(EXAMPLE_PIECES) == json.loads(EXAMPLE.read_text(encoding="utf-8"))
 
 
-def _fragment_dir(tmp_path, *, dir_names=None, with_td=True, with_default=True):
+def _fragment_dir(tmp_path, *, dir_names=None, with_td=True, with_default=True,
+                  with_misc=True):
     """Split the pyrenees example into a fragment directory under ``tmp_path``.
 
     ``dir_names`` overrides the four array-folder names (to exercise the
@@ -42,6 +43,8 @@ def _fragment_dir(tmp_path, *, dir_names=None, with_td=True, with_default=True):
             json.dumps(src["travel_description"]), encoding="utf-8")
     if with_default:
         (root / "defaults.json").write_text(json.dumps(src["defaults"]), encoding="utf-8")
+    if with_misc:
+        (root / "misc.json").write_text(json.dumps(src["misc"]), encoding="utf-8")
     for key, folder in names.items():
         d = root / folder
         d.mkdir()
@@ -145,7 +148,7 @@ def test_fragment_files_lists_every_piece_in_stitch_order(tmp_path):
     frags = fragment_files(root)
     kinds = [kind for kind, _ in frags]
     assert kinds == (
-        ["travel_description", "defaults"]
+        ["travel_description", "defaults", "misc"]
         + ["day"] * len(src["days"])
         + ["transport"] * len(src["transport"])
         + ["accommodation"] * len(src["accommodations"])

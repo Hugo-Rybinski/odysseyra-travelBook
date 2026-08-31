@@ -6,8 +6,8 @@
 // a default. Scalars that the model parses (dates, times, durations, tz offsets)
 // are plain strings in the input; prices are bare numbers.
 //
-// Mirrors the field tables in ../../README.md → "JSON format". Keep the two in
-// sync when the schema changes.
+// Mirrors the field tables in ../../file_format.md. Keep the two in sync when
+// the schema changes.
 
 export interface SrcCoordinate {
   lat?: number;
@@ -249,9 +249,24 @@ export interface SrcDay {
   activities?: SrcActivity[];
 }
 
+// One emergency contact, and the `misc` group holding them. Both halves are
+// optional and free text; an entry with neither is dropped by the model.
+export interface SrcEmergencyContact {
+  name?: string;
+  contact?: string;
+}
+
+// Trip-wide reference data that sits nowhere on the timeline. Unlike
+// `travel_description` / `defaults`, its keys are *not* also read from the top
+// level — see models/misc.py.
+export interface SrcMisc {
+  emergency_contacts?: SrcEmergencyContact[];
+}
+
 export interface SrcItinerary {
   travel_description?: SrcTravelDescription;
   defaults?: SrcDefaults;
+  misc?: SrcMisc;
   days?: SrcDay[];
   transport?: SrcTransport[];
   accommodations?: SrcAccommodation[];

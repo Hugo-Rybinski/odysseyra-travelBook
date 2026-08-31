@@ -1,7 +1,15 @@
 import { Fragment } from "react";
-import type { SrcDefaults, SrcSecondaryCurrency, SrcTravelDescription } from "../../types/source";
+import type {
+  SrcDefaults,
+  SrcEmergencyContact,
+  SrcMisc,
+  SrcSecondaryCurrency,
+  SrcTravelDescription,
+} from "../../types/source";
 import {
   DEFAULTS_GROUPS,
+  EMERGENCY_CONTACT_FIELDS,
+  newEmergencyContact,
   newSecondaryCurrency,
   SECONDARY_CURRENCY_FIELDS,
   TRAVEL_DESCRIPTION_FIELDS,
@@ -69,6 +77,52 @@ export function TravelDescriptionForm({
         path={path}
         onChange={(next) => onChange(next as unknown as SrcTravelDescription)}
       />
+    </div>
+  );
+}
+
+// The `misc` group: trip-wide reference data with no place on the timeline.
+// Today that is only the emergency contacts, but the group is drawn as a group
+// (a titled sub-array, like the secondary currencies) so the next such list has
+// somewhere obvious to land.
+export function MiscForm({
+  value,
+  path,
+  onChange,
+}: {
+  value: SrcMisc;
+  path: string;
+  onChange: (next: SrcMisc) => void;
+}) {
+  const t = useT();
+  const contacts = value.emergency_contacts ?? [];
+  return (
+    <div className="misc-form">
+      <div className="box-findings">
+        <FieldFindings path={path} />
+      </div>
+      <section className="sub-array">
+        <h4>{t("Emergency contacts ({n})", { n: contacts.length })}</h4>
+        <p className="field-note">
+          {t("Who to call where you're going. Shown in the 🗺️ Overview tab and on the book's last page. Leave a number out rather than guessing it.")}
+        </p>
+        <ArrayEditor<SrcEmergencyContact>
+          items={contacts}
+          onChange={(list) => onChange({ ...value, emergency_contacts: list })}
+          basePath={`${path}.emergency_contacts`}
+          itemTitle={(c, i) => c.name || c.contact || t("Contact {n}", { n: i + 1 })}
+          add={[{ label: t("contact"), make: newEmergencyContact }]}
+          emptyLabel={t("No emergency contacts.")}
+          renderItem={(c, _i, onItemChange, itemPath) => (
+            <FieldList
+              specs={EMERGENCY_CONTACT_FIELDS}
+              value={c as unknown as Rec}
+              path={itemPath}
+              onChange={(next) => onItemChange(next as unknown as SrcEmergencyContact)}
+            />
+          )}
+        />
+      </section>
     </div>
   );
 }

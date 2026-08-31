@@ -16,13 +16,13 @@ import { ArrayEditor } from "./fields/ArrayEditor";
 import { AccommodationForm } from "./forms/AccommodationForm";
 import { CarRentalForm } from "./forms/CarRentalForm";
 import { DayForm } from "./forms/DayForm";
-import { DefaultsForm, TravelDescriptionForm } from "./forms/ConfigForms";
+import { DefaultsForm, MiscForm, TravelDescriptionForm } from "./forms/ConfigForms";
 import { TransportForm } from "./forms/TransportForm";
 
 // The Edit tab: a structured form over the *input* itinerary JSON. Stacked,
-// collapsible sections — two config groups (Trip, Defaults) and four content
-// arrays (Days, Transport, Accommodations, Car rentals). Every edit produces a
-// new draft via `onChange`.
+// collapsible sections — three config groups (Trip, Defaults, Misc) and four
+// content arrays (Days, Transport, Accommodations, Car rentals). Every edit
+// produces a new draft via `onChange`.
 //
 // P2: validation findings are anchored to fields inline (Option B) via
 // `findingIndex` (a map of field-path → findings, provided through context and
@@ -217,6 +217,17 @@ export function EditPanel({
               value={draft.defaults ?? {}}
               path="defaults"
               onChange={(d) => onChange({ ...draft, defaults: d })}
+            />
+          </div>
+        </details>
+
+        <details className="edit-section">
+          <summary>{t("Misc")}</summary>
+          <div className="edit-section-body">
+            <MiscForm
+              value={draft.misc ?? {}}
+              path="misc"
+              onChange={(m) => onChange({ ...draft, misc: m })}
             />
           </div>
         </details>

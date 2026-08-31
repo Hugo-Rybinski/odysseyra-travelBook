@@ -29,6 +29,30 @@
       "FR"
     ]
   },
+  "misc": {
+    "emergency_contacts": [
+      {
+        "name": "Urgences — tous services (numéro européen)",
+        "contact": "112"
+      },
+      {
+        "name": "SAMU — urgences médicales",
+        "contact": "15"
+      },
+      {
+        "name": "Police / Gendarmerie",
+        "contact": "17"
+      },
+      {
+        "name": "Sapeurs-pompiers — incendie et secours en montagne",
+        "contact": "18"
+      },
+      {
+        "name": "Urgences par SMS (sourds et malentendants)",
+        "contact": "114"
+      }
+    ]
+  },
   "days": [
     {
       "date": "2026-06-08",

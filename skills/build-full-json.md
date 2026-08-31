@@ -69,6 +69,7 @@ The itinerary is one JSON **object** with these keys:
 {
   "travel_description": { ... },   // object — cover info (title required)
   "defaults":           { ... },   // object — trip-wide defaults (all optional)
+  "misc":               { ... },   // object — reference data off the timeline (all optional)
   "days":               [ ... ],   // array  — REQUIRED, non-empty; one entry per day, in order
   "transport":          [ ... ],   // array  — inter-city bookings, each with its "legs"
   "accommodations":     [ ... ],   // array  — places you sleep
@@ -81,7 +82,8 @@ The itinerary is one JSON **object** with these keys:
   an underscore, **`accommodations`** is plural.
 - `title` (and the other `travel_description` fields) may also sit at the top
   level instead of inside `travel_description`, but the grouped form is cleaner —
-  prefer it.
+  prefer it. **`misc` is different**: its contents are read from inside `misc`
+  only, so never hoist `emergency_contacts` to the top level.
 - Trip `start_date` / `end_date` are normally **inferred** as the earliest /
   latest date across days, transport, accommodation and car rentals. A day with
   no `date` is inferred as trip-start + its index. So you rarely set dates
@@ -209,6 +211,77 @@ unit of the default currency** — with a `EUR` default, `{"currency": "USD",
 "change_rate": 1.09}` means 1 € = $1.09. On the PDF every price is printed in the
 default currency followed by each secondary conversion in parentheses (e.g.
 `€612 ($667, £520)`).
+
+---
+
+## `misc` (object — optional)
+
+Trip-wide reference data that belongs to the whole trip but to **no point on its
+timeline**. Everything here is optional, group included. One field so far:
+
+| Field | Required | Format | Default | Notes |
+|---|---|---|---|---|
+| `emergency_contacts` | no | array of `{name, contact}` | `[]` | Who to call in an emergency where the trip goes — see below. |
+
+### `emergency_contacts` (array)
+
+Each entry is one number to reach:
+
+| Field | Required | Format | Default | Notes |
+|---|---|---|---|---|
+| `name` | no | text | `""` | Who it reaches: the service, the embassy, the person. |
+| `contact` | no | text | `""` | How to reach them: a phone number, an email, or an address. **Free text** — write it exactly as the country writes it. |
+
+```json
+"misc": {
+  "emergency_contacts": [
+    { "name": "Emergency — any service (EU-wide)", "contact": "112" },
+    { "name": "SAMU — medical emergencies", "contact": "15" },
+    { "name": "US Embassy, Paris — consular emergencies", "contact": "+33 1 43 12 22 22" }
+  ]
+}
+```
+
+**You may look these up — and you must then cite them.** This is the **second
+and last** field you are allowed to fill from your own knowledge or from the web
+rather than from the supplied documents (the first is a day's `bank_holiday`),
+because no booking confirmation lists a country's ambulance number. It comes with
+a hard condition:
+
+- **Every value you did not take from a supplied document goes in the
+  inconsistency report, with the URL you took it from** — see *Report what you
+  looked up online* at the end of this document. One bullet per contact.
+- **Not filling it is better than hallucinating it.** If you are not certain of a
+  number, **leave that entry out**, or write the `name` alone and no `contact` —
+  a half entry is valid, and it tells the traveller what to look up. An invented
+  emergency number is the single most dangerous thing this file could contain.
+- Prefer numbers that are **stable and verifiable**: the national/EU short codes
+  (`112`, `15`, `17`, `18`, `999`, `911`, `102`/`103`), then the traveller's own
+  embassy or consulate in the destination country.
+
+What to fill it with, in this order:
+
+1. Anything the **sources** state (an insurer's 24-hour line, a tour operator's
+   emergency contact, the number on a rental voucher) — that needs no citation,
+   like any other sourced field.
+2. The **destination country's** emergency short codes.
+3. The **traveller's embassy or consulate** in the destination country — only
+   when the sources tell you the traveller's nationality (a passport, a
+   departure airport, the language of the trip). Don't guess a nationality in
+   order to add one.
+
+Other rules:
+
+- **Country of the trip, not of the traveller** — a trip to France lists French
+  numbers. A trip crossing borders may list both, each `name` saying which
+  country it is for (`"Emergency — Spain"`).
+- **Write the `contact` as it is dialled locally.** A short code stays short
+  (`112`, not `+33 112`); a full number keeps its international form
+  (`+33 1 43 12 22 22`). Nothing parses the string, so no format is imposed.
+- **The `name` says who, not how.** Keep it short enough to read at a glance and
+  put the service first (`"SAMU — medical emergencies"`). No advice sentences, no
+  URLs, no "call this if…".
+- Leave the whole group out when you have nothing certain to put in it.
 
 ---
 
@@ -886,7 +959,8 @@ a conflict.
 A short slice of a France trip: one flight in, a hire car picked up off the
 train, a nested `place`, a multi-stop drive, one hotel and a car rental. (Shows
 the shape — real values come from your sources. The full version lives at
-`examples/france.json`.)
+`examples/france.json`.) The three `misc.emergency_contacts` here are looked-up
+values, so a real run would cite all three under *Looked up online*.
 
 ```json
 {
@@ -903,6 +977,13 @@ the shape — real values come from your sources. The full version lives at
     "currency": "EUR",
     "secondary_currencies": [
       { "currency": "USD", "change_rate": 1.08 }
+    ]
+  },
+  "misc": {
+    "emergency_contacts": [
+      { "name": "Emergency — any service (EU-wide)", "contact": "112" },
+      { "name": "SAMU — medical emergencies", "contact": "15" },
+      { "name": "US Embassy, Paris — consular emergencies", "contact": "+33 1 43 12 22 22" }
     ]
   },
   "days": [
@@ -1068,9 +1149,12 @@ the shape — real values come from your sources. The full version lives at
 
 - **Only include a field if the source actually states it.** Never invent
   bookings, prices, dates, or times. Omitting an optional field lets the tool
-  fall back to a sensible default (listed above). **One exception:** a day's
-  `bank_holiday` — public holiday dates are yours to look up, since a source
-  almost never states them (see *Set `bank_holiday` on every day that is one*).
+  fall back to a sensible default (listed above). **Exactly two exceptions**,
+  both because the fact is public and no booking confirmation carries it: a
+  day's `bank_holiday` (see *Set `bank_holiday` on every day that is one*) and
+  `misc.emergency_contacts` (see *`misc`*). Everything you fill from your own
+  knowledge or the web — and **only** those two may be — is reported with its
+  source; see *Report what you looked up online* below.
 - The top level is one JSON **object** with the keys shown above; `days` must be
   a non-empty array.
 - Write dates/times/durations exactly in the formats above; convert "6pm" →
@@ -1170,6 +1254,18 @@ the shape — real values come from your sources. The full version lives at
   1 unit or less, a distance/elevation/duration gap inside its tolerance, and two
   coordinates less than 1 km apart — are not conflicts and belong nowhere in this
   list.
+- **Report what you looked up online.** Anything in the JSON that did **not**
+  come from a supplied document — which can only ever be a `bank_holiday` flag or
+  a `misc.emergency_contacts` entry — gets its own bullet in the inconsistency
+  report, under a **"Looked up online"** heading, stating the value, where it
+  sits in the JSON, and **the URL you took it from**. One bullet per value; a
+  page covering several contacts may be cited once for all of them.
+  - **No URL, no value.** If you cannot point at a source, leave the value out
+    and say so in the gaps report instead. This rule exists so the user can check
+    every number that isn't theirs, and *not filling a field is always better
+    than hallucinating it*.
+  - It is a separate heading from the conflicts, not mixed in with them: nothing
+    here disagreed with anything — it simply wasn't in the sources.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
   not something to second-guess or overwrite.
@@ -1235,6 +1331,11 @@ You cannot run the validator, so verify these by hand:
   public holidays of the country it's spent in, and `bank_holiday` set on the ones
   that are (or the country listed in the gaps report when you couldn't confirm
   its calendar for that year).
+- **Emergency contacts are certain and cited:** every `misc.emergency_contacts`
+  entry is either from a supplied document or listed under *Looked up online*
+  with its URL — and any number you weren't sure of was left out (or reduced to a
+  `name` with no `contact`) rather than guessed. `contact` is written as it is
+  dialled locally, and no entry has both halves empty.
 - **Every day has a `city`**, and that night's accommodation `city` appears
   inside it spelled identically (`"Amboise → Sarlat-la-Canéda"` for a stay in
   `"Sarlat-la-Canéda"`).

@@ -11,6 +11,7 @@ import {
   CAR_RENTAL_FIELDS,
   DAY_FIELDS,
   DEFAULTS_FIELDS,
+  EMERGENCY_CONTACT_FIELDS,
   SCHEDULED_FIELDS,
   SECONDARY_CURRENCY_FIELDS,
   TRANSPORT_FIELDS,
@@ -179,7 +180,7 @@ function fieldNamesFrom(message: string): string[] {
 // nested activities and waypoints), so a finding that names no field can still
 // anchor to the box it concerns. Mirrors the form tree like collectFieldPaths.
 export function collectContainerPaths(draft: SrcItinerary): Set<string> {
-  const out = new Set<string>(["travel_description", "defaults"]);
+  const out = new Set<string>(["travel_description", "defaults", "misc"]);
   const walk = (base: string, act: SrcActivity) => {
     out.add(base);
     if (act.type === "road") {
@@ -205,6 +206,10 @@ export function collectContainerPaths(draft: SrcItinerary): Set<string> {
   });
   (draft.accommodations ?? []).forEach((_a, i) => out.add(`accommodations.${i}`));
   (draft.car_rentals ?? []).forEach((_c, i) => out.add(`car_rentals.${i}`));
+  // An emergency contact's box, so "this contact is empty" lands inside it.
+  (draft.misc?.emergency_contacts ?? []).forEach((_c, i) =>
+    out.add(`misc.emergency_contacts.${i}`),
+  );
   return out;
 }
 
@@ -230,6 +235,13 @@ export function collectFieldPaths(draft: SrcItinerary): Set<string> {
   addFields("defaults", DEFAULTS_FIELDS);
   (draft.defaults?.secondary_currencies ?? []).forEach((_c, i) =>
     addFields(`defaults.secondary_currencies.${i}`, SECONDARY_CURRENCY_FIELDS),
+  );
+
+  // `misc` renders no fields of its own — only the emergency-contact array — so
+  // the group's own path is a container (below), not a field.
+  add("misc.emergency_contacts");
+  (draft.misc?.emergency_contacts ?? []).forEach((_c, i) =>
+    addFields(`misc.emergency_contacts.${i}`, EMERGENCY_CONTACT_FIELDS),
   );
 
   (draft.days ?? []).forEach((day, i) => {

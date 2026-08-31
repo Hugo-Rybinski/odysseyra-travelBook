@@ -310,9 +310,10 @@ The format is documented in full — one table per object, each giving
 
 | Section | What it covers |
 | ------- | -------------- |
-| [Global structure](file_format.md#global-structure) | The two config groups and three content arrays |
+| [Global structure](file_format.md#global-structure) | The three config groups and three content arrays |
 | [`travel_description`](file_format.md#travel_description) | Cover title, summary, accent color, optional manual date range |
 | [`defaults`](file_format.md#defaults) | Trip-wide fallbacks — times, timezone, currency, meal thresholds — plus the [auto-sized buffer](file_format.md#auto-sized-buffers--spreading-a-day-out-to-end_time), [maps & coordinates](file_format.md#maps--coordinates) and [sunrise & sunset](file_format.md#sunrise--sunset) switches |
+| [`misc`](file_format.md#misc) | Trip-wide reference data with no place on the timeline — the [emergency contacts](file_format.md#miscemergency_contacts) |
 | [`days[]`](file_format.md#days--a-day) | One day: title, city, date, intro, bank holiday |
 | [`activities[]`](file_format.md#activities--common-fields) | The timeline and its six types — [`road`](file_format.md#road--a-drivetransfer), [`point_of_interest`](file_format.md#point_of_interest--a-specific-place), [`place`](file_format.md#place--a-place-a-town-say-grouping-several-nested-activities), [`hike`](file_format.md#hike) (with a [GPX track](file_format.md#a-hikes-gpx-track)), [`meal`](file_format.md#meal--a-stop-to-eat), [`buffer`](file_format.md#buffer--free-time-between-activities) |
 | [`transport[]`](file_format.md#transport) | A booking, and the [`legs[]`](file_format.md#transportlegs) that move you |

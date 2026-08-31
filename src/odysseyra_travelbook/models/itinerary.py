@@ -17,6 +17,7 @@ from .activities import (
 )
 from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
 from .currency import SecondaryCurrency, to_default
+from .misc import EmergencyContact, parse_emergency_contacts
 from .parsers import (
     ItineraryError,
     _parse_bool,
@@ -134,6 +135,9 @@ class Itinerary:
     show_moon_phase: bool = True  # show the night's moon phase (opt-out): on the
     # sun-times line when those are shown too, else in "tonight"
     show_sun_times: bool = True  # show each day's sunrise/sunset (opt-out)
+    # The `misc` group: trip-wide reference data with no place on the timeline.
+    # Empty means the trip lists none, and both renderers then draw nothing.
+    emergency_contacts: list[EmergencyContact] = field(default_factory=list)
     start_date: date | None = None  # inferred from the trip's earliest date
     end_date: date | None = None  # inferred from the trip's latest date
     days: list[Day] = field(default_factory=list)
@@ -150,6 +154,10 @@ class Itinerary:
         # top-level keys for compatibility.
         desc = {**data, **(data.get("travel_description") or {})}
         defaults = data.get("defaults") or {}
+        # `misc` is read from its own object only — see models/misc.py.
+        misc = data.get("misc") or {}
+        if not isinstance(misc, dict):
+            raise ItineraryError("'misc' must be an object")
 
         if "title" not in desc:
             raise ItineraryError("Itinerary needs a 'title'")
@@ -184,6 +192,9 @@ class Itinerary:
         inference_countries = cls._parse_inference_countries(
             defaults.get("inference_countries")
         )
+        emergency_contacts = parse_emergency_contacts(
+            misc.get("emergency_contacts")
+        )
         transport_data = data.get("transport", [])
         itinerary = cls(
             title=str(desc["title"]),
@@ -208,6 +219,7 @@ class Itinerary:
             inference_countries=inference_countries,
             show_moon_phase=show_moon,
             show_sun_times=show_sun,
+            emergency_contacts=emergency_contacts,
             start_date=_parse_date(desc.get("start_date")),
             end_date=_parse_date(desc.get("end_date")),
             days=[Day.from_dict(d) for d in days_data],

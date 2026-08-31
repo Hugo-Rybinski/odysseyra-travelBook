@@ -32,6 +32,34 @@
       "FR"
     ]
   },
+  "misc": {
+    "emergency_contacts": [
+      {
+        "name": "Emergency — any service (EU-wide)",
+        "contact": "112"
+      },
+      {
+        "name": "SAMU — medical emergencies",
+        "contact": "15"
+      },
+      {
+        "name": "Police / Gendarmerie",
+        "contact": "17"
+      },
+      {
+        "name": "Sapeurs-pompiers — fire & rescue",
+        "contact": "18"
+      },
+      {
+        "name": "Emergency by SMS (deaf & hard of hearing)",
+        "contact": "114"
+      },
+      {
+        "name": "US Embassy, Paris — consular emergencies",
+        "contact": "+33 1 43 12 22 22"
+      }
+    ]
+  },
   "days": [
     {
       "date": "2026-09-04",

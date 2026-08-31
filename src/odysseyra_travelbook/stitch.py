@@ -5,6 +5,7 @@ The layout of the input directory mirrors the shape of the itinerary JSON:
     trip/
       travel_description.json     # -> "travel_description" (optional; prompted if absent)
       defaults.json               # -> "defaults" (optional; legacy name: default.json)
+      misc.json                   # -> "misc"     (optional)
       days/*.json                 # -> "days"            (one entry per file)
       transports/*.json           # -> "transport"       (one entry per file)
       accommodations/*.json       # -> "accommodations"  (one entry per file)
@@ -41,6 +42,14 @@ _ARRAY_SECTIONS = [
 # lays down and `stitch` reads back first.
 SKELETON_DIRS = [names[0] for names, _ in _ARRAY_SECTIONS]
 
+# The single-object config groups, each mapping the accepted file names (the
+# first that exists wins) to its itinerary key. `travel_description` is not here
+# because it alone is prompted for when its file is absent.
+_OBJECT_SECTIONS = [
+    (["defaults.json", "default.json"], "defaults"),
+    (["misc.json"], "misc"),
+]
+
 # Each array section's itinerary key → the singular fragment "kind" used to
 # validate one of its files on its own (see validate.validate_fragment).
 _SECTION_KIND = {
@@ -71,6 +80,11 @@ def _load_array(directory: Path) -> list:
         else:
             entries.append(data)
     return entries
+
+
+def _object_file(directory: Path, names: list[str]) -> Path | None:
+    """The first of ``names`` present in ``directory``, or None."""
+    return next((directory / n for n in names if (directory / n).is_file()), None)
 
 
 def _prompt_travel_description(ask: Callable[[str], str]) -> dict:
@@ -118,16 +132,14 @@ def aggregate(directory: str | Path, ask: Callable[[str], str] = input) -> dict:
         td = _prompt_travel_description(ask)
     data["travel_description"] = td
 
-    default_file = next(
-        (directory / n for n in ("defaults.json", "default.json")
-         if (directory / n).is_file()),
-        None,
-    )
-    if default_file is not None:
-        defaults = _load_json(default_file)
-        if not isinstance(defaults, dict):
-            raise StitchError(f"{default_file.name} must be a JSON object")
-        data["defaults"] = defaults
+    for names, key in _OBJECT_SECTIONS:
+        path = _object_file(directory, names)
+        if path is None:
+            continue
+        group = _load_json(path)
+        if not isinstance(group, dict):
+            raise StitchError(f"{path.name} must be a JSON object")
+        data[key] = group
 
     for names, key in _ARRAY_SECTIONS:
         entries: list = []
@@ -147,21 +159,19 @@ def aggregate(directory: str | Path, ask: Callable[[str], str] = input) -> dict:
 
 def fragment_files(directory: str | Path) -> list[tuple[str, Path]]:
     """Every fragment JSON file in ``directory``, in stitch order, each paired
-    with its validation ``kind`` (``travel_description`` / ``defaults`` / ``day``
-    / ``transport`` / ``accommodation`` / ``car_rental``). Mirrors exactly what
-    :func:`aggregate` reads, so the two never diverge on which files count."""
+    with its validation ``kind`` (``travel_description`` / ``defaults`` /
+    ``misc`` / ``day`` / ``transport`` / ``accommodation`` / ``car_rental``).
+    Mirrors exactly what :func:`aggregate` reads, so the two never diverge on
+    which files count."""
     directory = Path(directory)
     out: list[tuple[str, Path]] = []
     td = directory / "travel_description.json"
     if td.is_file():
         out.append(("travel_description", td))
-    default_file = next(
-        (directory / n for n in ("defaults.json", "default.json")
-         if (directory / n).is_file()),
-        None,
-    )
-    if default_file is not None:
-        out.append(("defaults", default_file))
+    for names, key in _OBJECT_SECTIONS:
+        path = _object_file(directory, names)
+        if path is not None:
+            out.append((key, path))
     for names, key in _ARRAY_SECTIONS:
         for name in names:
             d = directory / name

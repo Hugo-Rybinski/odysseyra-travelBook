@@ -368,10 +368,20 @@ export interface Itinerary {
     infer_from_address: boolean;
     inference_countries: string[];
   };
+  // The `misc` group, flattened by serialize.py the same way `defaults` is.
+  // Optional: a doc resolved before the group existed carries none.
+  emergency_contacts?: EmergencyContact[];
   days: Day[];
   transports: Transport[];
   accommodations: Accommodation[];
   car_rentals: CarRental[];
+}
+
+// One of `misc.emergency_contacts`. Both halves are optional and free text —
+// see models/misc.py; a renderer draws whichever half it is given.
+export interface EmergencyContact {
+  name: string;
+  contact: string;
 }
 
 export type FindingLevel = "error" | "warning" | "info";

@@ -144,6 +144,12 @@ const LABELS = {
     wdFri: "Fri",
     wdSat: "Sat",
     wdSun: "Sun",
+    // The trip's emergency contacts (`misc.emergency_contacts`), listed at the
+    // foot of the 🗺️ Overview tab. The heading is the same English source the
+    // PDF localizes via translations.py ("Emergency contacts", on its own final
+    // page) — keep the two wordings in step. The contacts themselves are free
+    // text and need no label; the viewer only turns a dialable one into a link.
+    emergencyContacts: "Emergency contacts",
     // Weather-forecast condition labels (WMO codes → text; see weather.ts wmo()).
     wxClear: "Clear sky",
     wxMainlyClear: "Mainly clear",
@@ -248,6 +254,7 @@ const LABELS = {
     wdFri: "ven.",
     wdSat: "sam.",
     wdSun: "dim.",
+    emergencyContacts: "Numéros d'urgence",
     wxClear: "Ciel dégagé",
     wxMainlyClear: "Plutôt dégagé",
     wxPartlyCloudy: "Partiellement nuageux",

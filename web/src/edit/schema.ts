@@ -1,7 +1,7 @@
 // The field registry: a data description of every editable field, driven by the
-// README "JSON format" tables. Forms render from these descriptors so the schema
-// lives in one place — adding/renaming a field is a change here (plus the TS type
-// in types/source.ts) rather than in every form component.
+// field tables in ../../../file_format.md. Forms render from these descriptors so
+// the schema lives in one place — adding/renaming a field is a change here (plus
+// the TS type in types/source.ts) rather than in every form component.
 //
 // `placeholder` carries the format/default hint (shown as the input placeholder);
 // `help` is a longer tooltip. `NEW_*` are the stubs the "Add" buttons insert.
@@ -12,6 +12,7 @@ import type {
   SrcActivityType,
   SrcCarRental,
   SrcDay,
+  SrcEmergencyContact,
   SrcMeal,
   SrcSecondaryCurrency,
   SrcTransport,
@@ -180,6 +181,14 @@ export const DEFAULTS_GROUPS: FieldGroup[] = [
 // Every `defaults` field, flattened. The finding index walks this rather than the
 // groups, so regrouping the form can never change which paths it knows about.
 export const DEFAULTS_FIELDS: FieldSpec[] = DEFAULTS_GROUPS.flatMap((g) => g.fields);
+
+// One entry of `misc.emergency_contacts`. Both halves are optional — the model
+// renders whichever it is given, and leaving an unknown number out beats
+// inventing one — so neither is marked required here either.
+export const EMERGENCY_CONTACT_FIELDS: FieldSpec[] = [
+  { key: "name", label: "Name", kind: "text", placeholder: "e.g. SAMU (medical emergencies)", help: "Who this contact reaches — the service, the embassy, the person. Optional: a number on its own is still listed." },
+  { key: "contact", label: "Contact", kind: "text", placeholder: "e.g. 112, +33 1 43 12 22 22", help: "How to reach them: a phone number, an email or an address. Free text, so a country's own conventions survive. Optional — but an entry with neither half is dropped." },
+];
 
 export const SECONDARY_CURRENCY_FIELDS: FieldSpec[] = [
   { key: "currency", label: "Currency", kind: "text", required: true, placeholder: "USD", help: "The secondary currency's 3-letter ISO code. Required." },
@@ -423,4 +432,8 @@ export function newCarRental(): SrcCarRental {
 
 export function newSecondaryCurrency(): SrcSecondaryCurrency {
   return { currency: "", change_rate: 1 };
+}
+
+export function newEmergencyContact(): SrcEmergencyContact {
+  return { name: "", contact: "" };
 }

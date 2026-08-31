@@ -11,6 +11,7 @@ guide an LLM uses to write one of these from raw notes.
 - [Global structure](#global-structure)
 - [`travel_description`](#travel_description)
 - [`defaults`](#defaults)
+- [`misc`](#misc)
 - [`days[]` — a day](#days--a-day)
 - [`activities[]` — common fields](#activities--common-fields)
 - [`transport[]`](#transport)
@@ -22,7 +23,7 @@ be non-empty; everything else is optional and falls back to a sensible default.
 
 ## Global structure
 
-The top-level object has two config groups and three content arrays:
+The top-level object has three config groups and three content arrays:
 
 - **`travel_description`** *(object)* — what the trip is: cover title, summary,
   accent color, and an optional date range (inferred from the earliest/latest
@@ -30,6 +31,8 @@ The top-level object has two config groups and three content arrays:
 - **`defaults`** *(object)* — fallback settings applied across the trip: the
   day start and end time, how the buffers between activities are sized, time
   zone.
+- **`misc`** *(object, optional)* — trip-wide reference data that belongs to no
+  point on the timeline. Today: the emergency contacts.
 - **`days`** *(array, required, non-empty)* — the itinerary, one per day.
 - **`transport`** *(array, optional)* — travel bookings, each with its `legs`
   (the legs are also woven into the days).
@@ -49,6 +52,9 @@ The top-level object has two config groups and three content arrays:
     "end_time": "21:00",
     "timezone": "+02:00"
   },
+  "misc": {
+    "emergency_contacts": [ /* { "name": …, "contact": … } */ ]
+  },
   "days": [ /* day objects */ ],
   "transport": [ /* transport bookings, each with its "legs" */ ],
   "accommodations": [ /* accommodation objects */ ],
@@ -62,7 +68,9 @@ Throughout, dates use `YYYY-MM-DD`, times use `HH:MM`, durations look like
 (`travel_description` / `defaults`) or at the top level, but the old renamed
 aliases (`default_start_time` / `default_end_time` / `default_buffer`,
 `start_timezone` / `end_timezone`, transport `date`, `transports`, `default`)
-are no longer accepted — use the canonical names.
+are no longer accepted — use the canonical names. **`misc` is the exception**:
+its keys are read from the group only, never from the top level (it is new, so
+there is no older shape to stay compatible with).
 
 ## `travel_description`
 
@@ -255,6 +263,59 @@ it has one, otherwise it falls back to its `address` / place name, so it appears
 even when maps are off and independently of `show_on_map`. A multi-leg `road`
 gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's
 destination (its named waypoint).
+
+## `misc`
+
+Trip-wide reference data that belongs to the whole trip but to **no point on its
+timeline** — so it has nowhere to live among the days, the bookings or the stays.
+The whole group is optional, and so is everything in it.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `emergency_contacts` | ❌ | Who to call in an emergency where you're going | array | see below | `[]` (no emergency-contacts section) |
+
+Unlike `travel_description` and `defaults`, whose keys are also accepted at the
+top level, `misc` is read **only** from its own object: a bare top-level
+`emergency_contacts` would read as trip content rather than reference material,
+and there is no older file shape to stay compatible with.
+
+### `misc.emergency_contacts[]`
+
+One entry per number to reach. **Both fields are optional**, and whichever is
+present is drawn: a number with no label is still dialable, and a label with no
+number still tells the traveller what to look up. An entry with **neither** is
+dropped (the validator warns about it), and a missing half is a ⚠️ warning —
+because a gap you meant to fill is worth naming, while *inventing* an emergency
+number is worse than leaving it out.
+
+| Field | Required | Description | Type | Format | Default |
+| ----- | -------- | ----------- | ---- | ------ | ------- |
+| `name` | ❌ | Who this contact reaches | string | any text | `""` (the number is listed on its own) |
+| `contact` | ❌ | How to reach them | string | any text | `""` (nothing to call — a label only) |
+
+`contact` is deliberately **free text, never parsed**: emergency numbering is
+local (`112`, `15`, `999`, `+996 312 …`), and an entry may just as well hold an
+email or a street address. So a country's own conventions survive exactly as
+written.
+
+```json
+"misc": {
+  "emergency_contacts": [
+    { "name": "Emergency — any service (EU-wide)", "contact": "112" },
+    { "name": "SAMU — medical emergencies", "contact": "15" },
+    { "name": "US Embassy, Paris — consular emergencies", "contact": "+33 1 43 12 22 22" },
+    { "name": "Your embassy in Bishkek" }
+  ]
+}
+```
+
+**Where it shows up.** The PDF gives the contacts its **last page** (a plain
+directory: name left, number right in the accent color), reachable from a
+*Jump to → Emergency* shortcut on the cover; the web viewer lists them at the
+foot of the **🗺️ Overview** tab, where a contact that looks like a phone number
+or an email becomes a tap-to-call / mail link. Neither section is drawn when the
+list is empty. They are not in the `.ics` export — a phone number is not an
+event.
 
 ## `days[]` — a day
 

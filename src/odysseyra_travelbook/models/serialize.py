@@ -477,6 +477,12 @@ def to_dict(itinerary: Itinerary) -> dict:
             "infer_from_address": itinerary.infer_coordinates_from_address,
             "inference_countries": list(itinerary.inference_countries),
         },
+        # The `misc` group is flattened here the same way `defaults` is: the
+        # resolved doc has no use for the grouping, only for the values.
+        "emergency_contacts": [
+            {"name": c.name, "contact": c.contact}
+            for c in itinerary.emergency_contacts
+        ],
         "days": [_day(itinerary, i, d) for i, d in enumerate(itinerary.days)],
         "transports": [_transport(itinerary, t) for t in itinerary.transports],
         "accommodations": [

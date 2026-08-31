@@ -304,6 +304,14 @@ export const FR: Record<string, string> = {
   "No activities — a day needs at least one.":
     "Aucune activité — un jour en nécessite au moins une.",
   "No secondary currencies.": "Aucune devise secondaire.",
+  // The `misc` group and its emergency contacts
+  Misc: "Divers",
+  "Emergency contacts ({n})": "Numéros d'urgence ({n})",
+  "Who to call where you're going. Shown in the 🗺️ Overview tab and on the book's last page. Leave a number out rather than guessing it.":
+    "Qui appeler là où vous allez. Affichés dans l'onglet 🗺️ Aperçu et sur la dernière page du livre. Mieux vaut omettre un numéro que de le deviner.",
+  "Contact {n}": "Contact {n}",
+  contact: "contact",
+  "No emergency contacts.": "Aucun numéro d'urgence.",
 
   // ------------------------------------------------------ Activity type labels
   "Road / drive": "Route / trajet",
@@ -652,6 +660,15 @@ export const FR: Record<string, string> = {
   Paid: "Payé",
   "Payment state, shown as a badge. No badge when unset.":
     "État du paiement, affiché comme badge. Aucun badge si non défini.",
+
+  // Emergency contact (`misc.emergency_contacts`) — "Name" / "Contact" are keyed
+  // elsewhere already, so only the hints and help text are new here.
+  "e.g. SAMU (medical emergencies)": "ex. SAMU (urgences médicales)",
+  "Who this contact reaches — the service, the embassy, the person. Optional: a number on its own is still listed.":
+    "Qui ce contact permet de joindre — le service, l'ambassade, la personne. Facultatif : un numéro seul est tout de même affiché.",
+  "e.g. 112, +33 1 43 12 22 22": "ex. 112, +33 1 43 12 22 22",
+  "How to reach them: a phone number, an email or an address. Free text, so a country's own conventions survive. Optional — but an entry with neither half is dropped.":
+    "Comment les joindre : un numéro, un e-mail ou une adresse. Texte libre, pour respecter les conventions locales. Facultatif — mais une entrée sans aucun des deux est ignorée.",
 
   // Accommodation
   "Accommodation name. Required.": "Nom de l'hébergement. Obligatoire.",

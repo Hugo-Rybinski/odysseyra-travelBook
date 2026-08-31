@@ -7,6 +7,7 @@ import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
+import { EmergencyContacts } from "./EmergencyContacts";
 import { ForecastProvider, useActivityForecasts } from "./forecast";
 import { TransportList } from "./TransportList";
 import { TripMap } from "./TripMap";
@@ -147,6 +148,9 @@ export function Book({
               startOverviewOpen
             />
             <TripMap itinerary={itinerary} lang={lang} />
+            {/* The trip's emergency contacts close the overview — the same list
+                the PDF puts on its last page. A no-op when none are given. */}
+            <EmergencyContacts itinerary={itinerary} lang={lang} />
           </div>
         </ClampProvider>
       </MapProviderContext.Provider>
