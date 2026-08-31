@@ -234,7 +234,8 @@ export interface Day {
   stay_night: number | null; // 1-based night index within the stay
   night_transport: Transport | null;
   sleep_city: string;
-  // The night's moon phase, present only when defaults.show_moon_phase is on.
+  // The night's moon phase, present unless defaults.show_moon_phase is off (it
+  // defaults on).
   // `key` is a format.ts label key; `name` is the English fallback.
   moon: { key: string; emoji: string; name: string } | null;
   // The day's sunrise/sunset, present unless defaults.show_sun_times is off (it

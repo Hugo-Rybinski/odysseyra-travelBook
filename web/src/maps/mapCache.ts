@@ -25,8 +25,9 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // v4: each end got its own fallback chain (sunset → the day's last located stop,
 // sunrise → its first). v5: `sun.display` dropped — the viewer localizes it now.
 // v6: `road` activities gained a `description`. v7: road waypoints gained a
-// per-leg `off_road`.
-const SCHEMA_VERSION = 7;
+// per-leg `off_road`. v8: `show_moon_phase` now defaults on, so `day.moon` is
+// populated for docs that never set it.
+const SCHEMA_VERSION = 8;
 
 interface Entry {
   day: Day;

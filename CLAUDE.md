@@ -140,8 +140,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `secondary_currencies`, the accommodation calendar-event times
   `accommodation_start_time` 22:00 / `accommodation_end_time` 00:00 (midnight), the maps
   switches `include_maps_in_render` false / `infer_coordinates_from_address`
-  false / `inference_countries` [], `show_moon_phase` false and
-  `show_sun_times` **true**) — plus
+  false / `inference_countries` [], and `show_moon_phase` / `show_sun_times`
+  both **true**) — plus
   content arrays `days` (required, non-empty), `transport`, `accommodations`.
   Canonical keys may sit in their group or at the top level, but the old
   renamed aliases are gone (`default_start_time`/`default_end_time`/

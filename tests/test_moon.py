@@ -34,8 +34,22 @@ def test_serialized_moon_opt_in():
         assert d["moon"]["key"].startswith("moon")
 
 
-def test_serialized_moon_off_by_default():
-    # pyrenees.json does not set the flag → no moon emitted.
+def test_serialized_moon_on_by_default():
+    # pyrenees.json does not set the flag → the default (on) applies, so every
+    # dated day carries its phase.
     it = Itinerary.from_json_file(str(EXAMPLES / "pyrenees.json"))
+    assert it.show_moon_phase is True
+    days = to_dict(it)["days"]
+    assert days and all(d["moon"] is not None for d in days if d["date"])
+
+
+def test_serialized_moon_can_be_switched_off():
+    # `show_moon_phase: false` is the opt-out — nothing is emitted then.
+    it = Itinerary.from_dict({
+        "travel_description": {"title": "T"},
+        "defaults": {"show_moon_phase": False},
+        "days": [{"title": "D", "date": "2026-06-08", "activities": [
+            {"type": "buffer", "duration": "1h"}]}],
+    })
     assert it.show_moon_phase is False
     assert all(d["moon"] is None for d in to_dict(it)["days"])

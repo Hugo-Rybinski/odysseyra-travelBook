@@ -304,7 +304,7 @@ def _day(itin: Itinerary, index: int, day) -> dict:
     that night — the stay's city, else the day's own city."""
     stay = itin.stay_for(day.date)
     night = itin.night_transport(day.date)
-    # The night's moon phase, only when opted in (defaults.show_moon_phase). The
+    # The night's moon phase, unless opted out (defaults.show_moon_phase). The
     # ``key`` is localized by the viewer; ``name`` is the English fallback.
     moon = moon_phase(day.date) if itin.show_moon_phase and day.date else None
     # The day's sunrise/sunset at the night's accommodation, unless switched off

@@ -112,7 +112,7 @@ class DayMixin:
     def _day_stay(self, day) -> None:
         """A compact bar at the bottom of the day's page for that night — an
         accommodation, or an overnight transport leg if you sleep aboard one."""
-        # The night's moon phase, when opted in (defaults.show_moon_phase).
+        # The night's moon phase, unless opted out (defaults.show_moon_phase).
         moon = moon_phase(day.date) if self.itinerary.show_moon_phase and day.date else None
         acc = self.itinerary.stay_for(day.date)
         if acc is not None:

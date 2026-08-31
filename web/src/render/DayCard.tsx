@@ -600,8 +600,8 @@ function SunTimes({ day, lang }: { day: Day; lang: Lang }) {
 
 function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   const provider = useMapProvider();
-  // The night's moon phase (opt-in via defaults.show_moon_phase), shown as just
-  // the emoji before "Tonight:", with the phase name on hover — via the app's
+  // The night's moon phase (on by default; defaults.show_moon_phase opts out),
+  // shown as just the emoji before "Tonight:", with the name on hover — via the
   // CSS `data-tip` bubble (the native `title` proved unreliable, see Options).
   const moon = day.moon ? (
     <span className="moon-phase" data-tip={tr(lang, day.moon.key as LabelKey)}>

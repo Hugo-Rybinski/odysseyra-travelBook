@@ -25,6 +25,7 @@ export function draftToJson(draft: SrcItinerary): string {
 const SAFE_DEFAULTS: Record<string, unknown> = {
   show_on_map: true,
   show_sun_times: true,
+  show_moon_phase: true,
   off_road: false,
   breakfast_included: false,
   additional_drivers: 0,
