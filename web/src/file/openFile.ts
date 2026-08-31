@@ -41,8 +41,18 @@ export interface OpenedFile {
   handle: FsFileHandle | null; // null when opened via the input fallback
 }
 
+// The OS picker greys out anything it can't match, so list every MIME spelling a
+// .json file gets in the wild ("text/json" on some systems, plain text when no
+// JSON type is registered at all). `excludeAcceptAllOption: false` keeps an "All
+// files" entry in the dialog's type dropdown as the escape hatch.
+const JSON_ACCEPT: Record<string, string[]> = {
+  "application/json": [".json"],
+  "text/json": [".json"],
+  "text/plain": [".json"],
+};
+
 const PICKER_OPTS = {
-  types: [{ description: "Itinerary JSON", accept: { "application/json": [".json"] } }],
+  types: [{ description: "Itinerary JSON", accept: JSON_ACCEPT }],
   excludeAcceptAllOption: false,
   multiple: false,
 };
@@ -74,7 +84,12 @@ function openViaInput(): Promise<OpenedFile | null> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "application/json,.json";
+    // Deliberately unfiltered. iOS/Safari maps `accept` to UTIs and ignores the
+    // extension list, so `accept="application/json"` greys out perfectly good
+    // .json files with no dropdown to escape through — a file you cannot pick is
+    // worse than a picker that shows too much. The content is parsed and
+    // validated on open anyway, so a wrong pick fails loudly, not silently.
+    input.accept = "";
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return resolve(null);
