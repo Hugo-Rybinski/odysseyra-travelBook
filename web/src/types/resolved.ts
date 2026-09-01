@@ -39,12 +39,23 @@ export interface Scheduled {
 export interface Waypoint {
   coordinate: Coordinate | null;
   location: string;
-  // duration / distance / off_road all describe the leg *reaching* this waypoint
+  // duration / distance / off_road / gpx all describe the leg *reaching* this
+  // waypoint
   duration_min: number | null;
   duration_display: string;
   distance_km: number | null;
   // Optional: a day cached before per-leg off-road existed has none.
   off_road?: boolean;
+  // This point's map pin label, when the road asked for pins on its own points
+  // (see the road's display_*_on_maps below) and maps were rendered. Null/absent
+  // otherwise — which is the normal case, since all three switches default off.
+  map_pin?: string | null;
+  // The leg's recorded track, base64, exactly as it was attached — all the
+  // browser needs it for is the "(Get GPX track)" download. There is no
+  // geometry or profile here on purpose: a leg's recording is drawn as the
+  // route on the day map (the map render carries it), never as a figure of its
+  // own, which is what makes it unlike a hike's `track`.
+  gpx?: string | null;
 }
 
 // A hike's embedded GPX, reduced by the Python model (models/gpx.py) to what
@@ -104,6 +115,13 @@ export interface Activity extends Scheduled {
   start?: string;
   destination?: string;
   off_road?: boolean;
+  // Which of the drive's own points earn a numbered pin on the day map — the
+  // departure (the road's own `map_pin`), the final arrival, and the junctions
+  // in between (each on its waypoint). All default off; a day cached before v18
+  // carries none of them.
+  display_start_on_maps?: boolean;
+  display_end_on_maps?: boolean;
+  display_intermediate_point_on_maps?: boolean;
   waypoints?: Waypoint[];
   // road / hike
   distance_km?: number | null;

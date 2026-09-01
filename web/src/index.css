@@ -1670,7 +1670,17 @@ body {
 .via-route {
   color: var(--fg);
 }
-/* Bullet each leg of a multi-leg road (RoadVia only renders for 2+ legs). */
+/* A leg's own map pin, when the road asked for pins on its points. The row's
+   flex gap already spaces it, and its type is smaller than a title's, so the
+   disc shrinks to match. */
+.via-leg .pin-disc {
+  margin-right: 0;
+  min-width: 1.35em;
+  height: 1.35em;
+  font-size: 0.7rem;
+}
+/* Bullet each leg of a road (RoadVia renders for 2+ legs, or for one that
+   carries a map pin). */
 .via-route::before {
   content: "•";
   margin-right: 6px;

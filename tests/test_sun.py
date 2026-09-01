@@ -262,18 +262,20 @@ def test_the_sunset_uses_the_days_last_stop_not_its_first():
     assert got.sunset == sun_times(day.date, 48.3904, -4.4861, 120).sunset
 
 
-def test_a_roads_final_waypoint_can_close_the_day():
-    # A drive's own coordinate is its departure and its waypoints the stops
-    # through to the arrival, so the last waypoint is where the day ends up.
+def test_a_roads_last_leg_can_close_the_day():
+    # A drive departs from its first leg and arrives at its last, so the last
+    # leg's arrival is where the day ends up.
     it = _moving_trip()
     it.accommodations = []
     day = it.days[1]
     day.activities = [activity_from_dict({
-        "type": "road", "start": "Strasbourg",
-        "coordinate": {"lat": 48.5734, "long": 7.7521},
-        "waypoints": [
-            {"location": "Orléans", "coordinate": {"lat": 47.9029, "long": 1.9093}},
-            {"location": "Brest", "coordinate": {"lat": 48.3904, "long": -4.4861}},
+        "type": "road", "legs": [
+            {"start_location": "Strasbourg",
+             "start_coordinate": {"lat": 48.5734, "long": 7.7521},
+             "end_location": "Orléans",
+             "end_coordinate": {"lat": 47.9029, "long": 1.9093}},
+            {"end_location": "Brest",
+             "end_coordinate": {"lat": 48.3904, "long": -4.4861}},
         ],
     })]
     assert it.sun_reference(day.date, day).long == -4.4861  # the arrival

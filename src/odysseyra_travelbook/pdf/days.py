@@ -15,25 +15,26 @@ def road_display_legs(start, waypoints):
     waypoints carry no leg of their own — they merge forward into the next named
     waypoint, their ``duration`` / ``distance_km`` summed into that leg and their
     ``off_road`` OR-ed into it. Returns
-    ``[(src, dest, duration_min | None, distance_km | None, dest_coord,
+    ``[(src, dest, duration_min | None, distance_km | None, dest_wp,
     off_road)]``; ``dest`` is ``None`` for a trailing run of unnamed waypoints (an
-    unnamed arrival), and ``dest_coord`` is that leg's destination coordinate (the
-    named waypoint's, or the last shaping point's for an unnamed arrival)."""
+    unnamed arrival), and ``dest_wp`` is the waypoint the leg ends at — the named
+    one, or the last shaping point for an unnamed arrival — which is what carries
+    that leg's coordinate, its map pin and its ``gpx``."""
     legs = []
     acc = {"prev": start, "dur": 0, "dist": 0.0, "has_dur": False,
-           "has_dist": False, "pending": False, "coord": None, "off": False}
+           "has_dist": False, "pending": False, "wp": None, "off": False}
 
     def flush(dest):
         legs.append((acc["prev"], dest,
                      acc["dur"] if acc["has_dur"] else None,
                      acc["dist"] if acc["has_dist"] else None,
-                     acc["coord"], acc["off"]))
+                     acc["wp"], acc["off"]))
         acc.update(prev=dest, dur=0, dist=0.0, has_dur=False,
-                   has_dist=False, pending=False, coord=None, off=False)
+                   has_dist=False, pending=False, wp=None, off=False)
 
     for wp in waypoints:
         acc["pending"] = True
-        acc["coord"] = wp.coordinate  # the destination of the leg being built
+        acc["wp"] = wp  # the waypoint the leg being built ends at
         if wp.duration_min is not None:
             acc["dur"] += wp.duration_min
             acc["has_dur"] = True
@@ -525,7 +526,8 @@ class DayMixin:
             # multi-leg drives get a Navigate link per leg (in the VIA list).
             self._meta_line(x, w, parts)
         else:
-            dest_coord = act.waypoints[-1].coordinate if act.waypoints else None
+            dest_wp = legs[0][4] if legs else None
+            dest_coord = dest_wp.coordinate if dest_wp is not None else None
             self._line_with_nav(x, w, meta, dest_coord, act.destination)
         # The road-level chip covers the whole drive. A single-leg drive has no
         # VIA list to hang a per-leg flag on, so its leg's flag shows here too —
@@ -539,11 +541,18 @@ class DayMixin:
     def _road_waypoints(self, x: float, w: float, road) -> None:
         """The drive's legs, listed under a small 'VIA' header in a lower
         (lightened) accent — each row reads 'previous → this waypoint', with that
-        leg's duration / distance in muted text and a Navigate link to the leg's
-        destination. Hidden for a road with a single leg (a plain
-        departure→arrival), since the title already shows it."""
+        leg's duration / distance in muted text, its map pin when it has one, and
+        a Navigate link to the leg's destination.
+
+        Hidden for a road with a single leg (a plain departure→arrival), since
+        the title already shows it — *unless* that leg's arrival carries a map
+        pin, which needs a row to be read against: the pin's number is only
+        legible next to the place it points at (the same rule that puts every
+        other pin's disc beside its activity's title)."""
         legs = road_display_legs(road.start, road.waypoints)
-        if len(legs) <= 1:
+        pins = [self.pin_label(wp) if wp is not None else None
+                for _s, _d, _dur, _dist, wp, _off in legs]
+        if len(legs) <= 1 and not any(pins):
             return
         low_accent = _tint(self.accent, 0.4)
         self.ln(1)
@@ -551,9 +560,14 @@ class DayMixin:
         self.set_font(FONT, "B", 8)
         self.set_text_color(*low_accent)
         self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
-        for src, dest, dur_min, dist_km, dest_coord, off_road in legs:
+        for (src, dest, dur_min, dist_km, dest_wp, off_road), pin in zip(legs, pins):
             self._ensure_room(6)
-            self.set_x(x + 3)
+            row_y = self.get_y()
+            tx = x + 3
+            if pin:
+                # the arrival's own pin, before the row it labels
+                tx += self._pin_disc(tx, row_y + 0.2, pin)
+            self.set_xy(tx, row_y)  # _pin_disc moved the cursor; put it back
             self.set_font(FONT, "", 9)
             self.set_text_color(*low_accent)
             label = f"•  {src or '?'}  →  {dest or self.t('arrival')}"
@@ -573,6 +587,7 @@ class DayMixin:
                 # a drive that is off-road as a whole
                 self.cell(2, 5, "")
                 self._inline_chip(self.t("OFF-ROAD"))
+            dest_coord = dest_wp.coordinate if dest_wp is not None else None
             url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
                                                      provider=self.map_provider)
             if url:

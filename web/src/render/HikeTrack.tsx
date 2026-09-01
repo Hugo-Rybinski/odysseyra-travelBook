@@ -4,6 +4,7 @@ import { downloadBytes, slugify } from "../file/saveExport";
 import { fill, tr, type Lang } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { useAccent } from "./palette";
+import { useRouteGpx } from "./routeExport";
 
 // Same lazy chunk as the day and trip maps (MapLibre is heavy, precached once).
 const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMapGL })));
@@ -199,24 +200,33 @@ async function gpxBytes(base64: string): Promise<Uint8Array> {
   return gzipped ? gunzip(raw) : raw;
 }
 
-// Hands back the `.gpx` the hike carries, for a watch, a GPS or another app.
-// It's the file that was attached, byte-for-byte — not a re-export of the
-// simplified line the map draws — so what you load elsewhere is what you gave.
+// Hands back a `.gpx` the itinerary carries, for a watch, a GPS or another app.
+// It's the file that was attached, byte-for-byte — not a re-export of the line
+// the map draws — so what you load elsewhere is what you gave.
 //
 // Decoding is async (inflating a gzipped payload goes through a stream), so this
 // is a button rather than an `<a href>`: there is nothing to point at until the
 // click. It's styled as one of the inline links beside it all the same.
-export function GpxDownloadLink({ act, lang }: { act: Activity; lang: Lang }) {
+//
+// Paper can't hand back a file, so this has no PDF twin — the same deliberate
+// split as the road-leg download below.
+export function GpxDownload({
+  base64,
+  name,
+  lang,
+}: {
+  base64: string | null | undefined;
+  name: string;
+  lang: Lang;
+}) {
   const [failed, setFailed] = useState(false);
-  const base64 = act.track?.gpx;
   if (!base64) return null;
 
   const download = async () => {
     setFailed(false);
     try {
       const bytes = await gpxBytes(base64);
-      downloadBytes(bytes, `${slugify(act.title || "trail")}.gpx`,
-        "application/gpx+xml");
+      downloadBytes(bytes, `${slugify(name || "track")}.gpx`, "application/gpx+xml");
     } catch {
       setFailed(true);
     }
@@ -226,6 +236,57 @@ export function GpxDownloadLink({ act, lang }: { act: Activity; lang: Lang }) {
   return (
     <button type="button" className="link gpx-link" onClick={() => void download()}>
       {tr(lang, "getGpx")}
+    </button>
+  );
+}
+
+// A hike's trail file, from the `track` its GPX was reduced to.
+export function GpxDownloadLink({ act, lang }: { act: Activity; lang: Lang }) {
+  return <GpxDownload base64={act.track?.gpx} name={act.title || "trail"} lang={lang} />;
+}
+
+// The other half of the pair: a leg with **no** recording, whose file the app
+// builds on demand from the route the map draws (`buildLegGpx` → the engine's
+// `legGpx` op). Distinct wording from the download above — this file didn't
+// exist until you clicked, and what it holds is a computed route, not something
+// that was recorded — and it stays silent when there is no route to build from
+// (the engine refuses to pass a straight line off as one).
+export function GpxBuildLink({
+  dayIndex,
+  roadIndex,
+  legIndex,
+  lang,
+}: {
+  dayIndex: number;
+  roadIndex: number;
+  legIndex: number;
+  lang: Lang;
+}) {
+  const api = useRouteGpx();
+  const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
+  if (!api) return null;
+
+  const build = async () => {
+    setState("busy");
+    try {
+      const { gpx, name } = await api.build(dayIndex, roadIndex, legIndex);
+      downloadBytes(new TextEncoder().encode(gpx), `${slugify(name || "route")}.gpx`,
+        "application/gpx+xml");
+      setState("idle");
+    } catch {
+      setState("failed");
+    }
+  };
+
+  if (state === "failed") return <span className="gpx-error">{tr(lang, "gpxUnavailable")}</span>;
+  return (
+    <button
+      type="button"
+      className="link gpx-link"
+      disabled={!api.ready || state === "busy"}
+      onClick={() => void build()}
+    >
+      {tr(lang, "buildGpx")}
     </button>
   );
 }

@@ -62,19 +62,15 @@
       "activities": [
         {
           "type": "road",
-          "start": "Pau",
           "distance_km": 45,
           "start_time": "18:45",
           "duration": "50 min",
-          "off_road": false,
-          "coordinate": {
-            "lat": 43.29575,
-            "long": -0.36857
-          },
-          "waypoints": [
+          "legs": [
             {
-              "coordinate": { "lat": 43.09409, "long": -0.0465 },
-              "location": "Lourdes"
+              "start_location": "Pau",
+              "start_coordinate": { "lat": 43.29575, "long": -0.36857 },
+              "end_location": "Lourdes",
+              "end_coordinate": { "lat": 43.09409, "long": -0.0465 }
             }
           ]
         }
@@ -175,19 +171,16 @@
       "activities": [
         {
           "type": "road",
-          "start": "Lourdes",
           "distance_km": 52,
           "start_time": "08:00",
           "duration": "1h20",
-          "off_road": true,
-          "coordinate": {
-            "lat": 43.09409,
-            "long": -0.0465
-          },
-          "waypoints": [
+          "legs": [
             {
-              "coordinate": { "lat": 42.75674, "long": -0.00029 },
-              "location": "Départ de Gavarnie"
+              "start_location": "Lourdes",
+              "start_coordinate": { "lat": 43.09409, "long": -0.0465 },
+              "end_location": "Départ de Gavarnie",
+              "end_coordinate": { "lat": 42.75674, "long": -0.00029 },
+              "off_road": true
             }
           ],
           "activities": [
@@ -268,30 +261,26 @@
       "activities": [
         {
           "type": "road",
-          "start": "Gavarnie",
           "distance_km": 96,
           "duration": "2h05",
-          "off_road": false,
-          "coordinate": {
-            "lat": 42.69574,
-            "long": -0.0103
-          },
-          "waypoints": [
+          "legs": [
             {
-              "coordinate": { "lat": 42.8722, "long": -0.0033 },
-              "location": "Luz-Saint-Sauveur",
+              "start_location": "Gavarnie",
+              "start_coordinate": { "lat": 42.69574, "long": -0.0103 },
+              "end_location": "Luz-Saint-Sauveur",
+              "end_coordinate": { "lat": 42.8722, "long": -0.0033 },
               "duration": "35 min",
               "distance_km": 20
             },
             {
-              "coordinate": { "lat": 42.9089, "long": 0.3617 },
-              "location": "Arreau",
+              "end_location": "Arreau",
+              "end_coordinate": { "lat": 42.9089, "long": 0.3617 },
               "duration": "45 min",
               "distance_km": 40
             },
             {
-              "coordinate": { "lat": 43.02693, "long": 0.57091 },
-              "location": "Saint-Bertrand-de-Comminges",
+              "end_location": "Saint-Bertrand-de-Comminges",
+              "end_coordinate": { "lat": 43.02693, "long": 0.57091 },
               "duration": "40 min",
               "distance_km": 36
             }

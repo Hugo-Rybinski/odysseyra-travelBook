@@ -71,9 +71,9 @@ def test_pin_angles_fans_coincident_pins():
 DAY = {
     "title": "d", "city": "Lourdes",
     "activities": [
-        {"type": "road", "start": "Pau",
-         "coordinate": {"lat": 43.29, "long": -0.36},
-         "waypoints": [{"coordinate": {"lat": 43.09, "long": -0.05}, "location": "Lourdes"}]},
+        {"type": "road", "legs": [
+            {"start_location": "Pau", "start_coordinate": {"lat": 43.29, "long": -0.36},
+             "end_location": "Lourdes", "end_coordinate": {"lat": 43.09, "long": -0.05}}]},
         {"type": "point_of_interest", "name": "Sanctuary",
          "coordinate": {"lat": 43.097, "long": -0.058}},
         {"type": "point_of_interest", "name": "Hidden",
@@ -92,7 +92,7 @@ DAY = {
 
 def test_resolve_day_points_routes_and_areas(monkeypatch):
     # stub routing so the road's route needs no network
-    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache: [a, b])
+    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache, **kw: [a, b])
     it = _itin([DAY])
     points, routes, _nodes, areas = resolve_day(it.days[0], it, cache=None)
     labels = [p.label for p in points]
@@ -121,17 +121,16 @@ def test_area_centroid_fallback():
     assert len(areas) == 1
 
 
-def test_resolve_day_road_routes_through_waypoints(monkeypatch):
-    """A road draws departure (coordinate) → wp1 → … → last waypoint; the last
-    waypoint is the arrival."""
-    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache: [a, b])
+def test_resolve_day_road_routes_through_its_legs(monkeypatch):
+    """A road draws its first leg's departure → each leg's arrival, in order —
+    so the last leg's arrival is where the drive ends up."""
+    monkeypatch.setattr("odysseyra_travelbook.maps.build.route", lambda a, b, cache, **kw: [a, b])
     day = {"title": "d", "city": "Lourdes", "activities": [
-        {"type": "road", "start": "A",
-         "coordinate": {"lat": 0.0, "long": 0.0},
-         "waypoints": [
-             {"coordinate": {"lat": 1.0, "long": 1.0}, "location": "One"},
-             {"coordinate": {"lat": 2.0, "long": 2.0}, "location": "Two"},
-         ]}]}
+        {"type": "road", "legs": [
+            {"start_location": "A", "start_coordinate": {"lat": 0.0, "long": 0.0},
+             "end_location": "One", "end_coordinate": {"lat": 1.0, "long": 1.0}},
+            {"end_location": "Two", "end_coordinate": {"lat": 2.0, "long": 2.0}},
+        ]}]}
     it = _itin([day])
     _points, routes, nodes, _areas = resolve_day(it.days[0], it, cache=None)
     assert len(routes) == 1
@@ -222,16 +221,18 @@ def test_fill_coordinates_adds_and_preserves():
     data = {"days": [{"title": "d", "city": "Lourdes", "activities": [
         {"type": "point_of_interest", "name": "Sanctuary"},
         {"type": "point_of_interest", "name": "Unknown place"},
-        {"type": "road", "start": "Pau",
-         "waypoints": [{"coordinate": {"lat": 1.0, "long": 2.0}, "location": "Lourdes"}]},
+        {"type": "road", "legs": [
+            {"start_location": "Pau", "end_location": "Lourdes",
+             "end_coordinate": {"lat": 1.0, "long": 2.0}}]},
     ]}]}
     filled, missed = fill_coordinates(data, ["FR"], cache=None, geocoder=_stub)
     acts = data["days"][0]["activities"]
     assert acts[0]["coordinate"] == {"lat": 43.097, "long": -0.058}
     assert "coordinate" not in acts[1]                 # geocoder returned None
-    # a road's 'start' geocodes into its 'coordinate' (the departure point)
-    assert acts[2]["coordinate"] == {"lat": 43.29, "long": -0.36}
-    assert acts[2]["waypoints"][0]["coordinate"] == {"lat": 1.0, "long": 2.0}  # untouched
+    # a road leg's endpoint names geocode into its own start_/end_coordinate
+    leg = acts[2]["legs"][0]
+    assert leg["start_coordinate"] == {"lat": 43.29, "long": -0.36}
+    assert leg["end_coordinate"] == {"lat": 1.0, "long": 2.0}  # untouched
     assert filled == 2 and missed == 1
 
 
@@ -315,7 +316,7 @@ def test_area_map_always_pins_the_stay_without_moving_the_zoom(monkeypatch, tmp_
     from odysseyra_travelbook.maps import Cache
     from odysseyra_travelbook.maps import build as buildmod
 
-    monkeypatch.setattr(buildmod, "route", lambda a, b, cache: [a, b])
+    monkeypatch.setattr(buildmod, "route", lambda a, b, cache, **kw: [a, b])
     captured = []
 
     def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
@@ -452,7 +453,7 @@ def _trip_map_capture(monkeypatch):
     from odysseyra_travelbook.maps import build as buildmod
 
     seen = []
-    monkeypatch.setattr(buildmod, "route", lambda a, b, cache: [a, b])
+    monkeypatch.setattr(buildmod, "route", lambda a, b, cache, **kw: [a, b])
 
     def fake_render_map(all_coords, routes, points, accent, tiles_dir, **kw):
         seen.append({"extent": list(all_coords), "routes": list(routes),
@@ -574,18 +575,18 @@ def test_trip_map_sets_aside_a_far_off_drive(monkeypatch, tmp_path):
         "defaults": {"include_maps_in_render": True},
         "days": [
             {"title": "d1", "date": "2026-06-01", "city": "New York", "activities": [
-                {"type": "road", "start": "Manhattan", "destination": "JFK",
-                 "coordinate": {"lat": 40.75, "long": -73.99},
-                 "waypoints": [{"location": "JFK", "coordinate": {"lat": 40.64, "long": -73.78}}]}]},
+                {"type": "road", "legs": [
+                    {"start_location": "Manhattan", "start_coordinate": {"lat": 40.75, "long": -73.99},
+                     "end_location": "JFK", "end_coordinate": {"lat": 40.64, "long": -73.78}}]}]},
             {"title": "d2", "date": "2026-06-02", "city": "Paris", "activities": [
                 {"type": "point_of_interest", "name": "Louvre",
                  "coordinate": {"lat": 48.86, "long": 2.34}}]},
             {"title": "d3", "date": "2026-06-03", "city": "Amboise", "activities": [
                 {"type": "point_of_interest", "name": "Château",
                  "coordinate": {"lat": 47.41, "long": 0.98}},
-                {"type": "road", "start": "Paris", "destination": "Amboise",
-                 "coordinate": {"lat": 48.86, "long": 2.34},
-                 "waypoints": [{"location": "Amboise", "coordinate": {"lat": 47.41, "long": 0.98}}]}]},
+                {"type": "road", "legs": [
+                    {"start_location": "Paris", "start_coordinate": {"lat": 48.86, "long": 2.34},
+                     "end_location": "Amboise", "end_coordinate": {"lat": 47.41, "long": 0.98}}]}]},
         ],
     }
     render_trip_map(Itinerary.from_dict(doc), Cache.open(tmp_path))

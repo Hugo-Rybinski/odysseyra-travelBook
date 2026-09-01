@@ -307,7 +307,7 @@ day:
 - **A day you move** → `"Origin → Destination"` with a real arrow (`→`, U+2192),
   where the **destination is where you sleep**: `"Amboise → Sarlat-la-Canéda"`.
   Name only those two even if the drive passes through others — the road's
-  waypoints carry the rest. Never chain three (`"A → B → C"`).
+  legs carry the rest. Never chain three (`"A → B → C"`).
 - **A day out of town that returns to the same base** → keep the **base town**,
   not the excursion: a day hiking in Ala Archa out of Bishkek is `"Bishkek"`, not
   `"Ala Archa National Park"`. Use an **area** name only when the day genuinely
@@ -499,101 +499,151 @@ end-of-run gaps and inconsistency report, never in the JSON.
 
 **Map coordinates (any located activity may include these):** if the trip
 renders maps (`defaults.include_maps_in_render` on), an activity can carry a
-`coordinate` (applies to `point_of_interest`, `place`, `hike`, `meal`, `road` —
-on a `road` it's the **departure** point). A coordinate is plotted by default;
+`coordinate` (applies to `point_of_interest`, `place`, `hike` and `meal`; a
+`road` carries its coordinates on its **legs** instead — see below). A coordinate
+is plotted by default;
 add `"show_on_map": false` to record one without drawing its pin. With
 `infer_coordinates_from_address` on, activities with no coordinate are geocoded
 from their `name`/`address`; otherwise only explicit coordinates appear.
 
 #### Type `road` — a drive or transfer
 
-A road departs from `start` and runs through its `waypoints`, in order — the
-**last waypoint is the arrival**. There is no `end` field. A road is always a
-**ground** leg you drive or ride; a flight or train is a `transport` entry, never
-a road.
+A drive is written as its **`legs`**: one entry per hop, in travel order, each
+carrying its two ends, its driving time, its distance and its route. There is no
+`start`, `coordinate`, `waypoints` or `off_road` on the road itself. A road is
+always a **ground** leg you drive or ride; a flight or train is a `transport`
+entry, never a road.
 
 | Field | Required | Format | Notes |
 |---|---|---|---|
-| `start` | **yes** | text | Where the drive begins. |
-| `coordinate` | no | `{ "lat": .., "long": .. }` | The departure point, for the map route. |
-| `distance_km` | recommended | positive number | Driving distance. A road should carry a duration (its own/inferred times, or waypoint durations) **and** a `distance_km`; `validate` warns naming either that's missing. |
-| `off_road` | no | boolean | `true` if part is off-road. |
+| `legs` | **yes** | non-empty array of **leg** objects | The hops, in travel order. A plain A → B drive has exactly one. |
+| `distance_km` | recommended | positive number | Driving distance for the **whole** drive. A road should carry a duration (its own/inferred times, or its legs') **and** a `distance_km`; `validate` warns naming either that's missing. |
+| `display_start_on_maps` | no | boolean | `true` to give the drive's departure a numbered map pin. Default `false`. |
+| `display_end_on_maps` | no | boolean | `true` to give the drive's final arrival a numbered map pin. Default `false`. |
+| `display_intermediate_point_on_maps` | no | boolean | `true` to give every junction between two legs a numbered map pin. Default `false`. |
 | `description` | no | text | Free prose for what the other fields can't say — see below. |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the drive. Numbers only — see *Guidebook page references*. |
-| `waypoints` | **yes** | non-empty array of **waypoint** objects | Ordered stops through to the arrival. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
 
-Each **waypoint** is an object:
+Each **leg** is an object:
 
 | Field | Required | Format | Notes |
 |---|---|---|---|
-| `coordinate` | **yes** | `{ "lat": .., "long": .. }` | The point on the route. Only set coordinates you actually know. |
-| `location` | no | text | The waypoint's name. |
-| `duration` | no | duration (`"45 min"`) | Time for the leg reaching this waypoint. |
-| `distance_km` | no | positive number | Distance for the leg reaching this waypoint. |
-| `off_road` | no | boolean | `true` if the leg reaching this waypoint is off-road. |
+| `start_location` | **yes on the first leg** | text | Where the hop departs from. On any later leg, omit it and it reuses the previous leg's `end_location`. |
+| `start_coordinate` | no | `{ "lat": .., "long": .. }` | The departure point. Omit on a later leg to reuse the previous leg's `end_coordinate`. Only set coordinates you actually know. |
+| `end_location` | **yes on the last leg** | text | Where the hop arrives. On an earlier leg the next leg's `start_location` can name it instead. |
+| `end_coordinate` | **yes unless the next leg's `start_coordinate` gives it** | `{ "lat": .., "long": .. }` | The arrival point — it is plotted on the map, so it must resolve. |
+| `duration` | recommended | duration (`"45 min"`) | Driving time for this hop. |
+| `distance_km` | recommended | positive number | Driving distance for this hop. |
+| `off_road` | no | boolean | `true` if **this hop** runs off-road. |
+| `waypoints` | no | array of `{ "lat": .., "long": .. }` | Points the hop's route bends through, in order from its start to its end. Coordinates only — no names, no figures. |
+| `gpx` | no | the `.gpx` file base64-encoded (gzip allowed) | A recording of **this hop**, drawn as its line on the map instead of the routed guess. Only ever a file the user supplied — see below. |
 
-- A road needs **at least one** waypoint — the arrival. For a plain A→B drive,
-  that's a single waypoint at the destination (name it in `location`).
-- Give a waypoint a `location` when it's a real named stop shown to the reader.
-  Leave `location` off for a point that only **shapes the route** on the map (a
-  bend, a pass): it still gets a map disc, but in the PDF it merges into the next
-  named waypoint and its `duration`/`distance_km` are summed into that leg.
-- On a **multi-stop** drive each named waypoint is its own displayed leg, so give
-  each one a `duration` **and** a `distance_km` (folding in any preceding unnamed
-  shaping points); `validate` warns for a named leg missing either.
-- Keep the waypoint `duration`s adding up to no more than the road's own
-  `duration`; `validate` warns if the segments don't fit the drive.
-- **Off-road: flag the drive, or just the rough leg.** Set the road's own
-  `off_road` only when the drive as a whole leaves the tarmac. When the source
-  says just one stretch is rough — paved to the village, then 5 km of track —
-  leave the road's flag off and set `off_road: true` on the **waypoint that leg
-  arrives at** (the same place its `duration`/`distance_km` go). Setting both is
-  wrong unless both are genuinely true; a per-leg flag on a single-leg drive is
-  simply shown as the road's own flag, since a one-leg drive lists no legs.
+- A road needs **at least one** leg. For a plain A → B drive that is a single leg
+  with `start_location: "A"` and `end_location: "B"`.
+- **Write each junction once.** Two consecutive legs meet at one place, so give
+  it on one side only: the usual shape is a first leg with both of its ends, then
+  each later leg with just its `end_location` / `end_coordinate`. If you do write
+  both sides they must **match** — `validate` warns when the names differ or the
+  coordinates are a kilometre or more apart, and the earlier leg's `end_*` is
+  what gets used. What no leg names at all is an **error**: the first leg must
+  give its own departure and the last its own arrival.
+- **A named stop is a leg; a bend in the road is a waypoint.** Split the drive
+  into a leg per place the reader should see (each prints as its own row with its
+  own duration/distance and a *Navigate* link). Points that only **shape the
+  route** on the map — a pass, a river crossing, a detour the road takes — go in
+  that leg's `waypoints` as bare coordinates.
+- Give **every** leg a `duration` **and** a `distance_km`; `validate` warns for
+  each leg missing either. The one exception: on a **one-leg** drive the road's
+  own duration/`distance_km` cover it, since the drive *is* that hop.
+- Keep the leg `duration`s adding up to no more than the road's own `duration`;
+  `validate` warns if they don't fit the drive.
+- **Off-road belongs to the hop.** When the source says one stretch is rough —
+  paved to the village, then 5 km of track — set `off_road: true` on **that leg**
+  alone; its row carries an `OFF-ROAD` chip. A drive that is off-road from end to
+  end has it on every leg, and then (and only then) the whole road is flagged
+  beside its title. Never set it on legs the source doesn't describe that way.
+- **Leave the three `display_*_on_maps` switches alone unless the user asks.**
+  A drive is drawn as a route; the switches only add numbered pins to its own
+  points, which is a presentation choice, not something to infer from a source.
+  Set one only on an explicit instruction ("pin the stops", "show where we
+  break the drive"), and remember all three on means every named point of the
+  drive gets a pin.
+- **A leg's `gpx` is only ever a file the user gave you.** If the trip material
+  contains a `.gpx` for a drive (or a segment of one), attach it to the leg it
+  records, base64-encoded, and drop that leg's `waypoints` — the recording
+  already runs through them. **Never** synthesize one: not from a KML track, not
+  from a list of coordinates, not from your own idea of the road. A fabricated
+  recording is a wrong map drawn with total confidence. Nothing else about the
+  leg changes: keep its stated `duration` / `distance_km` rather than measuring
+  them off the file.
 - A road's **`description` is optional and holds only what no other field can**:
   the state of the road, a scenic or difficult stretch, a pass that may be shut,
   a toll, a ferry crossing, where to refuel. It is **not** the place to restate
-  the route, the distance, the duration or the stops — `start`, `distance_km` and
-  the waypoints already print those, and repeating them just doubles the text.
-  Leave it out when the source says nothing beyond the itinerary itself; most
-  drives don't need one. (Both renderers print it above the `VIA` leg list.)
+  the route, the distance, the duration or the stops — the legs already print
+  those, and repeating them just doubles the text. Leave it out when the source
+  says nothing beyond the itinerary itself; most drives don't need one. (Both
+  renderers print it above the leg list.)
 
-**Build the waypoints from a KML/KMZ directions track when one is provided.** If
-a KML/KMZ holds a *directions* geometry matching this drive, use it to generate
-the `waypoints` array instead of listing stops by hand. Keep every **named**
-point of the directions that falls on the drive's relevant segment as a named
-waypoint (its `location` = that name). Then, between each consecutive pair of
-named waypoints, insert **25 intermediate unnamed waypoints** (`location`
-omitted) by taking evenly spaced points along the directions geometry for that
-segment — so the map route follows the real road rather than a straight line.
+```json
+{
+  "type": "road",
+  "distance_km": 345,
+  "start_time": "08:30",
+  "duration": "4h",
+  "legs": [
+    {
+      "start_location": "Amboise",
+      "start_coordinate": { "lat": 47.4132, "long": 0.9857 },
+      "end_location": "Poitiers",
+      "end_coordinate": { "lat": 46.5802, "long": 0.3404 },
+      "duration": "1h20",
+      "distance_km": 120
+    },
+    {
+      "end_location": "Sarlat-la-Canéda",
+      "end_coordinate": { "lat": 44.889, "long": 1.216 },
+      "duration": "2h40",
+      "distance_km": 225
+    }
+  ]
+}
+```
+
+**A KML/KMZ directions track becomes `waypoints`, never a `gpx`.** If a KML/KMZ
+holds a *directions* geometry matching this drive, use it instead of guessing the
+route. Keep every **named** point of the directions that falls on the drive as
+the `end_location` of a leg (in order), and then, for each leg, fill its
+`waypoints` with **25 evenly spaced points** taken along the directions geometry
+for that leg's own segment — so the map route follows the real road rather than a
+straight line. Sampling a KML into `waypoints` is fine; re-encoding it as a
+leg's `gpx` is not — that field is reserved for a `.gpx` the user actually
+provided.
 
 **Link separate places with a `road`.** Between two consecutive activities that
 happen in different places (a different town, area, or trailhead), insert a
-`road` whose `start` is the first place and whose final waypoint is the second.
-Skip it only when the two stops share the same area (nested under one `place`,
-or clearly in one town) — there's no leg to draw within a single place.
+`road` whose first leg departs from the first place and whose last leg arrives at
+the second. Skip it only when the two stops share the same area (nested under one
+`place`, or clearly in one town) — there's no leg to draw within a single place.
 
 **Never chain roads — merge them into one.** When back-to-back roads form
-`A → B` then `B → C`, do **not** emit two road objects. Emit **one** road
-`A → C`, and let its waypoints carry the detail of each original leg:
+`A → B` then `B → C`, do **not** emit two road objects. Emit **one** road whose
+`legs` are those hops:
 
-- `start` is `A`, and the road's `coordinate` is A's departure coordinate.
-- `B` becomes a **named** waypoint (`location: "B"`) carrying the `A → B` leg's
-  own `duration` and `distance_km`; `C` is the final named waypoint, carrying the
-  `B → C` leg's. Each original road's shaping (unnamed) waypoints stay in place,
-  in order, ahead of the named waypoint they lead to.
+- the first leg is `A → B`, carrying that hop's `duration` and `distance_km`;
+  the second is `B → C` (its `start_location` omitted — it inherits `B`).
+- Each original road's route-shaping points stay with the leg they belong to, in
+  its `waypoints`.
 - The merged road's `distance_km` is the **sum** of the legs, and its
-  `duration`/times span the whole drive: its `start_time` is the first leg's, its
-  `end_time` the last leg's.
-- `off_road` is `true` if it was true on **any** leg, and the merged
-  `activities` are every leg's nested meals, in order.
+  `duration`/times span the whole drive: its `start_time` is the first hop's, its
+  `end_time` the last hop's.
+- `off_road` stays on whichever legs were off-road, and the merged `activities`
+  are every original road's nested meals, in order.
 
 A longer chain collapses the same way: `A → B`, `B → C`, `C → D` becomes a single
-road `A → D` with three named waypoints. This is exactly what waypoints are for —
-the PDF and the viewer display each named waypoint as its own leg, so nothing is
-lost by merging, while two chained road objects read as two separate drives and
-double-count the transition.
+road with three legs. This is exactly what legs are for — both renderers display
+each leg as its own row, so nothing is lost by merging, while two chained road
+objects read as two separate drives and double-count the transition.
 
 **The one exception: something happens at `B`.** If an activity sits *between*
 the two roads (you stop at `B` to visit, eat, or hike), the roads are not
@@ -657,9 +707,13 @@ silently overrides three real sub-durations.
 | `gpx` | no | base64 string | The trail's `.gpx` file, base64-encoded (gzip accepted). Drawn as a trail map + elevation profile. **Only emit this when you were given the actual GPX file** — see *Embedding a GPX track* below. |
 | `activities` | no | array of **meal** objects | Meal stops along the hike. |
 
-**Embedding a GPX track.** When a hike's GPX file is available to you *as a file*,
-put it in the hike's `gpx` field, base64-encoded, so the trail travels inside the
-itinerary and both renderers can draw it:
+**Embedding a GPX track.** When a GPX file is available to you *as a file*, put
+it base64-encoded in the `gpx` field of the thing it records — a hike, or a
+**road leg** (see *Type `road`*) — so the track travels inside the itinerary and
+the renderers can draw it. The encoding and the never-invent-one rule are the
+same for both; what differs is what gets drawn: a hike's becomes a trail map plus
+an elevation profile, a leg's becomes that leg's line on the day map (no profile,
+and no measured figures filled in for you).
 
 ```bash
 gzip -9 -c trail.gpx | base64 | tr -d '\n'    # preferred: ~10× smaller
@@ -679,6 +733,10 @@ Rules:
   written figure always wins over the measured one.
 - A GPX without `<ele>` elevations is fine: the trail map still draws, there is
   just no profile, and `elevation_m` stays unmeasured (so give it if you know it).
+  On a **road leg** elevations are never used at all.
+- The two bullets above about *measuring* apply to a hike only. A road leg's
+  `duration` and `distance_km` stay exactly as the source states them — the
+  track's measurements are never substituted.
 
 #### Type `meal` — a stop to eat
 
@@ -995,12 +1053,16 @@ values, so a real run would cite all three under *Looked up online*.
       "activities": [
         {
           "type": "road",
-          "start": "Paris-Charles de Gaulle Airport",
           "distance_km": 32,
           "start_time": "12:30",
           "duration": "50 min",
-          "waypoints": [
-            { "location": "Hôtel des Grands Boulevards", "coordinate": { "lat": 48.8713, "long": 2.3436 } }
+          "legs": [
+            {
+              "start_location": "Paris-Charles de Gaulle Airport",
+              "start_coordinate": { "lat": 49.0097, "long": 2.5479 },
+              "end_location": "Hôtel des Grands Boulevards",
+              "end_coordinate": { "lat": 48.8713, "long": 2.3436 }
+            }
           ]
         },
         {
@@ -1058,11 +1120,28 @@ values, so a real run would cite all three under *Looked up online*.
       "activities": [
         {
           "type": "road",
-          "start": "Amboise",
-          "waypoints": [
-            { "location": "Poitiers", "coordinate": { "lat": 46.5802, "long": 0.3404 }, "duration": "1h20" },
-            { "location": "Limoges", "coordinate": { "lat": 45.8336, "long": 1.2611 }, "duration": "1h15" },
-            { "location": "Sarlat-la-Canéda", "coordinate": { "lat": 44.8890, "long": 1.2160 }, "duration": "1h25" }
+          "distance_km": 345,
+          "legs": [
+            {
+              "start_location": "Amboise",
+              "start_coordinate": { "lat": 47.4132, "long": 0.9857 },
+              "end_location": "Poitiers",
+              "end_coordinate": { "lat": 46.5802, "long": 0.3404 },
+              "duration": "1h20",
+              "distance_km": 120
+            },
+            {
+              "end_location": "Limoges",
+              "end_coordinate": { "lat": 45.8336, "long": 1.2611 },
+              "duration": "1h15",
+              "distance_km": 125
+            },
+            {
+              "end_location": "Sarlat-la-Canéda",
+              "end_coordinate": { "lat": 44.8890, "long": 1.2160 },
+              "duration": "1h25",
+              "distance_km": 100
+            }
           ]
         }
       ]
@@ -1210,8 +1289,8 @@ values, so a real run would cite all three under *Looked up online*.
   `Sarlat-la-Canéda`, `St-Malo` vs `Saint-Malo`, `Florence` vs `Firenze`, `CDG`
   vs `Paris Charles de Gaulle`, `Lac de Gaube` vs `lac du Gaube`. Before you
   emit, sweep the file and make each real-world place appear under **one** form
-  everywhere — day `city`, accommodation `city`, transport `start`/`end`, a road's
-  `start` and its waypoint `location`s, `place`/`point_of_interest`/`hike` names,
+  everywhere — day `city`, accommodation `city`, transport `start`/`end`, a road
+  leg's `start_location`/`end_location`, `place`/`point_of_interest`/`hike` names,
   a meal's `area`, car-rental pick-up/drop-off locations, and the prose in every
   `description`.
   - **Choosing the form to keep**, in order: the trip's language (per the
@@ -1293,8 +1372,12 @@ You cannot run the validator, so verify these by hand:
   `defaults.secondary_currencies`.
 - **Coordinates** only where you actually know them — never guessed.
 - **No chained roads:** no day holds two adjacent `road`s where the first's
-  arrival is the second's `start`. Those are one road, with the intermediate
-  place as a named waypoint (see *Never chain roads*).
+  arrival is the second's departure. Those are one road, with the intermediate
+  place as the junction between two legs (see *Never chain roads*).
+- **Every road has `legs`:** no `road` carries a `start`, `coordinate`,
+  `waypoints` or `off_road` of its own (all four moved onto the legs), every
+  road's `legs` is non-empty, the first leg names its `start_location`, the last
+  its `end_location`, and each junction written on both sides matches.
 - **No provenance in the prose:** no `description`/`summary` mentions a GPX, a
   KML, an email, a screenshot, a source name, your own uncertainty, or
   `[to be checked]` — no exceptions.

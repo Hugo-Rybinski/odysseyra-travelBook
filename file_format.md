@@ -199,9 +199,9 @@ and its arrival day. Legs never widen the extent of a **printed** map — a
 transatlantic flight would zoom the page out to the ocean — so the line simply
 runs off the edge toward where it goes; only a map with nothing else locatable is
 framed on its legs. (The viewer's Overview does let them widen its initial view:
-there you can zoom out, on paper you can't.) A `road` instead uses its
-own `coordinate` as the departure point and its `waypoints` as the ordered stops
-through to the arrival (see below).
+there you can zoom out, on paper you can't.) A `road` instead carries its
+coordinates on its **legs** — `start_coordinate` / `end_coordinate` per hop, plus
+that hop's route-shaping `waypoints` (see below).
 
 With `infer_coordinates_from_address` off (the default) only objects with an
 explicit `coordinate` appear on the map, so builds stay deterministic and offline.
@@ -229,8 +229,8 @@ woke. Each has its own chain, mirroring the other:
 
 `show_on_map` is ignored throughout: it hides a pin, it doesn't move where you
 are. Step 2 covers a night with no stay listed — aboard an overnight leg, or a
-day you fly out — and reads a drive's `coordinate` as its departure and its final
-`waypoint` as its arrival, so a day's opening and closing positions are both
+day you fly out — and reads a drive's first leg as its departure and its last
+leg's arrival as its arrival, so a day's opening and closing positions are both
 real. It's why arriving from another continent doesn't print a sunrise from the
 far side of it: France day 2 wakes at Roissy, where the flight lands, not in
 New York. If the sunrise chain yields nothing usable it settles for the sunset's
@@ -262,7 +262,7 @@ that also drives its PDF export). The link points at the object's `coordinate` w
 it has one, otherwise it falls back to its `address` / place name, so it appears
 even when maps are off and independently of `show_on_map`. A multi-leg `road`
 gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's
-destination (its named waypoint).
+`end_coordinate` (or its `end_location`).
 
 ## `misc`
 
@@ -373,51 +373,124 @@ description. It works the same on a nested activity.
 
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
-| `start` | ✅ | Departure address | string | any text | — |
-| `coordinate` |  | The departure point (for the map route) | object | `{ "lat": .., "long": .. }` | none |
-| `distance_km` |  | Driving distance | number | positive number | none |
-| `off_road` |  | Highlight off-road sections | boolean | `true` / `false` | `false` |
+| `legs` | ✅ | The hops the drive is made of, in travel order | array | non-empty array of `leg` objects (see below) | — |
+| `distance_km` |  | Driving distance for the whole drive | number | positive number | none |
+| `display_start_on_maps` |  | Give the departure a numbered map pin | boolean | `true` / `false` | `false` |
+| `display_end_on_maps` |  | Give the final arrival a numbered map pin | boolean | `true` / `false` | `false` |
+| `display_intermediate_point_on_maps` |  | Give every junction between two legs a numbered map pin | boolean | `true` / `false` | `false` |
 | `description` |  | Anything the other fields don't cover | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering the drive | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
-| `waypoints` | ✅ | Ordered stops the route runs through (last = arrival) | array | non-empty array of `waypoint` objects (see below) | — |
 | `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
-A road departs from `start` (its `coordinate` is the departure point) and runs
-through its `waypoints`, in order — the **last waypoint is the arrival**. There
-is no separate `end`. The map draws `coordinate → waypoint 1 → … → last
-waypoint`, with a full-opacity accent disc on the departure and every waypoint.
+A drive is its **legs**: one hop each, in travel order, carrying the places, the
+driving time, the distance and the route. There is no `start`, `coordinate`,
+`waypoints` or `off_road` on the road itself — the departure is the first leg's
+`start_location`, the arrival the last leg's `end_location`, and the drive counts
+as off-road only when **every** one of its legs does. A plain A → B drive is a
+one-leg road, so there is exactly one shape to write.
 
 `description` is free prose for what the structured fields can't say — the state
 of the road, a scenic stretch, a pass that closes in winter, a toll or a ferry
 crossing. Both renderers print it under the drive's meta line and **above** the
 `VIA` leg list; leave it out when the legs already tell the story.
 
+#### `leg` — one hop of a drive
+
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
-| `coordinate` | ✅ | The point on the route | object | `{ "lat": .., "long": .. }` | — |
-| `location` |  | The waypoint's name | string | any text | `""` |
-| `duration` |  | Time for the leg reaching it | string | duration (`1h30`, `45 min`) | none |
-| `distance_km` |  | Distance for the leg reaching it | number | positive number | none |
-| `off_road` |  | The leg reaching it runs off-road | boolean | `true` / `false` | `false` |
+| `start_location` | ✅ on the first leg | Where the hop departs from | string | any text | the previous leg's `end_location` |
+| `start_coordinate` |  | The departure point on the map | object | `{ "lat": .., "long": .. }` | the previous leg's `end_coordinate` (geocoded from the name on the first leg) |
+| `end_location` | ✅ on the last leg | Where the hop arrives | string | any text | the next leg's `start_location` |
+| `end_coordinate` | ✅ unless deducible | The arrival point on the map | object | `{ "lat": .., "long": .. }` | the next leg's `start_coordinate` |
+| `duration` |  | Driving time for this hop | string | duration (`1h30`, `45 min`) | none |
+| `distance_km` |  | Driving distance for this hop | number | positive number | none |
+| `off_road` |  | This hop runs off-road | boolean | `true` / `false` | `false` |
+| `waypoints` |  | Points the hop's route bends through, in order | array | array of `{ "lat": .., "long": .. }` coordinates | `[]` (a straight route between the hop's ends) |
+| `gpx` |  | A recording of this hop, drawn as its line on the map | string | the `.gpx` file base64-encoded (gzip allowed) | none (the line is routed) |
 
-The waypoints are listed under the road in the PDF (in a lower accent), one row
-per leg (`previous → this waypoint`) — but the list is omitted for a road with a
-single leg (a plain departure→arrival), since the title already shows it. An
-**unnamed** waypoint (no `location`) still gets a map disc but has no row of its
-own — it merges forward into the next named waypoint, its `duration`/`distance_km`
-summed into that leg and its `off_road` OR-ed into it. If the waypoint
-`duration`s sum to more than the road's own `duration`, validation warns (the
-segment times can't fit the drive).
+**A junction is written once.** Two consecutive legs meet at one place, so
+either side may name it: a leg's `start_location` / `start_coordinate` fall back
+to the previous leg's `end_*`, and its `end_location` / `end_coordinate` to the
+next leg's `start_*`. What no leg names is an **error** — the drive would have a
+hole in it — so the first leg must give its own departure and the last its own
+arrival. Where both sides state it, the **earlier leg's `end_*` wins**, and
+validation warns when the two disagree (a differing name, or coordinates a
+kilometre or more apart): the drive can't jump between the two.
 
-**Off-road, per drive or per leg.** The road's own `off_road` says the drive as a
-whole leaves the tarmac and prints the `OFF-ROAD SECTIONS` chip beside the title.
-A waypoint's `off_road` marks **only the leg reaching it**, so a drive that is
-paved to the village and rough for the last 5 km needs no road-level flag: that
-leg's row in the `VIA` list carries a small `OFF-ROAD` chip after its
-duration/distance, in the PDF and the viewer alike. The two are independent —
-setting one never sets the other. The one
-special case: a **single-leg** drive has no `VIA` list, so a flag on its only leg
-is promoted to the road's chip rather than being lost.
+The departure *coordinate* is the one point that stays optional: with maps on it
+is geocoded from `start_location` when absent (and
+[`geocode`](README.md#geocode--bake-in-coordinates) fills every endpoint of every
+leg). Every other point of the route is plotted from its coordinate, so those
+must resolve. The map draws the whole chain — first departure → each leg's
+waypoints → each leg's arrival — with a full-opacity accent disc on the departure
+and on each leg's arrival; the route-shaping `waypoints` bend the drawn route
+without a disc of their own.
+
+Each leg is a row under the road in the PDF (in a lower accent), reading
+`from → to` with its own duration / distance and a **(Navigate)** link — but the
+list is omitted for a **one-leg** road, since the title already shows the same
+route. If the leg `duration`s sum to more than the road's own `duration`,
+validation warns (the leg times can't fit the drive). A leg with no `duration` or
+no `distance_km` warns too, naming the hop.
+
+**Off-road, per hop.** `off_road` belongs to a leg, so a drive that is paved to
+the village and rough for the last 5 km flags that leg alone: its row carries a
+small `OFF-ROAD` chip after the duration/distance, in the PDF and the viewer
+alike. A drive whose **every** leg is off-road also prints the `OFF-ROAD
+SECTIONS` chip beside the title, since the whole of it leaves the tarmac. That
+covers the **one-leg** drive, which has no row list to hang a flag on: its
+leg's flag is the drive's.
+
+#### Pinning a drive's own points
+
+A drive is drawn as a **route**, not as pins: with maps on, its line runs from
+the departure through every leg, with a small accent disc on each named point.
+The three `display_*_on_maps` switches — all **off** — additionally give those
+points a **numbered pin**, joining the day's `1..N` sequence in timeline order
+(so a pinned drive shifts the numbers of everything after it):
+
+| Switch | Pins |
+| ------ | ---- |
+| `display_start_on_maps` | the very first `start_location` |
+| `display_intermediate_point_on_maps` | every junction between two legs |
+| `display_end_on_maps` | the very last `end_location` |
+
+Turn on all three and **every named point of the drive is pinned**. As with any
+other pin, a point whose coordinate says `"show_on_map": false` is left out, and
+each pin's number is shown as an accent disc **beside the place it points at**:
+the departure's on the drive's title, each arrival's on that leg's row. This is
+why a **one-leg** drive with a pinned arrival prints its leg row after all
+(normally it doesn't, the title saying the same thing) — a pin number is
+unreadable without the name beside it.
+
+The whole-trip map is unaffected: there a pin carries the **day**, not the stop,
+and it already shows every named road point.
+
+#### Recording a leg (`gpx`)
+
+A leg may carry a `gpx` — the file base64-encoded, gzip allowed, stored exactly
+like [a hike's](#a-hikes-gpx-track). It is used for one thing: **that leg's line
+on the map** is the recording instead of the routed guess, so the drawn route
+follows the road you actually took (a forest track, a pass, a detour no router
+knows). The leg's `waypoints` become unnecessary — the recording already runs
+through them.
+
+Unlike a hike's, a leg's track is **never drawn as a figure of its own**: no
+trail map, no elevation profile, and a file with no elevations in it is no loss
+here. `defaults.include_hike_maps` governs hikes only; attaching a `gpx` to a leg
+is itself the opt-in, and with maps off it simply draws nothing (validation says
+so). The viewer offers the file back on the leg's row — **(Get GPX track)**,
+byte-for-byte what you attached — which paper has no twin for.
+
+A leg *without* a `gpx` gets a different link there: **(Build GPX file)**, which
+asks the app to write one from the line the map draws for that leg. Two things
+follow from where it comes from. It is a **route** (`<rte>`), not a track — the
+geometry was computed, not recorded, and calling it a track would hand your GPS a
+journey that never happened. And it needs a real route: when the router can't be
+reached the link reports that instead of handing back the straight line the map
+would draw, because a crow-flight line between two towns is a wrong route rather
+than a rough one. Nothing is written into your JSON either way — the file is
+built on the click and downloaded.
 
 ### `point_of_interest` — a specific place
 

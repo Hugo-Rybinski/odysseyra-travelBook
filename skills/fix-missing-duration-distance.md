@@ -105,33 +105,34 @@ search **both** levels. Record the full path as the entry's locator.
 `{ "lat": <number>, "long": <number> }` in decimal degrees. It may sit on:
 
 - an activity (`point_of_interest`, `place`, `hike`, `meal`),
-- a road's departure point (`road.coordinate`), and
-- **each road waypoint** (`waypoint.coordinate`).
+- **each end of each road leg** (`start_coordinate` / `end_coordinate`), and
+- a road leg's route-shaping `waypoints`, which are bare `{lat,long}` objects.
 
 `show_on_map: false` may also be present — ignore it here.
 
-**Roads and their legs.** A `road` object has:
+**Roads and their legs.** A `road` object holds a **`legs`** array — one entry
+per hop, in travel order — and nothing else about the route (there is no `start`,
+`coordinate`, `waypoints` or `off_road` on the road itself). Each leg is
+`{ "start_location": <name?>, "start_coordinate": {lat,long}?,
+"end_location": <name?>, "end_coordinate": {lat,long}?, "duration": <?>,
+"distance_km": <?>, "off_road": <?>, "waypoints": [{lat,long}, …]? }`.
 
-- `start` — text name of where the drive begins,
-- optional `coordinate` — the departure point,
-- **`waypoints`** — an ordered array. Each waypoint is
-  `{ "coordinate": {lat,long}, "location": <name?>, "duration": <?>, "distance_km": <?> }`.
+**An endpoint may be written on the neighbouring leg instead**, so read the chain
+before matching a warning:
 
-A waypoint with a **`location`** is a *named* stop and forms one displayed **leg**;
-a waypoint with **no** `location` is a route-shaping point (a bend/pass) that
-belongs to the next named leg. A leg's endpoints:
+- **origin** = this leg's `start_location`/`start_coordinate`; when they're absent,
+  the *previous* leg's `end_location`/`end_coordinate`.
+- **destination** = this leg's `end_location`/`end_coordinate`; when they're
+  absent, the *next* leg's `start_location`/`start_coordinate`.
 
-- **origin** = the previous named waypoint (its `coordinate`); for the *first* leg
-  it's the road's `coordinate` if present, else its `start` name.
-- **destination** = this named waypoint (its `coordinate`, else its `location`).
+So for a warning `this road's leg (A → B) …`, find the road whose legs resolve to
+`A → B` at that position — usually the leg whose `end_location` is `B`. Its
+`waypoints` (bare coordinates, if any) are that hop's shaping points.
 
-So for a warning `this road's leg (A → B) …`, find the road whose waypoints
-contain a named `B` immediately after named point `A` (or after `start` = A for
-the first leg); B's `coordinate` is the destination and A's is the origin. Any
-**unnamed** waypoints sitting between A and B are that leg's shaping points.
-
-For `this road (A → B) …` (a single-leg drive) the road has one named
-waypoint: A is the road `start`/`coordinate`, B is that lone waypoint.
+For `this road (A → B) …` the road has a **single** leg: A is its origin, B its
+destination, and the missing figure may be wanted on the road itself (its own
+`duration` / `distance_km` cover a one-leg drive) — fill the leg's, which is
+always correct.
 
 ---
 
@@ -150,11 +151,12 @@ waypoint: A is the road `start`/`coordinate`, B is that lone waypoint.
 
 Give every entry a locator so the completed value can be merged back: the JSON
 path (`days[2].activities[0]`, or the nested `…activities[1].activities[0]`) and,
-for a road leg, the two endpoint names. List **only** the missing fields.
+for a road leg, its index in `legs` and the two endpoint names. List **only**
+the missing fields.
 
 ### Road / road leg — missing `distance_km` and/or `duration`
 
-Take the leg's **origin** and **destination** coordinates from the waypoints (see
+Take the leg's **origin** and **destination** coordinates from the leg chain (see
 above). Build a Google Maps **directions** link and read the distance off it:
 
 ```
@@ -164,13 +166,13 @@ https://www.google.com/maps/dir/?api=1&origin=<ORIGIN>&destination=<DEST>&travel
 - Prefer coordinates — `origin=42.8746,74.5698&destination=42.8306,75.2806`.
 - If a coordinate is unknown, use the place name instead (URL-encoded):
   `origin=Bichkek&destination=Tokmok`.
-- If unnamed route-shaping waypoints sit between the two named points, add them so
-  the distance follows the real road: `&waypoints=42.90,74.80|42.88,75.05`.
+- If the leg carries route-shaping `waypoints`, add them so the distance follows
+  the real road: `&waypoints=42.90,74.80|42.88,75.05`.
 
 Entry (only lists the fields the warning flagged):
 
 ```
-- **Road leg** Bichkek → Tokmok · `days[2].activities[0]` waypoint "Tokmok"
+- **Road leg** Bichkek → Tokmok · `days[2].activities[0].legs[0]`
   - distance_km: ______ · [open in Google Maps](https://www.google.com/maps/dir/?api=1&origin=42.8746,74.5698&destination=42.8306,75.2806&travelmode=driving)
   - duration: ______
 ```

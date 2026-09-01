@@ -148,8 +148,9 @@ def test_activity_types_parse():
                 {
                     "title": "d",
                     "activities": [
-                        {"type": "road", "start": "A", "distance_km": 10, "off_road": True,
-                         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}]},
+                        {"type": "road", "distance_km": 10, "legs": [
+                            {"start_location": "A", "end_location": "B",
+                             "end_coordinate": {"lat": 1, "long": 2}, "off_road": True}]},
                         {"type": "point_of_interest", "name": "M", "category": "museum"},
                         {"type": "place", "name": "T", "activities": [
                             {"type": "point_of_interest", "name": "x", "category": "castle"},
@@ -173,9 +174,10 @@ def test_activity_types_parse():
 
 
 def test_road_title():
-    r = Road.from_dict({"type": "road", "start": "Pau", "waypoints": [
-        {"coordinate": {"lat": 1, "long": 2}, "location": "Lourdes"}]})
-    assert r.title == "Pau → Lourdes"       # destination is the last named waypoint
+    r = Road.from_dict({"type": "road", "legs": [
+        {"start_location": "Pau", "end_location": "Lourdes",
+         "end_coordinate": {"lat": 1, "long": 2}}]})
+    assert r.title == "Pau → Lourdes"       # the last leg's arrival is the destination
     assert r.destination == "Lourdes"
 
 
@@ -187,30 +189,35 @@ def test_road_display_legs():
         return Waypoint(coordinate=Coordinate(0.0, 0.0), location=loc or "",
                         duration_min=d, distance_km=km, off_road=off)
 
-    # a single named arrival → one leg (the caller hides the VIA list for this);
-    # each leg carries its destination's coordinate then its off-road flag
-    legs = road_display_legs("A", [wp("B")])
-    assert legs == [("A", "B", None, None, Coordinate(0.0, 0.0), False)]
+    # a single named arrival → one leg (the caller hides the VIA list for this,
+    # unless the arrival is pinned); each leg carries the *waypoint* it ends at —
+    # the source of its coordinate, its map pin and its gpx — then its flag
+    end = wp("B")
+    legs = road_display_legs("A", [end])
+    assert legs == [("A", "B", None, None, end, False)]
 
     # an unnamed shaping point merges forward into the next named waypoint,
     # summing duration and distance into that one leg
-    legs = road_display_legs("A", [wp(None, 30, 10), wp("C", 40, 20)])
-    assert legs == [("A", "C", 70, 30.0, Coordinate(0.0, 0.0), False)]
+    shaping, named = wp(None, 30, 10), wp("C", 40, 20)
+    legs = road_display_legs("A", [shaping, named])
+    assert legs == [("A", "C", 70, 30.0, named, False)]
 
     # two named waypoints → two legs
     legs = road_display_legs("A", [wp("B", 30), wp("C", 40)])
     assert [(s, d) for s, d, _, _, _, _ in legs] == [("A", "B"), ("B", "C")]
 
     # a trailing unnamed run yields a final leg with dest=None (the arrival)
-    legs = road_display_legs("A", [wp("B"), wp(None, 15)])
-    assert legs[-1] == ("B", None, 15, None, Coordinate(0.0, 0.0), False)
+    trailing = wp(None, 15)
+    legs = road_display_legs("A", [wp("B"), trailing])
+    assert legs[-1] == ("B", None, 15, None, trailing, False)
 
     # off_road is per leg: only the flagged leg carries it, and an unnamed
     # shaping point OR-s its flag into the named leg it merges into
     legs = road_display_legs("A", [wp("B", 30), wp("C", 40, off=True)])
     assert [leg[5] for leg in legs] == [False, True]
-    legs = road_display_legs("A", [wp(None, 10, off=True), wp("C", 40)])
-    assert legs == [("A", "C", 50, None, Coordinate(0.0, 0.0), True)]
+    rough, arrival = wp(None, 10, off=True), wp("C", 40)
+    legs = road_display_legs("A", [rough, arrival])
+    assert legs == [("A", "C", 50, None, arrival, True)]
 
 
 def test_hike_route_normalization():
@@ -252,13 +259,76 @@ def test_bad_route_rejected():
         )
 
 
-def test_road_requires_start_and_waypoints():
-    with pytest.raises(ItineraryError):  # missing 'start'
-        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
-            {"type": "road", "waypoints": [{"coordinate": {"lat": 1, "long": 2}}]}]}]})
-    with pytest.raises(ItineraryError):  # missing 'waypoints' (the arrival)
-        Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
-            {"type": "road", "start": "A"}]}]})
+def _road(legs):
+    return Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
+        {"type": "road", "legs": legs}]}]}).days[0].activities[0]
+
+
+A_TO_B = {"start_location": "A", "start_coordinate": {"lat": 1, "long": 1},
+          "end_location": "B", "end_coordinate": {"lat": 2, "long": 2}}
+
+
+def test_road_requires_legs():
+    for bad in ([],                                          # empty
+                "not-an-array",
+                [{"end_location": "B",                        # no departure named
+                  "end_coordinate": {"lat": 2, "long": 2}}],
+                [{"start_location": "A",                      # no arrival named
+                  "end_coordinate": {"lat": 2, "long": 2}}],
+                [{"start_location": "A", "end_location": "B"}],  # arrival unlocated
+                [dict(A_TO_B), {"end_coordinate": {"lat": 3, "long": 3}}],  # ditto, chained
+                [dict(A_TO_B), {"end_location": "C"}]):
+        with pytest.raises(ItineraryError):
+            _road(bad)
+    with pytest.raises(ItineraryError):  # a junction neither side names
+        _road([{"start_location": "A", "end_coordinate": {"lat": 2, "long": 2}},
+               {"end_location": "C", "end_coordinate": {"lat": 3, "long": 3}}])
+
+
+def test_road_legs_lower_onto_the_waypoint_chain():
+    """A leg's route-shaping points come first, then its arrival carrying that
+    leg's figures — the shape every renderer already read."""
+    road = _road([
+        {**A_TO_B, "duration": "1h", "distance_km": 50,
+         "waypoints": [{"lat": 1.5, "long": 1.5}]},
+        {"end_location": "C", "end_coordinate": {"lat": 3, "long": 3},
+         "duration": "30 min", "distance_km": 25, "off_road": True},
+    ])
+    assert road.start == "A" and road.destination == "C"
+    assert (road.coordinate.lat, road.coordinate.long) == (1.0, 1.0)
+    assert [(w.location, w.duration_min, w.distance_km, w.off_road)
+            for w in road.waypoints] == [
+        ("", None, None, False),          # the shaping point, no row of its own
+        ("B", 60, 50.0, False),
+        ("C", 30, 25.0, True),
+    ]
+
+
+def test_road_leg_endpoints_come_from_the_neighbouring_leg():
+    """Either side of a junction may name it; the earlier leg's end wins."""
+    road = _road([{"start_location": "A", "start_coordinate": {"lat": 1, "long": 1},
+                   "end_coordinate": {"lat": 2, "long": 2}},
+                  {"start_location": "B", "end_location": "C",
+                   "end_coordinate": {"lat": 3, "long": 3}}])
+    assert road.title == "A → C"
+    assert [w.location for w in road.waypoints] == ["B", "C"]
+    # …and a start_coordinate stands in for the previous leg's missing end
+    road = _road([{"start_location": "A", "end_location": "B"},
+                  {"start_coordinate": {"lat": 2, "long": 2}, "end_location": "C",
+                   "end_coordinate": {"lat": 3, "long": 3}}])
+    assert [(w.location, w.coordinate.lat) for w in road.waypoints] == [("B", 2.0), ("C", 3.0)]
+    assert road.coordinate is None  # the departure alone may go unlocated
+
+
+def test_road_is_off_road_only_when_every_leg_is():
+    off = {"off_road": True}
+    assert _road([{**A_TO_B, **off}]).off_road is True
+    assert _road([{**A_TO_B, **off},
+                  {"end_location": "C", "end_coordinate": {"lat": 3, "long": 3}, **off}
+                  ]).off_road is True
+    assert _road([{**A_TO_B, **off},
+                  {"end_location": "C", "end_coordinate": {"lat": 3, "long": 3}}
+                  ]).off_road is False
 
 
 def test_poi_category_default_and_enum():
@@ -297,8 +367,9 @@ def test_nested_activities_require_a_valid_type():
                 {"type": "road", "start": "A", "end": "B"}]}]}]})
     with pytest.raises(ItineraryError):  # a road accepts only nested meals
         Itinerary.from_dict({"title": "t", "days": [{"title": "d", "activities": [
-            {"type": "road", "start": "A",
-             "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+            {"type": "road", "legs": [
+                {"start_location": "A", "end_location": "B",
+                 "end_coordinate": {"lat": 1, "long": 2}}],
              "activities": [{"type": "point_of_interest", "name": "X"}]}]}]})
 
 
@@ -315,8 +386,9 @@ def test_point_of_interest_nests_a_hike():
 def test_meal_nests_under_road_hike_place_and_poi():
     meal = {"type": "meal", "meal_type": "picnic", "area": "somewhere"}
     for container in (
-        {"type": "road", "start": "A",
-         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+        {"type": "road", "legs": [
+            {"start_location": "A", "end_location": "B",
+             "end_coordinate": {"lat": 1, "long": 2}}],
          "activities": [meal]},
         {"type": "hike", "name": "H", "activities": [meal]},
         {"type": "place", "name": "P", "activities": [meal]},

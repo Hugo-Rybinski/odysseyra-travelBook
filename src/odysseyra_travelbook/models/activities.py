@@ -77,51 +77,143 @@ class Buffer(Activity):
 
 @dataclass
 class Waypoint:
-    """An intermediate stop a drive's route passes through. Carries a required
-    ``coordinate`` (the point plotted on the route) plus an optional location
-    name and the leg's ``duration``/``distance_km``/``off_road``. When a road has
-    waypoints the route runs start → waypoint 1 → … → last waypoint, and the last
-    one is the effective destination (the road's ``end_coordinate`` is not
-    plotted).
+    """One point of a drive's route, as the model carries it: a required
+    ``coordinate`` (plotted on the route) plus an optional location name and the
+    figures of the leg *reaching* it (``duration`` / ``distance_km`` /
+    ``off_road``). The route runs start → waypoint 1 → … → last waypoint, and the
+    last named one is the destination.
+
+    This is the **lowered** form of the input's ``legs`` (see
+    :func:`_road_chain`), not something written by hand: a leg contributes its
+    route-shaping points as unnamed waypoints and then its arrival as a named one
+    carrying that leg's figures. Everything downstream — the PDF, the resolved
+    document the viewer renders, the maps, the ``.ics`` — reads this chain, which
+    is why moving the input onto legs changed no renderer.
 
     ``off_road`` describes the **leg reaching this waypoint**, exactly like
     ``duration`` and ``distance_km`` — so a drive can be rough on one stretch
-    without the whole road being flagged (``Road.off_road``)."""
+    without the whole road being flagged (``Road.off_road``).
+
+    So does ``gpx``/``track``: the recording of the drive *up to* this point.
+    Unlike a hike's it is never drawn as a figure of its own — no trail map, no
+    elevation profile — it **is** the leg's line on the day map, replacing the
+    routed guess (see ``maps/build.py``)."""
 
     coordinate: Coordinate
     location: str = ""
     duration_min: int | None = None
     distance_km: float | None = None
     off_road: bool = False
+    gpx: str = ""                       # base64 GPX of the leg reaching here
+    track: GpxTrack | None = None       # parsed from `gpx`
 
     @property
     def duration_display(self) -> str:
         return _format_duration(self.duration_min)
 
-    @classmethod
-    def from_dict(cls, d: dict) -> "Waypoint":
-        if not isinstance(d, dict):
-            raise ItineraryError(
-                "a road 'waypoint' must be an object with a 'coordinate'"
-            )
-        coord = _parse_coordinate(d.get("coordinate"))
-        if coord is None:
-            raise ItineraryError("a road 'waypoint' needs a 'coordinate'")
-        return cls(
-            coordinate=coord,
-            location=str(d.get("location", "")),
-            duration_min=_parse_duration(d.get("duration")),
-            distance_km=_parse_float(d.get("distance_km"), "waypoint distance_km"),
-            off_road=_parse_bool(d.get("off_road", False)),
+
+def _leg_text(leg: dict | None, key: str) -> str:
+    return str(leg.get(key) or "").strip() if leg else ""
+
+
+def _leg_off_road(leg: dict) -> bool:
+    return _parse_bool(leg.get("off_road", False))
+
+
+def _road_chain(legs: list[dict]) -> tuple[str, Coordinate | None, list[Waypoint], bool]:
+    """Lower a road's input ``legs`` onto the chain :class:`Road` carries: the
+    departure (name + optional coordinate), the ordered :class:`Waypoint` list,
+    and whether the whole drive is off-road.
+
+    Each leg contributes its route-shaping ``waypoints`` — bare coordinates that
+    bend the drawn route and get no row of their own — followed by its arrival,
+    a named waypoint carrying that leg's ``duration`` / ``distance_km`` /
+    ``off_road``.
+
+    A leg may leave out the endpoint its neighbour already states:
+    ``start_location`` / ``start_coordinate`` fall back to the previous leg's
+    ``end_*``, and ``end_location`` / ``end_coordinate`` to the next leg's
+    ``start_*``, so a junction between two legs is written once. The first leg
+    must name its own departure and the last its own arrival; a junction neither
+    side names can't be deduced and raises. Where both sides state it, the
+    earlier leg's ``end_*`` wins (the validator warns when the two disagree).
+
+    The departure *coordinate* stays optional, as the road's own ``coordinate``
+    always was: with maps on it is geocoded from ``start_location`` when absent.
+    Every other point of the route is plotted from its coordinate, so those are
+    required — exactly what a hand-written waypoint always demanded."""
+    start = _leg_text(legs[0], "start_location")
+    if not start:
+        raise ItineraryError(
+            "the first road 'leg' needs a 'start_location' — there is no "
+            "previous leg to take its departure from"
         )
+    waypoints: list[Waypoint] = []
+    for i, leg in enumerate(legs):
+        nxt = legs[i + 1] if i + 1 < len(legs) else None
+        end = _leg_text(leg, "end_location") or _leg_text(nxt, "start_location")
+        if not end:
+            raise ItineraryError(
+                f"road leg {i + 1} needs an 'end_location' — neither it nor the "
+                "next leg's 'start_location' names where it arrives"
+                if nxt else
+                "the last road 'leg' needs an 'end_location' — there is no next "
+                "leg to take its arrival from"
+            )
+        coord = _parse_coordinate(leg.get("end_coordinate"))
+        if coord is None and nxt is not None:
+            coord = _parse_coordinate(nxt.get("start_coordinate"))
+        if coord is None:
+            raise ItineraryError(
+                f"road leg {i + 1} needs an 'end_coordinate' — {end} is a point "
+                "on the route, so it has to be located"
+            )
+        shaping = leg.get("waypoints") or []
+        if not isinstance(shaping, list):
+            raise ItineraryError(
+                "a road leg's 'waypoints' must be a list of coordinates"
+            )
+        for raw in shaping:
+            point = _parse_coordinate(raw)
+            if point is None:
+                raise ItineraryError(
+                    "each of a road leg's 'waypoints' must be a coordinate with "
+                    "a 'lat' and a 'long'"
+                )
+            waypoints.append(Waypoint(coordinate=point))
+        raw_gpx = leg.get("gpx")
+        waypoints.append(Waypoint(
+            coordinate=coord,
+            location=end,
+            duration_min=_parse_duration(leg.get("duration")),
+            distance_km=_parse_float(leg.get("distance_km"), "road leg distance_km"),
+            off_road=_leg_off_road(leg),
+            gpx=str(raw_gpx) if raw_gpx else "",
+            track=gpx_track(raw_gpx) if raw_gpx not in (None, "") else None,
+        ))
+    # The drive as a whole is off-road only when every one of its legs is; a
+    # single rough stretch stays that leg's own flag.
+    return (start, _parse_coordinate(legs[0].get("start_coordinate")), waypoints,
+            all(_leg_off_road(leg) for leg in legs))
 
 
 @dataclass
 class Road(Activity):
-    """A drive/transfer. Departs from ``start`` (its optional ``coordinate`` is
-    the departure point) and runs through ``waypoints`` — an ordered list whose
-    last entry is the arrival. There is no separate ``end``: the destination is
-    the final waypoint."""
+    """A drive/transfer, written as an ordered chain of ``legs`` — one per hop,
+    each with its endpoints, its driving time and distance, whether it runs
+    off-road, and the intermediate points its route bends through.
+
+    The legs are lowered on load (:func:`_road_chain`) onto the fields carried
+    here: ``start`` (with the inherited ``coordinate``) is the departure and
+    ``waypoints`` the ordered points through to the arrival, each leg's arrival
+    carrying that leg's figures. There is no separate ``end``: the destination is
+    the last named waypoint.
+
+    The three ``display_*_on_maps`` switches (all **off**) say which of the
+    drive's own points earn a **numbered pin** on the day map — the very first
+    departure, the very last arrival, and every junction in between. A drive is
+    drawn as a route either way; these only add pins, and with all three on every
+    named point of the road is pinned (see :func:`.maps.build.resolve_day`)."""
 
     kind = "road"
     start: str = ""
@@ -129,6 +221,9 @@ class Road(Activity):
     guidebook_pages: str = ""
     distance_km: float | None = None
     off_road: bool = False
+    display_start_on_maps: bool = False
+    display_end_on_maps: bool = False
+    display_intermediate_point_on_maps: bool = False
     waypoints: list[Waypoint] = field(default_factory=list)  # ordered stops; last = arrival
     activities: list[Activity] = field(default_factory=list)
 
@@ -141,6 +236,28 @@ class Road(Activity):
         return ""
 
     @property
+    def named_waypoints(self) -> list[Waypoint]:
+        """The waypoints that end a leg — the ones with a name, i.e. everything
+        but the route-shaping points."""
+        return [wp for wp in self.waypoints if wp.location]
+
+    def pinned_waypoints(self) -> list[Waypoint]:
+        """The named waypoints that earn a numbered pin: the last one under
+        ``display_end_on_maps``, the earlier ones under
+        ``display_intermediate_point_on_maps``. A point whose coordinate is
+        ``show_on_map: false`` is never pinned — that flag hides a pin wherever
+        it appears."""
+        named = self.named_waypoints
+        out = []
+        for i, wp in enumerate(named):
+            last = i == len(named) - 1
+            shown = (self.display_end_on_maps if last
+                     else self.display_intermediate_point_on_maps)
+            if shown and wp.coordinate is not None and wp.coordinate.show_on_map:
+                out.append(wp)
+        return out
+
+    @property
     def title(self) -> str:
         if self.start and self.destination:
             return f"{self.start} → {self.destination}"
@@ -148,20 +265,34 @@ class Road(Activity):
 
     @classmethod
     def from_dict(cls, d: dict) -> "Road":
-        if "start" not in d:
-            raise ItineraryError("A 'road' activity needs a 'start' address")
-        waypoints = [Waypoint.from_dict(w) for w in d.get("waypoints", [])]
-        if not waypoints:
+        raw = d.get("legs")
+        if not isinstance(raw, list) or not raw:
             raise ItineraryError(
-                "A 'road' activity needs at least one 'waypoint' (the arrival)"
+                "A 'road' activity needs a non-empty 'legs' array — one entry "
+                "per hop of the drive (a plain A → B drive has one)"
             )
+        for leg in raw:
+            if not isinstance(leg, dict):
+                raise ItineraryError(
+                    "each road 'leg' must be an object with a 'start_location' "
+                    "and an 'end_location'"
+                )
+        start, coordinate, waypoints, off_road = _road_chain(raw)
+        sched = _sched(d)
+        # A road has no 'coordinate' of its own any more: its departure point is
+        # the first leg's 'start_coordinate'.
+        sched["coordinate"] = coordinate
         return cls(
-            **_sched(d),  # 'coordinate' here is the departure point
-            start=str(d["start"]),
+            **sched,
+            start=start,
             description=str(d.get("description", "")),
             guidebook_pages=_pages(d),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
-            off_road=_parse_bool(d.get("off_road", False)),
+            off_road=off_road,
+            display_start_on_maps=_parse_bool(d.get("display_start_on_maps", False)),
+            display_end_on_maps=_parse_bool(d.get("display_end_on_maps", False)),
+            display_intermediate_point_on_maps=_parse_bool(
+                d.get("display_intermediate_point_on_maps", False)),
             waypoints=waypoints,
             activities=_nested(d, "road"),
         )

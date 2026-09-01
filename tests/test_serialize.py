@@ -137,24 +137,28 @@ def test_scheduled_tz_keys_do_not_clobber_place_names():
         assert isinstance(leg["start_tz_label"], str)
 
 
-def test_road_waypoints_and_legs_are_serialized():
+def test_road_legs_serialize_as_the_waypoint_chain():
+    """The input's `legs` are lowered before serialization: the resolved document
+    carries the departure plus the ordered waypoints, which is what both
+    renderers read — so moving the input onto legs moved no renderer."""
     d = _load(PYRENEES)
     roads = [a for day in d["days"] for a in _all_activities(day)
              if a["type"] == "road"]
     assert roads, "the example contains road activities"
     road = roads[0]
-    assert road["start"]
-    assert road["waypoints"], "a road serializes its ordered waypoints"
-    assert road["destination"], "destination resolves from the last named waypoint"
+    assert road["start"], "the first leg's departure"
+    assert road["waypoints"], "one entry per leg (plus its route-shaping points)"
+    assert road["destination"], "destination resolves from the last leg's arrival"
+    assert "legs" not in road, "the resolved road is the chain, not the input legs"
     assert "description" in road, "a road carries its optional free prose"
 
 
 def test_road_description_is_optional_and_round_trips():
     # A road's `description` holds what the structured fields can't say. It
     # defaults to "" (so the renderers simply skip it) and survives to_dict.
-    base = {"type": "road", "start": "Sarlat",
-            "waypoints": [{"coordinate": {"lat": 43.0, "long": 0.1},
-                           "location": "Cauterets"}]}
+    base = {"type": "road", "legs": [
+        {"start_location": "Sarlat", "end_location": "Cauterets",
+         "end_coordinate": {"lat": 43.0, "long": 0.1}}]}
     it = Itinerary.from_dict({"travel_description": {"title": "T"},
                               "days": [{"title": "D", "activities": [base]}]})
     assert to_dict(it)["days"][0]["activities"][0]["description"] == ""
@@ -171,9 +175,9 @@ def test_guidebook_pages_on_every_described_type():
     # it, it defaults to "" and it reaches the serialized dict verbatim (the
     # renderers add the "p." themselves), whitespace-trimmed.
     acts = [
-        {"type": "road", "start": "Sarlat", "guidebook_pages": " 132 ",
-         "waypoints": [{"coordinate": {"lat": 43.0, "long": 0.1},
-                        "location": "Cauterets"}]},
+        {"type": "road", "guidebook_pages": " 132 ", "legs": [
+            {"start_location": "Sarlat", "end_location": "Cauterets",
+             "end_coordinate": {"lat": 43.0, "long": 0.1}}]},
         {"type": "point_of_interest", "name": "Louvre",
          "guidebook_pages": "44-47"},
         {"type": "place", "name": "Latin Quarter",

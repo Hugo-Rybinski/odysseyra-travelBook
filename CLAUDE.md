@@ -90,7 +90,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `activities.py` — `Activity` base + the 6 activity types (`road`,
     `point_of_interest`, `place`, `hike`, `meal`, `buffer`), `activity_from_dict`,
     `schedule_activities` (the day timeline pass) and `resolve_meal_categories`
-    (fills each `Meal.category` from the trip thresholds after scheduling).
+    (fills each `Meal.category` from the trip thresholds after scheduling). Also
+    `Waypoint` + `_road_chain`, which lower a road's input `legs` onto the
+    departure + waypoint chain everything downstream reads (see the road bullet
+    below).
   - `transport.py` — `Transport` (a booking) + `TransportLeg` (one hop, a
     `Scheduled`) + `resolve_transport(leg, …)` (tz-aware time inference, per leg).
     A leg proxies its booking's shared fields (`type`, `booking_number`,
@@ -200,7 +203,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `emergency_contacts` would read as a fifth content array.
 - **Maps & coordinates.** Every locatable object may carry an optional
   `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
-  segments use `start_/end_coordinate` (road, a transport **leg**) or
+  segments use `start_/end_coordinate` (a **road leg**, a transport **leg**) or
   `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
   per-day OSM map with a pin per located activity + drives as routes; areas get a
   single pin plus a second zoomed map of their nested points. A transport leg
@@ -317,6 +320,107 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     becomes that night's "accommodation". A **booking** infers nothing of its
     own: its `title`/`start_date`/`end_date` are derived from its legs (first
     departure → last arrival).
+- **A drive is its `legs`.** A `road` is written as an ordered array of `legs` —
+  one per hop, each with `start_/end_location`, `start_/end_coordinate`, its own
+  `duration` / `distance_km` / `off_road`, and `waypoints`: a bare coordinate
+  list that bends *that hop's* drawn route. `legs` is **required and non-empty**,
+  so a plain A → B drive is a one-leg road and there is exactly one shape to
+  consume — the move `transport` already made. The road itself therefore has
+  **no** `start`, `coordinate`, `waypoints` or `off_road` of its own any more
+  (`validator.py`'s `ROAD_MOVED_KEYS` names each retired key and where its value
+  went, since nothing reports an unknown key and it would otherwise be dropped in
+  silence); the drive counts as off-road when **all** of its legs are.
+  - **A junction is written once.** `models/activities.py`'s `_road_chain`
+    resolves an omitted endpoint from the neighbouring leg (`start_*` ← the
+    previous leg's `end_*`, `end_*` ← the next leg's `start_*`), so the first leg
+    must name its own departure and the last its own arrival; a junction no leg
+    names raises. Where both sides state it the **earlier** leg's `end_*` wins,
+    and `_road_leg_junction` warns when the two disagree (a different name, or
+    coordinates over 0.01° apart) — the losing value would otherwise vanish
+    without a word. The departure *coordinate* alone stays optional: it is
+    geocoded from the name, exactly as the road's own `coordinate` always was.
+    Every other point of the route is plotted from its coordinate, which is what
+    a hand-written waypoint always demanded anyway.
+  - **It lowers onto the old chain, which is why nothing rendered differently.**
+    `_road_chain` returns `(start, coordinate, waypoints, off_road)` — each leg
+    contributing its shaping points as unnamed `Waypoint`s, then its arrival as a
+    named one carrying that leg's figures — so `Road`, `serialize.py`, the
+    resolved `Day`, both renderers, the maps and the `.ics` are all untouched.
+    The *input* moved; the rendering contract didn't, so `france.json`'s resolved
+    document is byte-identical and **`SCHEMA_VERSION` needs no bump**. The
+    display legs the renderers compute (`pdf/days.py`'s `road_display_legs`,
+    `render/nav.ts`'s `roadLegs`) now line up one-to-one with the written legs,
+    since every leg's arrival is named — the merge-forward rule survives for the
+    shaping points, which is where it always mattered.
+  - The validator has its own table (`ROAD_LEG_SPECS`) and `_road_leg_specs`
+    tailors it per leg: an endpoint the neighbour supplies is optional (its
+    `default` naming *which* neighbour), one nobody supplies is `required` — so a
+    broken junction is a single error on the earlier leg's `end_*`, and the later
+    leg's `start_*` is dropped from its table rather than reported a second time.
+    Per-leg `duration`/`distance_km` still warn when missing, with the wording
+    unchanged (`skills/fix-missing-duration-distance.md` matches on it), and a
+    one-leg drive may state either on the road instead — the drive *is* that hop.
+  - The Edit tab mirrors the shape: `ROAD_LEG_FIELDS` plus a **Legs** sub-array
+    with two `CoordinateField`s per leg and a nested **Route waypoints** array of
+    bare coordinates; the road itself no longer draws a coordinate box. `geocode`
+    now fills **every** leg endpoint (`maps/writeback.py`) — something the old
+    shape couldn't do for a waypoint, since its coordinate was required up front.
+  - **A drive can pin its own points** — `display_start_on_maps`,
+    `display_end_on_maps`, `display_intermediate_point_on_maps`, all **off**. A
+    road is a *route*; these give its departure, its final arrival and its
+    junctions a **numbered pin** as well, joining the day's `1..N` sequence in
+    timeline order (`resolve_day` appends them where the road sits, so the
+    numbers still read down the page and everything after a pinned drive shifts).
+    All three on = every named point pinned, which is the whole rule. The pin is
+    keyed by object identity like every other (`DayMaps.numbers[id(obj)]`): the
+    **road** object carries the departure's label — so `pin_label(road)` /
+    `act.map_pin` needed no new plumbing — and each pinned waypoint carries its
+    own, which is why `serialize.py`'s `_waypoint` gained `map_pin` and
+    `bridge.py`'s `_stamp_pins` now walks the waypoints too. A disc sits **beside
+    the name it labels**: the departure's on the road's title, each arrival's on
+    that leg's row — which is why a **one-leg** drive whose arrival is pinned
+    prints its leg row after all (`_road_waypoints` / `RoadVia` both switch on
+    `len(legs) > 1 or any pin`), a bare number being unreadable. `show_on_map:
+    false` still suppresses a pin. The whole-trip map is deliberately untouched:
+    a pin there carries the **day**, not the stop, and `tripGeo.ts`'s model
+    fallback already draws every named road point.
+  - **A leg may carry a `gpx`** — stored exactly like a hike's (base64, gzip
+    tolerated, `models/gpx.py`) but used for one thing only: `maps/build.py`'s
+    `_road_route` draws **that leg** from the recording instead of routing it, so
+    a road with no GPX draws precisely the line it always did while one with a
+    track follows the road actually taken. Deliberately **not** a hike: no trail
+    map, no elevation profile, so an elevation-less file loses nothing and
+    `defaults.include_hike_maps` (hikes only) doesn't gate it — attaching the
+    file is the opt-in, and with maps off it draws nothing (an info says so). The
+    resolved waypoint therefore carries a bare `gpx` string rather than a hike's
+    `track` object: there is no geometry to ship, because the *map render* is
+    where the line lives. The viewer alone offers it back — `GpxDownload` (the
+    hike's button, generalized to a base64 + a filename) on the leg's row — the
+    same paper-can't-download divergence.
+  - **A leg with no recording can have one built on demand.** The other link on
+    that row, `(Build GPX file)` (`GpxBuildLink`) — deliberately worded apart
+    from `(Get GPX track)`, since this file didn't exist until the click — asks
+    the engine for the leg's drawn geometry and downloads it. The chain is
+    `RouteGpxContext` (provided by `App.tsx`, bound to the text the preview was
+    resolved from, mirroring the Edit tab's geocode context) → `buildLegGpx` →
+    the `legGpx` op → `bridge.leg_gpx` → `maps/build.py`'s `road_leg_geometry` +
+    `models/gpx_export.py`'s `route_gpx`. Three things are load-bearing:
+    - **A `<rte>`, not a `<trk>`.** The geometry was computed, so writing it as a
+      track would hand a GPS a recording that never happened —
+      `models/gpx_export.py` exists to keep that distinction (and is where the
+      README's whole-trip GPX/KML export should grow from, rather than a second
+      writer).
+    - **No straight-line fallback.** `route(..., fallback=False)` and
+      `road_leg_geometry(..., fallback=False)` return `None` where the drawing
+      path would draw `[a, b]`: a crow-flight line is fine to *draw* and wrong to
+      *export*, so the link reports "no route" instead. Nothing is stored either
+      way, which is why the file's own `gpx` stays "user-provided only".
+    - **The leg is addressed as "the Nth road of day D, hop M"**, not by an index
+      into the resolved timeline — that has buffers woven through it, so its
+      activity numbers don't match the input's, while a day's roads do (hence
+      `roadOrdinals` in `DayCard`).
+  - Both of those change the resolved `Day`, hence the `SCHEMA_VERSION` bump to
+    **18**.
 - **Transport is a booking plus its `legs`.** What is reserved once — `type`,
   `name`, `booking_number`, `booking_source`, `website`, `booking_link`,
   `status`, `description`, `price`/`currency`/`paid` — sits on the `Transport`;
@@ -581,8 +685,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   located stay) and the **sunrise** at `wake_reference` (the **previous** night's
   stay → the day's own **first** located stop → the nearest dated located stay).
   `_first_coordinate`/`_last_coordinate` walk nested activities and a road's
-  `waypoints` (its `coordinate` is the departure, its last waypoint the
-  arrival). An unusable morning reference falls back to the evening's. The
+  lowered `waypoints` (its `coordinate` is the first leg's departure, its last
+  waypoint the last leg's arrival). An unusable morning reference falls back to the evening's. The
   clock is `day_timezone(day)` (a day's first explicit `start_tz`, else
   `defaults.timezone`), and `_sun_at` drops a reference sitting more than
   `_MAX_CLOCK_GAP_MIN` (3 h) of solar time from it — a New York day printed on

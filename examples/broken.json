@@ -39,13 +39,19 @@
       "title": "Day two",
       "date": "2026-06-10",
       "activities": [
-        { "type": "road", "start": "A", "distance_km": 0, "start_time": "09:00", "end_time": "23:00",
-          "waypoints": [
+        { "type": "road", "distance_km": 0, "start_time": "09:00", "end_time": "23:00",
+          "display_start_on_maps": "yes please", "display_intermediate_point_on_maps": true,
+          "legs": [
             "not-an-object",
-            { "location": "No coordinate" },
-            { "coordinate": { "lat": 91, "long": 2 }, "duration": "nope", "distance_km": -3 },
-            { "coordinate": { "lat": 1, "long": 2 }, "duration": "8h" },
-            { "coordinate": { "lat": 1, "long": 2 }, "duration": "8h" }
+            { "end_location": "No coordinate of its own" },
+            { "start_location": "Elsewhere", "start_coordinate": { "lat": 91, "long": 2 },
+              "end_location": "Bad figures", "end_coordinate": { "lat": 1, "long": 2 },
+              "duration": "nope", "distance_km": -3, "off_road": "maybe" },
+            { "start_coordinate": { "lat": 50, "long": 2 },
+              "end_location": "Too long", "end_coordinate": { "lat": 1, "long": 2 }, "duration": "8h",
+              "waypoints": [ "not-a-coordinate", { "lat": 1 } ] },
+            { "end_coordinate": { "lat": 1, "long": 2 }, "duration": "8h",
+              "gpx": "not a gpx file" }
           ],
           "activities": [ { "type": "point_of_interest", "name": "Not allowed on a road" } ] },
         { "type": "point_of_interest", "category": "alien", "website": "ftp://nope", "guidebook_pages": "see pp. 12-14", "opening_days": "funday", "opening_hours": "09:30", "start_time": "17:00", "end_time": "23:00", "duration": "3h", "coordinate": { "lat": 999, "long": "west" } },
@@ -70,7 +76,10 @@
           { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
           { "type": "meal", "restaurant": "Slow", "duration": "45 min" }
         ] },
-        { "type": "road", "waypoints": [] }
+        { "type": "road", "legs": [] },
+        { "type": "road", "legs": "not-an-array" },
+        { "type": "road", "start": "Old shape", "coordinate": { "lat": 1, "long": 2 }, "off_road": true,
+          "waypoints": [ { "coordinate": { "lat": 1, "long": 2 }, "location": "Nowhere" } ] }
       ]
     }
   ],

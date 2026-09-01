@@ -38,18 +38,101 @@ def _hex_to_rgb(value: str) -> tuple[int, int, int]:
         return (31, 78, 95)
 
 
-def _route_through(points, cache):
+def _route_through(points, cache, *, fallback=True):
     """Driving geometry through an ordered list of ``(lat, long)`` points,
     chaining :func:`route` over each consecutive pair (start → wp1 → … → end)
-    and stitching the segments into one line."""
+    and stitching the segments into one line.
+
+    ``fallback=False`` gives ``None`` as soon as any pair can't be routed (see
+    :func:`.routing.route`), rather than a line with a straight guess in it."""
     line: list[tuple[float, float]] = []
     for a, b in zip(points, points[1:]):
-        seg = route(a, b, cache)
+        seg = route(a, b, cache, fallback=fallback)
+        if seg is None:
+            return None
         if line and seg and line[-1] == seg[0]:
             line.extend(seg[1:])
         else:
             line.extend(seg)
     return line
+
+
+def road_leg_lines(road, departure, cache, *, fallback=True):
+    """One drawn line per **leg** of a drive, as
+    ``[(arrival waypoint, [(lat, long), …] | None), …]``.
+
+    Each named waypoint closes a leg; the unnamed ones before it are that leg's
+    route-shaping points. A leg with a ``gpx`` contributes the recording's own
+    line — the real road, bends and all — and its shaping points are then
+    redundant (the recording already runs through them). Without one it is
+    routed, so a road with no GPX draws exactly the line it always did.
+
+    A leg's line is ``None`` when it couldn't be built: nothing to route from
+    (no departure coordinate and no track), or — with ``fallback=False`` —
+    routing was unavailable and a straight guess was refused.
+
+    ``departure`` is the road's start coordinate, possibly ``None``: a track can
+    carry a leg on its own."""
+    out = []
+    prev = departure
+    shaping: list[tuple[float, float]] = []
+    for wp in road.waypoints:
+        here = (wp.coordinate.lat, wp.coordinate.long)
+        if not wp.location:
+            shaping.append(here)
+            continue
+        track = getattr(wp, "track", None)
+        if track is not None and len(track.points) >= 2:
+            out.append((wp, [(lat, long) for lat, long in track.points]))
+        elif prev is not None:
+            out.append((wp, _route_through([prev] + shaping + [here], cache,
+                                           fallback=fallback)))
+        else:
+            out.append((wp, None))
+        prev, shaping = here, []
+    if shaping and prev is not None:  # trailing shaping points (no named arrival)
+        out.append((None, _route_through([prev] + shaping, cache, fallback=fallback)))
+    return out
+
+
+def _road_route(road, departure, cache):
+    """A drive's whole drawn line: its legs' lines (:func:`road_leg_lines`)
+    stitched together, skipping any that couldn't be built."""
+    line: list[tuple[float, float]] = []
+    for _wp, seg in road_leg_lines(road, departure, cache):
+        if not seg:
+            continue
+        if line and line[-1] == seg[0]:
+            line.extend(seg[1:])
+        else:
+            line.extend(seg)
+    return line
+
+
+def road_departure(road, day, itinerary, cache):
+    """A drive's departure coordinate as the map resolves it: the road's own
+    ``coordinate`` when it has one, else geocoded from its ``start`` (anchored on
+    the day's city), else ``None`` — the same call :func:`resolve_day` makes, so
+    an export can't drift from what's drawn."""
+    r = _Resolver(itinerary, cache)
+    return r.endpoint_coord(road.coordinate, road.start, _anchor_city(day.city))
+
+
+def road_leg_geometry(road, day, itinerary, cache, leg_index, *, fallback=False):
+    """The drawn line of one leg of ``road`` — the ``leg_index``-th of its named
+    waypoints — as ``(arrival waypoint, [(lat, long), …])``, or ``None`` when it
+    can't be built.
+
+    Defaults to ``fallback=False``: this is the seam the *export* uses, and a
+    straight line between two towns is a wrong route, not a rough one."""
+    lines = [(wp, seg) for wp, seg in
+             road_leg_lines(road, road_departure(road, day, itinerary, cache),
+                            cache, fallback=fallback)
+             if wp is not None]
+    if not 0 <= leg_index < len(lines):
+        return None
+    wp, seg = lines[leg_index]
+    return None if not seg or len(seg) < 2 else (wp, seg)
 
 
 def _anchor_city(city: str) -> str:
@@ -153,8 +236,10 @@ def resolve_day(day, itinerary, cache):
     """Return (main_points, routes, route_nodes, area_details) for a day.
 
     * ``main_points`` — ordered ``[_Pt]``, one per located point activity (a
-      place/area contributes a single pin).
-    * ``routes`` — ``[[(lat, long), …]]`` drive geometries.
+      place/area contributes a single pin), plus any of a drive's own points that
+      asked for one (``Road.display_*_on_maps``, all off by default).
+    * ``routes`` — ``[[(lat, long), …]]`` drive geometries, each leg drawn from
+      its ``gpx`` when it has one and routed otherwise (see :func:`_road_route`).
     * ``route_nodes`` — ``[[(lat, long), …]]`` the named stops of each route
       (the departure plus each *named* waypoint), for the full-opacity node
       discs on the map. Unnamed route-shaping waypoints are excluded.
@@ -174,16 +259,25 @@ def resolve_day(day, itinerary, cache):
             # the departure (start/coordinate) plus the waypoints, in order —
             # the last waypoint is the arrival.
             a = r.endpoint_coord(act.coordinate, act.start, city)
-            waypoints = [(w.coordinate.lat, w.coordinate.long) for w in act.waypoints]
-            pts = ([a] if a else []) + waypoints
-            if len(pts) >= 2:
-                routes.append(_route_through(pts, cache))
+            line = _road_route(act, a, cache)
+            if len(line) >= 2:
+                routes.append(line)
                 # only the departure and *named* waypoints get a node disc;
                 # unnamed (route-shaping) waypoints still bend the route but
                 # are not marked with their own circle.
                 named = [(w.coordinate.lat, w.coordinate.long)
                          for w in act.waypoints if w.location]
                 route_nodes.append(([a] if a else []) + named)
+            # A drive is a route, not a pin — unless it asks for pins on its own
+            # points (see Road.display_*_on_maps). They join the day's numbered
+            # sequence here, in timeline order, so the numbers still read down
+            # the page: the departure is the road's own pin, each pinned
+            # junction/arrival is its waypoint's.
+            if act.display_start_on_maps and a and (
+                    act.coordinate is None or act.coordinate.show_on_map):
+                main.append(_Pt(act.start or act.title, a[0], a[1], act))
+            for wp in act.pinned_waypoints():
+                main.append(_Pt(wp.location, wp.coordinate.lat, wp.coordinate.long, wp))
             continue
         if act.kind == "place":
             nested = []

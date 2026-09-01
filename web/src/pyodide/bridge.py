@@ -94,12 +94,23 @@ def _rendered_map(rendered) -> dict:
 
 def _stamp_pins(dm, day, day_out, itinerary) -> None:
     """Copy each object's pin label (by object identity, via ``dm.number_for``)
-    onto the matching serialized dict entry."""
+    onto the matching serialized dict entry.
+
+    A road's own points are pinned too when it asks for them
+    (``Road.display_*_on_maps``): the road's label is its **departure**, and each
+    pinned junction/arrival is its waypoint's — which is why the waypoints are
+    walked in step with their serialized twins here."""
     def walk(acts, out_acts):
         for act, out in zip(acts, out_acts):
             label = dm.number_for(act)
             if label is not None:
                 out["map_pin"] = label
+            wps = getattr(act, "waypoints", None)
+            if wps and out.get("waypoints"):
+                for wp, wp_out in zip(wps, out["waypoints"]):
+                    wp_label = dm.number_for(wp)
+                    if wp_label is not None:
+                        wp_out["map_pin"] = wp_label
             nested = getattr(act, "activities", None)
             if nested and out.get("activities"):
                 walk(nested, out["activities"])
@@ -263,6 +274,52 @@ def geocode(text_query, countrycodes=""):
         if result is None:
             return json.dumps({"coordinate": None})
         return json.dumps({"coordinate": {"lat": result[0], "long": result[1]}})
+    except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
+        return json.dumps({"error": str(exc)})
+
+
+def leg_gpx(text, day_index, road_index, leg_index):
+    """Build a GPX **route** file for one leg of one drive, from the geometry the
+    map would draw for it — the answer to "give me this drive as a file" for a
+    leg that carries no recording of its own.
+
+    The leg is addressed as *the ``leg_index``-th hop of the ``road_index``-th
+    drive of day ``day_index``*, all 0-based. Deliberately not an index into the
+    resolved timeline: that has buffers woven through it, so its activity numbers
+    don't line up with the input's — whereas "the Nth road of a day" is the same
+    thing on both sides.
+
+    Returns ``{"gpx": <file text>, "name": <suggested name>}``, or
+    ``{"error": ...}``. It is an error rather than a straight line when routing
+    is unavailable (see :func:`maps.build.road_leg_geometry`): a crow-flight line
+    between two towns is a wrong route to hand a GPS, not a rough one.
+
+    Needs the network unless that leg's geometry is already in the routing cache
+    — which it normally is, the day's map having just been drawn from it."""
+    try:
+        from odysseyra_travelbook.maps import Cache
+        from odysseyra_travelbook.maps.build import road_leg_geometry
+        from odysseyra_travelbook.models import route_gpx
+
+        itinerary = _parsed(text)
+        day = itinerary.days[day_index]
+        roads = [a for a in day.activities if getattr(a, "kind", "") == "road"]
+        if not 0 <= road_index < len(roads):
+            return json.dumps({"error": "no such drive on that day"})
+        road = roads[road_index]
+        cache = Cache.open()
+        geometry = road_leg_geometry(road, day, itinerary, cache, leg_index)
+        try:
+            cache.save()
+        except Exception:
+            pass
+        if geometry is None:
+            return json.dumps({"error": "no route available for that leg"})
+        wp, line = geometry
+        legs = [w for w in road.waypoints if w.location]
+        start = road.start if leg_index == 0 else legs[leg_index - 1].location
+        name = f"{start} → {wp.location}" if start else wp.location
+        return json.dumps({"gpx": route_gpx(line, name), "name": name})
     except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
         return json.dumps({"error": str(exc)})
 

@@ -12,12 +12,12 @@ import {
   DAY_FIELDS,
   DEFAULTS_FIELDS,
   EMERGENCY_CONTACT_FIELDS,
+  ROAD_LEG_FIELDS,
   SCHEDULED_FIELDS,
   SECONDARY_CURRENCY_FIELDS,
   TRANSPORT_FIELDS,
   TRANSPORT_LEG_FIELDS,
   TRAVEL_DESCRIPTION_FIELDS,
-  WAYPOINT_FIELDS,
 } from "./schema";
 
 export const FINDING_ICON: Record<FindingLevel, string> = {
@@ -156,7 +156,7 @@ function resolveAnchor(
   if (containerPaths.has(path)) return [path];
 
   // Last resort: attach to the nearest ancestor container (e.g. a road's
-  // `….waypoints` array line → the road's box) rather than the rail.
+  // `….legs` array line → the road's box) rather than the rail.
   const ancestor = path.replace(/\.[^.]+$/, "");
   if (ancestor !== path && containerPaths.has(ancestor)) return [ancestor];
 
@@ -177,15 +177,20 @@ function fieldNamesFrom(message: string): string[] {
 }
 
 // The set of rendered container boxes (config groups + every array item, incl.
-// nested activities and waypoints), so a finding that names no field can still
+// nested activities, a drive's legs and their route waypoints), so a finding that
+// names no field can still
 // anchor to the box it concerns. Mirrors the form tree like collectFieldPaths.
 export function collectContainerPaths(draft: SrcItinerary): Set<string> {
   const out = new Set<string>(["travel_description", "defaults", "misc"]);
   const walk = (base: string, act: SrcActivity) => {
     out.add(base);
     if (act.type === "road") {
-      out.add(`${base}.waypoints`); // the array itself (e.g. "needs at least one waypoint")
-      (act.waypoints ?? []).forEach((_w, i) => out.add(`${base}.waypoints.${i}`));
+      out.add(`${base}.legs`); // the array itself ("needs at least one leg")
+      (act.legs ?? []).forEach((leg, i) => {
+        out.add(`${base}.legs.${i}`);
+        out.add(`${base}.legs.${i}.waypoints`);
+        (leg.waypoints ?? []).forEach((_w, k) => out.add(`${base}.legs.${i}.waypoints.${k}`));
+      });
     }
     const canNest =
       act.type === "point_of_interest" ||
@@ -291,12 +296,17 @@ function walkActivity(
   // A hand-edited draft may carry an unknown type; skip its (absent) field table.
   const typeFields = ACTIVITY_FIELDS[type];
   if (typeFields) addFields(base, typeFields);
-  addCoord(`${base}.coordinate`);
+  // A road has no coordinate of its own — its endpoints live on its legs.
+  if (type !== "road") addCoord(`${base}.coordinate`);
 
   if (type === "road") {
-    (act.waypoints ?? []).forEach((_w, i) => {
-      addFields(`${base}.waypoints.${i}`, WAYPOINT_FIELDS);
-      addCoord(`${base}.waypoints.${i}.coordinate`);
+    (act.legs ?? []).forEach((leg, i) => {
+      const lp = `${base}.legs.${i}`;
+      addFields(lp, ROAD_LEG_FIELDS);
+      addCoord(`${lp}.start_coordinate`);
+      addCoord(`${lp}.end_coordinate`);
+      // a route-shaping waypoint *is* a coordinate — no wrapping field
+      (leg.waypoints ?? []).forEach((_w, k) => addCoord(`${lp}.waypoints.${k}`));
     });
   }
 

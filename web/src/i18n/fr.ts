@@ -276,7 +276,11 @@ export const FR: Record<string, string> = {
 
   // ------------------------------------------------------------ Form sections
   Type: "Type",
-  Waypoints: "Points de passage",
+  // A road's legs are "étapes"; a transport booking's are "trajets" (below).
+  "Drive legs": "Étapes du trajet",
+  "Drive leg {n}": "Étape {n}",
+  "drive leg": "étape",
+  "Route waypoints": "Points de passage de l'itinéraire",
   "Nested activities": "Activités imbriquées",
   Activities: "Activités",
   // The `defaults` box's group titles
@@ -294,8 +298,14 @@ export const FR: Record<string, string> = {
   "Currency {n}": "Devise {n}",
   waypoint: "point de passage",
   currency: "devise",
-  "No waypoints — a road needs at least one (the arrival).":
-    "Aucun point de passage — une route en nécessite au moins un (l'arrivée).",
+  "No legs — a road needs at least one (its departure to its arrival).":
+    "Aucune étape — une route en nécessite au moins une (de son départ à son arrivée).",
+  "One leg per hop of the drive. Leave a leg's From blank to reuse the previous leg's To.":
+    "Une étape par tronçon du trajet. Laissez le « De » d'une étape vide pour reprendre le « À » de la précédente.",
+  "Points the route bends through between this leg's two ends — coordinates only, in travel order.":
+    "Les points par lesquels passe l'itinéraire entre les deux extrémités de cette étape — des coordonnées seulement, dans l'ordre du parcours.",
+  "No waypoints — the route runs straight between the leg's two ends.":
+    "Aucun point de passage — l'itinéraire va tout droit entre les deux extrémités de l'étape.",
   "Travel time is missing.": "Le temps de trajet est manquant.",
   "Distance is missing.": "La distance est manquante.",
   "Travel time and distance are missing.": "Le temps de trajet et la distance sont manquants.",
@@ -505,16 +515,19 @@ export const FR: Record<string, string> = {
     "La ou les pages du guide qui traitent de cette activité — une page, une plage, ou une liste séparée par des virgules (ex. 14, 15-18, 16, 23, 25-30). Affichées dans une pastille d'accent clair à la fin de la description. Facultatif.",
 
   // Road
-  "Start (departure)": "Départ",
-  "Departure address": "Adresse de départ",
-  "Departure address/name; also the map route's start. Required.":
-    "Adresse/nom de départ ; aussi le début de l'itinéraire sur la carte. Obligatoire.",
   "Distance (km)": "Distance (km)",
   "driving distance": "distance routière",
-  "Total driving distance in km. Optional.": "Distance routière totale en km. Facultatif.",
-  "Off-road": "Hors-piste",
-  "Highlight off-road sections. Defaults to off.":
-    "Mettre en évidence les sections hors-piste. Désactivé par défaut.",
+  "Total driving distance in km for the whole drive (each leg carries its own too). Optional.":
+    "Distance routière totale en km pour tout le trajet (chaque étape porte aussi la sienne). Facultatif.",
+  "Pin the departure": "Épingler le départ",
+  "Give the drive's departure a numbered pin on the day map. Defaults to off — a drive is drawn as a route, and its pins are opt-in.":
+    "Donner au départ du trajet une épingle numérotée sur la carte du jour. Désactivé par défaut — un trajet est dessiné comme un itinéraire, ses épingles s'activent au cas par cas.",
+  "Pin the arrival": "Épingler l'arrivée",
+  "Give the drive's final arrival a numbered pin on the day map. Defaults to off.":
+    "Donner à l'arrivée finale du trajet une épingle numérotée sur la carte du jour. Désactivé par défaut.",
+  "Pin the junctions": "Épingler les jonctions",
+  "Give every junction between two legs a numbered pin on the day map. With all three switches on, every named point of the drive is pinned. Defaults to off.":
+    "Donner à chaque jonction entre deux étapes une épingle numérotée sur la carte du jour. Avec les trois options activées, tous les points nommés du trajet sont épinglés. Désactivé par défaut.",
   "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional.":
     "Tout ce que les autres champs ne couvrent pas — l'état de la route, un tronçon panoramique, un péage ou un ferry. Facultatif.",
 
@@ -583,20 +596,30 @@ export const FR: Record<string, string> = {
   "Length of the free time (e.g. 30 min). A 0 min buffer just suppresses the default buffer here. Required.":
     "Durée du temps libre (ex. 30 min). Une pause de 0 min supprime simplement la pause par défaut ici. Obligatoire.",
 
-  // Waypoint
+  // Road leg
   Location: "Lieu",
-  "The waypoint's name": "Le nom du point de passage",
-  "The waypoint's name. Optional — an unnamed waypoint still draws a map pin but merges into the next named leg.":
-    "Le nom du point de passage. Facultatif — un point de passage sans nom pose quand même une épingle mais fusionne avec le tronçon nommé suivant.",
-  "Leg duration": "Durée du tronçon",
-  "Driving time for the leg reaching this waypoint. Optional.":
-    "Temps de conduite du tronçon menant à ce point de passage. Facultatif.",
-  "Leg distance (km)": "Distance du tronçon (km)",
-  "Driving distance for the leg reaching this waypoint. Optional.":
-    "Distance routière du tronçon menant à ce point de passage. Facultatif.",
-  "Leg off-road": "Tronçon hors-piste",
-  "Mark just this leg as off-road, without flagging the whole drive. Defaults to off.":
-    "Marquer ce seul tronçon comme hors-piste, sans signaler tout le trajet. Désactivé par défaut.",
+  From: "De",
+  To: "À",
+  "the previous leg's arrival": "l'arrivée de l'étape précédente",
+  "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival.":
+    "D'où part cette étape. Laissez vide sur toute étape sauf la première : elle reprend alors l'arrivée de l'étape précédente.",
+  "the next leg's departure": "le départ de l'étape suivante",
+  "Where this hop arrives. Required on the last leg; on an earlier one the next leg's departure can name it instead.":
+    "Où arrive cette étape. Obligatoire sur la dernière étape ; sur une étape antérieure, le départ de l'étape suivante peut le nommer à la place.",
+  "Driving time": "Temps de conduite",
+  "Driving time for this hop. Optional, but validation warns when it's missing.":
+    "Temps de conduite de cette étape. Facultatif, mais la validation avertit s'il manque.",
+  "Driving distance for this hop. Optional, but validation warns when it's missing.":
+    "Distance routière de cette étape. Facultatif, mais la validation avertit si elle manque.",
+  "Off-road": "Hors-piste",
+  "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off.":
+    "Marquer cette seule étape comme hors-piste. Le trajet entier n'est hors-piste que si toutes ses étapes le sont. Désactivé par défaut.",
+  "GPX recording": "Enregistrement GPX",
+  "A .gpx recording of this hop, stored in the itinerary itself. It becomes this leg's line on the day map instead of the routed guess — there's no separate trail map or elevation profile, unlike a hike's. Optional.":
+    "Un enregistrement .gpx de cette étape, stocké dans l'itinéraire lui-même. Il devient le tracé de cette étape sur la carte du jour à la place de l'itinéraire calculé — sans carte ni profil altimétrique dédiés, contrairement à une randonnée. Facultatif.",
+  "From coordinate": "Coordonnée de départ",
+  "To coordinate": "Coordonnée d'arrivée",
+  Waypoint: "Point de passage",
 
   // Transport
   "Transport kind, shown as a badge on the booking and on each of its legs. Defaults to 'other'.":

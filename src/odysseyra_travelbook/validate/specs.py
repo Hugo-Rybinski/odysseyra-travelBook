@@ -309,19 +309,27 @@ NOTE_DESC = "a short note for whatever the other fields don't cover"
 
 ACTIVITY_SPECS = {
     "road": [
-        Spec("start", True, "the departure address", "any text"),
-        Spec("distance_km", False, "the driving distance in km", "a number",
-             "none (not shown)", V_NUMBER),
-        Spec("off_road", False, "whether part of the drive is off-road",
-             "true or false", "false", V_BOOL),
+        Spec("legs", True, "the hops the drive is made of, in travel order",
+             "a non-empty array of leg objects (see below), each with its "
+             "endpoints and that hop's duration / distance_km / off_road"),
+        Spec("distance_km", False, "the driving distance in km for the whole "
+             "drive", "a number", "none (not shown)", V_NUMBER),
+        Spec("display_start_on_maps", False,
+             "whether the drive's departure gets a numbered map pin",
+             "true or false", "false (the drive is drawn as a route only)",
+             V_BOOL),
+        Spec("display_end_on_maps", False,
+             "whether the drive's final arrival gets a numbered map pin",
+             "true or false", "false (the drive is drawn as a route only)",
+             V_BOOL),
+        Spec("display_intermediate_point_on_maps", False,
+             "whether each junction between two legs gets a numbered map pin",
+             "true or false", "false (the drive is drawn as a route only)",
+             V_BOOL),
         Spec("description", False, "anything about the drive the other fields "
              "don't cover", "any text", '""'),
         Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
              V_PAGES),
-        Spec("waypoints", True, "the ordered stops the route runs through "
-             "(the last is the arrival)",
-             "a non-empty array of {coordinate, location, duration, distance_km, "
-             "off_road} objects"),
         Spec("activities", False, "nested meals (a stop along the drive)",
              "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],
@@ -390,6 +398,42 @@ ACTIVITY_SPECS = {
              "a duration like '30 min'", "", V_DUR),
     ],
 }
+
+# One hop of a `road`. The four endpoint fields are optional *here* and made
+# required per leg by the validator (`_road_leg_specs`): the first leg must name
+# its own departure and the last its own arrival, while a leg in between inherits
+# whichever endpoint its neighbour states — so the defaults quoted below are what
+# an omitted one falls back to. The departure coordinate is the one point that
+# stays optional throughout: with maps on it is geocoded from the name.
+ROAD_LEG_SPECS = [
+    Spec("start_location", False, "where this hop departs from", "any text",
+         "the previous leg's 'end_location'"),
+    Spec("start_coordinate", False, "the departure point on the map",
+         "an object with a 'lat' and a 'long'",
+         "the previous leg's 'end_coordinate' (geocoded from the name on the "
+         "first leg)"),
+    Spec("end_location", False, "where this hop arrives", "any text",
+         "the next leg's 'start_location'"),
+    Spec("end_coordinate", False, "the arrival point on the map",
+         "an object with a 'lat' and a 'long'",
+         "the next leg's 'start_coordinate'"),
+    Spec("duration", False, "how long this hop takes to drive",
+         "a duration like '1h30' or '45 min'", "none (not shown)", V_DUR),
+    Spec("distance_km", False, "this hop's driving distance in km", "a number",
+         "none (not shown)", V_NUMBER),
+    Spec("off_road", False, "whether this hop runs off-road", "true or false",
+         "false (and the drive counts as off-road only when every leg is)",
+         V_BOOL),
+    Spec("waypoints", False, "intermediate points the hop's route bends "
+         "through, in order from its start to its end",
+         "an array of {lat, long} coordinates",
+         "[] (the route runs straight between the hop's endpoints)"),
+    Spec("gpx", False,
+         "a GPX recording of this hop, drawn as its line on the day map "
+         "(instead of the routed guess)",
+         "the .gpx file base64-encoded (gzip allowed)",
+         "none (the hop's line is routed through its endpoints)", V_GPX),
+]
 
 DAY_SPECS = [
     Spec("title", True, "the day's title", "any text"),

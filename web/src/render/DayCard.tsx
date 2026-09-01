@@ -11,7 +11,7 @@ import type {
 import { fill, fmtDate, fmtWeekdayRuns, tr, type Lang, type LabelKey } from "./format";
 import { Clamp } from "./Clamp";
 import { ForecastChip } from "./forecast";
-import { GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
+import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import {
@@ -153,6 +153,15 @@ export function DayCard({
   const timeline = mergeTimeline(day);
   const toggle = () => onToggle(day.day_number);
 
+  // Which drive of the day each road is — the address the engine wants for a
+  // leg's GPX (see render/routeExport.ts). Counted over the day's own
+  // activities, so buffers woven into the resolved timeline don't shift it, and
+  // it matches "the Nth road of day D" in the input JSON.
+  const roadOrdinals = new Map<Activity, number>();
+  day.activities
+    .filter((a) => a.type === "road")
+    .forEach((a, i) => roadOrdinals.set(a, i));
+
   const mapCaption = fill(tr(lang, "dayMapCaption"), { index: day.day_number });
 
   return (
@@ -222,6 +231,8 @@ export function DayCard({
                   lang={lang}
                   dayMap={day.map}
                   interactive={interactive}
+                  dayIndex={day.day_number - 1}
+                  roadIndex={roadOrdinals.get(item.act)}
                 />
               ),
             )}
@@ -299,11 +310,17 @@ function ActivityRow({
   lang,
   dayMap,
   interactive = false,
+  dayIndex,
+  roadIndex,
 }: {
   act: Activity;
   lang: Lang;
   dayMap?: DayMap; // present on top-level rows, for a place's area detail map
   interactive?: boolean;
+  // Where this row sits, for a road leg's on-demand GPX. Absent on a nested row
+  // (a road is never nested), which simply leaves the leg without that link.
+  dayIndex?: number;
+  roadIndex?: number;
 }) {
   // A place's zoomed detail map (matched by title), drawn inline after it —
   // interactive when possible, falling back to the static PNG, like the overview.
@@ -369,7 +386,9 @@ function ActivityRow({
           <ForecastChip act={act} lang={lang} />
         </div>
         <ActivityDetails act={act} lang={lang} nav={nav} />
-        {act.type === "road" && <RoadVia act={act} lang={lang} />}
+        {act.type === "road" && (
+          <RoadVia act={act} lang={lang} dayIndex={dayIndex} roadIndex={roadIndex} />
+        )}
         {act.type === "point_of_interest" && <Links lang={lang} website={act.website} />}
       </div>
       {/* A hike's embedded GPX: the trail map + elevation profile, sitting in
@@ -522,12 +541,28 @@ function singleLegOffRoad(act: Activity): boolean {
   return legs.length === 1 && legs[0].offRoad;
 }
 
-// The VIA breakdown for a multi-leg drive: one row per named leg with its own
-// duration/distance and a Navigate link.
-function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
+// The VIA breakdown for a multi-leg drive: one row per leg with its own map pin,
+// duration/distance, a Navigate link and — when the leg was recorded — the GPX it
+// was drawn from.
+//
+// A single-leg drive normally shows nothing here (its title says the same
+// thing), but a pinned arrival needs a row to be read against: a pin number is
+// only legible beside the place it points at. Mirrors pdf/days.py's
+// `_road_waypoints` — keep the two in step.
+function RoadVia({
+  act,
+  lang,
+  dayIndex,
+  roadIndex,
+}: {
+  act: Activity;
+  lang: Lang;
+  dayIndex?: number;
+  roadIndex?: number;
+}) {
   const provider = useMapProvider();
   const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
-  if (legs.length <= 1) return null;
+  if (legs.length <= 1 && !legs.some((l) => l.destPin)) return null;
   return (
     <div className="via">
       <p className="via-head">{tr(lang, "via").toUpperCase()}</p>
@@ -539,6 +574,7 @@ function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
         const nav = navUrl(provider, leg.destCoord, leg.dest ?? "");
         return (
           <p key={i} className="via-leg">
+            <PinDisc label={leg.destPin} />
             <span className="via-route">
               {leg.src || "?"} → {leg.dest || "?"}
             </span>
@@ -550,6 +586,18 @@ function RoadVia({ act, lang }: { act: Activity; lang: Lang }) {
                 {tr(lang, "navigate")}
               </a>
             )}
+            {/* the file this leg carries, or — for a leg with none — one the
+                app builds from the drawn route, which says so in its label */}
+            {leg.gpx ? (
+              <GpxDownload base64={leg.gpx} name={leg.dest || act.title} lang={lang} />
+            ) : dayIndex != null && roadIndex != null ? (
+              <GpxBuildLink
+                dayIndex={dayIndex}
+                roadIndex={roadIndex}
+                legIndex={i}
+                lang={lang}
+              />
+            ) : null}
           </p>
         );
       })}

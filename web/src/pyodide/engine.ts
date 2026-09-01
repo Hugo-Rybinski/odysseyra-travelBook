@@ -160,6 +160,14 @@ function dispatch<O extends Op>(bridge: Bridge, op: O, args: OpArgs<O>): OpResul
       if (parsed.error) throw new Error(parsed.error);
       return (parsed.coordinate ?? null) as OpResult<O>;
     }
+    case "legGpx": {
+      const [text, dayIndex, roadIndex, legIndex] = args as OpArgs<"legGpx">;
+      const parsed = JSON.parse(
+        bridge.leg_gpx(text, dayIndex, roadIndex, legIndex) as string,
+      ) as { gpx?: string; name?: string; error?: string };
+      if (parsed.error || !parsed.gpx) throw new Error(parsed.error ?? "no route");
+      return { gpx: parsed.gpx, name: parsed.name ?? "" } as OpResult<O>;
+    }
     case "ics": {
       const [text, lang] = args as OpArgs<"ics">;
       return envelope<string>(bridge.ics(text, lang) as string, "ics") as OpResult<O>;

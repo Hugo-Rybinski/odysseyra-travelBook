@@ -195,6 +195,23 @@ export function buildIcs(text: string, lang = "en"): Promise<string> {
   return call("ics", [text, lang]);
 }
 
+/** Build a GPX route file for one road leg — the `legIndex`-th hop of the
+ * `roadIndex`-th drive of day `dayIndex` (all 0-based) — from the geometry the
+ * map draws for it. For a leg with no recording of its own; a leg that has one
+ * hands back that file instead (no engine call needed).
+ *
+ * Throws when there is no route to give: the bridge refuses to pass off a
+ * straight line between two towns as a route. Usually served from the routing
+ * cache the day's map render filled, so it needs no network in that case. */
+export function buildLegGpx(
+  text: string,
+  dayIndex: number,
+  roadIndex: number,
+  legIndex: number,
+): Promise<{ gpx: string; name: string }> {
+  return call("legGpx", [text, dayIndex, roadIndex, legIndex]);
+}
+
 /** Build the PDF. `maps` overrides the file's `include_maps_in_render` for this
  * export (undefined leaves the file's own setting in force). Address inference
  * and its country scope have no override — they come from the file's `defaults`.

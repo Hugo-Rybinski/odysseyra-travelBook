@@ -15,7 +15,7 @@ export interface TransportFormProps {
 }
 
 // A booking's reservation fields, then its legs as a sub-array (the same shape a
-// road's waypoints use). The coordinates belong to a leg's endpoints, not to the
+// road's legs use). The coordinates belong to a leg's endpoints, not to the
 // booking, so they sit inside each leg's item.
 export function TransportForm({ value, path, onChange }: TransportFormProps) {
   const t = useT();

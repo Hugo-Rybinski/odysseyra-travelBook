@@ -45,7 +45,14 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // booking plus its `legs`, so a day's `transports` are now legs enriched with
 // their booking's shared fields (`leg_index`/`leg_count` included) — a
 // v16-cached day holds the old flat objects, which the new row would misread.
-const SCHEMA_VERSION = 17;
+// v18: a road's points can now carry a **numbered pin** of their own
+// (`display_start_on_maps` / `display_end_on_maps` /
+// `display_intermediate_point_on_maps`), so a waypoint gained `map_pin` and the
+// road's own `map_pin` became its departure's — and a leg gained the `gpx` it
+// was drawn from, which the "(Get GPX track)" button hands back. A v17-cached
+// day has none of them, and its numbering predates the road pins joining the
+// day's 1..N sequence.
+const SCHEMA_VERSION = 18;
 
 interface Entry {
   day: Day;

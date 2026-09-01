@@ -6,19 +6,15 @@
   "activities": [
     {
       "type": "road",
-      "start": "Pau",
       "distance_km": 45,
       "start_time": "18:45",
       "duration": "50 min",
-      "off_road": false,
-      "coordinate": {
-        "lat": 43.29575,
-        "long": -0.36857
-      },
-      "waypoints": [
+      "legs": [
         {
-          "coordinate": { "lat": 43.09409, "long": -0.0465 },
-          "location": "Lourdes"
+          "start_location": "Pau",
+          "start_coordinate": { "lat": 43.29575, "long": -0.36857 },
+          "end_location": "Lourdes",
+          "end_coordinate": { "lat": 43.09409, "long": -0.0465 }
         }
       ]
     }

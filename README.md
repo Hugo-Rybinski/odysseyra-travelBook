@@ -289,7 +289,7 @@ The header's burger menu switches between views:
   level filter (the same engine as `odysseyra-travelBook validate`).
 - **✏️ Edit** — a structured form editor over the input JSON. Every field is
   editable, with add / remove / reorder for days, activities (one level of
-  nesting), transport, accommodations, car rentals and waypoints. It **validates
+  nesting), transport, accommodations, car rentals and a drive's legs. It **validates
   live** as you type, anchoring each finding inline on its field; an **Apply
   changes** button pushes the draft into the viewer, findings and PDF export (the
   preview refreshes only on Apply). **Save** writes back to the opened file,
@@ -368,9 +368,12 @@ they reuse of what's already here.
 - **GPX / KML export** — a new CLI sub-command (sibling to `ics`) emitting the
   **whole trip** as GPX tracks/waypoints or KML, for Garmin, Komoot, OsmAnd and
   other offline-GPS apps. The geocoding and OSRM routing pipeline (`maps/`)
-  already produces the points and route geometry it would serialize. (A hike's
-  own attached GPX can already be downloaded from the viewer — that's the file
-  coming back out, not the trip being exported.)
+  already produces the points and route geometry it would serialize, and
+  `models/gpx_export.py` already writes a route out — the whole-trip version is
+  the same serializer over more geometry. (Two pieces of this exist in the
+  viewer: a hike's own attached GPX comes back out as the file you attached, and
+  a drive's leg can have one **built** from the route the map draws. Neither is
+  the trip being exported in one file.)
 - **PDF cover photo / per-day hero images** — let `travel_description` carry a
   cover image and each day an optional hero image, rendered behind the cover
   banner and day header. Today the layout is typography + maps only.

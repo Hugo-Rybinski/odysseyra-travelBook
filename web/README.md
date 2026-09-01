@@ -306,7 +306,8 @@ README schema tables). It is being built in phases — see
 
 - **P1:** the form surface — every object/field, grouped in collapsible sections,
   with add/remove/reorder for days, activities (incl. one level of nesting),
-  transport, accommodations, car rentals, waypoints and secondary currencies.
+  transport, accommodations, car rentals, a drive's legs (and their route
+  waypoints) and secondary currencies.
 - **P2:** live validation. The draft is serialized (with a line→path map) and
   re-validated as you type (debounced); each finding is anchored **inline on its
   field** (the input is flagged, with the message beneath) by translating the
@@ -393,7 +394,8 @@ src/
   index.css
   ActivityIndicator.tsx    the loader: names what the engine is busy with
   pyodide/
-    runtime.ts             RPC client: boot() + typed validate/resolve/renderDayMap/buildPdf
+    runtime.ts             RPC client: boot() + typed validate/resolve/renderDayMap/
+                           buildIcs/buildLegGpx/buildPdf
     worker.ts              module Web Worker hosting the one Python interpreter
     engine.ts              boot Pyodide, install the wheel, dispatch one call
     protocol.ts            the typed UI ↔ worker message contract

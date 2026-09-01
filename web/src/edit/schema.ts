@@ -14,10 +14,10 @@ import type {
   SrcDay,
   SrcEmergencyContact,
   SrcMeal,
+  SrcRoadLeg,
   SrcSecondaryCurrency,
   SrcTransport,
   SrcTransportLeg,
-  SrcWaypoint,
 } from "../types/source";
 
 export type FieldKind =
@@ -236,12 +236,13 @@ const GUIDEBOOK_FIELD: FieldSpec = {
 };
 
 // Per-activity-type fields (excluding the shared scheduling ones and nested
-// `activities`/`waypoints`/`coordinate`, which the form renders specially).
+// `activities`/`legs`/`coordinate`, which the form renders specially).
 export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
   road: [
-    { key: "start", label: "Start (departure)", kind: "text", required: true, placeholder: "Departure address", help: "Departure address/name; also the map route's start. Required." },
-    { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km. Optional." },
-    { key: "off_road", label: "Off-road", kind: "bool", help: "Highlight off-road sections. Defaults to off." },
+    { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km for the whole drive (each leg carries its own too). Optional." },
+    { key: "display_start_on_maps", label: "Pin the departure", kind: "bool", help: "Give the drive's departure a numbered pin on the day map. Defaults to off — a drive is drawn as a route, and its pins are opt-in." },
+    { key: "display_end_on_maps", label: "Pin the arrival", kind: "bool", help: "Give the drive's final arrival a numbered pin on the day map. Defaults to off." },
+    { key: "display_intermediate_point_on_maps", label: "Pin the junctions", kind: "bool", help: "Give every junction between two legs a numbered pin on the day map. With all three switches on, every named point of the drive is pinned. Defaults to off." },
     { key: "description", label: "Description", kind: "textarea", help: "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional." },
     GUIDEBOOK_FIELD,
   ],
@@ -280,15 +281,22 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
   buffer: [{ key: "duration", label: "Duration", kind: "duration", required: true, placeholder: "Length of the free time", help: "Length of the free time (e.g. 30 min). A 0 min buffer just suppresses the default buffer here. Required." }],
 };
 
-export const WAYPOINT_FIELDS: FieldSpec[] = [
-  { key: "location", label: "Location", kind: "text", placeholder: "The waypoint's name", help: "The waypoint's name. Optional — an unnamed waypoint still draws a map pin but merges into the next named leg." },
-  { key: "duration", label: "Leg duration", kind: "duration", placeholder: "1h30 / 45 min", help: "Driving time for the leg reaching this waypoint. Optional." },
-  { key: "distance_km", label: "Leg distance (km)", kind: "number", help: "Driving distance for the leg reaching this waypoint. Optional." },
-  { key: "off_road", label: "Leg off-road", kind: "bool", help: "Mark just this leg as off-road, without flagging the whole drive. Defaults to off." },
+// One hop of a road. The endpoint names sit here (their coordinates are the two
+// CoordinateFields the leg's form adds), and either may be left blank when the
+// neighbouring leg names the junction — the first leg needs its own departure
+// and the last its own arrival. The route-shaping `waypoints` are a sub-array of
+// bare coordinates, so they have no field spec of their own.
+export const ROAD_LEG_FIELDS: FieldSpec[] = [
+  { key: "start_location", label: "From", kind: "text", placeholder: "the previous leg's arrival", help: "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival." },
+  { key: "end_location", label: "To", kind: "text", placeholder: "the next leg's departure", help: "Where this hop arrives. Required on the last leg; on an earlier one the next leg's departure can name it instead." },
+  { key: "duration", label: "Driving time", kind: "duration", placeholder: "1h30 / 45 min", help: "Driving time for this hop. Optional, but validation warns when it's missing." },
+  { key: "distance_km", label: "Distance (km)", kind: "number", help: "Driving distance for this hop. Optional, but validation warns when it's missing." },
+  { key: "off_road", label: "Off-road", kind: "bool", help: "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off." },
+  { key: "gpx", label: "GPX recording", kind: "gpx", help: "A .gpx recording of this hop, stored in the itinerary itself. It becomes this leg's line on the day map instead of the routed guess — there's no separate trail map or elevation profile, unlike a hike's. Optional." },
 ];
 
 // A booking: what is reserved once. Its hops live in `legs` (TRANSPORT_LEG_FIELDS),
-// rendered by TransportForm as a sub-array — the same shape as a road's waypoints.
+// rendered by TransportForm as a sub-array — the same shape as a road's legs.
 export const TRANSPORT_FIELDS: FieldSpec[] = [
   { key: "type", label: "Type", kind: "enum", enum: TRANSPORT_TYPES, placeholder: "other", help: "Transport kind, shown as a badge on the booking and on each of its legs. Defaults to 'other'." },
   { key: "name", label: "Name", kind: "text", placeholder: "the route through its legs", help: "What to call the whole booking (“Round trip New York ↔ France”), shown as the card's heading. Defaults to the route through its legs (A → B → C)." },
@@ -377,7 +385,7 @@ export const CAR_RENTAL_FIELDS: FieldSpec[] = [
 export function newActivity(type: SrcActivityType): SrcActivity {
   switch (type) {
     case "road":
-      return { type, start: "", waypoints: [newWaypoint()] };
+      return { type, legs: [newRoadLeg()] };
     case "point_of_interest":
       return { type, name: "" };
     case "place":
@@ -391,8 +399,8 @@ export function newActivity(type: SrcActivityType): SrcActivity {
   }
 }
 
-export function newWaypoint(): SrcWaypoint {
-  return { location: "" };
+export function newRoadLeg(): SrcRoadLeg {
+  return { start_location: "", end_location: "" };
 }
 
 export function newMeal(): SrcMeal {

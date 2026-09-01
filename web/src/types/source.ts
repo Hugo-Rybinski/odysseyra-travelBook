@@ -63,23 +63,42 @@ export interface SrcScheduled {
   end_tz?: string;
 }
 
-export interface SrcWaypoint {
-  coordinate?: SrcCoordinate;
-  location?: string;
+// One hop of a drive. Either endpoint may be left out when the neighbouring leg
+// states it (`start_*` falls back to the previous leg's `end_*` and vice versa),
+// so a junction is written once; the first leg must name its departure and the
+// last its arrival. `waypoints` are bare coordinates that bend this hop's route
+// — a stop worth naming, or a stretch worth timing, is a leg of its own.
+export interface SrcRoadLeg {
+  start_location?: string;
+  start_coordinate?: SrcCoordinate;
+  end_location?: string;
+  end_coordinate?: SrcCoordinate;
   duration?: string;
   distance_km?: number;
-  off_road?: boolean; // this leg alone runs off-road
+  off_road?: boolean; // this hop alone runs off-road
+  waypoints?: SrcCoordinate[]; // in order, from the hop's start to its end
+  // A recording of this hop, base64 (gzip allowed) — stored exactly like a
+  // hike's `gpx`, but used differently: it becomes this leg's line on the day
+  // map instead of the routed guess, and it is never drawn as a map + profile
+  // of its own.
+  gpx?: string;
 }
 
 export interface SrcRoad extends SrcScheduled {
   type: "road";
-  start?: string;
-  coordinate?: SrcCoordinate; // the departure point
-  distance_km?: number;
-  off_road?: boolean;
+  distance_km?: number; // the whole drive (each leg carries its own too)
+  // Which of the drive's own points get a numbered pin on the day map: its
+  // departure, its final arrival, and every junction between two legs. All
+  // default false — a drive is a route, and pins are opt-in.
+  display_start_on_maps?: boolean;
+  display_end_on_maps?: boolean;
+  display_intermediate_point_on_maps?: boolean;
   description?: string;
   guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
-  waypoints?: SrcWaypoint[];
+  // Required and non-empty: one entry per hop. A plain A → B drive has one.
+  // The departure, the arrival and the route all live here, which is why a road
+  // has no `start` / `coordinate` / `waypoints` / `off_road` of its own.
+  legs?: SrcRoadLeg[];
   activities?: SrcMeal[]; // nested meals only
 }
 

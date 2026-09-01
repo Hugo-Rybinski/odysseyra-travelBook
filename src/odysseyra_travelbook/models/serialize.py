@@ -177,6 +177,17 @@ def _waypoint(wp) -> dict:
         "distance_km": wp.distance_km,
         # whether the leg *reaching* this waypoint runs off-road
         "off_road": wp.off_road,
+        # The map pin label of this point, when the road asked for pins on its
+        # points (Road.display_*_on_maps) and maps were rendered for this build;
+        # ``None`` otherwise. Stamped onto the waypoint object by the caller, the
+        # same way an activity's is (see the PWA bridge).
+        "map_pin": getattr(wp, "_map_pin", None),
+        # The leg's recorded track, base64, exactly as it was attached — the one
+        # thing the browser needs it for is handing the file back ("(Get GPX
+        # track)"). Deliberately *not* wrapped in a `track` object like a hike's:
+        # a leg's recording is drawn as the route on the day map, which the map
+        # render already carries, so there is no geometry or profile to ship.
+        "gpx": wp.gpx or None,
     }
 
 
@@ -205,6 +216,10 @@ def _activity(itin: Itinerary, act) -> dict:
             "guidebook_pages": act.guidebook_pages,
             "distance_km": act.distance_km,
             "off_road": act.off_road,
+            # which of the drive's own points asked for a numbered pin
+            "display_start_on_maps": act.display_start_on_maps,
+            "display_end_on_maps": act.display_end_on_maps,
+            "display_intermediate_point_on_maps": act.display_intermediate_point_on_maps,
             "waypoints": [_waypoint(w) for w in act.waypoints],
         })
 

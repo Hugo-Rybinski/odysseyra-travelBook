@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import datetime, time, timedelta
 
 from ..lang import DEFAULT_LANGUAGE, fmt_weekday_runs, tr, weekday_name
@@ -11,6 +12,7 @@ from ..models import (
     Itinerary,
     ItineraryError,
     _format_duration,
+    _parse_coordinate,
     _parse_date,
     _parse_duration,
     _parse_route,
@@ -29,14 +31,13 @@ from .specs import (
     EMERGENCY_CONTACT_SPECS,
     MISC,
     PLACE_SCHEDULE,
+    ROAD_LEG_SPECS,
     SCHEDULE,
     TRANSPORT_LEG_SPECS,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
-    V_BOOL,
     V_COORDINATE,
     V_CURRENCY,
-    V_DUR,
     V_ISO_COUNTRY,
     V_NUMBER,
 )
@@ -46,6 +47,21 @@ COORDINATE_KEYS = (
     "coordinate", "start_coordinate", "end_coordinate",
     "pickup_coordinate", "dropoff_coordinate",
 )
+
+# What a `road` used to carry directly, before the drive became a chain of
+# `legs`. Nothing reports an unknown key, so a document written against the older
+# shape would only be told that 'legs' is missing and would silently lose all of
+# this — hence the same naming treatment the transport booking/leg split gets
+# (`_misplaced_transport_fields`). Each entry says where the value lives now.
+ROAD_MOVED_KEYS = {
+    "start": "move it to the first leg's 'start_location'",
+    "coordinate": "move it to the first leg's 'start_coordinate'",
+    "waypoints": "the drive's stops are its legs now: one leg per hop, its "
+                 "arrival in 'end_location' / 'end_coordinate', and any "
+                 "route-shaping points in that leg's own 'waypoints'",
+    "off_road": "set it on each leg that runs off-road (the drive counts as "
+                "off-road when every one of its legs does)",
+}
 
 # The two sides of the transport booking/leg split, taken straight from the spec
 # tables so they can't drift from them. A key found on the wrong side is unread
@@ -239,6 +255,12 @@ def _truthy(value):
     return str(value).strip().lower() in ("true", "yes", "1", "paid", "paid online")
 
 
+def _stated(obj, key):
+    """A trimmed string field of a raw object, ``""`` when absent (or the object
+    itself is)."""
+    return str(obj.get(key) or "").strip() if isinstance(obj, dict) else ""
+
+
 _UNBUILT = object()  # "the model hasn't been built yet" (None means "won't build")
 
 
@@ -424,7 +446,8 @@ class _Validator:
             self._hike_route_endpoints(act, path)
             self._hike_gpx(act, path)
         if kind == "road":
-            self._road_waypoints(act, path)
+            self._road_legs(act, path)
+            self._road_moved_fields(act, path)
         if kind == "meal" and act.get("restaurant") and act.get("area"):
             self.add("warning", path, "both 'restaurant' and 'area' are set — "
                      "'area' is ignored when a restaurant is named.")
@@ -440,17 +463,15 @@ class _Validator:
         expected to give *each* of its magnitude fields (a duration plus
         distance — and, for a hike, elevation) and warns naming any that are
         missing. A duration counts as known when it is given or inferable from
-        the start/end times (or, for a road, from its waypoints)."""
+        the start/end times (or, for a road, from its legs)."""
         dur_known = _obj_minutes(act) is not None
         if kind == "road":
-            wps = act.get("waypoints")
-            legs = self._road_legs(str(act.get("start", "")).strip(),
-                                   wps if isinstance(wps, list) else [])
+            legs = self._road_display_legs(act)
             if len(legs) <= 1:
                 # a plain departure → arrival drive: the whole road is one leg,
                 # so its own duration/distance (or the sole leg's) covers it
                 src, dest, has_dur, has_dist = (legs[0] if legs
-                                                else (act.get("start"), None, False, False))
+                                                else (None, None, False, False))
                 dur_ok = dur_known or has_dur
                 dist_ok = act.get("distance_km") is not None or has_dist
                 missing = ([] if dur_ok else ["duration"]) + \
@@ -461,11 +482,9 @@ class _Validator:
                              route=self._leg_label(src, dest),
                              missing=", ".join(missing))
             else:
-                # a multi-stop drive: each named leg is shown on its own, so each
+                # a multi-hop drive: each leg is shown on its own, so each
                 # should carry its own duration and distance
                 for src, dest, has_dur, has_dist in legs:
-                    if dest is None:
-                        continue  # a trailing unnamed (route-shaping) arrival
                     missing = ([] if has_dur else ["duration"]) + \
                               ([] if has_dist else ["distance_km"])
                     if missing:
@@ -507,33 +526,26 @@ class _Validator:
                    for s in nested)
 
     @staticmethod
-    def _road_legs(start, waypoints):
-        """Group raw waypoint dicts into display legs, mirroring the PDF: an
-        unnamed (route-shaping) waypoint merges forward into the next named one,
-        its duration/distance folded into that leg. Returns a list of
-        ``(src, dest_or_None, has_duration, has_distance)`` — one per leg; ``src``
-        is the previous named point (or the road ``start`` for the first leg) and
-        ``dest`` is ``None`` for a trailing run of unnamed waypoints (an unnamed
-        arrival)."""
-        legs = []
-        prev = start
-        has_dur = has_dist = pending = False
-        for wp in waypoints:
-            if not isinstance(wp, dict):
-                continue
-            pending = True
-            if _dur(wp.get("duration")) is not None:
-                has_dur = True
-            if wp.get("distance_km") is not None:
-                has_dist = True
-            loc = str(wp.get("location", "")).strip()
-            if loc:
-                legs.append((prev, loc, has_dur, has_dist))
-                prev = loc
-                has_dur = has_dist = pending = False
-        if pending:
-            legs.append((prev, None, has_dur, has_dist))
-        return legs
+    def _road_display_legs(act):
+        """A road's raw ``legs`` as the reader sees them:
+        ``(src, dest, has_duration, has_distance)`` per hop, with the endpoint
+        names resolved the way the model resolves them — each leg's arrival is
+        its own ``end_location`` or, failing that, the next leg's
+        ``start_location``, and its departure is the previous leg's arrival.
+        Either end is ``None`` when the document names it nowhere (an error
+        ``_road_legs`` reports; the warnings below just print ``?``)."""
+        raw = act.get("legs")
+        legs = [leg for leg in raw if isinstance(leg, dict)] if isinstance(raw, list) else []
+        out = []
+        src = _stated(legs[0], "start_location") if legs else ""
+        for k, leg in enumerate(legs):
+            nxt = legs[k + 1] if k + 1 < len(legs) else None
+            dest = _stated(leg, "end_location") or _stated(nxt, "start_location")
+            out.append((src or None, dest or None,
+                        _dur(leg.get("duration")) is not None,
+                        leg.get("distance_km") is not None))
+            src = dest
+        return out
 
     @staticmethod
     def _name_of(act):
@@ -599,71 +611,184 @@ class _Validator:
                 self.add("error", spath, "a nested activity can't contain its own "
                          "nested activities — nesting is only one level deep.")
 
-    def _road_waypoints(self, act, path):
-        """Validate a road's optional ``waypoints`` — each an object with a
-        required ``coordinate`` and optional ``location`` / ``duration`` /
-        ``distance_km`` / ``off_road`` (all three describing the leg *reaching*
-        that waypoint). Warns when the segment durations sum past the road's
-        own duration (they can't fit the drive)."""
-        raw = act.get("waypoints")
+    def _road_legs(self, act, path):
+        """Validate a road's ``legs`` — required, an array, non-empty, each an
+        object carrying one hop of the drive (see ``ROAD_LEG_SPECS``).
+
+        A leg may leave out the endpoint its neighbour states, so *which* of its
+        four endpoint fields are required depends on where it sits in the chain
+        (``_road_leg_specs``). A junction neither side names is reported once, on
+        the earlier leg's ``end_*`` — the same place the model raises — and the
+        later leg's ``start_*`` is left out of its table so the same hole isn't
+        also reported as an inheritable default there.
+
+        Warns when the leg durations sum past the road's own duration (they can't
+        fit the drive)."""
+        raw = act.get("legs")
         if raw is None:
             return  # required-field-missing is reported by check_object
+        lpath = path + ("legs",)
         if not isinstance(raw, list):
-            self.add("error", path + ("waypoints",),
-                     "'waypoints' must be an array of {coordinate, location, "
-                     "duration, distance_km, off_road} objects.")
+            self.add("error", lpath,
+                     "'legs' must be an array of {start_location, end_location, "
+                     "duration, distance_km, off_road, waypoints} objects — one "
+                     "per hop of the drive.")
             return
         if not raw:
-            self.add("error", path + ("waypoints",),
-                     "a road needs at least one 'waypoint' — the route's final "
-                     "stop is the arrival.")
+            self.add("error", lpath,
+                     "a road needs at least one 'leg' — the hop from its "
+                     "departure to its arrival.")
             return
         total, known = 0, False
-        for k, wp in enumerate(raw):
-            wpath = path + ("waypoints", k)
-            if not isinstance(wp, dict):
-                self.add("error", wpath, "each waypoint must be an object with a "
-                         "'coordinate' (a {lat, long} point on the route).")
+        for k, leg in enumerate(raw):
+            lp = lpath + (k,)
+            if not isinstance(leg, dict):
+                self.add("error", lp, "each road leg must be an object with a "
+                         "'start_location' and an 'end_location' (and their "
+                         "coordinates).")
                 continue
-            if wp.get("coordinate") in (None, ""):
-                self.add("error", wpath, "a waypoint needs a 'coordinate' (a "
-                         "{lat, long} object) — it sets a point on the route.")
-            dk = wp.get("distance_km")
-            if dk is not None:
-                err = V_NUMBER(dk)
-                if err:
-                    self.add("error", wpath + ("distance_km",),
-                             "field '{name}' is invalid ({value}) — {error}.",
-                             name="distance_km", value=repr(dk), error=self._terr(err))
-                elif float(dk) <= 0:
-                    self.add("error", wpath + ("distance_km",),
-                             "distance_km must be a positive number (got {value}).",
-                             value=dk)
-            off = wp.get("off_road")
-            if off is not None:
-                err = V_BOOL(off)
-                if err:
-                    self.add("error", wpath + ("off_road",),
-                             "field '{name}' is invalid ({value}) — {error}.",
-                             name="off_road", value=repr(off), error=self._terr(err))
-            dur = wp.get("duration")
-            if dur is not None:
-                err = V_DUR(dur)
-                if err:
-                    self.add("error", wpath + ("duration",),
-                             "field '{name}' is invalid ({value}) — {error}.",
-                             name="duration", value=repr(dur), error=self._terr(err))
-                else:
-                    d = _dur(dur)
-                    if d is not None:
-                        total += d
-                        known = True
+            prev = raw[k - 1] if k and isinstance(raw[k - 1], dict) else None
+            nxt = raw[k + 1] if k + 1 < len(raw) else None
+            nxt = nxt if isinstance(nxt, dict) else None
+            self.check_object(leg, lp, self._road_leg_specs(prev, nxt, first=k == 0,
+                                                            last=k == len(raw) - 1))
+            self._road_leg_junction(leg, lp, prev)
+            self._road_leg_waypoints(leg, lp)
+            self._road_leg_gpx(leg, lp)
+            self._magnitudes(leg, lp, "road")
+            d = _dur(leg.get("duration"))
+            if d is not None:
+                total += d
+                known = True
         parent = _obj_minutes(act)
         if known and parent is not None and total > parent:
-            self.add("warning", path, "the waypoint segments last {total} in "
-                     "total, longer than the road's {parent} — the segment times "
-                     "don't fit the drive.", total=_format_duration(total),
+            self.add("warning", path, "the legs last {total} in total, longer "
+                     "than the road's own {parent} — the leg times don't fit the "
+                     "drive.", total=_format_duration(total),
                      parent=_format_duration(parent))
+
+    @staticmethod
+    def _road_leg_specs(prev, nxt, *, first, last):
+        """``ROAD_LEG_SPECS`` tailored to one leg's place in the chain.
+
+        An endpoint the neighbouring leg states may be left out here (the table's
+        ``default`` says which neighbour it comes from); one nobody else states
+        is required. The two ``start_*`` fields are dropped outright when the
+        previous leg gives nothing to inherit — that hole is the previous leg's
+        missing ``end_*``, already reported there.
+
+        The departure *coordinate* is the one point that is never required: with
+        maps on it is geocoded from ``start_location``, exactly as the road's own
+        ``coordinate`` always was."""
+        specs = []
+        for spec in ROAD_LEG_SPECS:
+            if spec.name == "start_location":
+                if first:
+                    specs.append(replace(spec, required=True, description=(
+                        "where the drive departs from (the first leg has no "
+                        "previous leg to inherit it from)")))
+                elif _stated(prev, "end_location"):
+                    specs.append(spec)
+            elif spec.name == "start_coordinate":
+                if first:
+                    specs.append(replace(spec, default=(
+                        "geocoded from 'start_location' when maps are on")))
+                elif prev is not None and prev.get("end_coordinate") not in (None, ""):
+                    specs.append(spec)
+            elif spec.name == "end_location":
+                stated_next = bool(_stated(nxt, "start_location"))
+                specs.append(spec if stated_next else replace(
+                    spec, required=True, description=(
+                        "where this hop arrives (the next leg could name it as "
+                        "its own 'start_location' instead)" if not last else
+                        "where the drive arrives (the last leg has no next leg "
+                        "to inherit it from)")))
+            elif spec.name == "end_coordinate":
+                stated_next = nxt is not None and nxt.get(
+                    "start_coordinate") not in (None, "")
+                specs.append(spec if stated_next else replace(
+                    spec, required=True, description=(
+                        "the arrival point on the map (the next leg could name "
+                        "it as its own 'start_coordinate' instead)" if not last else
+                        "the arrival point on the map (the last leg has no next "
+                        "leg to inherit it from)")))
+            else:
+                specs.append(spec)
+        return specs
+
+    def _road_leg_junction(self, leg, lp, prev):
+        """Both sides of a junction may name it, and then they must agree: the
+        chain uses the *earlier* leg's ``end_*``, so a disagreement silently
+        drops this leg's own values."""
+        if prev is None:
+            return
+        there = _stated(prev, "end_location")
+        here = _stated(leg, "start_location")
+        if there and here and there.casefold() != here.casefold():
+            self.add("warning", lp + ("start_location",),
+                     "this leg departs from {here} but the previous one arrives "
+                     "at {there} — a drive can't jump between the two, and it is "
+                     "the previous leg's 'end_location' that is used.",
+                     here=repr(here), there=repr(there))
+        a, b = self._leg_point(prev.get("end_coordinate")), self._leg_point(
+            leg.get("start_coordinate"))
+        if a and b and (abs(a[0] - b[0]) > 0.01 or abs(a[1] - b[1]) > 0.01):
+            self.add("warning", lp + ("start_coordinate",),
+                     "this leg's 'start_coordinate' is a kilometre or more from "
+                     "the previous leg's 'end_coordinate' — a drive can't jump "
+                     "between the two, and it is the previous leg's that is used.")
+
+    @staticmethod
+    def _leg_point(value):
+        """``(lat, long)`` of a coordinate object, or ``None`` when it is absent
+        or malformed (the field check reports that)."""
+        try:
+            coord = _parse_coordinate(value)
+        except ItineraryError:
+            return None
+        return (coord.lat, coord.long) if coord else None
+
+    def _road_leg_waypoints(self, leg, lp):
+        """A leg's ``waypoints`` are bare coordinates that bend its route between
+        its two endpoints — no names and no figures of their own (a stop worth
+        naming, or a stretch worth timing, is a leg of its own)."""
+        raw = leg.get("waypoints")
+        if raw is None:
+            return
+        wpath = lp + ("waypoints",)
+        if not isinstance(raw, list):
+            self.add("error", wpath, "'waypoints' must be an array of {lat, long} "
+                     "coordinates, in order from the leg's start to its end.")
+            return
+        for i, wp in enumerate(raw):
+            err = V_COORDINATE(wp) if wp not in (None, "") else "is empty"
+            if err:
+                self.add("error", wpath + (i,),
+                         "each of a leg's 'waypoints' must be a coordinate with "
+                         "a 'lat' and a 'long' ({error}).", error=self._terr(err))
+
+    def _road_leg_gpx(self, leg, lp):
+        """What a leg's recording does, and the one thing that can silence it.
+        Unlike a hike's GPX it is never drawn as a figure of its own — no trail
+        map, no elevation profile — it *is* the leg's line on the day map, so a
+        file with no elevations is no loss here. With maps off nothing is drawn
+        at all, which is worth saying since the file is still being carried."""
+        if self._gpx_of(leg) is None:
+            return  # none given, or one that won't decode (the field check said so)
+        if not _truthy(self._defaults().get("include_maps_in_render")):
+            self.add("info", lp + ("gpx",), "'include_maps_in_render' is off, so "
+                     "this GPX is parsed but no map is drawn from it (the viewer "
+                     "still offers the file for download).")
+
+    def _road_moved_fields(self, act, path):
+        """Name a road field written on the older, waypoint-based shape. The
+        model reads none of them any more and nothing reports an unknown key, so
+        the value would be lost without a word."""
+        for key, where in ROAD_MOVED_KEYS.items():
+            if act.get(key) is not None:
+                self.add("warning", path + (key,),
+                         "field '{name}' is no longer read on a road — {where}.",
+                         name=key, where=self.t(where))
 
     def _transport(self, t, path):
         """A booking: the reservation fields, then each of its ``legs``."""

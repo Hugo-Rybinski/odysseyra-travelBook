@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type React
 import {
   boot,
   buildIcs,
+  buildLegGpx,
   buildPdf,
   geocode,
   renderDayMap,
@@ -31,6 +32,7 @@ import {
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
 import { MapProviderContext, type MapProvider } from "./render/nav";
+import { RouteGpxContext } from "./render/routeExport";
 import { Options } from "./Options";
 import { PromptsPanel } from "./prompts/PromptsPanel";
 import { GuidePanel } from "./prompts/GuidePanel";
@@ -704,6 +706,21 @@ export function App() {
     [source],
   );
 
+  // Building a GPX file for a road leg that carries no recording — the engine
+  // routes it (usually straight from the cache the day's map filled) and hands
+  // back the file. Bound to the text the current preview was resolved from, so
+  // the leg indices the row passes line up with what's on screen.
+  const routeGpx = useMemo(
+    () => ({
+      build: async (dayIndex: number, roadIndex: number, legIndex: number) => {
+        if (!source) throw new Error("no itinerary open");
+        return buildLegGpx(source.text, dayIndex, roadIndex, legIndex);
+      },
+      ready: engineReady,
+    }),
+    [source, engineReady],
+  );
+
   // What the engine is busy with, for the loader. The engine runs off-thread
   // (see pyodide/runtime.ts), so this list is the only sign of a long call —
   // nothing freezes any more, and several of these can be true at once (the PDF
@@ -733,6 +750,7 @@ export function App() {
 
   return (
     <I18nProvider lang={lang}>
+    <RouteGpxContext.Provider value={routeGpx}>
     <main className="shell">
       <PwaStatus />
       <ActivityIndicator items={activities} />
@@ -1044,6 +1062,7 @@ export function App() {
         )
       )}
     </main>
+    </RouteGpxContext.Provider>
     </I18nProvider>
   );
 }

@@ -54,11 +54,17 @@ def _request_route(coords: str) -> list[tuple[float, float]] | None:
     return line if len(line) >= 2 else None
 
 
-def route(a: tuple[float, float], b: tuple[float, float], cache) -> list[tuple[float, float]]:
+def route(a: tuple[float, float], b: tuple[float, float], cache,
+          *, fallback: bool = True) -> list[tuple[float, float]] | None:
     """Road geometry ``a``→``b`` as ``[(lat, long), …]`` (``a`` and ``b`` are
     ``(lat, long)``). Retries transient OSRM failures with backoff; returns a
     straight ``[a, b]`` (logged, never cached) when routing is unavailable or
-    finds no route."""
+    finds no route.
+
+    ``fallback=False`` returns ``None`` there instead. A straight line is a fine
+    thing to *draw* — the map still shows that you went from a to b — but a poor
+    thing to hand to a GPS as a route, so the export path asks for the real
+    geometry or nothing (see :func:`.build.road_leg_geometry`)."""
     key = f"{a[0]:.5f},{a[1]:.5f}->{b[0]:.5f},{b[1]:.5f}"
     if cache is not None and key in cache.routes:
         return [tuple(p) for p in cache.routes[key]]
@@ -82,4 +88,4 @@ def route(a: tuple[float, float], b: tuple[float, float], cache) -> list[tuple[f
     logger.warning(
         "OSRM routing %.5f,%.5f → %.5f,%.5f failed (%s); drawing a straight "
         "line instead.", a[0], a[1], b[0], b[1], reason)
-    return [a, b]
+    return [a, b] if fallback else None

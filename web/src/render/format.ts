@@ -102,7 +102,11 @@ const LABELS = {
     // Screen-only: hands back the .gpx the hike carries. Paper can't download a
     // file, so this has no PDF twin.
     getGpx: "(Get GPX track)",
+    // A leg with no recording: the app builds the file from the drawn route, so
+    // the link says so rather than borrowing the "get the track" wording.
+    buildGpx: "(Build GPX file)",
     gpxFailed: "The GPX file couldn't be read.",
+    gpxUnavailable: "No route to build a GPX file from.",
     buildingMap: "Building map…",
     noTripMap: "No coordinates on file — add coordinates (or turn maps on) to map the trip.",
     tripMapUnavailable: "The trip map couldn't be loaded.",
@@ -226,7 +230,9 @@ const LABELS = {
     hikeDescent: "↓ {m} m",
     hikeProfileAlt: "Profil altimétrique sur {km} km, de {low} m à {high} m",
     getGpx: "(Obtenir la trace GPX)",
+    buildGpx: "(Générer le fichier GPX)",
     gpxFailed: "Le fichier GPX n'a pas pu être lu.",
+    gpxUnavailable: "Aucun itinéraire pour générer un fichier GPX.",
     buildingMap: "Génération de la carte…",
     noTripMap:
       "Aucune coordonnée enregistrée — ajoutez des coordonnées (ou activez les cartes) pour cartographier le voyage.",

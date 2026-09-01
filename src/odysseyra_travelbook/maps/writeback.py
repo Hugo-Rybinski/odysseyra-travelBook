@@ -31,8 +31,13 @@ def fill_coordinates(data: dict, countries, cache, geocoder=_default_geocode):
             return
         kind = act.get("type")
         if kind == "road":
-            # the departure point; waypoints carry their own explicit coordinates
-            resolve(q(act.get("start"), city), act, "coordinate")
+            # Both endpoints of every leg. A leg that inherits an endpoint from
+            # its neighbour names nothing there, so there is nothing to geocode
+            # — and the route-shaping waypoints are coordinates already.
+            for leg in act.get("legs", []) or []:
+                if isinstance(leg, dict):
+                    resolve(q(leg.get("start_location"), city), leg, "start_coordinate")
+                    resolve(q(leg.get("end_location"), city), leg, "end_coordinate")
         elif kind in ("point_of_interest", "place", "hike"):
             resolve(q(act.get("name"), city), act, "coordinate")
         elif kind == "meal":

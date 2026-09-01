@@ -1,13 +1,13 @@
-import type { SrcActivity, SrcActivityType, SrcCoordinate, SrcWaypoint } from "../../types/source";
+import type { SrcActivity, SrcActivityType, SrcCoordinate, SrcRoadLeg } from "../../types/source";
 import {
   ACTIVITY_FIELDS,
   ACTIVITY_TYPE_LABELS,
   ACTIVITY_TYPES,
   newActivity,
-  newWaypoint,
+  newRoadLeg,
   PLACE_SCHEDULED_FIELDS,
+  ROAD_LEG_FIELDS,
   SCHEDULED_FIELDS,
-  WAYPOINT_FIELDS,
 } from "../schema";
 import { useT, type TFn } from "../../i18n";
 import { directionsUrl, useMapProvider } from "../../render/nav";
@@ -23,8 +23,12 @@ type Rec = Record<string, unknown>;
 export function activityTitle(a: SrcActivity, index: number, t: TFn): string {
   const label = t(ACTIVITY_TYPE_LABELS[a.type]);
   switch (a.type) {
-    case "road":
-      return a.start ? `${label}: ${a.start} → …` : label;
+    case "road": {
+      // The drive is named by its two ends: the first leg's departure and the
+      // last leg's arrival (each may sit on the neighbouring leg instead).
+      const route = roadRoute(a.legs ?? []);
+      return route ? `${label}: ${route}` : label;
+    }
     case "point_of_interest":
     case "place":
     case "hike":
@@ -83,63 +87,59 @@ function srcCoord(c?: SrcCoordinate) {
     : null;
 }
 
-interface LegGap {
-  index: number; // the waypoint the leg ends at
-  origin: string; // the previous named point, else the road's start
-  destName: string;
-  destCoord: { lat: number; long: number; show_on_map: boolean } | null;
-  missingTime: boolean;
-  missingDist: boolean;
+// A leg's endpoints, resolved the way the model resolves them (see
+// models/activities._road_chain): an endpoint the leg leaves out is taken from
+// its neighbour — the departure from the previous leg's arrival, the arrival
+// from the next leg's departure.
+function legStart(legs: SrcRoadLeg[], i: number): string {
+  const own = (legs[i]?.start_location ?? "").trim();
+  return own || (i > 0 ? legEnd(legs, i - 1) : "");
 }
 
-// One entry per NAMED waypoint (a leg end), summing any preceding unnamed
-// (route-shaping) waypoints into that leg — mirroring the viewer's roadLegs
-// merge — so a leg counts as complete if its figures sit on any of its points.
-function roadLegGaps(activity: SrcActivity): LegGap[] {
-  if (activity.type !== "road") return [];
-  const wps = activity.waypoints ?? [];
-  const out: LegGap[] = [];
-  let origin = (activity.start ?? "").trim();
-  let hasDur = false;
-  let hasDist = false;
-  for (let i = 0; i < wps.length; i++) {
-    const w = wps[i];
-    if ((w.duration ?? "").trim() !== "") hasDur = true;
-    if (w.distance_km != null) hasDist = true;
-    if ((w.location ?? "").trim() !== "") {
-      out.push({
-        index: i,
-        origin,
-        destName: w.location ?? "",
-        destCoord: srcCoord(w.coordinate),
-        missingTime: !hasDur,
-        missingDist: !hasDist,
-      });
-      origin = (w.location ?? "").trim() || origin;
-      hasDur = false;
-      hasDist = false;
-    }
-  }
-  return out;
+function legEnd(legs: SrcRoadLeg[], i: number): string {
+  return (legs[i]?.end_location ?? "").trim() || (legs[i + 1]?.start_location ?? "").trim();
 }
 
-// A single-leg road (0/1 waypoints) whose driving time and/or distance is blank:
-// warn on the road with a start → arrival directions link. Multi-leg roads warn
-// per waypoint instead (see the waypoint editor below).
+function legEndCoord(legs: SrcRoadLeg[], i: number): SrcCoordinate | undefined {
+  return legs[i]?.end_coordinate ?? legs[i + 1]?.start_coordinate;
+}
+
+// The whole drive as one route label — the first leg's departure to the last
+// leg's arrival, whichever of the two the document actually names.
+function roadRoute(legs: SrcRoadLeg[]): string {
+  if (!legs.length) return "";
+  return [legStart(legs, 0), legEnd(legs, legs.length - 1)].filter(Boolean).join(" → ");
+}
+
+// The pair the validator warns about per leg: no driving time, no distance.
+function legGap(leg: SrcRoadLeg | undefined) {
+  return {
+    missingTime: (leg?.duration ?? "").trim() === "",
+    missingDist: leg?.distance_km == null,
+  };
+}
+
+// A one-leg drive *is* its single hop, so it may state the figures on the road
+// itself — the same latitude the validator gives it. Warn on the road then, with
+// a departure → arrival directions link; a multi-leg drive warns per leg instead
+// (see the leg editor below).
 function RoadCheckOnline({ activity }: { activity: SrcActivity }) {
   const provider = useMapProvider();
   if (activity.type !== "road") return null;
-  const wps = activity.waypoints ?? [];
-  if (wps.length > 1) return null;
+  const legs = activity.legs ?? [];
+  if (legs.length !== 1) return null;
 
-  const hasLegDist = wps.some((w) => w.distance_km != null);
-  const hasLegDur = wps.some((w) => (w.duration ?? "").trim() !== "");
-  const missingDist = activity.distance_km == null && !hasLegDist;
-  const missingTime = (activity.duration ?? "").trim() === "" && !hasLegDur;
+  const gap = legGap(legs[0]);
+  const missingDist = gap.missingDist && activity.distance_km == null;
+  const missingTime = gap.missingTime && (activity.duration ?? "").trim() === "";
   if (!missingDist && !missingTime) return null;
 
-  const last = wps.length ? wps[wps.length - 1] : undefined;
-  const href = directionsUrl(provider, activity.start, srcCoord(last?.coordinate), last?.location);
+  const href = directionsUrl(
+    provider,
+    legStart(legs, 0),
+    srcCoord(legEndCoord(legs, 0)),
+    legEnd(legs, 0),
+  );
   return <GapWarning missingTime={missingTime} missingDist={missingDist} href={href} />;
 }
 
@@ -174,10 +174,10 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
   const rec = activity as unknown as Rec;
   const set = (next: Rec) => onChange(next as unknown as SrcActivity);
 
-  // Per-leg gaps for a multi-leg road, keyed by the waypoint they end at, so the
-  // "check online" hint sits on the waypoint that's missing its figures.
-  const legGaps = roadLegGaps(activity);
-  const multiLegRoad = type === "road" && (activity.waypoints ?? []).length > 1;
+  // On a multi-leg drive the "check online" hint sits on the leg that's missing
+  // its figures rather than on the road (see RoadCheckOnline).
+  const roadLegs = type === "road" ? (activity.legs ?? []) : [];
+  const multiLegRoad = roadLegs.length > 1;
 
   // A hand-edited draft may carry an unknown/absent type; fall back to the
   // scheduling fields only (ACTIVITY_FIELDS[type] would be undefined → a
@@ -222,20 +222,21 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
       {type === "road" && <RoadCheckOnline activity={activity} />}
 
-      {type !== "buffer" && (
+      {/* A road has no coordinate of its own: its departure is the first leg's
+          'start_coordinate', and every other point of the route belongs to the
+          leg that reaches it. */}
+      {type !== "buffer" && type !== "road" && (
         <CoordinateField
           path={`${path}.coordinate`}
           value={activity.coordinate}
           geocodeQuery={
-            type === "road"
-              ? activity.start
-              : type === "hike"
-                ? activity.start || activity.name
-                : type === "point_of_interest"
-                  ? activity.address || activity.name
-                  : type === "place"
-                    ? activity.name
-                    : activity.address || activity.restaurant || activity.area
+            type === "hike"
+              ? activity.start || activity.name
+              : type === "point_of_interest"
+                ? activity.address || activity.name
+                : type === "place"
+                  ? activity.name
+                  : activity.address || activity.restaurant || activity.area
           }
           onChange={(c) => set({ ...rec, coordinate: c })}
         />
@@ -243,47 +244,96 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
 
       {type === "road" && (
         <section className="sub-array">
-          <h4>{t("Waypoints")}</h4>
+          <h4>{t("Drive legs")}</h4>
           <div className="box-findings">
-            <FieldFindings path={`${path}.waypoints`} />
+            <FieldFindings path={`${path}.legs`} />
           </div>
-          <ArrayEditor<SrcWaypoint>
-            items={activity.waypoints ?? []}
-            onChange={(wp) => set({ ...rec, waypoints: wp })}
-            basePath={`${path}.waypoints`}
+          <p className="field-note">
+            {t("One leg per hop of the drive. Leave a leg's From blank to reuse the previous leg's To.")}
+          </p>
+          <ArrayEditor<SrcRoadLeg>
+            items={roadLegs}
+            onChange={(legs) => set({ ...rec, legs })}
+            basePath={`${path}.legs`}
             defaultOpen={false}
-            itemTitle={(w, i) => w.location || t("Waypoint {n}", { n: i + 1 })}
-            add={[{ label: t("waypoint"), make: newWaypoint }]}
-            emptyLabel={t("No waypoints — a road needs at least one (the arrival).")}
-            renderItem={(w, i, onItemChange, itemPath) => {
-              // On a multi-leg road, this named waypoint's leg may be missing its
-              // travel time / distance — hint here (not on the road) with a link
-              // to the map for this leg (previous point → this waypoint).
-              const gap = multiLegRoad ? legGaps.find((l) => l.index === i) : undefined;
+            itemTitle={(_leg, i) =>
+              [legStart(roadLegs, i), legEnd(roadLegs, i)].filter(Boolean).join(" → ") ||
+              t("Drive leg {n}", { n: i + 1 })
+            }
+            add={[{ label: t("drive leg"), make: newRoadLeg }]}
+            emptyLabel={t("No legs — a road needs at least one (its departure to its arrival).")}
+            renderItem={(leg, i, onItemChange, itemPath) => {
+              // On a multi-leg drive this hop may be missing its travel time /
+              // distance — hint here (not on the road) with a link to the map
+              // for this hop alone.
+              const gap = multiLegRoad ? legGap(leg) : { missingTime: false, missingDist: false };
               return (
                 <>
                   <div className="box-findings">
                     <FieldFindings path={itemPath} />
                   </div>
                   <FieldList
-                    specs={WAYPOINT_FIELDS}
-                    value={w as unknown as Rec}
+                    specs={ROAD_LEG_FIELDS}
+                    value={leg as unknown as Rec}
                     path={itemPath}
-                    onChange={(next) => onItemChange(next as unknown as SrcWaypoint)}
+                    onChange={(next) => onItemChange(next as unknown as SrcRoadLeg)}
                   />
-                  {gap && (gap.missingTime || gap.missingDist) && (
+                  {(gap.missingTime || gap.missingDist) && (
                     <GapWarning
                       missingTime={gap.missingTime}
                       missingDist={gap.missingDist}
-                      href={directionsUrl(provider, gap.origin, gap.destCoord, gap.destName)}
+                      href={directionsUrl(
+                        provider,
+                        legStart(roadLegs, i),
+                        srcCoord(legEndCoord(roadLegs, i)),
+                        legEnd(roadLegs, i),
+                      )}
                     />
                   )}
                   <CoordinateField
-                    path={`${itemPath}.coordinate`}
-                    value={w.coordinate}
-                    geocodeQuery={w.location}
-                    onChange={(c: SrcCoordinate | undefined) => onItemChange({ ...w, coordinate: c })}
+                    label="From coordinate"
+                    path={`${itemPath}.start_coordinate`}
+                    value={leg.start_coordinate}
+                    geocodeQuery={legStart(roadLegs, i)}
+                    onChange={(c) => onItemChange({ ...leg, start_coordinate: c })}
                   />
+                  <CoordinateField
+                    label="To coordinate"
+                    path={`${itemPath}.end_coordinate`}
+                    value={leg.end_coordinate}
+                    geocodeQuery={legEnd(roadLegs, i)}
+                    onChange={(c) => onItemChange({ ...leg, end_coordinate: c })}
+                  />
+                  <section className="sub-array">
+                    <h4>{t("Route waypoints")}</h4>
+                    <div className="box-findings">
+                      <FieldFindings path={`${itemPath}.waypoints`} />
+                    </div>
+                    <p className="field-note">
+                      {t("Points the route bends through between this leg's two ends — coordinates only, in travel order.")}
+                    </p>
+                    <ArrayEditor<SrcCoordinate>
+                      items={leg.waypoints ?? []}
+                      onChange={(waypoints) => onItemChange({ ...leg, waypoints })}
+                      basePath={`${itemPath}.waypoints`}
+                      defaultOpen={false}
+                      itemTitle={(w, k) =>
+                        w.lat != null && w.long != null
+                          ? `${w.lat}, ${w.long}`
+                          : t("Waypoint {n}", { n: k + 1 })
+                      }
+                      add={[{ label: t("waypoint"), make: () => ({}) }]}
+                      emptyLabel={t("No waypoints — the route runs straight between the leg's two ends.")}
+                      renderItem={(w, _k, onWaypointChange, wpPath) => (
+                        <CoordinateField
+                          label="Waypoint"
+                          path={wpPath}
+                          value={w}
+                          onChange={(c) => onWaypointChange(c ?? {})}
+                        />
+                      )}
+                    />
+                  </section>
                 </>
               );
             }}

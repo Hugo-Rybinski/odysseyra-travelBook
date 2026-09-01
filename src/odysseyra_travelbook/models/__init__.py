@@ -5,6 +5,7 @@ The model is split across submodules:
 * :mod:`.parsers` — scalar parsers and ``ItineraryError``;
 * :mod:`.activities` — the activity types and the day-scheduling pass;
 * :mod:`.gpx` — a hike's embedded GPX track (decode, parse, measure);
+* :mod:`.gpx_export` — writing computed geometry back out as a GPX route;
 * :mod:`.opening` — a point of interest's opening days and hours;
 * :mod:`.misc` — the ``misc`` group (the trip's emergency contacts);
 * :mod:`.transport` — the ``Transport`` booking and its ``TransportLeg``s;
@@ -22,6 +23,7 @@ from .geo import (
     _parse_coordinate,
 )
 from .gpx import GpxTrack, decode_gpx, gpx_track, parse_gpx
+from .gpx_export import route_gpx
 from .opening import (
     WEEKDAYS,
     Opening,
@@ -96,6 +98,7 @@ __all__ = [
     "decode_gpx",
     "gpx_track",
     "parse_gpx",
+    "route_gpx",
     "SecondaryCurrency",
     "to_default",
     "Hike",

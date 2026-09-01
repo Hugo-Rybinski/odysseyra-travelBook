@@ -51,10 +51,10 @@
       "title": "Ala Archa National Park",
       "description": "A day hike in the gorge just south of the city.",
       "activities": [
-        { "type": "road", "start": "Bishkek", "distance_km": 40,
-          "coordinate": { "lat": 42.8761, "long": 74.6037 },
-          "waypoints": [
-            { "coordinate": { "lat": 42.5431, "long": 74.4792 }, "location": "Ala Archa National Park" }
+        { "type": "road", "distance_km": 40,
+          "legs": [
+            { "start_location": "Bishkek", "start_coordinate": { "lat": 42.8761, "long": 74.6037 },
+              "end_location": "Ala Archa National Park", "end_coordinate": { "lat": 42.5431, "long": 74.4792 } }
           ] },
         { "type": "hike", "name": "Ak-Sai Waterfall trail", "distance_km": 12, "elevation_m": 800, "route": "back_and_forth" }
       ]
@@ -64,12 +64,15 @@
       "title": "North shore of Issyk-Kul",
       "description": "Drive east along the lake to Cholpon-Ata and its Bronze-Age petroglyphs.",
       "activities": [
-        { "type": "road", "start": "Bishkek", "distance_km": 250,
-          "coordinate": { "lat": 42.8761, "long": 74.6037 },
-          "waypoints": [
-            { "coordinate": { "lat": 42.8355, "long": 75.2878 }, "location": "Tokmok", "duration": "1h", "distance_km": 60 },
-            { "coordinate": { "lat": 42.4603, "long": 76.1866 }, "location": "Balykchy", "duration": "2h", "distance_km": 120 },
-            { "coordinate": { "lat": 42.7316, "long": 77.8635 }, "location": "Cholpon-Ata", "duration": "1h30", "distance_km": 70 }
+        { "type": "road", "distance_km": 250,
+          "legs": [
+            { "start_location": "Bishkek", "start_coordinate": { "lat": 42.8761, "long": 74.6037 },
+              "end_location": "Tokmok", "end_coordinate": { "lat": 42.8355, "long": 75.2878 },
+              "duration": "1h", "distance_km": 60 },
+            { "end_location": "Balykchy", "end_coordinate": { "lat": 42.4603, "long": 76.1866 },
+              "duration": "2h", "distance_km": 120 },
+            { "end_location": "Cholpon-Ata", "end_coordinate": { "lat": 42.7316, "long": 77.8635 },
+              "duration": "1h30", "distance_km": 70 }
           ] },
         { "type": "point_of_interest", "name": "Cholpon-Ata Petroglyphs", "category": "ruins",
           "coordinate": { "lat": 42.6606, "long": 77.0567 } },
@@ -82,10 +85,10 @@
       "title": "Karakol town",
       "description": "Continue to Karakol at the lake's east end — a mix of Russian and Dungan heritage.",
       "activities": [
-        { "type": "road", "start": "Cholpon-Ata", "distance_km": 150,
-          "coordinate": { "lat": 42.7316, "long": 77.8635 },
-          "waypoints": [
-            { "coordinate": { "lat": 42.4817, "long": 78.4003 }, "location": "Karakol" }
+        { "type": "road", "distance_km": 150, "display_end_on_maps": true,
+          "legs": [
+            { "start_location": "Cholpon-Ata", "start_coordinate": { "lat": 42.7316, "long": 77.8635 },
+              "end_location": "Karakol", "end_coordinate": { "lat": 42.4817, "long": 78.4003 } }
           ] },
         { "type": "point_of_interest", "name": "Holy Trinity Cathedral", "category": "church",
           "coordinate": { "lat": 42.4891, "long": 78.3949 } },
@@ -100,12 +103,13 @@
       "title": "Red rocks & fairy canyon",
       "description": "The Seven Bulls formation and the Skazka canyon on the south shore.",
       "activities": [
-        { "type": "road", "start": "Karakol", "distance_km": 30,
-          "coordinate": { "lat": 42.4817, "long": 78.4003 },
-          "waypoints": [
-            { "coordinate": { "lat": 42.3520, "long": 78.2340 }, "location": "Jeti-Oguz",
-              "duration": "35 min", "distance_km": 25 },
-            { "coordinate": { "lat": 42.3368, "long": 78.2387 }, "location": "Jeti-Oguz Seven Bulls",
+        { "type": "road", "distance_km": 30, "display_intermediate_point_on_maps": true,
+          "legs": [
+            { "start_location": "Karakol", "start_coordinate": { "lat": 42.4817, "long": 78.4003 },
+              "end_location": "Jeti-Oguz", "end_coordinate": { "lat": 42.3520, "long": 78.2340 },
+              "duration": "35 min", "distance_km": 25,
+              "gpx": "H4sIAAAAAAAC/42ZQW9jNwyE7/kVhu8bi6RISYXjBXpogfawPWyBXo3sqxvEiQ3H3WT766uXoo8jFAV4cxD7i8kZUqOX7ce3p+Pq63R5eTg9363pNq1X0/P96cvD8+Fu/evnHz7U9cfdzfZwfsN30Xp1f5n219Plbv3py7eXl+nbZb/6fNl/nY7fn06Pq+lt/3Q+TutVxz+/3K3/uF7P3202r6+vt9fT+XS47H9/eLu9Pz1tfvzltw1taL27Wa2218vjbvu8f5p2P+8v+8fTcXU9rX6arg8fPh3+/Gu7ef/V/K6X6TB/4J+PnK+r4/56t858myuVXsJx/pql3uaUJK132+k47ajktN3Mr7ab9w/9HyA1B0grjRyQI4CUB4AqAGoAUFqtCBDiBaAcAvAASEUcoBFAtQKAWgUALQRIhgBteQFYqISSB4AoACwCsKoIIFIHhEowzgAotdgCKKES1AaACQByCJAEAd2LDigRQM6MAFIAhHogFQHWqC6ASiEAEwKsNAdIBMA2ALIAIGRlTgkB848LINTEeXoAkBgAkXG2lnGYtGYHtMhGsspYgpoBIKKCWcMStK8oB0SsbDrsAxVoYotY2XIeSiBoYovIaEJYQm7YxIiMRhVL6OMNgJCMybCErN7EmiIyapOhhJwAEFGh/8WhBGYARFRQq0MJKQMgslRVFUuQagCINFEzYwli0ESKWPndegBQaCKFekCCB4uIb6QeHQKA3ApuJGFfqn1OI4BRRiE/FypHdmKfpkGFRNkBoRJ6QgAA17Yc71VCJQjh0calkAMiKmRSlJFNXUaJGElaRRlZ2WXMkWHqJxvKyDm5jDkyC2KKMjJXlzFHDte+xFBGJnMZNeKD7r1BxpRdRo34QGhIKNTYZbTINPZhRBnnReiAiA+45uEbmHkJFvEB25CVSXmJebVESmAV9AFJdR+EUhpLwaBJDFYOpTRmQhmJyHsQSmmcDI2UWvEe1MgsUBvSeqriPaiRHvRbAfogFfBBjQwTzRcEACj4IBSyKAtOY8rgg1DIIq7og8S1OiBiJOrKI4DABy0yzqkZ+iAl8EEoZKVKkNa5VfBBKGSlnvMQ0OO/AyJWTor7gJuBD0IhKwmOMzfxe2MLhazEZSiBXMaWIjImMpCxH42VHRCSMWFG4r4DzAEBGaW1TAhQP1xbJKX1oxHPBa79pHJAjQAKoQq1T+cCiKQ06cKjCj3iiwMkAsi4D3q+yMUBoR4MN1cumr2J1CIAxpjHpUfNBcAcAcxdAwB5QmmsEUDCeyNbY58FjsjY1w5a2Yrf3ptESuinB6pg6g+imkRU6EcwqmCSfBYkokK1YaEY+UJpOWKkni/QiTrv2AVQIgBuWIJW34lNI7NQe6RAQEkAiPigX09RRtXisxB5GCelYsRhnVvyL8AiTSxW0Ik9MfksRB7G9YTEuBO159MFUFIEIHg29ojljwP7KRUBMGETc2PfSCVUQjL0wfyM1QERFazvXgSYOSCS0sT6EkPAHFwXQORgsXGY8AFEizwKE8s8NJE9YLQa6gHr8A0gI7VIyBJLZfgGyWNei4Qs0Tb0QBr0IBKyRMvQAynQgxYxkurQAzHsQUQFHS4cLIo9iKigPPbAfdB/8d9pfH85/7/l/cXuZrs5nN92N38DZYsaZToaAAA=" },
+            { "end_location": "Jeti-Oguz Seven Bulls", "end_coordinate": { "lat": 42.3368, "long": 78.2387 },
               "duration": "20 min", "distance_km": 5, "off_road": true }
           ] },
         { "type": "point_of_interest", "name": "Jeti-Oguz Seven Bulls", "category": "viewpoint",
@@ -120,11 +124,12 @@
       "title": "Burana Tower & back",
       "description": "The long drive back west, stopping at the Burana minaret near Tokmok.",
       "activities": [
-        { "type": "road", "start": "Karakol", "distance_km": 400,
-          "coordinate": { "lat": 42.4817, "long": 78.4003 },
-          "waypoints": [
-            { "coordinate": { "lat": 42.4603, "long": 76.1866 }, "duration": "3h", "distance_km": 210 },
-            { "coordinate": { "lat": 42.8761, "long": 74.6037 }, "location": "Bishkek", "duration": "3h", "distance_km": 190 }
+        { "type": "road", "distance_km": 400,
+          "legs": [
+            { "start_location": "Karakol", "start_coordinate": { "lat": 42.4817, "long": 78.4003 },
+              "end_location": "Bishkek", "end_coordinate": { "lat": 42.8761, "long": 74.6037 },
+              "duration": "6h", "distance_km": 400,
+              "waypoints": [ { "lat": 42.4603, "long": 76.1866 } ] }
           ] },
         { "type": "point_of_interest", "name": "Burana Tower", "category": "ruins",
           "coordinate": { "lat": 42.7464, "long": 75.2501 } }

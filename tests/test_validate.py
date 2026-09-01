@@ -27,6 +27,12 @@ def _messages(findings):
     return "\n".join(f.message for f in findings)
 
 
+# A complete one-hop road leg (A → B, both ends located), so a fixture that is
+# about something else doesn't collect endpoint findings of its own.
+_LEG = {"start_location": "A", "start_coordinate": {"lat": 1, "long": 2},
+        "end_location": "B", "end_coordinate": {"lat": 3, "long": 4}}
+
+
 def test_example_has_no_errors():
     findings = validate_text(EXAMPLE.read_text(encoding="utf-8"))
     assert _errors(findings) == []
@@ -177,10 +183,23 @@ def test_manual_range_not_covering_days_warns():
     assert "before the last day" in msgs
 
 
-def test_road_missing_waypoints_is_error():
+def test_road_missing_legs_is_error():
     doc = {"travel_description": {"title": "T"},
-           "days": [{"title": "d", "activities": [{"type": "road", "start": "A"}]}]}
-    assert "required field 'waypoints'" in _messages(_errors(validate_text(json.dumps(doc))))
+           "days": [{"title": "d", "activities": [{"type": "road"}]}]}
+    assert "required field 'legs'" in _messages(_errors(validate_text(json.dumps(doc))))
+
+
+def test_road_written_on_the_old_waypoint_shape_is_named():
+    """The retired keys are unread now, and an unknown key is reported by
+    nothing — so each one is named, with where its value has moved to."""
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "road", "start": "A", "coordinate": {"lat": 1, "long": 2},
+                "off_road": True,
+                "waypoints": [{"coordinate": {"lat": 3, "long": 4}, "location": "B"}]}]}]}
+    w = _messages(_warnings(validate_text(json.dumps(doc))))
+    for key in ("start", "coordinate", "off_road", "waypoints"):
+        assert f"field '{key}' is no longer read on a road" in w
 
 
 def test_poi_invalid_category_is_error():
@@ -204,16 +223,14 @@ def test_nested_activity_type_is_required_and_checked():
 def test_road_and_hike_nest_only_meals():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
-               {"type": "road", "start": "A",
-                "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+               {"type": "road", "legs": [_LEG],
                 "activities": [{"type": "point_of_interest", "name": "X"}]}]}]}
     msgs = _messages(_errors(validate_text(json.dumps(doc))))
     assert "a nested activity 'type' must be one of: meal" in msgs
     # a meal nested under a road is accepted
     ok = {"travel_description": {"title": "T"},
           "days": [{"title": "d", "activities": [
-              {"type": "road", "start": "A",
-               "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}],
+              {"type": "road", "legs": [_LEG],
                "activities": [{"type": "meal", "meal_type": "lunch"}]}]}]}
     assert "nested activity" not in _messages(_errors(validate_text(json.dumps(ok))))
 
@@ -270,39 +287,40 @@ def test_activity_without_determinable_duration_warns():
 
 def test_single_leg_road_warns_for_each_missing_magnitude():
     # a plain A→B drive: neither duration nor distance → both listed
-    w = _messages(_warnings(_one_day([{"type": "road", "start": "A",
-                                       "waypoints": [{"location": "B"}]}])))
+    w = _messages(_warnings(_one_day([{"type": "road", "legs": [_LEG]}])))
     assert "this road (A → B) should give a duration and a 'distance_km'" in w
     assert "missing: duration, distance_km" in w
     # road-level distance present, duration still missing → duration only
-    w2 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "distance_km": 12,
-                                        "waypoints": [{"location": "B"}]}])))
+    w2 = _messages(_warnings(_one_day([{"type": "road", "distance_km": 12,
+                                        "legs": [_LEG]}])))
     assert "missing: duration." in w2
     # both known (duration via times, distance on the road) → no warning
-    w3 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "distance_km": 12,
+    w3 = _messages(_warnings(_one_day([{"type": "road", "distance_km": 12,
                                         "start_time": "09:00", "end_time": "10:00",
-                                        "waypoints": [{"location": "B"}]}])))
+                                        "legs": [_LEG]}])))
     assert "this road should give" not in w3
-    # a waypoint duration + distance also satisfy the single leg
-    w4 = _messages(_warnings(_one_day([{"type": "road", "start": "A", "waypoints": [
-        {"location": "B", "duration": "40 min", "distance_km": 30}]}])))
+    # the leg's own duration + distance also satisfy the single-leg drive
+    w4 = _messages(_warnings(_one_day([{"type": "road", "legs": [
+        dict(_LEG, duration="40 min", distance_km=30)]}])))
     assert "this road should give" not in w4
 
 
 def test_multi_leg_road_warns_per_named_leg():
     # two named legs; the second lacks its distance → only that leg warns
-    day = [{"type": "road", "start": "A", "waypoints": [
-        {"location": "B", "duration": "40 min", "distance_km": 30},
-        {"location": "C", "duration": "50 min"}]}]
+    day = [{"type": "road", "legs": [
+        dict(_LEG, duration="40 min", distance_km=30),
+        {"end_location": "C", "end_coordinate": {"lat": 3, "long": 4},
+         "duration": "50 min"}]}]
     w = _messages(_warnings(_one_day(day)))
     assert "this road's leg (B → C) should give a duration and a 'distance_km'" in w
     assert "missing: distance_km." in w
     assert "(A → B)" not in w  # the complete leg doesn't warn
-    # unnamed shaping points fold their duration/distance into the next named leg
-    day2 = [{"type": "road", "start": "A", "waypoints": [
-        {"duration": "20 min", "distance_km": 10},
-        {"location": "B", "duration": "20 min", "distance_km": 20},
-        {"location": "C", "duration": "50 min", "distance_km": 40}]}]
+    # a leg's route-shaping waypoints carry no figures of their own to miss
+    day2 = [{"type": "road", "legs": [
+        dict(_LEG, duration="40 min", distance_km=30,
+             waypoints=[{"lat": 1.5, "long": 2.5}]),
+        {"end_location": "C", "end_coordinate": {"lat": 3, "long": 4},
+         "duration": "50 min", "distance_km": 40}]}]
     assert "this road's leg" not in _messages(_warnings(_one_day(day2)))
 
 
@@ -578,8 +596,7 @@ def test_day_past_midnight_is_error():
 
 def test_nonpositive_distance_and_duration_are_errors():
     findings = _one_day([
-        {"type": "road", "start": "A", "distance_km": 0, "duration": "1h",
-         "waypoints": [{"coordinate": {"lat": 1, "long": 2}, "location": "B"}]},
+        {"type": "road", "distance_km": 0, "duration": "1h", "legs": [_LEG]},
         {"type": "hike", "name": "H", "duration": "0 min"},
     ])
     msgs = _messages(_errors(findings))
@@ -699,25 +716,65 @@ def test_malformed_json_reports_error():
     assert "invalid JSON" in _messages(findings)
 
 
-def test_road_waypoint_requires_coordinate():
+def test_road_leg_endpoints_must_be_deducible():
+    """Whichever endpoint no leg names is an error, on the leg that needs it."""
+    def errs(legs):
+        doc = {"travel_description": {"title": "T"},
+               "days": [{"title": "d", "activities": [
+                   {"type": "road", "legs": legs}]}]}
+        return _messages(_errors(validate_text(json.dumps(doc))))
+
+    # the first leg must name its own departure, the last its own arrival
+    assert "required field 'start_location'" in errs(
+        [{"end_location": "B", "end_coordinate": {"lat": 3, "long": 4}}])
+    assert "required field 'end_location'" in errs(
+        [{"start_location": "A", "end_coordinate": {"lat": 3, "long": 4}}])
+    assert "required field 'end_coordinate'" in errs(
+        [{"start_location": "A", "end_location": "B"}])
+    # a junction the next leg names is fine, and reported nowhere
+    quiet = errs([{"start_location": "A", "end_coordinate": {"lat": 3, "long": 4}},
+                  {"start_location": "B", "end_location": "C",
+                   "end_coordinate": {"lat": 5, "long": 6}}])
+    assert "end_location" not in quiet and "start_location" not in quiet
+    # …but one neither side names is reported once, on the earlier leg
+    lonely = errs([{"start_location": "A", "end_coordinate": {"lat": 3, "long": 4}},
+                   {"end_location": "C", "end_coordinate": {"lat": 5, "long": 6}}])
+    assert lonely.count("required field 'end_location'") == 1
+
+
+def test_road_leg_junction_mismatch_warns():
+    """Both sides may name a junction, and then they must agree — the chain uses
+    the earlier leg's end, so a disagreement silently drops this leg's values."""
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
-               {"type": "road", "start": "A",
-                "waypoints": [{"location": "no coord"}]}]}]}
-    assert "a waypoint needs a 'coordinate'" in _messages(
+               {"type": "road", "legs": [
+                   {"start_location": "A", "start_coordinate": {"lat": 1, "long": 2},
+                    "end_location": "B", "end_coordinate": {"lat": 3, "long": 4}},
+                   {"start_location": "Bee", "start_coordinate": {"lat": 9, "long": 4},
+                    "end_location": "C", "end_coordinate": {"lat": 5, "long": 6}}]}]}]}
+    w = _messages(_warnings(validate_text(json.dumps(doc))))
+    assert "this leg departs from 'Bee' but the previous one arrives at 'B'" in w
+    assert "'start_coordinate' is a kilometre or more from" in w
+
+
+def test_road_leg_waypoints_are_bare_coordinates():
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "activities": [
+               {"type": "road", "legs": [dict(
+                   _LEG, waypoints=[{"coordinate": {"lat": 1, "long": 2}}])]}]}]}
+    assert "each of a leg's 'waypoints' must be a coordinate" in _messages(
         _errors(validate_text(json.dumps(doc))))
 
 
-def test_road_waypoint_durations_exceeding_road_warns():
+def test_road_leg_durations_exceeding_the_road_warns():
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": [
-               {"type": "road", "start": "A", "duration": "1h",
-                "waypoints": [
-                    {"coordinate": {"lat": 1, "long": 2}, "duration": "40 min"},
-                    {"coordinate": {"lat": 1, "long": 2}, "duration": "40 min"},
-                ]}]}]}
-    assert "the waypoint segments last" in _messages(
-        _warnings(validate_text(json.dumps(doc))))
+               {"type": "road", "duration": "1h", "legs": [
+                   dict(_LEG, duration="40 min"),
+                   {"end_location": "C", "end_coordinate": {"lat": 5, "long": 6},
+                    "duration": "40 min"},
+               ]}]}]}
+    assert "the legs last" in _messages(_warnings(validate_text(json.dumps(doc))))
 
 
 def _place_doc(nested, **fields):
@@ -748,8 +805,7 @@ def test_a_missing_place_duration_states_the_nested_total_as_its_default():
 
 
 def _pages_doc(kind: str, pages):
-    extra = {"road": {"start": "A",
-                      "waypoints": [{"coordinate": {"lat": 1, "long": 2}}]}}
+    extra = {"road": {"legs": [_LEG]}}
     act = {"type": kind, "name": "N", "guidebook_pages": pages}
     act.update(extra.get(kind, {}))
     return json.dumps({"travel_description": {"title": "T"},

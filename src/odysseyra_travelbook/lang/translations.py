@@ -233,27 +233,59 @@ _FR = {
         "lorsqu'un restaurant est nommé.",
     "field '{name}' is invalid ({value}) — {error}.":
         "champ « {name} » invalide ({value}) — {error}.",
-    "'waypoints' must be an array of {coordinate, location, duration, "
-    "distance_km} objects.":
-        "« waypoints » doit être un tableau d'objets {coordinate, location, "
-        "duration, distance_km}.",
-    "a road needs at least one 'waypoint' — the route's final stop is the "
+    "'legs' must be an array of {start_location, end_location, duration, "
+    "distance_km, off_road, waypoints} objects — one per hop of the drive.":
+        "« legs » doit être un tableau d'objets {start_location, end_location, "
+        "duration, distance_km, off_road, waypoints} — un par étape du trajet.",
+    "a road needs at least one 'leg' — the hop from its departure to its "
     "arrival.":
-        "une route a besoin d'au moins un « waypoint » — le dernier arrêt de "
-        "l'itinéraire est l'arrivée.",
-    "each waypoint must be an object with a 'coordinate' (a {lat, long} point "
-    "on the route).":
-        "chaque point de passage doit être un objet avec un « coordinate » (un "
-        "point {lat, long} sur l'itinéraire).",
-    "a waypoint needs a 'coordinate' (a {lat, long} object) — it sets a point "
-    "on the route.":
-        "un point de passage a besoin d'un « coordinate » (un objet {lat, long}) "
-        "— il place un point sur l'itinéraire.",
-    "the waypoint segments last {total} in total, longer than the road's "
-    "{parent} — the segment times don't fit the drive.":
-        "les segments des points de passage durent {total} au total, plus que "
-        "la durée de la route ({parent}) — les durées des segments ne tiennent "
-        "pas dans le trajet.",
+        "une route a besoin d'au moins une étape dans « legs » — celle qui va "
+        "de son départ à son arrivée.",
+    "each road leg must be an object with a 'start_location' and an "
+    "'end_location' (and their coordinates).":
+        "chaque étape de route doit être un objet avec un « start_location » et "
+        "un « end_location » (et leurs coordonnées).",
+    "'waypoints' must be an array of {lat, long} coordinates, in order from the "
+    "leg's start to its end.":
+        "« waypoints » doit être un tableau de coordonnées {lat, long}, dans "
+        "l'ordre du départ de l'étape vers son arrivée.",
+    "each of a leg's 'waypoints' must be a coordinate with a 'lat' and a "
+    "'long' ({error}).":
+        "chaque « waypoints » d'une étape doit être une coordonnée avec un "
+        "« lat » et un « long » ({error}).",
+    "this leg departs from {here} but the previous one arrives at {there} — a "
+    "drive can't jump between the two, and it is the previous leg's "
+    "'end_location' that is used.":
+        "cette étape part de {here} alors que la précédente arrive à {there} — "
+        "un trajet ne peut pas sauter de l'un à l'autre, et c'est le "
+        "« end_location » de l'étape précédente qui est utilisé.",
+    "this leg's 'start_coordinate' is a kilometre or more from the previous "
+    "leg's 'end_coordinate' — a drive can't jump between the two, and it is the "
+    "previous leg's that is used.":
+        "le « start_coordinate » de cette étape est à un kilomètre ou plus du "
+        "« end_coordinate » de l'étape précédente — un trajet ne peut pas sauter "
+        "de l'un à l'autre, et c'est celui de l'étape précédente qui est "
+        "utilisé.",
+    "field '{name}' is no longer read on a road — {where}.":
+        "le champ « {name} » n'est plus lu sur une route — {where}.",
+    "move it to the first leg's 'start_location'":
+        "déplacez-le dans le « start_location » de la première étape",
+    "move it to the first leg's 'start_coordinate'":
+        "déplacez-le dans le « start_coordinate » de la première étape",
+    "the drive's stops are its legs now: one leg per hop, its arrival in "
+    "'end_location' / 'end_coordinate', and any route-shaping points in that "
+    "leg's own 'waypoints'":
+        "les arrêts du trajet sont désormais ses étapes : une étape par tronçon, "
+        "son arrivée dans « end_location » / « end_coordinate », et les points "
+        "qui dessinent l'itinéraire dans les « waypoints » de cette étape",
+    "set it on each leg that runs off-road (the drive counts as off-road when "
+    "every one of its legs does)":
+        "indiquez-le sur chaque étape hors-route (le trajet n'est hors-route que "
+        "si toutes ses étapes le sont)",
+    "the legs last {total} in total, longer than the road's own {parent} — the "
+    "leg times don't fit the drive.":
+        "les étapes durent {total} au total, plus que la durée de la route "
+        "({parent}) — les durées des étapes ne tiennent pas dans le trajet.",
     "the nested activities last {total} in total, longer than this activity's "
     "{parent} — they can't all fit inside it.":
         "les activités imbriquées durent {total} au total, plus que la durée de "
@@ -571,13 +603,89 @@ _FR = {
         "un tableau non vide d'objets activité, chacun avec un « type »",
     "the departure address": "l'adresse de départ",
     "the arrival address": "l'adresse d'arrivée",
-    "the driving distance in km": "la distance de conduite en km",
-    "whether part of the drive is off-road":
-        "si une partie du trajet est hors-route",
     "intermediate stops the route passes through":
         "les arrêts intermédiaires que traverse l'itinéraire",
-    "the ordered stops the route runs through (the last is the arrival)":
-        "les arrêts ordonnés que suit l'itinéraire (le dernier est l'arrivée)",
+    # a road and its legs
+    "the hops the drive is made of, in travel order":
+        "les étapes qui composent le trajet, dans l'ordre du parcours",
+    "a non-empty array of leg objects (see below), each with its endpoints and "
+    "that hop's duration / distance_km / off_road":
+        "un tableau non vide d'objets étape (voir ci-dessous), chacun avec ses "
+        "extrémités et les « duration » / « distance_km » / « off_road » de "
+        "cette étape",
+    "the driving distance in km for the whole drive":
+        "la distance de conduite en km pour tout le trajet",
+    "whether the drive's departure gets a numbered map pin":
+        "si le départ du trajet reçoit une épingle numérotée sur la carte",
+    "whether the drive's final arrival gets a numbered map pin":
+        "si l'arrivée finale du trajet reçoit une épingle numérotée sur la carte",
+    "whether each junction between two legs gets a numbered map pin":
+        "si chaque jonction entre deux étapes reçoit une épingle numérotée sur "
+        "la carte",
+    "false (the drive is drawn as a route only)":
+        "false (le trajet n'est dessiné que comme un itinéraire)",
+    "a GPX recording of this hop, drawn as its line on the day map (instead of "
+    "the routed guess)":
+        "un enregistrement GPX de cette étape, dessiné comme son tracé sur la "
+        "carte du jour (à la place de l'itinéraire calculé)",
+    "none (the hop's line is routed through its endpoints)":
+        "aucun (le tracé de l'étape est calculé entre ses extrémités)",
+    "'include_maps_in_render' is off, so this GPX is parsed but no map is drawn "
+    "from it (the viewer still offers the file for download).":
+        "« include_maps_in_render » est désactivé : ce GPX est analysé mais "
+        "aucune carte n'en est dessinée (la visionneuse propose tout de même le "
+        "fichier au téléchargement).",
+    "where this hop departs from": "d'où part cette étape",
+    "where the drive departs from (the first leg has no previous leg to inherit "
+    "it from)":
+        "d'où part le trajet (la première étape n'a pas d'étape précédente dont "
+        "l'hériter)",
+    "the previous leg's 'end_location'":
+        "le « end_location » de l'étape précédente",
+    "the departure point on the map": "le point de départ sur la carte",
+    "an object with a 'lat' and a 'long'":
+        "un objet avec un « lat » et un « long »",
+    "the previous leg's 'end_coordinate' (geocoded from the name on the first "
+    "leg)":
+        "le « end_coordinate » de l'étape précédente (géocodé depuis le nom "
+        "pour la première étape)",
+    "geocoded from 'start_location' when maps are on":
+        "géocodé depuis « start_location » si les cartes sont activées",
+    "where this hop arrives": "où arrive cette étape",
+    "where this hop arrives (the next leg could name it as its own "
+    "'start_location' instead)":
+        "où arrive cette étape (l'étape suivante peut le nommer dans son propre "
+        "« start_location » à la place)",
+    "where the drive arrives (the last leg has no next leg to inherit it from)":
+        "où arrive le trajet (la dernière étape n'a pas d'étape suivante dont "
+        "l'hériter)",
+    "the next leg's 'start_location'":
+        "le « start_location » de l'étape suivante",
+    "the arrival point on the map": "le point d'arrivée sur la carte",
+    "the arrival point on the map (the next leg could name it as its own "
+    "'start_coordinate' instead)":
+        "le point d'arrivée sur la carte (l'étape suivante peut le nommer dans "
+        "son propre « start_coordinate » à la place)",
+    "the arrival point on the map (the last leg has no next leg to inherit it "
+    "from)":
+        "le point d'arrivée sur la carte (la dernière étape n'a pas d'étape "
+        "suivante dont l'hériter)",
+    "the next leg's 'start_coordinate'":
+        "le « start_coordinate » de l'étape suivante",
+    "how long this hop takes to drive": "le temps de conduite de cette étape",
+    "this hop's driving distance in km":
+        "la distance de conduite de cette étape en km",
+    "whether this hop runs off-road": "si cette étape est hors-route",
+    "false (and the drive counts as off-road only when every leg is)":
+        "false (et le trajet n'est hors-route que si toutes ses étapes le sont)",
+    "intermediate points the hop's route bends through, in order from its start "
+    "to its end":
+        "les points intermédiaires par lesquels passe l'itinéraire de l'étape, "
+        "dans l'ordre de son départ vers son arrivée",
+    "an array of {lat, long} coordinates":
+        "un tableau de coordonnées {lat, long}",
+    "[] (the route runs straight between the hop's endpoints)":
+        "[] (l'itinéraire va tout droit entre les extrémités de l'étape)",
     "the point-of-interest name": "le nom du point d'intérêt",
     "the kind of place, shown as the badge":
         "le type de lieu, affiché comme badge",
@@ -729,8 +837,6 @@ _FR = {
         "un tableau d'objets meal, chacun avec un « type »",
     "an array of {coordinate, location, duration, distance_km} objects":
         "un tableau d'objets {coordinate, location, duration, distance_km}",
-    "a non-empty array of {coordinate, location, duration, distance_km} objects":
-        "un tableau non vide d'objets {coordinate, location, duration, distance_km}",
     "'booked' or 'confirmed'": "« booked » ou « confirmed »",
     "'paid' or 'to pay'": "« paid » ou « to pay »",
     "text or a number": "un texte ou un nombre",

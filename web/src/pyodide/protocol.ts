@@ -29,6 +29,13 @@ export interface OpMap {
     args: [query: string, countries: string];
     result: { lat: number; long: number } | null;
   };
+  // Build a GPX route file for one road leg (the Nth road of a day, its Mth
+  // hop) out of the geometry the map draws — for a leg that carries no
+  // recording of its own. Rejects rather than returning a straight line.
+  legGpx: {
+    args: [text: string, dayIndex: number, roadIndex: number, legIndex: number];
+    result: { gpx: string; name: string };
+  };
   ics: { args: [text: string, lang: string]; result: string };
   build: {
     args: [

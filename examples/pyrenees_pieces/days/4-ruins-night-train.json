@@ -6,30 +6,26 @@
   "activities": [
     {
       "type": "road",
-      "start": "Gavarnie",
       "distance_km": 96,
       "duration": "2h05",
-      "off_road": false,
-      "coordinate": {
-        "lat": 42.69574,
-        "long": -0.0103
-      },
-      "waypoints": [
+      "legs": [
         {
-          "coordinate": { "lat": 42.8722, "long": -0.0033 },
-          "location": "Luz-Saint-Sauveur",
+          "start_location": "Gavarnie",
+          "start_coordinate": { "lat": 42.69574, "long": -0.0103 },
+          "end_location": "Luz-Saint-Sauveur",
+          "end_coordinate": { "lat": 42.8722, "long": -0.0033 },
           "duration": "35 min",
           "distance_km": 20
         },
         {
-          "coordinate": { "lat": 42.9089, "long": 0.3617 },
-          "location": "Arreau",
+          "end_location": "Arreau",
+          "end_coordinate": { "lat": 42.9089, "long": 0.3617 },
           "duration": "45 min",
           "distance_km": 40
         },
         {
-          "coordinate": { "lat": 43.02693, "long": 0.57091 },
-          "location": "Saint-Bertrand-de-Comminges",
+          "end_location": "Saint-Bertrand-de-Comminges",
+          "end_coordinate": { "lat": 43.02693, "long": 0.57091 },
           "duration": "40 min",
           "distance_km": 36
         }

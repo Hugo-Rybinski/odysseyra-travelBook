@@ -101,6 +101,11 @@ export interface RoadLeg {
   distanceKm: number | null;
   destCoord: Coordinate | null;
   offRoad: boolean;
+  // the arrival's map pin, when the road asked for pins on its own points
+  destPin: string | null;
+  // the leg's recorded track (base64), when one was attached — offered for
+  // download on the leg's row; the drawn route already comes from it
+  gpx: string | null;
 }
 
 // Collapse a road's waypoints into display legs, mirroring
@@ -117,6 +122,8 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
   let pending = false;
   let coord: Coordinate | null = null;
   let off = false;
+  let pin: string | null = null;
+  let gpx: string | null = null;
 
   const flush = (dest: string | null) => {
     legs.push({
@@ -126,6 +133,8 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
       distanceKm: hasDist ? dist : null,
       destCoord: coord,
       offRoad: off,
+      destPin: pin,
+      gpx,
     });
     prev = dest ?? prev;
     dur = 0;
@@ -135,11 +144,17 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
     pending = false;
     coord = null;
     off = false;
+    pin = null;
+    gpx = null;
   };
 
   for (const wp of waypoints) {
     pending = true;
     coord = wp.coordinate;
+    // the pin and the track belong to the point the leg *ends* at, like its
+    // duration/distance — a shaping point carries neither
+    pin = wp.map_pin ?? null;
+    gpx = wp.gpx ?? null;
     if (wp.duration_min != null) {
       dur += wp.duration_min;
       hasDur = true;
