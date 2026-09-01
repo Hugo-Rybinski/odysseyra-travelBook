@@ -417,9 +417,13 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     mid-wrap. The viewer's twins are `ActivityTitle` and `RoadVia` plus the
     `pin-disc-mid` class (`.act-title` is a flex row, so the space at the end of
     `"Amboise → "` is collapsed and the margin is all that's left). This is also
-    why a **one-leg** drive whose arrival is pinned prints its leg row after all
-    (`_road_waypoints` / `RoadVia` both switch on `len(legs) > 1 or any pin`), a
-    bare number being unreadable. `show_on_map: false` still suppresses a pin.
+    what lets a **one-leg** drive print **no VIA row at all** (`_road_waypoints`
+    / `RoadVia` both switch on `len(legs) > 1`, full stop): the drive *is* that
+    hop, so the title carries the route, the figures, the Navigate link *and*
+    the arrival's disc against its own name. A pinned arrival used to earn a row
+    — the title bunched its discs at the front then, so the number sat against
+    the wrong town — and the row was pure duplication once the discs moved
+    mid-line. `show_on_map: false` still suppresses a pin.
     The whole-trip map is deliberately untouched: a pin there carries the
     **day**, not the stop, and `tripGeo.ts`'s model fallback already draws every
     named road point.
@@ -500,10 +504,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       `(Get GPX track)` sits. Without that they were simply absent for the
       commonest road there is: the links hang off the leg, and a plain A → B
       drive has no leg row to hang them on (the same reasoning that promotes a
-      single leg's `off_road` to the road's chip). `ActivityDetails` promotes
-      only when there is genuinely no row — `legs.length === 1 &&
-      !legs[0].destPin` — since a one-leg drive with a *pinned* arrival does get
-      one, and would otherwise offer the file twice. No PDF twin, as above.
+      single leg's `off_road` to the road's chip). `ActivityDetails` promotes on
+      `legs.length === 1` — the same condition `RoadVia` returns null on, so the
+      two can't both draw the link or both drop it. No PDF twin, as above.
   - **A leg with no recording can have one built on demand.** The other link on
     that row, `(Build GPX file)` (`GpxBuildLink`) — deliberately worded apart
     from `(Get GPX track)`, since this file didn't exist until the click — asks

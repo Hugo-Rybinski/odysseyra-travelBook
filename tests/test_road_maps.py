@@ -296,17 +296,20 @@ def _title(document, pins=None, road_pin=None):
     return "".join(pieces).strip()
 
 
-def test_a_one_leg_drive_lists_its_leg_only_once_it_is_pinned():
-    """A pin number is unreadable without the name beside it, so a pinned
-    arrival earns the row a plain one-leg drive doesn't get. Mirrors the
-    viewer's RoadVia."""
+def test_a_one_leg_drive_never_lists_its_leg():
+    """The drive *is* that hop, so the title carries every part of the row —
+    the pinned arrival included, its disc drawn mid-title. Mirrors the viewer's
+    RoadVia."""
     rows, discs = _via_rows(doc(legs=[LEG_AB]))
     assert rows == [] and discs == []      # a plain A → B drive: the title says it
 
+    # ...and a pinned arrival changes nothing: `_road_title` puts that disc
+    # beside its own name, which is the only thing the row ever added.
     rows, discs = _via_rows(doc(legs=[LEG_AB], display_end_on_maps=True),
                             pins={"B": "2"})
-    assert len(rows) == 1 and "A" in rows[0] and "B" in rows[0]
-    assert discs == ["2"]                  # the arrival's pin, beside its name
+    assert rows == [] and discs == []
+    assert _title(doc(legs=[LEG_AB], display_end_on_maps=True),
+                  pins={"B": "2"}, road_pin="1") == "(1)A  →  (2)B"
 
 
 def test_each_leg_row_pins_both_of_its_ends():

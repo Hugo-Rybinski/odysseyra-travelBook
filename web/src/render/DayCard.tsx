@@ -561,15 +561,13 @@ function ActivityDetails({
   // links (renders nothing for every other activity).
   if (act.type === "hike" && act.track?.gpx)
     chips.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
-  // A drive's GPX normally sits on its leg's VIA row — but a plain one-leg
-  // drive draws no VIA list, so the link had nowhere to go and simply vanished.
-  // It is promoted to the road's own line instead, the same way a single leg's
-  // off-road flag is promoted to the road's chip. (Only when there really is no
-  // VIA row: a one-leg drive with a pinned arrival gets one, and would
-  // otherwise offer the file twice.)
+  // A drive's GPX normally sits on its leg's VIA row — but a one-leg drive
+  // draws no VIA list at all, so the link had nowhere to go and simply
+  // vanished. It is promoted to the road's own line instead, the same way a
+  // single leg's off-road flag is promoted to the road's chip.
   if (act.type === "road") {
     const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
-    if (legs.length === 1 && !legs[0].destPin) {
+    if (legs.length === 1) {
       if (legs[0].gpx)
         chips.push(
           <GpxDownload
@@ -626,9 +624,11 @@ function singleLegOffRoad(act: Activity): boolean {
 // so its disc shows on both rows and the numbers chain (1)→(2), (2)→(3) …, each
 // beside the town it names.
 //
-// A single-leg drive normally shows nothing here (its title says the same
-// thing), but a pinned arrival needs a row to be read against: a pin number is
-// only legible beside the place it points at. Mirrors pdf/days.py's
+// A single-leg drive shows nothing here: the drive *is* that hop, so the title
+// already carries the route, the figures, the Navigate link and — since
+// `ActivityTitle` draws its discs mid-line — the arrival's pin beside the name
+// it labels. Its GPX links are promoted to the chips line (`ActivityDetails`),
+// the only part with nowhere else to go. Mirrors pdf/days.py's
 // `_road_waypoints` — keep the two in step.
 function RoadVia({
   act,
@@ -643,7 +643,7 @@ function RoadVia({
 }) {
   const provider = useMapProvider();
   const legs = roadLegs(act.start ?? "", act.waypoints ?? [], act.map_pin ?? null);
-  if (legs.length <= 1 && !legs.some((l) => l.destPin)) return null;
+  if (legs.length <= 1) return null;
   return (
     <div className="via">
       <p className="via-head">{tr(lang, "via").toUpperCase()}</p>

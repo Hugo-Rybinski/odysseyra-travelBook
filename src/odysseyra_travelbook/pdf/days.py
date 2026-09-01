@@ -582,16 +582,18 @@ class DayMixin:
         against its own town. The first row's departure pin comes from the road
         itself, which is where the day map's numbering puts it.
 
-        Hidden for a road with a single leg (a plain departure→arrival), since
-        the title already shows it — *unless* that leg's arrival carries a map
-        pin, which needs a row to be read against: the pin's number is only
-        legible next to the place it points at (the same rule that puts every
-        other pin's disc beside its activity's title)."""
+        Hidden for a road with a single leg (a plain departure→arrival): the
+        drive *is* that hop, so the title already carries every part of the row
+        — the route, the duration, the distance, the Navigate link, and (since
+        `_road_title` draws its discs mid-line) the arrival's map pin beside the
+        name it labels. A pinned arrival used to earn a row here, back when the
+        title bunched its discs at the front and the number sat against the
+        wrong town; the mid-line discs retired that reason."""
         legs = road_display_legs(road.start, road.waypoints)
+        if len(legs) <= 1:
+            return
         pins = [self.pin_label(wp) if wp is not None else None
                 for _s, _d, _dur, _dist, wp, _off in legs]
-        if len(legs) <= 1 and not any(pins):
-            return
         # A leg's departure is the previous leg's arrival; the first one's is the
         # road's own pin (the label `pin_label(road)` carries).
         src_pins = [self.pin_label(road), *pins[:-1]]

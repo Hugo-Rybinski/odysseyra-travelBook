@@ -435,8 +435,8 @@ without a disc of their own.
 
 Each leg is a row under the road in the PDF (in a lower accent), reading
 `from → to` with its own duration / distance and a **(Navigate)** link — but the
-list is omitted for a **one-leg** road, since the title already shows the same
-route. If the leg `duration`s sum to more than the road's own `duration`,
+list is omitted for a **one-leg** road, since the drive *is* that hop and the
+title already shows all of it. If the leg `duration`s sum to more than the road's own `duration`,
 validation warns (the leg times can't fit the drive). A leg with no `duration` or
 no `distance_km` warns too, naming the hop.
 
@@ -476,10 +476,10 @@ a place of its own.
 Turn on all three and **every named point of the drive is pinned**. As with any
 other pin, a point whose coordinate says `"show_on_map": false` is left out, and
 each pin's number is shown as an accent disc **beside the place it points at**:
-the departure's on the drive's title, each arrival's on that leg's row. This is
-why a **one-leg** drive with a pinned arrival prints its leg row after all
-(normally it doesn't, the title saying the same thing) — a pin number is
-unreadable without the name beside it.
+the departure's on the drive's title, each arrival's on that leg's row — and on
+a **one-leg** drive, which prints no leg row, the arrival's disc sits mid-title
+(`Tours → (1) Château de Chambord`), so the number still reads against its own
+place.
 
 #### A drive that shares an end with its neighbour
 
