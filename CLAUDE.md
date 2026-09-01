@@ -138,11 +138,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   contact has two fields where a booking has a dozen.
 - **`maps/`** — map rendering, imported only when maps are on. `geocode.py`
   (Nominatim + `countrycodes` + disk cache), `routing.py` (OSRM driving geometry +
-  cache), `render.py` (Carto Positron `@2x` tiles → contrast boost → dotted
+  cache), `mvt.py` + `basemap.py` (Carto Positron's **vector** tiles decoded and
+  drawn — see the basemap bullet under "Key design decisions"),
+  `render.py` (basemap → contrast boost → dotted
   transport legs → translucent theme-colored route → rotated numbered teardrop
-  pins → label sandwich; pure Pillow, with `dashes()` splitting a polyline into
-  dash pieces, and `_tile_bytes` retrying a transient tile failure — one
-  rate-limited tile mid-stitch otherwise silently costs the whole map),
+  pins → collision-checked place labels; pure Pillow, with `dashes()` splitting a
+  polyline into dash pieces),
   `build.py` (`resolve_day` → points/routes/area-details,
   `day_legs` → a day's transport legs as straight endpoint pairs,
   `render_day_maps` → PIL images, plus `resolve_trip`/`_trip_extent`/
@@ -151,7 +152,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   nothing and needs only tiles), `writeback.py` (`fill_coordinates` for the
   `geocode` command),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
-  `$ODYSSEYRA_CACHE`). Uses `Pillow`; everything networked goes through `urllib`.
+  `$ODYSSEYRA_CACHE`; tiles are `vec_<z>_<x>_<y>.mvt` — the old raster
+  `nolabels_*`/`onlylabels_*.png` files are dead and can be deleted). Uses
+  `Pillow`; everything networked goes through `maps.http_get` (`urllib`
+  natively, a `fetch` shim in the browser) — `basemap.tile_bytes` retries a
+  transient tile failure, since one rate-limited tile otherwise silently costs
+  the whole map.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`,
   plus `weekday_name` and `fmt_weekday_runs` for a POI's opening days),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
@@ -778,6 +784,57 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   imported dynamically (a chunk nobody normally downloads). Long calls are now
   surfaced by the loader, `web/src/ActivityIndicator.tsx` — non-blocking by
   design (no backdrop, `pointer-events: none`), since the page stays usable.
+- **The basemap is Carto's *vector* tiles, rasterized by us.** Both renderers
+  now read the **same** source — `web/src/maps/carto.ts`'s
+  `tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt`,
+  the URL template MapLibre draws in the viewer — because Carto's *pre-rendered
+  raster* tiles (`light_nolabels`/`light_only_labels@2x`, what `render.py` used
+  to stitch) now answer keyless requests with an `API KEY REQUIRED` watermark.
+  They answer with **HTTP 200 and a valid PNG**, so nothing downstream could
+  detect it: `tile_bytes`'s retry/backoff was useless and the stamp simply
+  appeared in the book. Two new modules do the work `render.py` used to get for
+  free from the server:
+  - `mvt.py` — bytes → features. A hand-rolled Mapbox-Vector-Tile reader (pure
+    stdlib; `protobuf` is compiled and would have to work in Pyodide too),
+    gzip-tolerant like `models/gpx.py`. The caller names the layers it wants and
+    every other layer is **skipped by its length prefix without decoding a
+    feature** — on a city tile the `poi`/`housenumber`/`building` layers we never
+    draw are 13 of every 16 features. `ring_is_exterior` reads a polygon ring's
+    winding to tell a lake from the island in it; tile coordinates run
+    y-downwards, which flips the shoelace sign (get it backwards and every lake
+    renders as a hole).
+  - `basemap.py` — features → image, plus the labels as **data**. Colours and
+    per-zoom widths are lifted from `positron-gl-style/style.json`, so it reads
+    as the same basemap, but it is a **deliberate subset**: ~15 rules against
+    Positron's 93 layers, no bridge/tunnel distinction, no POIs, and no road
+    names (clutter at a few centimetres wide). Building footprints *are* drawn,
+    but only from `BUILDING_MIN_ZOOM` (14) — an **area** zoom map is a few city
+    blocks, where a footprint is what you navigate by, while on a day map it
+    would be a grey smear. `width_at`'s first stop
+    doubles as the layer's minzoom, which is what keeps a z6 country map to
+    motorways. `render_basemap` returns `(image, labels)` and draws no text
+    itself.
+  Three things got **better**, not merely restored: a map costs **one** tile
+  fetch instead of two (the old base + labels-only sandwich); labels are drawn
+  last by `render.py`'s `_draw_labels`, so a place name is **dropped where a pin
+  or the attribution already sits** (the raster label tile was composited over
+  our pins regardless, so a numbered pin could sit on the town it marked) and
+  where it would be clipped at the edge; and because the label is data, places
+  are named in the **book's** language (`name:{lang}` → `name:latin` → `name`,
+  plumbed as `lang` through `render_map`/`render_day_maps`/`render_trip_map`/
+  `render_hike_map` from the PDF mixins' `self.lang`). `state`/`province` labels
+  are deliberately dropped: OSM's `name:en` for a French region is often a
+  literal gloss (Bourgogne-Franche-Comté → "BURGUNDY-FREE COUNTY"). The
+  viewer's `render_day` bridge call passes **no** lang on purpose — its static
+  PNG then names places the way its own MapLibre map does, and the PDF it
+  exports still goes through `build(lang=…)`. The source publishes to **z14**, so
+  anything closer overzooms those tiles — exactly what MapLibre does, which is
+  why the two stay consistent past z14. Strokes are aliased in Pillow, so the
+  basemap is supersampled ×2 and reduced, dropping to ×1 past
+  `MAX_SS_PIXELS` (the whole-trip page would otherwise want a 56 MB canvas).
+  This changed the *rendered images* inside a cached day without changing any
+  field, so it needed a `SCHEMA_VERSION` bump (**v19**) — the one case the
+  itinerary hash provably cannot catch.
 - **Interactive and static maps are alternatives, not a fallback chain.** With
   Options → interactive maps **on**, a viewer map slot is the MapLibre map or a
   short "couldn't be loaded" note; the pre-rendered PNG is drawn *only* with the

@@ -337,7 +337,7 @@ Itinerary` stays stable):
 - `models/` — the data model + JSON parsing (`parsers`, `activities`, `transport`, `accommodation`, `car_rental`, `geo`, `itinerary`)
 - `validate/` — the read-only checker (`jsonpos` line-tracking parser, `findings`, `specs`, `validator`)
 - `pdf/` — `base` + one mixin per section (cover, days, day maps, trip map, transport, accommodation, car rental)
-- `maps/` — map rendering, per day and for the whole trip (geocode → routing → tiles → image), imported only when maps are on
+- `maps/` — map rendering, per day and for the whole trip (geocode → routing → vector tiles → `mvt` decode → `basemap` draw → image), imported only when maps are on
 - `lang/` — localization (`dates`, `translations`)
 - `cli.py` — the command-line entry point; `stitch.py` — fragment assembly
 
@@ -397,11 +397,6 @@ they reuse of what's already here.
   visa notes, a packing list, a phrasebook. Each is a new key in the group, a
   spec table, a page or Overview block in each renderer — no new top-level
   section.
-- **A configurable map tile source** — `maps/render.py` hard-codes Carto
-  Positron, which now answers unkeyed requests with watermarked tiles, so every
-  rendered map carries an "API KEY REQUIRED" stamp. The provider (and its key)
-  wants to be a `defaults` field plus an env var, the way the cache directory
-  already is, so a trip can be drawn from whichever source you have access to.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.

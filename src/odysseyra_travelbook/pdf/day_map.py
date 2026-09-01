@@ -4,8 +4,11 @@ as images with a numbered legend. Only active when the trip opts into maps."""
 from __future__ import annotations
 
 import io
+import logging
 
 from .base import FONT
+
+logger = logging.getLogger("odysseyra_travelbook.pdf")
 
 
 class DayMapMixin:
@@ -26,10 +29,14 @@ class DayMapMixin:
         try:
             from ..maps import render_day_maps
             dm = render_day_maps(day, self.itinerary, self._map_cache(),
-                                 ink_saver=self.ink_saver)
+                                 ink_saver=self.ink_saver, lang=self.lang)
             self._map_cache().save()
             return dm
-        except Exception:
+        except Exception as exc:
+            # Loud, because the alternative is a book that prints no maps while
+            # the build reports success — the failure has to name itself.
+            logger.warning("Day map for %r failed (%s); the day prints without one.",
+                           getattr(day, "title", "?"), exc)
             return None
 
     # -- drawing --------------------------------------------------------

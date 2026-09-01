@@ -302,7 +302,8 @@ def resolve_day(day, itinerary, cache):
     return main, routes, route_nodes, areas
 
 
-def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
+def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
+                    lang: str | None = None) -> DayMaps:
     """Build the main day map and any per-area detail maps (PIL images)."""
     main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
     accent = _hex_to_rgb(itinerary.cover_color)
@@ -340,7 +341,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
     if all_coords:
         img = render_map(all_coords, routes, main_points, accent, cache.tiles,
                          ink_saver=ink_saver, labels=main_labels, route_nodes=nodes,
-                         legs=legs)
+                         legs=legs, lang=lang)
         result.main = RenderedMap(img, [p.label for p in main_pts])
 
     stay_coord = None
@@ -361,7 +362,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False) -> DayMaps:
             points.append(stay_coord)
             labels.append(STAY_PIN)
         img = render_map(coords, [], points, accent, cache.tiles,
-                         ink_saver=ink_saver, labels=labels)
+                         ink_saver=ink_saver, labels=labels, lang=lang)
         result.areas.append((title, RenderedMap(img, [p.label for p in pts])))
 
     return result
@@ -503,7 +504,8 @@ def _trip_extent(points, lines):
 
 
 def render_trip_map(itinerary, cache, ink_saver: bool = False,
-                    map_w: int = 940, map_h: int = 1240):
+                    map_w: int = 940, map_h: int = 1240,
+                    lang: str | None = None):
     """One map of the whole trip as a PIL image, or ``None`` when nothing on the
     trip is located. Portrait by default, to fill a book page.
 
@@ -526,13 +528,14 @@ def render_trip_map(itinerary, cache, ink_saver: bool = False,
         return None
     return render_map(extent, routes, points, _hex_to_rgb(itinerary.cover_color),
                       cache.tiles, map_w=map_w, map_h=map_h, ink_saver=ink_saver,
-                      labels=labels, legs=legs)
+                      labels=labels, legs=legs, lang=lang)
 
 
 # ------------------------------------------------------------- hike track ---
 
 def render_hike_map(track, accent_hex: str, cache, ink_saver: bool = False,
-                    map_w: int = 900, map_h: int = 560):
+                    map_w: int = 900, map_h: int = 560,
+                    lang: str | None = None):
     """One hike's GPX track as a PIL image, framed on the track itself.
 
     Unlike every other map here there is nothing to resolve: the geometry is the
@@ -549,4 +552,4 @@ def render_hike_map(track, accent_hex: str, cache, ink_saver: bool = False,
     line = [(lat, long) for lat, long in track.points]
     return render_map(line, [line], [], _hex_to_rgb(accent_hex), cache.tiles,
                       map_w=map_w, map_h=map_h, ink_saver=ink_saver,
-                      route_nodes=[line[0], line[-1]])
+                      route_nodes=[line[0], line[-1]], lang=lang)

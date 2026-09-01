@@ -18,8 +18,11 @@ resolved ``track`` (``web/src/render/HikeTrack.tsx``) — keep the two in step.
 from __future__ import annotations
 
 import io
+import logging
 
 from .base import FAINT, FONT, MUTED, _tint
+
+logger = logging.getLogger("odysseyra_travelbook.pdf")
 
 # Height of the profile chart's plot area, and the room its labels need above
 # (the header line) and below (the distance axis).
@@ -63,9 +66,12 @@ class HikeMapMixin:
         try:
             from ..maps import render_hike_map
             img = render_hike_map(track, self.itinerary.cover_color,
-                                  self._map_cache(), ink_saver=self.ink_saver)
+                                  self._map_cache(), ink_saver=self.ink_saver,
+                                  lang=self.lang)
             self._map_cache().save()
-        except Exception:
+        except Exception as exc:
+            logger.warning("Hike trail map failed (%s); the elevation profile "
+                           "is still drawn.", exc)
             return None
         if img is None:
             return None

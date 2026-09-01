@@ -1,30 +1,31 @@
-"""Raster map rendering: stitch Carto (OSM) tiles, boost contrast, draw the
-route and numbered pins, and keep the basemap's own labels on top. Pure Pillow.
+"""Map rendering: draw the Carto Positron basemap, boost its contrast, add the
+route and numbered pins, and place the basemap's own labels on top. Pure Pillow.
+
+The basemap itself comes from :mod:`basemap`, which rasterizes Carto's **vector**
+tiles — the ones the web viewer's MapLibre map draws. The pre-rendered raster
+tiles this module used to stitch now come back watermarked unless a key is
+supplied (and with an HTTP 200, so nothing could tell). Two consequences show up
+here: the basemap arrives as one image instead of a base + labels-only sandwich,
+and the labels arrive as *data*, drawn last so they can dodge our own pins —
+something a pre-rendered label tile could never do.
 """
 
 from __future__ import annotations
 
 import math
-import time
-import urllib.error
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from pathlib import Path
 
-from odysseyra_travelbook import maps as _maps  # call _maps.http_get so the browser override applies
+from . import basemap
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 
-# Carto Positron, split into a label-free base and a labels-only overlay so the
-# contrast boost works on clean imagery and the map's own place names sit on top
-# of the route/pins. "@2x" = retina tiles. Roads-first, no relief.
-BASE_URL = "https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png"
-LABELS_URL = "https://basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png"
 ATTRIBUTION = "© OpenStreetMap contributors © CARTO"
 
 TILE = 256      # logical slippy-map tile size (projection unit)
-SCALE = 2       # @2x tiles -> device pixels are 2x logical
+SCALE = 2       # device pixels per logical pixel (a "@2x" render)
 SS = 3          # overlay supersampling for antialiased strokes/shapes
 
 
@@ -47,47 +48,12 @@ def _pick_zoom(bbox, map_w, map_h) -> int:
     return 2
 
 
-TILE_RETRIES = 3      # attempts on a transient tile failure
-TILE_BACKOFF = 0.4    # base seconds between attempts; grows 0.4, 0.8, 1.6 …
-
-
-def _tile_bytes(url: str) -> bytes:
-    """One tile's bytes, retrying transient failures (network, timeout, HTTP
-    429/5xx) with a short backoff — the same treatment routing gives OSRM.
-
-    A map is stitched from dozens of tiles and any single failure loses the whole
-    image (the caller swallows it), so one rate-limited tile in a burst would
-    silently cost a day's map — or, for the whole-trip map, a whole page."""
-    last: Exception | None = None
-    for attempt in range(TILE_RETRIES):
-        try:
-            return _maps.http_get(url)
-        except urllib.error.HTTPError as exc:
-            if not (exc.code == 429 or exc.code >= 500):
-                raise           # 4xx: definitive (bad URL, key required, …)
-            last = exc
-        except Exception as exc:  # URLError, timeout, the browser's fetch shim …
-            last = exc
-        if attempt < TILE_RETRIES - 1:
-            time.sleep(TILE_BACKOFF * (2 ** attempt))
-    raise last  # type: ignore[misc]
-
-
-def _fetch_tile(url, style, z, x, y, tiles_dir: Path) -> Image.Image:
-    f = tiles_dir / f"{style}_{z}_{x}_{y}.png"
-    if not f.exists():
-        f.write_bytes(_tile_bytes(url.format(z=z, x=x, y=y)))
-    return Image.open(f).convert("RGBA")
-
-
 # ------------------------------------------------------------------ helpers ---
-def _font(size: int):
-    for name in ("DejaVuSans-Bold.ttf",):
-        try:
-            return ImageFont.truetype(str(FONT_DIR / name), size)
-        except Exception:
-            pass
-    return ImageFont.load_default()
+def _font(size: int, name: str = "DejaVuSans-Bold.ttf"):
+    try:
+        return ImageFont.truetype(str(FONT_DIR / name), size)
+    except Exception:
+        return ImageFont.load_default()
 
 
 def boost_contrast(img: Image.Image, contrast=1.4, saturation=0.7) -> Image.Image:
@@ -173,6 +139,51 @@ def _teardrop(d, hc, tip, R, fill):
     d.ellipse([hcx - R, hcy - R, hcx + R, hcy + R], fill=fill)
 
 
+def _boxes_overlap(a, b, pad: float = 0.0) -> bool:
+    return not (a[2] + pad <= b[0] or b[2] + pad <= a[0]
+                or a[3] + pad <= b[1] or b[3] + pad <= a[1])
+
+
+def _pin_box(x, y, R, angle, bw):
+    """The area a pin occupies — its tip plus its head disc — so a place label
+    can be dropped rather than printed under it."""
+    L = R * 2.15
+    hx, hy = x + L * math.cos(angle), y + L * math.sin(angle)
+    r = R + bw
+    return (min(x, hx - r), min(y, hy - r), max(x, hx + r), max(y, hy + r))
+
+
+def _draw_labels(img: Image.Image, labels, taken: list) -> None:
+    """Draw the basemap's place names, skipping any that would collide.
+
+    Greedy in the order :mod:`basemap` ranked them (a capital before a hamlet),
+    testing each against the pins and the labels already placed. The raster
+    label tiles this replaces couldn't do that — they were composited over our
+    pins whatever they hit — so a numbered pin sometimes sat on top of the very
+    town it marked.
+    """
+    d = ImageDraw.Draw(img, "RGBA")
+    for lb in labels:
+        size = max(7, round(lb.size))
+        if lb.italic:
+            font = _font(size, "DejaVuSans-Oblique.ttf")
+        elif lb.priority[0] <= 2:      # a country or a city carries weight
+            font = _font(size)
+        else:
+            font = _font(size, "DejaVuSans.ttf")
+        box = d.textbbox((lb.x, lb.y), lb.text, font=font, anchor="mm")
+        # A name only half on the page reads as a rendering fault, so it is
+        # dropped rather than clipped — the anchor being inside isn't enough.
+        if box[0] < 0 or box[1] < 0 or box[2] > img.width or box[3] > img.height:
+            continue
+        if any(_boxes_overlap(box, t, pad=2 * SCALE) for t in taken):
+            continue
+        taken.append(box)
+        d.text((lb.x, lb.y), lb.text, font=font, fill=lb.color, anchor="mm",
+               stroke_width=max(1, round(size * 0.13)),
+               stroke_fill=basemap.LABEL_HALO)
+
+
 def _pin(d, x, y, R, number, font, accent, angle):
     L = R * 2.15
     hc = (x + L * math.cos(angle), y + L * math.sin(angle))
@@ -186,7 +197,7 @@ def _pin(d, x, y, R, number, font, accent, angle):
 # ---------------------------------------------------------------- top level ---
 def render_map(all_coords, routes, points, accent, tiles_dir,
                map_w=900, map_h=620, ink_saver=False, labels=None,
-               route_nodes=None, legs=None) -> Image.Image:
+               route_nodes=None, legs=None, lang=None) -> Image.Image:
     """Render an RGB map image fitting every ``(lat, long)`` in ``all_coords``.
 
     * ``routes`` — list of ``[(lat, long), …]`` polylines (drives), drawn as a
@@ -203,6 +214,8 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
       accent disc sitting on top of the translucent route line. Unnamed
       route-shaping waypoints are not marked.
     * ``accent`` — ``(r, g, b)`` theme color (the trip's ``cover_color``).
+    * ``lang`` — names the basemap's places in the book's language where the
+      tiles carry a translation.
     """
     lats = [c[0] for c in all_coords]
     lons = [c[1] for c in all_coords]
@@ -210,24 +223,14 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
     cx, cy = lonlat_to_px((min(lats) + max(lats)) / 2,
                           (min(lons) + max(lons)) / 2, z)
     left, top = cx - map_w / 2, cy - map_h / 2
-    dtile = TILE * SCALE
-    tx0, ty0 = int(left // TILE), int(top // TILE)
-    tx1, ty1 = int((left + map_w) // TILE), int((top + map_h) // TILE)
-
-    def stitch(url, style):
-        canvas = Image.new("RGBA", ((tx1 - tx0 + 1) * dtile, (ty1 - ty0 + 1) * dtile))
-        for tx in range(tx0, tx1 + 1):
-            for ty in range(ty0, ty1 + 1):
-                canvas.paste(_fetch_tile(url, style, z, tx, ty, tiles_dir),
-                             ((tx - tx0) * dtile, (ty - ty0) * dtile))
-        ox, oy = int((left - tx0 * TILE) * SCALE), int((top - ty0 * TILE) * SCALE)
-        return canvas.crop((ox, oy, ox + map_w * SCALE, oy + map_h * SCALE)).convert("RGBA")
 
     def project(lat, lon):
         gx, gy = lonlat_to_px(lat, lon, z)
         return ((gx - left) * SCALE, (gy - top) * SCALE)
 
-    img = boost_contrast(stitch(BASE_URL, "nolabels"),
+    base, place_labels = basemap.render_basemap(
+        z, left, top, map_w, map_h, tiles_dir, scale=SCALE, lang=lang)
+    img = boost_contrast(base,
                          contrast=1.15 if ink_saver else 1.4,
                          saturation=0.4 if ink_saver else 0.7)
 
@@ -278,11 +281,14 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
 
     # pins: numbered teardrops, clustered ones fanned apart by rotation
     px = [project(lat, lon) for lat, lon in points]
+    keep_clear = []
     if px:
         R = 15 * SCALE
         angles = pin_angles(px, head_r=R)
         font = _font(round(17 * SCALE * SS))
         pin_col = (255, 255, 255) if ink_saver else accent
+        keep_clear = [_pin_box(x, y, R, ang, R * 0.22)
+                      for (x, y), ang in zip(px, angles)]
 
         def paint_pins(d, ss):
             for i, ((x, y), ang) in enumerate(zip(px, angles), start=1):
@@ -294,11 +300,23 @@ def render_map(all_coords, routes, points, accent, tiles_dir,
                 _pin(d, x * ss, y * ss, R * ss, text, font, accent, ang)
         img.alpha_composite(_ss_layer(img.size, paint_pins))
 
-    # the map's own place labels, composited last so they sit above route + pins
-    img.alpha_composite(stitch(LABELS_URL, "onlylabels"))
+    # the map's own place labels, drawn last so they sit above route + pins —
+    # and skipped where a pin already claims the space.
+    keep_clear.append(_attribution_box(img))
+    _draw_labels(img, place_labels, keep_clear)
 
     _attribution(img)
     return img.convert("RGB")
+
+
+def _attribution_box(img: Image.Image):
+    """Where :func:`_attribution` will sit, so no label is placed under it."""
+    d = ImageDraw.Draw(img)
+    af = _font(11 * SCALE)
+    bb = d.textbbox((0, 0), ATTRIBUTION, font=af)
+    w, h = bb[2] - bb[0], bb[3] - bb[1]
+    pad = 4 * SCALE
+    return (img.width - w - 2 * pad, img.height - h - 2 * pad, img.width, img.height)
 
 
 def _attribution(img: Image.Image) -> None:

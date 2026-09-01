@@ -12,6 +12,13 @@
 //
 // The style JSON, glyphs, sprite and tiles all live under *.basemaps.cartocdn.com
 // (CORS-open) and are cached CacheFirst by the service worker (see vite.config).
+//
+// VECTOR_TILE_URL below is now shared with the Python renderer: `maps/basemap.py`
+// rasterizes the *same* tiles for the PDF and for the static PNGs, because
+// Carto's pre-rendered raster tiles answer keyless requests with an "API KEY
+// REQUIRED" watermark. Keep the two templates identical — the service worker
+// caches by URL, so a tile this module prefetches is one the engine gets for
+// free, and vice versa. Both also cap at zoom 14 and overzoom past it.
 import type { StyleSpecification } from "maplibre-gl";
 
 const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
@@ -19,6 +26,15 @@ const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json
 const VECTOR_TILE_URL =
   "https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt";
 const MAX_ZOOM = 14;
+
+// Pinning the host means replacing the source's `url` (its TileJSON) with a bare
+// `tiles` template — and the TileJSON is the *only* place the style carries an
+// attribution, so it has to be restated here or MapLibre's attribution control
+// renders empty. Both credits are required: CARTO serves the tiles, OpenStreetMap
+// contributors are the data (the PDF stamps the same two in `maps/render.py`).
+const ATTRIBUTION =
+  '&copy; <a href="https://carto.com/about-carto/" target="_blank" rel="noopener">CARTO</a>, ' +
+  '&copy; <a href="https://www.openstreetmap.org/about/" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
 
 let styleTextPromise: Promise<string> | null = null;
 
@@ -39,6 +55,7 @@ export function cartoStyle(): Promise<StyleSpecification> {
             tiles: [VECTOR_TILE_URL],
             minzoom: 0,
             maxzoom: MAX_ZOOM,
+            attribution: ATTRIBUTION,
           };
         }
         return JSON.stringify(style);

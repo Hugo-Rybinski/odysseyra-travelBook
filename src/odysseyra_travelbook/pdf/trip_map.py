@@ -9,6 +9,9 @@ should stay in step.
 from __future__ import annotations
 
 import io
+import logging
+
+logger = logging.getLogger("odysseyra_travelbook.pdf")
 
 
 class TripMapMixin:
@@ -24,9 +27,10 @@ class TripMapMixin:
         try:
             from ..maps import render_trip_map
             img = render_trip_map(self.itinerary, self._map_cache(),
-                                  ink_saver=self.ink_saver)
+                                  ink_saver=self.ink_saver, lang=self.lang)
             self._map_cache().save()
-        except Exception:
+        except Exception as exc:
+            logger.warning("The whole-trip map failed (%s); the page is skipped.", exc)
             return
         if img is None:
             return

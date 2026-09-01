@@ -190,10 +190,14 @@ def test_route_no_route_is_not_retried(monkeypatch):
 
 
 def test_render_map_offline(monkeypatch, tmp_path):
-    """render_map produces an RGB image without network (tiles stubbed)."""
+    """render_map produces an RGB image without network (tiles stubbed).
+
+    An empty dict is a legitimate decoded tile — the ocean has no features — so
+    stubbing the fetch this way exercises the whole drawing path over a bare
+    background."""
     monkeypatch.setattr(
-        "odysseyra_travelbook.maps.render._fetch_tile",
-        lambda url, style, z, x, y, td: Image.new("RGBA", (512, 512), (240, 240, 240, 255)))
+        "odysseyra_travelbook.maps.basemap.fetch_tile",
+        lambda z, x, y, td: {})
     pts = [(43.09, -0.05), (43.10, -0.04)]
     img = render_map(pts, [pts], pts, (47, 107, 79), tmp_path)
     assert img.mode == "RGB" and img.width > 0 and img.height > 0
@@ -240,47 +244,43 @@ def test_fill_coordinates_adds_and_preserves():
 def test_fetch_tile_uses_http_get_seam(monkeypatch, tmp_path):
     """Tiles are fetched through the overridable odysseyra_travelbook.maps.http_get seam,
     so the browser (Pyodide, no sockets) can swap in a fetch-based transport."""
-    import io
-
     import odysseyra_travelbook.maps as maps
-    from odysseyra_travelbook.maps import render
+    from odysseyra_travelbook.maps import basemap
 
-    buf = io.BytesIO()
-    Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(buf, "PNG")
     seen = []
 
     def fake_http_get(url, timeout=20):
         seen.append(url)
-        return buf.getvalue()
+        return b""              # an empty tile still decodes — to nothing
 
     monkeypatch.setattr(maps, "http_get", fake_http_get)
-    img = render._fetch_tile(render.BASE_URL, "nolabels", 5, 1, 1, tmp_path)
-    assert seen and "cartocdn.com" in seen[0]
-    assert img.mode == "RGBA"
+    assert basemap.fetch_tile(5, 1, 1, tmp_path) == {}
+    assert seen and "cartocdn.com" in seen[0] and seen[0].endswith(".mvt")
+    # cached to disk as the wire bytes, so a second call needs no network
+    assert (tmp_path / "vec_5_1_1.mvt").exists()
+    assert basemap.fetch_tile(5, 1, 1, tmp_path) == {}
+    assert len(seen) == 1
 
 
 def test_tile_fetch_retries_transient_failures_but_not_a_4xx(monkeypatch, tmp_path):
     """A rate-limited tile is retried (one blip mid-stitch would otherwise cost
     the whole map), while a definitive 4xx fails straight away."""
-    import io
     import urllib.error
 
     import odysseyra_travelbook.maps as maps
-    from odysseyra_travelbook.maps import render
+    from odysseyra_travelbook.maps import basemap
 
-    monkeypatch.setattr(render.time, "sleep", lambda s: None)  # no real backoff
-    buf = io.BytesIO()
-    Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(buf, "PNG")
+    monkeypatch.setattr(basemap.time, "sleep", lambda s: None)  # no real backoff
     calls = []
 
     def flaky(url, timeout=20):
         calls.append(url)
         if len(calls) < 3:
             raise urllib.error.HTTPError(url, 429, "slow down", None, None)
-        return buf.getvalue()
+        return b""
 
     monkeypatch.setattr(maps, "http_get", flaky)
-    assert render._fetch_tile(render.BASE_URL, "nolabels", 6, 1, 1, tmp_path)
+    assert basemap.fetch_tile(6, 1, 1, tmp_path) == {}
     assert len(calls) == 3
 
     calls.clear()
@@ -291,7 +291,7 @@ def test_tile_fetch_retries_transient_failures_but_not_a_4xx(monkeypatch, tmp_pa
 
     monkeypatch.setattr(maps, "http_get", gone)
     with pytest.raises(urllib.error.HTTPError):
-        render._fetch_tile(render.BASE_URL, "nolabels", 6, 2, 2, tmp_path)
+        basemap.fetch_tile(6, 2, 2, tmp_path)
     assert len(calls) == 1
 
 
@@ -306,6 +306,87 @@ def test_geocode_uses_http_get_seam(monkeypatch):
         lambda url, timeout=20: b'[{"lat": "43.1", "lon": "-0.05"}]')
     cache = type("C", (), {"geocode": {}})()
     assert geocode.geocode("Somewhere", ["FR"], cache) == (43.1, -0.05)
+
+
+def test_geocode_caches_a_real_miss_but_never_a_transient_failure(monkeypatch):
+    """The distinction the cache turns on. "Nothing matches that text" is worth
+    remembering forever; "we couldn't ask" must not be — a coordinate that
+    failed once would otherwise stay missing in every later build, and a missing
+    coordinate is a missing pin, so enough of them silently cost a whole map."""
+    import urllib.error
+
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import geocode
+
+    monkeypatch.setattr(geocode.time, "sleep", lambda s: None)
+
+    # an empty result set is Nominatim answering: definitive, cached
+    monkeypatch.setattr(maps, "http_get", lambda url, timeout=20: b"[]")
+    cache = type("C", (), {"geocode": {}})()
+    assert geocode.geocode("an aire near Limoges", ["FR"], cache) is None
+    assert cache.geocode == {"an aire near Limoges|FR": None}
+
+    # a network/TLS blip is not an answer: retried, warned, and NOT remembered
+    calls = []
+
+    def flaky(url, timeout=20):
+        calls.append(url)
+        raise OSError("[SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer")
+
+    monkeypatch.setattr(maps, "http_get", flaky)
+    cache = type("C", (), {"geocode": {}})()
+    assert geocode.geocode("Sanctuary, Lourdes", ["FR"], cache) is None
+    assert len(calls) == geocode.GEOCODE_RETRIES      # retried, like OSRM
+    assert cache.geocode == {}                       # nothing poisoned
+
+    # …so once the blip passes, the very next call resolves it
+    monkeypatch.setattr(
+        maps, "http_get",
+        lambda url, timeout=20: b'[{"lat": "43.09", "lon": "-0.05"}]')
+    assert geocode.geocode("Sanctuary, Lourdes", ["FR"], cache) == (43.09, -0.05)
+
+
+def test_geocode_does_not_retry_a_definitive_4xx(monkeypatch):
+    """A malformed query is our fault and will fail identically three times."""
+    import urllib.error
+
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import geocode
+
+    monkeypatch.setattr(geocode.time, "sleep", lambda s: None)
+    calls = []
+
+    def bad(url, timeout=20):
+        calls.append(url)
+        raise urllib.error.HTTPError(url, 400, "bad request", None, None)
+
+    monkeypatch.setattr(maps, "http_get", bad)
+    cache = type("C", (), {"geocode": {}})()
+    assert geocode.geocode("???", [], cache) is None
+    assert len(calls) == 1
+    assert cache.geocode == {"???|": None}       # definitive, so remembered
+
+
+def test_geocode_survives_a_rate_limit_then_succeeds(monkeypatch):
+    """Nominatim's 429 is the transient case that actually happens in a build."""
+    import urllib.error
+
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import geocode
+
+    monkeypatch.setattr(geocode.time, "sleep", lambda s: None)
+    calls = []
+
+    def limited(url, timeout=20):
+        calls.append(url)
+        if len(calls) < 3:
+            raise urllib.error.HTTPError(url, 429, "slow down", None, None)
+        return b'[{"lat": "42.5", "lon": "76.0"}]'
+
+    monkeypatch.setattr(maps, "http_get", limited)
+    cache = type("C", (), {"geocode": {}})()
+    assert geocode.geocode("Karakol", ["KG"], cache) == (42.5, 76.0)
+    assert len(calls) == 3
 
 
 # -- area detail map: the night's-stay ★ only when inside the extent ---------

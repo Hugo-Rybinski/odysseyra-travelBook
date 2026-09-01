@@ -52,7 +52,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // was drawn from, which the "(Get GPX track)" button hands back. A v17-cached
 // day has none of them, and its numbering predates the road pins joining the
 // day's 1..N sequence.
-const SCHEMA_VERSION = 18;
+// v19: the static map images are drawn from Carto's **vector** tiles now, not
+// its pre-rendered raster ones (which answer keyless requests with an "API KEY
+// REQUIRED" watermark). No field changed shape — but a cached day carries the
+// rendered PNGs, so a v18 entry would keep handing back watermarked maps for an
+// itinerary whose JSON never moved. Exactly the case the hash can't catch.
+const SCHEMA_VERSION = 19;
 
 interface Entry {
   day: Day;
