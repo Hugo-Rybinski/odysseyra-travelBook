@@ -384,8 +384,24 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
-- **Contacts / emergency info** — an optional section for embassy, insurance,
-  host and per-country emergency numbers, rendered as its own page.
+- **Typed / grouped contacts** — the flat
+  [`misc.emergency_contacts`](file_format.md#miscemergency_contacts) list is
+  built (the book's last page, and the end of the viewer's Overview tab), but
+  every entry is an untyped `{name, contact}` pair. Giving a contact a *kind*
+  (embassy, insurer, host, local emergency number) would let both renderers
+  group the directory and let a per-country block be filled in from the
+  countries the trip actually visits.
+- **More `misc` reference lists** — the [`misc`](file_format.md#misc) group was
+  added precisely so trip-wide data with no place on the timeline has somewhere
+  to go, and it holds one list so far. Obvious neighbours: travel documents /
+  visa notes, a packing list, a phrasebook. Each is a new key in the group, a
+  spec table, a page or Overview block in each renderer — no new top-level
+  section.
+- **A configurable map tile source** — `maps/render.py` hard-codes Carto
+  Positron, which now answers unkeyed requests with watermarked tiles, so every
+  rendered map carries an "API KEY REQUIRED" stamp. The provider (and its key)
+  wants to be a `defaults` field plus an env var, the way the cache directory
+  already is, so a trip can be drawn from whichever source you have access to.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.
