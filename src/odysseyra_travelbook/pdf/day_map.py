@@ -10,6 +10,13 @@ from .base import FONT
 
 logger = logging.getLogger("odysseyra_travelbook.pdf")
 
+# The inline pin disc: its diameter, and the horizontal room it takes including
+# the gap to the text it labels. Published because a caller that wants to place
+# a disc *inside* a line (see `_route_with_pins`) has to measure the line before
+# drawing any of it.
+PIN_D = 4.8
+PIN_DISC_W = PIN_D + 1.8
+
 
 class DayMapMixin:
     def _maps_enabled(self) -> bool:
@@ -43,14 +50,60 @@ class DayMapMixin:
     def _pin_disc(self, x: float, y: float, label: str) -> float:
         """A small accent disc with the pin label (matching the map pins),
         drawn inline before an activity title. Returns its width incl. a gap."""
-        d = 4.8
+        d = PIN_D
         self.set_fill_color(*self.accent)
         self.ellipse(x, y, d, d, style="F")
         self.set_font(FONT, "B", 7)
         self.set_text_color(255, 255, 255)
         self.set_xy(x, y)
         self.cell(d, d, str(label), align="C")  # centered in the disc (h=d)
-        return d + 1.8
+        return PIN_DISC_W
+
+    def _route_width(self, ends, *, sep: str, size: float, style: str,
+                     lead: str = "") -> float:
+        """The width :meth:`_route_with_pins` would draw ``ends`` in. Separate
+        from the drawing so a caller can decide whether the whole route fits one
+        line *before* committing any of it to the page (the disc is drawn as it
+        goes, so there is no backing out halfway)."""
+        self.set_font(FONT, style, size)
+        pad = 2 * self.c_margin  # a cell's own left+right inner padding
+        total = self.get_string_width(lead) + pad if lead else 0.0
+        for i, (pin, name) in enumerate(ends):
+            if pin:
+                total += PIN_DISC_W
+            text = name if i == len(ends) - 1 else name + sep
+            total += self.get_string_width(text) + pad
+        return total
+
+    def _route_with_pins(self, x: float, y: float, ends, *, sep: str, h: float,
+                         size: float, style: str, color, lead: str = "") -> float:
+        """``(1) Amboise  →  (4) Sarlat-la-Canéda`` — a route on one line with
+        each end's map pin **beside the name it labels**, not bunched at the
+        front. A pin number exists to point at one place, so a route with two
+        pinned ends needs two discs in the right two spots; the alternative
+        (both discs leading the line) reads as if they both belonged to the
+        departure.
+
+        ``ends`` is ``[(pin | None, name), …]`` and ``lead`` an optional prefix
+        (the VIA list's bullet). Returns the x it ended at. ``_pin_disc`` sets
+        its own font and colour, so both are re-applied for every text run."""
+        tx = x
+
+        def run(text: str) -> None:
+            nonlocal tx
+            self.set_font(FONT, style, size)
+            self.set_text_color(*color)
+            self.set_xy(tx, y)
+            self.cell(self.get_string_width(text) + 2 * self.c_margin, h, text)
+            tx = self.get_x()
+
+        if lead:
+            run(lead)
+        for i, (pin, name) in enumerate(ends):
+            if pin:
+                tx += self._pin_disc(tx, y + (h - PIN_D) / 2, pin)
+            run(name if i == len(ends) - 1 else name + sep)
+        return tx
 
     def pin_label(self, act):
         """The pin label (number, area letter or '*') for ``act``, if it has one."""

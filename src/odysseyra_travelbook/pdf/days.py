@@ -314,14 +314,15 @@ class DayMixin:
                 self.cell(gw, 3.5, elbl, align="C")
 
         num = self.pin_label(act)
-        tx, tw = x, detail_w
-        if num:
-            wd = self._pin_disc(x, top + 0.6, num)
-            tx, tw = x + wd, detail_w - wd
-        self.set_xy(tx, top)
-        self.set_font(FONT, "B", 11)
-        self.set_text_color(*INK)
-        self.multi_cell(tw, 6, act.title)
+        if not self._road_title(act, x, detail_w, top, num):
+            tx, tw = x, detail_w
+            if num:
+                wd = self._pin_disc(x, top + 0.6, num)
+                tx, tw = x + wd, detail_w - wd
+            self.set_xy(tx, top)
+            self.set_font(FONT, "B", 11)
+            self.set_text_color(*INK)
+            self.multi_cell(tw, 6, act.title)
 
         # Type-specific details.
         getattr(self, f"_details_{act.kind}")(act, x, detail_w)
@@ -515,6 +516,37 @@ class DayMixin:
             return self.t("MEAL")
         return self.t("ROAD") if act.kind == "road" else self.t("HIKE")
 
+    def _road_title(self, act, x: float, w: float, top: float, dep_pin) -> bool:
+        """A drive's title with a disc beside **each** end it pins —
+        ``(1) Amboise → (4) Sarlat-la-Canéda``.
+
+        Every other activity is one place, so one disc leads its title; a drive
+        is two, and the arrival's number has to sit next to the arrival or it
+        reads as a second label on the departure. Returns ``False`` — leaving the
+        plain single-disc ``multi_cell`` to the caller — for anything that isn't
+        a drive with a pinned, named arrival, and for a route too long to fit
+        one line (a disc can't be drawn mid-wrap). The viewer's `ActivityTitle`
+        is the same rule; keep the two in step."""
+        if getattr(act, "kind", "") != "road":
+            return False
+        legs = road_display_legs(act.start, act.waypoints)
+        arr_wp = legs[-1][4] if legs else None
+        # Only named waypoints are ever pinned, so an unnamed arrival (a
+        # trailing run of shaping points) falls through here on its own.
+        arr_pin = self.pin_label(arr_wp) if arr_wp is not None else None
+        dest = legs[-1][1] if legs else ""
+        if not arr_pin or not act.start or not dest:
+            return False
+        ends = ((dep_pin, act.start), (arr_pin, dest))
+        opts = dict(sep="  →  ", size=11, style="B")
+        if self._route_width(ends, **opts) > w:
+            return False
+        self._route_with_pins(x, top, ends, h=6, color=INK, **opts)
+        # match the `multi_cell` this stands in for: one line consumed, cursor
+        # back at the left margin (`_meta_line` and friends re-set x, not y).
+        self.set_xy(self.l_margin, top + 6)
+        return True
+
     def _details_road(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.distance_km is not None:
@@ -540,9 +572,15 @@ class DayMixin:
 
     def _road_waypoints(self, x: float, w: float, road) -> None:
         """The drive's legs, listed under a small 'VIA' header in a lower
-        (lightened) accent — each row reads 'previous → this waypoint', with that
-        leg's duration / distance in muted text, its map pin when it has one, and
-        a Navigate link to the leg's destination.
+        (lightened) accent — each row reads 'previous → this waypoint', with each
+        end's map pin beside the name it labels, that leg's duration / distance
+        in muted text, and a Navigate link to the leg's destination.
+
+        A junction is one place written twice — it ends one leg and starts the
+        next — so its disc appears on both rows: read down the list, the numbers
+        chain ``(1)→(2)``, ``(2)→(3)``, ``(3)→(4)`` and every one of them sits
+        against its own town. The first row's departure pin comes from the road
+        itself, which is where the day map's numbering puts it.
 
         Hidden for a road with a single leg (a plain departure→arrival), since
         the title already shows it — *unless* that leg's arrival carries a map
@@ -554,24 +592,24 @@ class DayMixin:
                 for _s, _d, _dur, _dist, wp, _off in legs]
         if len(legs) <= 1 and not any(pins):
             return
+        # A leg's departure is the previous leg's arrival; the first one's is the
+        # road's own pin (the label `pin_label(road)` carries).
+        src_pins = [self.pin_label(road), *pins[:-1]]
         low_accent = _tint(self.accent, 0.4)
         self.ln(1)
         self.set_x(x)
         self.set_font(FONT, "B", 8)
         self.set_text_color(*low_accent)
         self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
-        for (src, dest, dur_min, dist_km, dest_wp, off_road), pin in zip(legs, pins):
+        for (src, dest, dur_min, dist_km, dest_wp, off_road), pin, src_pin in zip(
+                legs, pins, src_pins):
             self._ensure_room(6)
             row_y = self.get_y()
-            tx = x + 3
-            if pin:
-                # the arrival's own pin, before the row it labels
-                tx += self._pin_disc(tx, row_y + 0.2, pin)
-            self.set_xy(tx, row_y)  # _pin_disc moved the cursor; put it back
-            self.set_font(FONT, "", 9)
-            self.set_text_color(*low_accent)
-            label = f"•  {src or '?'}  →  {dest or self.t('arrival')}"
-            self.cell(self.get_string_width(label) + 1, 5, label)
+            ends = ((src_pin, src or "?"), (pin, dest or self.t("arrival")))
+            tx = self._route_with_pins(x + 3, row_y, ends, sep="  →  ", h=5,
+                                       size=9, style="", color=low_accent,
+                                       lead="•  ")
+            self.set_xy(tx, row_y)  # the discs moved the cursor; put it back
             meta = []
             if dur_min is not None:
                 meta.append(_format_duration(dur_min))

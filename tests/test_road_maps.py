@@ -225,9 +225,10 @@ def test_a_leg_gpx_neither_fills_nor_silences_the_figures_warning():
 
 # -- the PDF's leg list ------------------------------------------------------
 
-def _via_rows(document, pins=None):
-    """The rows `_road_waypoints` draws for the document's road, as text. `pins`
-    maps a waypoint's location to the pin label the rendered map gave it."""
+def _pdf_for(document, pins=None, road_pin=None):
+    """A `TravelPDF` on a blank page, with `pin_label` stubbed: `pins` maps a
+    waypoint's location to the label the rendered map gave it, and `road_pin` is
+    the road's own (its departure's)."""
     from odysseyra_travelbook.pdf import TravelPDF
 
     it = Itinerary.from_dict(document)
@@ -235,12 +236,47 @@ def _via_rows(document, pins=None):
     pdf = TravelPDF(it, "en", False, "google")
     pdf.add_page()
     labels = {id(wp): (pins or {}).get(wp.location) for wp in road.waypoints}
+    labels[id(road)] = road_pin
     pdf.pin_label = lambda obj: labels.get(id(obj))
-    rows, discs = [], []
-    pdf.cell = lambda w, h=0, text="", *a, **k: rows.append(text)
-    pdf._pin_disc = lambda x, y, label: discs.append(label) or 6.0
+    return pdf, road
+
+
+def _transcribe(pdf):
+    """Capture what `pdf` draws as a flat list of pieces, a pin disc coming
+    through as ``(label)``. A route is drawn as a run of cells with the discs
+    between them, so what the reader sees is the concatenation — hence the
+    transcript rather than one string per `cell` call. Returns
+    ``(pieces, discs)``."""
+    pieces, discs = [], []
+
+    def disc(x, y, label):
+        pieces.append(f"({label})")
+        discs.append(label)
+        return 6.0
+
+    pdf.cell = lambda w, h=0, text="", *a, **k: pieces.append(text)
+    pdf.multi_cell = lambda w, h=0, text="", *a, **k: pieces.append(text)
+    pdf._pin_disc = disc
+    return pieces, discs
+
+
+def _via_rows(document, pins=None, road_pin=None):
+    """The rows `_road_waypoints` draws for the document's road, one string each
+    (split on the bullet that leads every row)."""
+    pdf, road = _pdf_for(document, pins, road_pin)
+    pieces, discs = _transcribe(pdf)
     pdf._road_waypoints(pdf.l_margin, pdf.content_width, road)
-    return [r for r in rows if r.strip()], discs
+    text = "".join(pieces)
+    rows = [f"•{r}".strip() for r in text.split("•")[1:]]
+    return rows, discs
+
+
+def _title(document, pins=None, road_pin=None):
+    """The two-ended title `_road_title` draws for the document's road."""
+    pdf, road = _pdf_for(document, pins, road_pin)
+    pieces, _discs = _transcribe(pdf)
+    assert pdf._road_title(road, pdf.l_margin, pdf.content_width, 20.0, road_pin)
+    return "".join(pieces).strip()
 
 
 def test_a_one_leg_drive_lists_its_leg_only_once_it_is_pinned():
@@ -252,15 +288,36 @@ def test_a_one_leg_drive_lists_its_leg_only_once_it_is_pinned():
 
     rows, discs = _via_rows(doc(legs=[LEG_AB], display_end_on_maps=True),
                             pins={"B": "2"})
-    assert any("A" in r and "B" in r for r in rows)
+    assert len(rows) == 1 and "A" in rows[0] and "B" in rows[0]
     assert discs == ["2"]                  # the arrival's pin, beside its name
 
 
-def test_each_pinned_leg_row_carries_its_own_disc():
+def test_each_leg_row_pins_both_of_its_ends():
+    """A junction ends one leg and starts the next, so its disc shows on both
+    rows — the numbers chain (2)→(3) and each sits against its own name, rather
+    than one disc leading a row that names two places."""
     rows, discs = _via_rows(doc(display_intermediate_point_on_maps=True),
-                            pins={"B": "2", "C": "3"})
+                            pins={"B": "2", "C": "3"}, road_pin="1")
     assert len([r for r in rows if "→" in r]) == 3   # three legs, three rows
-    assert discs == ["2", "3"]                       # D is not pinned
+    assert rows[0].startswith("•  (1)A") and "(2)B" in rows[0]
+    assert rows[1].startswith("•  (2)B") and "(3)C" in rows[1]
+    assert rows[2].startswith("•  (3)C") and "D" in rows[2]
+    # D is unpinned, so the last row's arrival carries no disc
+    assert discs == ["1", "2", "2", "3", "3"]
+
+
+def test_the_road_title_pins_both_ends_when_the_arrival_is_pinned():
+    """`(1) Amboise → (4) Sarlat` — the arrival's number belongs beside the
+    arrival. Mirrors the viewer's `ActivityTitle`."""
+    assert _title(doc(display_end_on_maps=True), pins={"D": "4"},
+                  road_pin="1") == "(1)A  →  (4)D"
+
+
+def test_the_road_title_stays_a_plain_line_without_an_arrival_pin():
+    """Nothing to split: one disc leads the title, as for every other activity
+    (which is also what a road with an *unnamed* arrival falls back to)."""
+    pdf, road = _pdf_for(doc(display_start_on_maps=True), road_pin="1")
+    assert pdf._road_title(road, pdf.l_margin, pdf.content_width, 20.0, "1") is False
 
 
 # -- building a GPX for a leg that has none ----------------------------------

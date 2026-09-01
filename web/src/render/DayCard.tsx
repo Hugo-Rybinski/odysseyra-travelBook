@@ -42,9 +42,45 @@ function MapFigure({ rendered, caption }: { rendered: RenderedMap; caption: stri
 
 // The small accent disc carrying an activity's map-pin label (number / area
 // letter / ★ stay), shown inline before its title — mirroring the PDF's pin discs.
-function PinDisc({ label }: { label: string | null | undefined }) {
+// `mid` marks a disc that sits *inside* a line rather than leading it (a drive's
+// arrival, in the title and in the VIA rows): it needs a gap on its left as well
+// as the right one every disc has, and in `.act-title` — a flex row — the space
+// in the text before it is collapsed away, so the margin is the only thing left.
+function PinDisc({ label, mid }: { label: string | null | undefined; mid?: boolean }) {
   if (!label) return null;
-  return <span className="pin-disc" aria-hidden>{label}</span>;
+  return (
+    <span className={mid ? "pin-disc pin-disc-mid" : "pin-disc"} aria-hidden>
+      {label}
+    </span>
+  );
+}
+
+// An activity's title, led by its map-pin disc.
+//
+// A drive is the one activity that is *two* places, so when it pins its arrival
+// as well the discs split to sit beside the names they label —
+// `(1) Amboise → (4) Sarlat-la-Canéda`. Both leading the line would read as two
+// labels on the departure. Mirrors pdf/days.py's `_road_title`; keep in step.
+function ActivityTitle({ act }: { act: Activity }) {
+  const legs = act.type === "road" ? roadLegs(act.start ?? "", act.waypoints ?? []) : [];
+  const arrival = legs.length ? legs[legs.length - 1] : null;
+  // Only a *named* arrival is ever pinned, so an unnamed one falls through to
+  // the plain title on its own.
+  if (arrival?.destPin && act.start && arrival.dest)
+    return (
+      <>
+        <PinDisc label={act.map_pin} />
+        {`${act.start} → `}
+        <PinDisc label={arrival.destPin} mid />
+        {arrival.dest}
+      </>
+    );
+  return (
+    <>
+      <PinDisc label={act.map_pin} />
+      {act.title}
+    </>
+  );
 }
 
 // Placeholder shown in the map's slot while that day's map is still being built
@@ -375,8 +411,7 @@ function ActivityRow({
       />
       <div className="act-body">
         <div className="act-title">
-          <PinDisc label={act.map_pin} />
-          {act.title}
+          <ActivityTitle act={act} />
           {act.type === "road" && (act.off_road || singleLegOffRoad(act)) && (
             <span className="chip outline">{tr(lang, "offRoad")}</span>
           )}
@@ -385,7 +420,13 @@ function ActivityRow({
           )}
           <ForecastChip act={act} lang={lang} />
         </div>
-        <ActivityDetails act={act} lang={lang} nav={nav} />
+        <ActivityDetails
+          act={act}
+          lang={lang}
+          nav={nav}
+          dayIndex={dayIndex}
+          roadIndex={roadIndex}
+        />
         {act.type === "road" && (
           <RoadVia act={act} lang={lang} dayIndex={dayIndex} roadIndex={roadIndex} />
         )}
@@ -447,7 +488,19 @@ function Opening({ act, lang }: { act: Activity; lang: Lang }) {
   );
 }
 
-function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: string }) {
+function ActivityDetails({
+  act,
+  lang,
+  nav,
+  dayIndex,
+  roadIndex,
+}: {
+  act: Activity;
+  lang: Lang;
+  nav: string;
+  dayIndex?: number;
+  roadIndex?: number;
+}) {
   const bits: string[] = [];
 
   if (act.type === "road") {
@@ -508,6 +561,30 @@ function ActivityDetails({ act, lang, nav }: { act: Activity; lang: Lang; nav: s
   // links (renders nothing for every other activity).
   if (act.type === "hike" && act.track?.gpx)
     chips.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
+  // A drive's GPX normally sits on its leg's VIA row — but a plain one-leg
+  // drive draws no VIA list, so the link had nowhere to go and simply vanished.
+  // It is promoted to the road's own line instead, the same way a single leg's
+  // off-road flag is promoted to the road's chip. (Only when there really is no
+  // VIA row: a one-leg drive with a pinned arrival gets one, and would
+  // otherwise offer the file twice.)
+  if (act.type === "road") {
+    const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
+    if (legs.length === 1 && !legs[0].destPin) {
+      if (legs[0].gpx)
+        chips.push(
+          <GpxDownload
+            key="gpx"
+            base64={legs[0].gpx}
+            name={legs[0].dest || act.title}
+            lang={lang}
+          />,
+        );
+      else if (dayIndex != null && roadIndex != null)
+        chips.push(
+          <GpxBuildLink key="gpx" dayIndex={dayIndex} roadIndex={roadIndex} legIndex={0} lang={lang} />,
+        );
+    }
+  }
 
   if (!chips.length && !trail && !description && !guidebook && !act.opening) return null;
   return (
@@ -541,9 +618,13 @@ function singleLegOffRoad(act: Activity): boolean {
   return legs.length === 1 && legs[0].offRoad;
 }
 
-// The VIA breakdown for a multi-leg drive: one row per leg with its own map pin,
-// duration/distance, a Navigate link and — when the leg was recorded — the GPX it
-// was drawn from.
+// The VIA breakdown for a multi-leg drive: one row per leg carrying both ends'
+// map pins, its duration/distance, a Navigate link and — when the leg was
+// recorded — the GPX it was drawn from.
+//
+// A junction is one place written twice (it ends one leg and starts the next),
+// so its disc shows on both rows and the numbers chain (1)→(2), (2)→(3) …, each
+// beside the town it names.
 //
 // A single-leg drive normally shows nothing here (its title says the same
 // thing), but a pinned arrival needs a row to be read against: a pin number is
@@ -561,7 +642,7 @@ function RoadVia({
   roadIndex?: number;
 }) {
   const provider = useMapProvider();
-  const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
+  const legs = roadLegs(act.start ?? "", act.waypoints ?? [], act.map_pin ?? null);
   if (legs.length <= 1 && !legs.some((l) => l.destPin)) return null;
   return (
     <div className="via">
@@ -574,18 +655,18 @@ function RoadVia({
         const nav = navUrl(provider, leg.destCoord, leg.dest ?? "");
         return (
           <p key={i} className="via-leg">
-            <PinDisc label={leg.destPin} />
             <span className="via-route">
-              {leg.src || "?"} → {leg.dest || "?"}
+              <PinDisc label={leg.srcPin} />
+              {`${leg.src || "?"} → `}
+              <PinDisc label={leg.destPin} mid />
+              {leg.dest || "?"}
             </span>
             {meta.length > 0 && <span className="via-meta">{meta.join("  ·  ")}</span>}
             {/* the same small chip the road-level flag uses, on the rough leg */}
             {leg.offRoad && <span className="chip outline">{tr(lang, "offRoad")}</span>}
-            {nav && (
-              <a className="link" href={nav} target="_blank" rel="noreferrer">
-                {tr(lang, "navigate")}
-              </a>
-            )}
+            {/* the shared NavLink, so this row's links match the ones on every
+                other activity — and the GPX buttons sitting right beside it */}
+            {nav && <NavLink lang={lang} href={nav} />}
             {/* the file this leg carries, or — for a leg with none — one the
                 app builds from the drawn route, which says so in its label */}
             {leg.gpx ? (

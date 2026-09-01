@@ -383,13 +383,38 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     `act.map_pin` needed no new plumbing — and each pinned waypoint carries its
     own, which is why `serialize.py`'s `_waypoint` gained `map_pin` and
     `bridge.py`'s `_stamp_pins` now walks the waypoints too. A disc sits **beside
-    the name it labels**: the departure's on the road's title, each arrival's on
-    that leg's row — which is why a **one-leg** drive whose arrival is pinned
-    prints its leg row after all (`_road_waypoints` / `RoadVia` both switch on
-    `len(legs) > 1 or any pin`), a bare number being unreadable. `show_on_map:
-    false` still suppresses a pin. The whole-trip map is deliberately untouched:
-    a pin there carries the **day**, not the stop, and `tripGeo.ts`'s model
-    fallback already draws every named road point.
+    the name it labels**, which for a drive means *inside* the line rather than
+    leading it — a road is the one activity that is two places, so with all three
+    switches on a day reads
+
+    ```
+    (1) Amboise → (4) Sarlat-la-Canéda
+    4h · 345 km
+    VIA
+    •  (1) Amboise → (2) Poitiers
+    •  (2) Poitiers → (3) Limoges
+    •  (3) Limoges → (4) Sarlat-la-Canéda
+    ```
+
+    A junction is one place written twice — it ends one leg and starts the next —
+    so its disc appears on **both** rows and the numbers chain down the list; a
+    row's departure pin is the previous row's arrival pin, the first one's being
+    the road's own (`pin_label(road)` / `act.map_pin`). Bunching the discs at the
+    front of a line was the old shape and read as several labels on one place.
+    Drawing a disc mid-line is what `pdf/day_map.py`'s `_route_with_pins` (+
+    `_route_width`, which has to measure the whole line *before* the first disc
+    goes down) and `days.py`'s `_road_title` exist for: the title falls back to
+    the plain one-disc `multi_cell` for anything that isn't a drive with a pinned
+    named arrival, and for a route too long for one line — a disc can't be drawn
+    mid-wrap. The viewer's twins are `ActivityTitle` and `RoadVia` plus the
+    `pin-disc-mid` class (`.act-title` is a flex row, so the space at the end of
+    `"Amboise → "` is collapsed and the margin is all that's left). This is also
+    why a **one-leg** drive whose arrival is pinned prints its leg row after all
+    (`_road_waypoints` / `RoadVia` both switch on `len(legs) > 1 or any pin`), a
+    bare number being unreadable. `show_on_map: false` still suppresses a pin.
+    The whole-trip map is deliberately untouched: a pin there carries the
+    **day**, not the stop, and `tripGeo.ts`'s model fallback already draws every
+    named road point.
   - **A leg may carry a `gpx`** — stored exactly like a hike's (base64, gzip
     tolerated, `models/gpx.py`) but used for one thing only: `maps/build.py`'s
     `_road_route` draws **that leg** from the recording instead of routing it, so
@@ -403,6 +428,15 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     where the line lives. The viewer alone offers it back — `GpxDownload` (the
     hike's button, generalized to a base64 + a filename) on the leg's row — the
     same paper-can't-download divergence.
+    - **A one-leg drive draws no VIA row, so its GPX links are promoted to the
+      road's own chips line** — beside `(Navigate)`, exactly where a hike's
+      `(Get GPX track)` sits. Without that they were simply absent for the
+      commonest road there is: the links hang off the leg, and a plain A → B
+      drive has no leg row to hang them on (the same reasoning that promotes a
+      single leg's `off_road` to the road's chip). `ActivityDetails` promotes
+      only when there is genuinely no row — `legs.length === 1 &&
+      !legs[0].destPin` — since a one-leg drive with a *pinned* arrival does get
+      one, and would otherwise offer the file twice. No PDF twin, as above.
   - **A leg with no recording can have one built on demand.** The other link on
     that row, `(Build GPX file)` (`GpxBuildLink`) — deliberately worded apart
     from `(Get GPX track)`, since this file didn't exist until the click — asks
@@ -410,7 +444,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     `RouteGpxContext` (provided by `App.tsx`, bound to the text the preview was
     resolved from, mirroring the Edit tab's geocode context) → `buildLegGpx` →
     the `legGpx` op → `bridge.leg_gpx` → `maps/build.py`'s `road_leg_geometry` +
-    `models/gpx_export.py`'s `route_gpx`. Three things are load-bearing:
+    `models/gpx_export.py`'s `route_gpx`. Both GPX buttons are styled as the
+    inline links they sit among (`.link .gpx-link`, weight 600), so the VIA row's
+    Navigate uses the shared `NavLink` (`.link .nav-inline`, and the `(Navigate)`
+    parentheses the rest of the book prints) rather than a bare `.link` of its
+    own — otherwise the row's three links came out in two different weights and
+    only two of the three were parenthesized. Three things are load-bearing:
     - **A `<rte>`, not a `<trk>`.** The geometry was computed, so writing it as a
       track would hand a GPS a recording that never happened —
       `models/gpx_export.py` exists to keep that distinction (and is where the

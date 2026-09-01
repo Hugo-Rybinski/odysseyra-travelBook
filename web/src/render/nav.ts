@@ -101,7 +101,11 @@ export interface RoadLeg {
   distanceKm: number | null;
   destCoord: Coordinate | null;
   offRoad: boolean;
-  // the arrival's map pin, when the road asked for pins on its own points
+  // the two ends' map pins, when the road asked for pins on its own points. A
+  // junction is one place written twice, so it is the previous leg's `destPin`
+  // and this one's `srcPin` — each row then carries the number of the town it
+  // names (see pdf/days.py's `_road_waypoints`).
+  srcPin: string | null;
   destPin: string | null;
   // the leg's recorded track (base64), when one was attached — offered for
   // download on the leg's row; the drawn route already comes from it
@@ -112,7 +116,14 @@ export interface RoadLeg {
 // pdf.days.road_display_legs: unnamed (route-shaping) waypoints merge forward
 // into the next named leg, summing their duration/distance and OR-ing their
 // off_road flag.
-export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
+//
+// `startPin` is the road's own map pin — the departure's label — which seeds the
+// first leg's `srcPin`; pass it whenever the pins are going to be drawn.
+export function roadLegs(
+  start: string,
+  waypoints: Waypoint[],
+  startPin: string | null = null,
+): RoadLeg[] {
   const legs: RoadLeg[] = [];
   let prev = start;
   let dur = 0;
@@ -123,6 +134,7 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
   let coord: Coordinate | null = null;
   let off = false;
   let pin: string | null = null;
+  let srcPin: string | null = startPin;
   let gpx: string | null = null;
 
   const flush = (dest: string | null) => {
@@ -133,10 +145,12 @@ export function roadLegs(start: string, waypoints: Waypoint[]): RoadLeg[] {
       distanceKm: hasDist ? dist : null,
       destCoord: coord,
       offRoad: off,
+      srcPin,
       destPin: pin,
       gpx,
     });
     prev = dest ?? prev;
+    srcPin = pin; // this arrival is the next leg's departure
     dur = 0;
     dist = 0;
     hasDur = false;

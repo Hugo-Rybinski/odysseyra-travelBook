@@ -1356,6 +1356,14 @@ body {
   line-height: 1;
   vertical-align: middle;
 }
+/* A disc drawn mid-line rather than leading one — a drive's arrival, in
+   `(1) Amboise → (4) Sarlat`. It mirrors the disc's own right-hand gap so the
+   number is spaced the same from the arrow before it and the name after it. In
+   `.act-title` that margin is doing all the work: the row is a flex container,
+   so the space at the end of "Amboise → " is collapsed away. */
+.pin-disc-mid {
+  margin-left: 6px;
+}
 /* vertically center the disc against the title text */
 .act-title,
 .stay-line span {
@@ -1670,14 +1678,21 @@ body {
 .via-route {
   color: var(--fg);
 }
-/* A leg's own map pin, when the road asked for pins on its points. The row's
-   flex gap already spaces it, and its type is smaller than a title's, so the
-   disc shrinks to match. */
+/* The legs' map pins, when the road asked for pins on its points. They sit
+   *inside* the route text — one before each end, beside the name it labels — so
+   each keeps a small gap of its own (the row's flex gap only separates the row's
+   top-level parts). Smaller than a title's disc, to match the smaller type. */
 .via-leg .pin-disc {
-  margin-right: 0;
+  margin-right: 4px;
   min-width: 1.35em;
   height: 1.35em;
   font-size: 0.7rem;
+}
+/* …and no left margin on the arrival's disc here: unlike `.act-title`, this row
+   is ordinary inline flow, so the space after "Amboise → " survives and already
+   matches the 4px on the disc's other side. */
+.via-leg .pin-disc-mid {
+  margin-left: 0;
 }
 /* Bullet each leg of a road (RoadVia renders for 2+ legs, or for one that
    carries a map pin). */
