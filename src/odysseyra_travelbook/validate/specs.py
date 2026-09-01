@@ -324,7 +324,23 @@ ACTIVITY_SPECS = {
              V_BOOL),
         Spec("display_intermediate_point_on_maps", False,
              "whether each junction between two legs gets a numbered map pin",
-             "true or false", "false (the drive is drawn as a route only)",
+             "true or false",
+             "true (splitting the drive there is what says the junction "
+             "matters — set it false to leave the junctions unpinned)",
+             V_BOOL),
+        Spec("same_start_as_previous_activity", False,
+             "whether the drive departs from the previous activity's place — the "
+             "first leg may then leave out its 'start_location' / "
+             "'start_coordinate', and the departure shares that activity's map "
+             "pin instead of taking a number of its own",
+             "true or false", "false (the drive states its own departure)",
+             V_BOOL),
+        Spec("same_end_as_next_activity", False,
+             "whether the drive arrives at the next activity's place — the last "
+             "leg may then leave out its 'end_location' / 'end_coordinate', and "
+             "the arrival shares that activity's map pin instead of taking a "
+             "number of its own",
+             "true or false", "false (the drive states its own arrival)",
              V_BOOL),
         Spec("description", False, "anything about the drive the other fields "
              "don't cover", "any text", '""'),
@@ -405,6 +421,10 @@ ACTIVITY_SPECS = {
 # whichever endpoint its neighbour states — so the defaults quoted below are what
 # an omitted one falls back to. The departure coordinate is the one point that
 # stays optional throughout: with maps on it is geocoded from the name.
+#
+# The road's `same_start_as_previous_activity` / `same_end_as_next_activity`
+# reopen the two ends the chain can't: the outer endpoint then inherits from the
+# neighbouring *activity* instead of a neighbouring leg.
 ROAD_LEG_SPECS = [
     Spec("start_location", False, "where this hop departs from", "any text",
          "the previous leg's 'end_location'"),

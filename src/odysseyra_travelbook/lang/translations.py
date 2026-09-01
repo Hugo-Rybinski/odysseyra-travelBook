@@ -266,6 +266,50 @@ _FR = {
         "« end_coordinate » de l'étape précédente — un trajet ne peut pas sauter "
         "de l'un à l'autre, et c'est celui de l'étape précédente qui est "
         "utilisé.",
+    "'same_start_as_previous_activity' is set on the day's first activity — "
+    "there is no previous activity to take the departure from.":
+        "« same_start_as_previous_activity » est activé sur la première activité "
+        "de la journée — il n'y a pas d'activité précédente d'où prendre le "
+        "départ.",
+    "'same_start_as_previous_activity' is set, but the previous activity "
+    "({other}) names no place to depart from — give it a name, or the first leg "
+    "a 'start_location'.":
+        "« same_start_as_previous_activity » est activé, mais l'activité "
+        "précédente ({other}) ne nomme aucun lieu de départ — donnez-lui un nom, "
+        "ou donnez un « start_location » à la première étape.",
+    "'display_start_on_maps' adds nothing here: "
+    "'same_start_as_previous_activity' is on, so the departure wears the "
+    "previous activity's own pin rather than a second number for the same "
+    "place.":
+        "« display_start_on_maps » n'ajoute rien ici : "
+        "« same_start_as_previous_activity » est activé, donc le départ porte "
+        "l'épingle de l'activité précédente plutôt qu'un second numéro pour le "
+        "même lieu.",
+    "'same_end_as_next_activity' is set on the day's last activity — there is "
+    "no next activity to take the arrival from.":
+        "« same_end_as_next_activity » est activé sur la dernière activité de la "
+        "journée — il n'y a pas d'activité suivante d'où prendre l'arrivée.",
+    "'same_end_as_next_activity' is set, but the next activity ({other}) names "
+    "no place to arrive at — give it a name, or the last leg an 'end_location'.":
+        "« same_end_as_next_activity » est activé, mais l'activité suivante "
+        "({other}) ne nomme aucun lieu d'arrivée — donnez-lui un nom, ou donnez "
+        "un « end_location » à la dernière étape.",
+    "'same_end_as_next_activity' is set, but the next activity ({other}) has no "
+    "'coordinate' — a drive's arrival is a point on its route, so it has to be "
+    "located. Give that activity a coordinate, or the last leg an "
+    "'end_coordinate'.":
+        "« same_end_as_next_activity » est activé, mais l'activité suivante "
+        "({other}) n'a pas de « coordinate » — l'arrivée d'un trajet est un "
+        "point de son itinéraire, elle doit donc être localisée. Donnez une "
+        "coordonnée à cette activité, ou un « end_coordinate » à la dernière "
+        "étape.",
+    "'display_end_on_maps' adds nothing here: 'same_end_as_next_activity' is "
+    "on, so the arrival wears the next activity's own pin rather than a second "
+    "number for the same place.":
+        "« display_end_on_maps » n'ajoute rien ici : "
+        "« same_end_as_next_activity » est activé, donc l'arrivée porte "
+        "l'épingle de l'activité suivante plutôt qu'un second numéro pour le "
+        "même lieu.",
     "field '{name}' is no longer read on a road — {where}.":
         "le champ « {name} » n'est plus lu sur une route — {where}.",
     "move it to the first leg's 'start_location'":
@@ -624,6 +668,44 @@ _FR = {
         "la carte",
     "false (the drive is drawn as a route only)":
         "false (le trajet n'est dessiné que comme un itinéraire)",
+    "true (splitting the drive there is what says the junction matters — set it "
+    "false to leave the junctions unpinned)":
+        "true (découper le trajet à cet endroit est précisément ce qui dit que "
+        "la jonction compte — mettez false pour laisser les jonctions sans "
+        "épingle)",
+    "whether the drive departs from the previous activity's place — the first "
+    "leg may then leave out its 'start_location' / 'start_coordinate', and the "
+    "departure shares that activity's map pin instead of taking a number of its "
+    "own":
+        "si le trajet part du lieu de l'activité précédente — la première étape "
+        "peut alors omettre ses « start_location » / « start_coordinate », et le "
+        "départ partage l'épingle de cette activité au lieu de prendre un numéro "
+        "à lui",
+    "false (the drive states its own departure)":
+        "false (le trajet indique son propre départ)",
+    "whether the drive arrives at the next activity's place — the last leg may "
+    "then leave out its 'end_location' / 'end_coordinate', and the arrival "
+    "shares that activity's map pin instead of taking a number of its own":
+        "si le trajet arrive au lieu de l'activité suivante — la dernière étape "
+        "peut alors omettre ses « end_location » / « end_coordinate », et "
+        "l'arrivée partage l'épingle de cette activité au lieu de prendre un "
+        "numéro à elle",
+    "false (the drive states its own arrival)":
+        "false (le trajet indique sa propre arrivée)",
+    "the previous activity's place ('same_start_as_previous_activity' is on)":
+        "le lieu de l'activité précédente (« same_start_as_previous_activity » "
+        "est activé)",
+    "the previous activity's coordinate, else geocoded from 'start_location' "
+    "when maps are on":
+        "la coordonnée de l'activité précédente, sinon géocodée depuis "
+        "« start_location » si les cartes sont activées",
+    "the next activity's place ('same_end_as_next_activity' is on)":
+        "le lieu de l'activité suivante (« same_end_as_next_activity » est "
+        "activé)",
+    "the next activity's coordinate ('same_end_as_next_activity' is on) — which "
+    "then has to have one":
+        "la coordonnée de l'activité suivante (« same_end_as_next_activity » est "
+        "activé) — qui doit donc en avoir une",
     "a GPX recording of this hop, drawn as its line on the day map (instead of "
     "the routed guess)":
         "un enregistrement GPX de cette étape, dessiné comme son tracé sur la "

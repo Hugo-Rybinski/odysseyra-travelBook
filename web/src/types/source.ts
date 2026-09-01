@@ -88,11 +88,21 @@ export interface SrcRoad extends SrcScheduled {
   type: "road";
   distance_km?: number; // the whole drive (each leg carries its own too)
   // Which of the drive's own points get a numbered pin on the day map: its
-  // departure, its final arrival, and every junction between two legs. All
-  // default false — a drive is a route, and pins are opt-in.
+  // departure, its final arrival, and every junction between two legs. The two
+  // ends default false — they are usually the activity before/after, already
+  // pinned. The junctions default **true**: splitting the drive there is what
+  // says the point matters, and nothing else on the page identifies it.
   display_start_on_maps?: boolean;
   display_end_on_maps?: boolean;
   display_intermediate_point_on_maps?: boolean;
+  // That end of the drive *is* the neighbouring activity's place: you drive away
+  // from the museum you just visited, and on to the hotel listed next. The
+  // matching leg endpoint may then be left blank (it is filled in from that
+  // activity), and that end shares the activity's map pin rather than taking a
+  // second number for the same place — which is worth setting even when the
+  // endpoint is spelled out. Both default false.
+  same_start_as_previous_activity?: boolean;
+  same_end_as_next_activity?: boolean;
   description?: string;
   guidebook_pages?: string; // guidebook page(s): "14", "15-18", "16, 23, 25-30"
   // Required and non-empty: one entry per hop. A plain A → B drive has one.

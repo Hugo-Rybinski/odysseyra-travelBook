@@ -3,7 +3,7 @@ the day-scheduling pass."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import time
 
 from .geo import Coordinate, _parse_coordinate
@@ -97,9 +97,15 @@ class Waypoint:
     So does ``gpx``/``track``: the recording of the drive *up to* this point.
     Unlike a hike's it is never drawn as a figure of its own — no trail map, no
     elevation profile — it **is** the leg's line on the day map, replacing the
-    routed guess (see ``maps/build.py``)."""
+    routed guess (see ``maps/build.py``).
 
-    coordinate: Coordinate
+    ``coordinate`` is typed optional for one transient state only: a road with
+    ``same_end_as_next_activity`` may leave its arrival unlocated in the JSON, and
+    the point is then filled in from the next activity by
+    :func:`resolve_shared_road_endpoints` before the day is observable. Anything
+    downstream may treat it as set."""
+
+    coordinate: Coordinate | None
     location: str = ""
     duration_min: int | None = None
     distance_km: float | None = None
@@ -120,7 +126,9 @@ def _leg_off_road(leg: dict) -> bool:
     return _parse_bool(leg.get("off_road", False))
 
 
-def _road_chain(legs: list[dict]) -> tuple[str, Coordinate | None, list[Waypoint], bool]:
+def _road_chain(
+    legs: list[dict], *, borrow_start: bool = False, borrow_end: bool = False,
+) -> tuple[str, Coordinate | None, list[Waypoint], bool]:
     """Lower a road's input ``legs`` onto the chain :class:`Road` carries: the
     departure (name + optional coordinate), the ordered :class:`Waypoint` list,
     and whether the whole drive is off-road.
@@ -141,29 +149,41 @@ def _road_chain(legs: list[dict]) -> tuple[str, Coordinate | None, list[Waypoint
     The departure *coordinate* stays optional, as the road's own ``coordinate``
     always was: with maps on it is geocoded from ``start_location`` when absent.
     Every other point of the route is plotted from its coordinate, so those are
-    required — exactly what a hand-written waypoint always demanded."""
+    required — exactly what a hand-written waypoint always demanded.
+
+    ``borrow_start`` / ``borrow_end`` are the road's ``same_start_as_previous_``
+    ``activity`` / ``same_end_as_next_activity``: the one endpoint that has no
+    neighbouring *leg* to inherit from then has a neighbouring *activity*
+    instead, so it is left blank here and filled in by
+    :func:`resolve_shared_road_endpoints` once the day's other activities exist.
+    That is the only reason this function ever returns a nameless ``start`` or an
+    unlocated final waypoint."""
     start = _leg_text(legs[0], "start_location")
-    if not start:
+    if not start and not borrow_start:
         raise ItineraryError(
             "the first road 'leg' needs a 'start_location' — there is no "
-            "previous leg to take its departure from"
+            "previous leg to take its departure from (set "
+            "'same_start_as_previous_activity' to take it from the previous "
+            "activity instead)"
         )
     waypoints: list[Waypoint] = []
     for i, leg in enumerate(legs):
         nxt = legs[i + 1] if i + 1 < len(legs) else None
+        last = nxt is None
         end = _leg_text(leg, "end_location") or _leg_text(nxt, "start_location")
-        if not end:
+        if not end and not (last and borrow_end):
             raise ItineraryError(
                 f"road leg {i + 1} needs an 'end_location' — neither it nor the "
                 "next leg's 'start_location' names where it arrives"
                 if nxt else
                 "the last road 'leg' needs an 'end_location' — there is no next "
-                "leg to take its arrival from"
+                "leg to take its arrival from (set 'same_end_as_next_activity' "
+                "to take it from the next activity instead)"
             )
         coord = _parse_coordinate(leg.get("end_coordinate"))
         if coord is None and nxt is not None:
             coord = _parse_coordinate(nxt.get("start_coordinate"))
-        if coord is None:
+        if coord is None and not (last and borrow_end):
             raise ItineraryError(
                 f"road leg {i + 1} needs an 'end_coordinate' — {end} is a point "
                 "on the route, so it has to be located"
@@ -209,11 +229,33 @@ class Road(Activity):
     carrying that leg's figures. There is no separate ``end``: the destination is
     the last named waypoint.
 
-    The three ``display_*_on_maps`` switches (all **off**) say which of the
-    drive's own points earn a **numbered pin** on the day map — the very first
-    departure, the very last arrival, and every junction in between. A drive is
-    drawn as a route either way; these only add pins, and with all three on every
-    named point of the road is pinned (see :func:`.maps.build.resolve_day`)."""
+    The three ``display_*_on_maps`` switches say which of the drive's own points
+    earn a **numbered pin** on the day map — the very first departure, the very
+    last arrival, and every junction in between. A drive is drawn as a route
+    either way; these only add pins, and with all three on every named point of
+    the road is pinned (see :func:`.maps.build.resolve_day`).
+
+    ``display_intermediate_point_on_maps`` is **on**, the two ends **off**. A
+    junction is the one point of a drive that has nothing else to identify it:
+    splitting the drive there is what says it matters, and the reader has no way
+    to find it on the map otherwise. The two ends are usually the activity before
+    and after (the drive leaves the château and arrives at the hotel), so pinning
+    them by default would number the same place twice — which is what
+    ``same_start_as_previous_activity`` / ``same_end_as_next_activity`` are for.
+
+    ``same_start_as_previous_activity`` / ``same_end_as_next_activity`` say that
+    an end of the drive **is** the neighbouring activity's place rather than a
+    place of its own — you drive away from the museum you just visited, and on to
+    the hotel listed next. Two consequences, and they are independent:
+
+    * the leg endpoint there may be left blank and is filled in from that
+      activity (:func:`resolve_shared_road_endpoints`);
+    * that end never earns a pin of its own, whatever the ``display_*`` switch
+      says — it *shares* the neighbour's, so one place keeps one number.
+
+    ``start_shared_with`` / ``end_shared_with`` hold the neighbour a flag
+    resolved to, which is what the maps read to alias the pin. They are filled in
+    by the day, never by the JSON."""
 
     kind = "road"
     start: str = ""
@@ -223,7 +265,11 @@ class Road(Activity):
     off_road: bool = False
     display_start_on_maps: bool = False
     display_end_on_maps: bool = False
-    display_intermediate_point_on_maps: bool = False
+    display_intermediate_point_on_maps: bool = True  # opt-out, unlike the two ends
+    same_start_as_previous_activity: bool = False
+    same_end_as_next_activity: bool = False
+    start_shared_with: Activity | None = None  # resolved by the day, not the JSON
+    end_shared_with: Activity | None = None
     waypoints: list[Waypoint] = field(default_factory=list)  # ordered stops; last = arrival
     activities: list[Activity] = field(default_factory=list)
 
@@ -243,14 +289,20 @@ class Road(Activity):
 
     def pinned_waypoints(self) -> list[Waypoint]:
         """The named waypoints that earn a numbered pin: the last one under
-        ``display_end_on_maps``, the earlier ones under
-        ``display_intermediate_point_on_maps``. A point whose coordinate is
+        ``display_end_on_maps`` (off by default), the earlier ones under
+        ``display_intermediate_point_on_maps`` (**on**), so a multi-leg drive
+        pins its junctions unless told not to. A point whose coordinate is
         ``show_on_map: false`` is never pinned — that flag hides a pin wherever
         it appears."""
         named = self.named_waypoints
         out = []
         for i, wp in enumerate(named):
             last = i == len(named) - 1
+            if last and self.end_shared_with is not None:
+                # The arrival is the next activity's place: it wears that
+                # activity's pin (see `maps.build.pin_aliases`), so pinning it
+                # again here would put two numbers on one point.
+                continue
             shown = (self.display_end_on_maps if last
                      else self.display_intermediate_point_on_maps)
             if shown and wp.coordinate is not None and wp.coordinate.show_on_map:
@@ -277,7 +329,10 @@ class Road(Activity):
                     "each road 'leg' must be an object with a 'start_location' "
                     "and an 'end_location'"
                 )
-        start, coordinate, waypoints, off_road = _road_chain(raw)
+        borrow_start = _parse_bool(d.get("same_start_as_previous_activity", False))
+        borrow_end = _parse_bool(d.get("same_end_as_next_activity", False))
+        start, coordinate, waypoints, off_road = _road_chain(
+            raw, borrow_start=borrow_start, borrow_end=borrow_end)
         sched = _sched(d)
         # A road has no 'coordinate' of its own any more: its departure point is
         # the first leg's 'start_coordinate'.
@@ -292,7 +347,9 @@ class Road(Activity):
             display_start_on_maps=_parse_bool(d.get("display_start_on_maps", False)),
             display_end_on_maps=_parse_bool(d.get("display_end_on_maps", False)),
             display_intermediate_point_on_maps=_parse_bool(
-                d.get("display_intermediate_point_on_maps", False)),
+                d.get("display_intermediate_point_on_maps", True)),
+            same_start_as_previous_activity=borrow_start,
+            same_end_as_next_activity=borrow_end,
             waypoints=waypoints,
             activities=_nested(d, "road"),
         )
@@ -588,6 +645,139 @@ def activity_from_dict(data: dict) -> Activity:
             f"Activity 'type' must be one of: {valid} (got {kind!r})"
         )
     return _ACTIVITY_TYPES[kind].from_dict(data)
+
+
+def _place_name(act: Activity, side: str) -> str:
+    """The name of the *place* ``act`` puts you at — its ``start`` side (where it
+    begins) or its ``end`` side (where it leaves you).
+
+    Only a road distinguishes the two: it is the one activity that is two places.
+    Everywhere else both sides are the activity's single location, which is its
+    place name rather than its :attr:`title` — a meal's title is
+    "Lunch at Chez Bruno", and you don't drive to that."""
+    if act.kind == "road":
+        return act.start if side == "start" else act.destination
+    if act.kind == "meal":
+        return act.restaurant or act.area
+    return getattr(act, "name", "")
+
+
+def _place_coord(act: Activity, side: str) -> Coordinate | None:
+    """The coordinate of the place :func:`_place_name` names, or ``None`` — as a
+    **copy**, since ``Coordinate`` is mutable and the two objects are meant to
+    agree today, not forever.
+
+    Deliberately only what the JSON states: a ``place`` that is located on the
+    map by the centroid of its nested points still lends none here, because that
+    centroid is a *drawing* decision made in ``maps/build.py``. Sharing the pin
+    covers that case anyway — the drive's end wears the place's number wherever
+    the place ended up."""
+    if act.kind == "road":
+        if side == "start":
+            return replace(act.coordinate) if act.coordinate else None
+        for wp in reversed(act.waypoints):
+            if wp.location:
+                return replace(wp.coordinate) if wp.coordinate else None
+        return None
+    return replace(act.coordinate) if act.coordinate else None
+
+
+def _neighbour(activities: list[Activity], index: int, step: int) -> Activity | None:
+    """The nearest activity before (``step=-1``) or after (``step=+1``) ``index``
+    that is somewhere you can be. Buffers are skipped: free time is a length, not
+    a location, so ``[museum, 45 min buffer, drive]`` departs from the museum."""
+    i = index + step
+    while 0 <= i < len(activities):
+        if activities[i].kind != "buffer":
+            return activities[i]
+        i += step
+    return None
+
+
+def resolve_shared_road_endpoints(activities: list[Activity]) -> None:
+    """Settle every road's ``same_start_as_previous_activity`` /
+    ``same_end_as_next_activity`` against the day's other activities, in place.
+
+    A flag does two things (see :class:`Road`): it lets that leg endpoint be left
+    blank, filling it in from the neighbour, and it records the neighbour in
+    ``start_shared_with`` / ``end_shared_with`` so the maps can alias the pin. The
+    fill is a *fallback* — an endpoint the JSON states wins, and the pin is shared
+    either way, which is the point of keeping the two apart: "this is the same
+    place" is worth saying even when you also want to name it yourself.
+
+    Raises when the flag has nothing to resolve against: no neighbouring activity
+    at all (the road is first or last in the day), or one that names no place. An
+    arrival additionally has to end up *located*, since it is a point on the drawn
+    route — the same requirement the last leg's ``end_coordinate`` always carried.
+
+    Roads are settled left to right, so a drive can hand its arrival to the next
+    drive's departure. Two drives pointing at each other resolve to nothing and
+    raise, which is the honest answer: neither states the junction they share.
+    """
+    for i, act in enumerate(activities):
+        if act.kind != "road":
+            continue
+        if act.same_start_as_previous_activity:
+            prev = _neighbour(activities, i, -1)
+            _share_start(act, prev)
+        if act.same_end_as_next_activity:
+            nxt = _neighbour(activities, i, +1)
+            _share_end(act, nxt)
+
+
+def _share_start(road: Road, prev: Activity | None) -> None:
+    if prev is None:
+        # Named by its arrival, since its departure is the very thing missing.
+        raise ItineraryError(
+            "'same_start_as_previous_activity' is set on the day's first "
+            f"activity, the drive to {road.destination or 'nowhere named'} — "
+            "there is no previous activity to take the departure from"
+        )
+    name = _place_name(prev, "end")
+    if not road.start:
+        if not name:
+            raise ItineraryError(
+                "'same_start_as_previous_activity' is set, but the previous "
+                f"activity ({prev.title}) names no place to depart from — give "
+                "the first leg a 'start_location'"
+            )
+        road.start = name
+    if road.coordinate is None:
+        # Still optional after this: a departure with only a name is geocoded,
+        # exactly as a road's own start always was.
+        road.coordinate = _place_coord(prev, "end")
+    road.start_shared_with = prev
+
+
+def _share_end(road: Road, nxt: Activity | None) -> None:
+    if nxt is None:
+        raise ItineraryError(
+            "'same_end_as_next_activity' is set on the day's last activity, the "
+            f"drive from {road.start or 'nowhere named'} — there is no next "
+            "activity to take the arrival from"
+        )
+    if not road.waypoints:  # unreachable: 'legs' is required and non-empty
+        return
+    arrival = road.waypoints[-1]
+    name = _place_name(nxt, "start")
+    if not arrival.location:
+        if not name:
+            raise ItineraryError(
+                "'same_end_as_next_activity' is set, but the next activity "
+                f"({nxt.title}) names no place to arrive at — give the last leg "
+                "an 'end_location'"
+            )
+        arrival.location = name
+    if arrival.coordinate is None:
+        arrival.coordinate = _place_coord(nxt, "start")
+    if arrival.coordinate is None:
+        raise ItineraryError(
+            "'same_end_as_next_activity' is set, but the next activity "
+            f"({nxt.title}) has no 'coordinate' — a drive's arrival is a point "
+            "on its route, so it has to be located: give it one, or give the "
+            "last leg an 'end_coordinate'"
+        )
+    road.end_shared_with = nxt
 
 
 # An auto-sized buffer is rounded down to a whole multiple of this many minutes.

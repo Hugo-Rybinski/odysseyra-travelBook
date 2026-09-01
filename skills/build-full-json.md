@@ -520,7 +520,9 @@ entry, never a road.
 | `distance_km` | recommended | positive number | Driving distance for the **whole** drive. A road should carry a duration (its own/inferred times, or its legs') **and** a `distance_km`; `validate` warns naming either that's missing. |
 | `display_start_on_maps` | no | boolean | `true` to give the drive's departure a numbered map pin. Default `false`. |
 | `display_end_on_maps` | no | boolean | `true` to give the drive's final arrival a numbered map pin. Default `false`. |
-| `display_intermediate_point_on_maps` | no | boolean | `true` to give every junction between two legs a numbered map pin. Default `false`. |
+| `display_intermediate_point_on_maps` | no | boolean | Give every junction between two legs a numbered map pin. Default **`true`** — set it `false` only to *stop* pinning them. |
+| `same_start_as_previous_activity` | no | boolean | `true` if the drive departs from the **previous** activity's place. The first leg's `start_location` / `start_coordinate` may then be omitted, and the departure shares that activity's map pin. Default `false`. |
+| `same_end_as_next_activity` | no | boolean | `true` if the drive arrives at the **next** activity's place. The last leg's `end_location` / `end_coordinate` may then be omitted, and the arrival shares that activity's map pin. Default `false`. |
 | `description` | no | text | Free prose for what the other fields can't say — see below. |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the drive. Numbers only — see *Guidebook page references*. |
 | `activities` | no | array of **meal** objects | Meal stops along the drive (see nesting). |
@@ -529,9 +531,9 @@ Each **leg** is an object:
 
 | Field | Required | Format | Notes |
 |---|---|---|---|
-| `start_location` | **yes on the first leg** | text | Where the hop departs from. On any later leg, omit it and it reuses the previous leg's `end_location`. |
+| `start_location` | **yes on the first leg** | text | Where the hop departs from. On any later leg, omit it and it reuses the previous leg's `end_location`. On the first leg it may be omitted too when the road sets `same_start_as_previous_activity`. |
 | `start_coordinate` | no | `{ "lat": .., "long": .. }` | The departure point. Omit on a later leg to reuse the previous leg's `end_coordinate`. Only set coordinates you actually know. |
-| `end_location` | **yes on the last leg** | text | Where the hop arrives. On an earlier leg the next leg's `start_location` can name it instead. |
+| `end_location` | **yes on the last leg** | text | Where the hop arrives. On an earlier leg the next leg's `start_location` can name it instead; on the last leg it may be omitted when the road sets `same_end_as_next_activity`. |
 | `end_coordinate` | **yes unless the next leg's `start_coordinate` gives it** | `{ "lat": .., "long": .. }` | The arrival point — it is plotted on the map, so it must resolve. |
 | `duration` | recommended | duration (`"45 min"`) | Driving time for this hop. |
 | `distance_km` | recommended | positive number | Driving distance for this hop. |
@@ -568,7 +570,60 @@ Each **leg** is an object:
   points, which is a presentation choice, not something to infer from a source.
   Set one only on an explicit instruction ("pin the stops", "show where we
   break the drive"), and remember all three on means every named point of the
-  drive gets a pin.
+  drive gets a pin. Note the defaults are **not** uniform:
+  `display_intermediate_point_on_maps` is already **`true`**, so omitting it
+  pins the junctions — write it out only as `false`, when the user wants them
+  unpinned. The two ends default `false`.
+- **`same_start_as_previous_activity` / `same_end_as_next_activity` are facts,
+  not presentation** — unlike the switches above, so do set them when the drive's
+  end really is the neighbouring activity's place: "after the château, drive to
+  Sarlat" is a drive whose start *is* the château. Two effects: the matching leg
+  endpoint may be omitted (it is taken from that activity's name and
+  `coordinate`), and that end of the drive shares the activity's map pin instead
+  of numbering the same place twice.
+
+  **Run this check on every drive**, once for each end. Compare the drive's
+  endpoint with the *place* of the activity written next to it in `activities`
+  (skipping any `buffer`) — the previous one for the departure, the next one for
+  the arrival. Its place is its `name`, or a meal's `restaurant` / `area`, or for
+  another road its own departure / arrival:
+
+  1. **Are the names close enough?** Not string-equal — the same place written
+     two ways. A venue and the town it is in ("Château d'Amboise" ↔ "Amboise"),
+     a name with or without its article or type word ("Lascaux IV" ↔
+     "Montignac", via its `24290 Montignac` address), a spelling or accent
+     variant. If you cannot say they are the same place, stop: the answer is no.
+  2. **Then the coordinates.** Set the switch when **either**:
+     - both ends have a `coordinate` and they are **less than 3 km apart**, or
+     - **neither** has one (nothing contradicts the names, and there is no
+       coordinate to duplicate anyway).
+     If they are 3 km or more apart, do **not** set it — the names agreeing is
+     then a coincidence of naming, not one place. If only one side has a
+     coordinate, treat the names as the whole answer and use step 1's verdict.
+
+  ~3 km is roughly a town and its outskirts: a château and its village, a museum
+  and its car park, a trailhead and the hamlet below it. Two different villages
+  in one valley are usually further apart than that.
+
+  - Still **write the endpoint out** whenever the source names it — the switch is
+    then only about the shared pin, which is the half worth having. Omit the
+    endpoint only when the source really gives no name of its own for it.
+  - Never set a switch to paper over a **different** place. "Drive from the hotel
+    car park" after a visit to the old town is two places; write the departure.
+  - It is an **error** when there is no previous / next activity (the drive is
+    first or last in the day), when that activity names no place, or — for an
+    arrival — when it has no `coordinate` and the last leg has no
+    `end_coordinate`. Check the neighbour before setting the switch.
+  - Worked examples, from `examples/france.json`:
+
+    | Drive end | Neighbour | Names | Distance | Set it? |
+    |---|---|---|---|---|
+    | arrives `Château de Chambord` | POI `Château de Chambord` | identical | 0 km | ✅ — and drop the leg's `end_location` / `end_coordinate` entirely |
+    | departs `Beynac-et-Cazenac` | POI `Château de Beynac` | same place, two wordings | 0 km | ✅ — keep the written departure, take only the pin |
+    | departs `Tours` | *(none — first of the day)* | — | — | ❌ error: no previous activity |
+    | arrives `Toulouse-Blagnac Airport` | meal `Le Comptoir du Terminal` | the restaurant is *in* the airport | 0.0 km | ✅ |
+    | departs `Chambord` | meal `Le Grand Saint-Michel` | the restaurant faces the château | 0.25 km | ✅ |
+    | arrives `Hôtel des Grands Boulevards` | meal `Bistrot Vivienne` | a hotel and a bistro are two businesses | 0.63 km | ❌ — step 1 fails, so the distance never matters |
 - **A leg's `gpx` is only ever a file the user gave you.** If the trip material
   contains a `.gpx` for a drive (or a segment of one), attach it to the leg it
   records, base64-encoded, and drop that leg's `waypoints` — the recording

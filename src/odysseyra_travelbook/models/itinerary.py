@@ -13,6 +13,7 @@ from .activities import (
     activity_from_dict,
     nested_duration_total,
     resolve_meal_categories,
+    resolve_shared_road_endpoints,
     schedule_activities,
 )
 from .car_rental import CarRental, CarRentalEvent, resolve_car_rental
@@ -90,13 +91,20 @@ class Day:
     def from_dict(cls, data: dict) -> "Day":
         if "title" not in data:
             raise ItineraryError("Each day needs a 'title'")
+        activities = [activity_from_dict(a) for a in data.get("activities", [])]
+        # A drive that says an end of it *is* the neighbouring activity's place
+        # can only be settled here: `Road.from_dict` sees one activity, and this
+        # is the first point where the whole day exists. Before the timeline pass,
+        # so "the next activity" is still the one the JSON wrote next rather than
+        # an inserted buffer.
+        resolve_shared_road_endpoints(activities)
         return cls(
             title=str(data["title"]),
             date=_parse_date(data.get("date")),
             city=str(data.get("city", "")),
             description=str(data.get("description", "")),
             bank_holiday=_parse_bool(data.get("bank_holiday", False)),
-            activities=[activity_from_dict(a) for a in data.get("activities", [])],
+            activities=activities,
         )
 
 

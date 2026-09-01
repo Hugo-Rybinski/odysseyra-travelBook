@@ -64,10 +64,18 @@ def resolved(document):
 
 # -- the model ---------------------------------------------------------------
 
-def test_the_three_switches_default_off():
+def test_the_two_end_switches_default_off_and_the_junctions_on():
+    """Splitting a drive at a place is what says the place matters, so the
+    junctions are pinned unless told not to; the two ends are usually the
+    activity before/after, already numbered."""
     road = road_of(doc())
-    assert (road.display_start_on_maps, road.display_end_on_maps,
-            road.display_intermediate_point_on_maps) == (False, False, False)
+    assert (road.display_start_on_maps, road.display_end_on_maps) == (False, False)
+    assert road.display_intermediate_point_on_maps is True
+    assert [w.location for w in road.pinned_waypoints()] == ["B", "C"]
+
+
+def test_the_junction_switch_can_be_turned_off():
+    road = road_of(doc(display_intermediate_point_on_maps=False))
     assert road.pinned_waypoints() == []
 
 
@@ -75,7 +83,8 @@ def test_each_switch_selects_its_own_points():
     assert [w.location for w in road_of(
         doc(display_intermediate_point_on_maps=True)).pinned_waypoints()] == ["B", "C"]
     assert [w.location for w in road_of(
-        doc(display_end_on_maps=True)).pinned_waypoints()] == ["D"]
+        doc(display_end_on_maps=True,
+            display_intermediate_point_on_maps=False)).pinned_waypoints()] == ["D"]
     # …and all three together pin every named point of the drive
     every = road_of(doc(display_start_on_maps=True, display_end_on_maps=True,
                         display_intermediate_point_on_maps=True))
@@ -116,10 +125,18 @@ def test_an_unusable_leg_gpx_is_an_itinerary_error():
 
 # -- the day map -------------------------------------------------------------
 
-def test_a_drive_with_no_switches_contributes_no_pin(no_network):
-    _it, (main, routes, nodes, _areas) = resolved(doc())
+def test_a_drive_with_every_switch_off_contributes_no_pin(no_network):
+    _it, (main, routes, nodes, _areas) = resolved(
+        doc(display_intermediate_point_on_maps=False))
     assert main == []                      # a route, not pins
     assert len(routes) == 1 and len(nodes) == 1
+
+
+def test_a_drive_left_alone_pins_its_junctions(no_network):
+    """The default now: the junctions join the day's numbering, the two ends
+    don't — so a 3-leg drive with nothing set contributes B and C."""
+    _it, (main, _routes, _nodes, _areas) = resolved(doc())
+    assert [p.label for p in main] == ["B", "C"]
 
 
 def test_pinned_points_join_the_days_numbering_in_timeline_order(no_network):

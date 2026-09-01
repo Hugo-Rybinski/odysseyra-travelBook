@@ -31,7 +31,9 @@ const SAFE_DEFAULTS: Record<string, unknown> = {
   off_road: false,
   display_start_on_maps: false,
   display_end_on_maps: false,
-  display_intermediate_point_on_maps: false,
+  display_intermediate_point_on_maps: true, // the one pin switch that defaults on
+  same_start_as_previous_activity: false,
+  same_end_as_next_activity: false,
   bank_holiday: false,
   breakfast_included: false,
   additional_drivers: 0,

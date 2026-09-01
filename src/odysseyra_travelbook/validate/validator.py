@@ -415,9 +415,10 @@ class _Validator:
             self.add("error", path, "a day's 'activities' must not be empty — every "
                      "day needs at least one activity.")
         for j, act in enumerate(activities or []):
-            self._activity(act, path + ("activities", j))
+            self._activity(act, path + ("activities", j),
+                           siblings=activities or [], index=j)
 
-    def _activity(self, act, path):
+    def _activity(self, act, path, siblings=None, index=0):
         if not isinstance(act, dict):
             self.add("error", path, "each activity must be an object with a 'type'")
             return
@@ -448,6 +449,7 @@ class _Validator:
         if kind == "road":
             self._road_legs(act, path)
             self._road_moved_fields(act, path)
+            self._road_shared_endpoints(act, path, siblings or [act], index)
         if kind == "meal" and act.get("restaurant") and act.get("area"):
             self.add("warning", path, "both 'restaurant' and 'area' are set — "
                      "'area' is ignored when a restaurant is named.")
@@ -639,6 +641,8 @@ class _Validator:
                      "a road needs at least one 'leg' — the hop from its "
                      "departure to its arrival.")
             return
+        borrow_start = _truthy(act.get("same_start_as_previous_activity"))
+        borrow_end = _truthy(act.get("same_end_as_next_activity"))
         total, known = 0, False
         for k, leg in enumerate(raw):
             lp = lpath + (k,)
@@ -650,8 +654,9 @@ class _Validator:
             prev = raw[k - 1] if k and isinstance(raw[k - 1], dict) else None
             nxt = raw[k + 1] if k + 1 < len(raw) else None
             nxt = nxt if isinstance(nxt, dict) else None
-            self.check_object(leg, lp, self._road_leg_specs(prev, nxt, first=k == 0,
-                                                            last=k == len(raw) - 1))
+            self.check_object(leg, lp, self._road_leg_specs(
+                prev, nxt, first=k == 0, last=k == len(raw) - 1,
+                borrow_start=borrow_start, borrow_end=borrow_end))
             self._road_leg_junction(leg, lp, prev)
             self._road_leg_waypoints(leg, lp)
             self._road_leg_gpx(leg, lp)
@@ -668,7 +673,8 @@ class _Validator:
                      parent=_format_duration(parent))
 
     @staticmethod
-    def _road_leg_specs(prev, nxt, *, first, last):
+    def _road_leg_specs(prev, nxt, *, first, last, borrow_start=False,
+                        borrow_end=False):
         """``ROAD_LEG_SPECS`` tailored to one leg's place in the chain.
 
         An endpoint the neighbouring leg states may be left out here (the table's
@@ -679,23 +685,42 @@ class _Validator:
 
         The departure *coordinate* is the one point that is never required: with
         maps on it is geocoded from ``start_location``, exactly as the road's own
-        ``coordinate`` always was."""
+        ``coordinate`` always was.
+
+        ``borrow_start`` / ``borrow_end`` are the road's ``same_start_as_``
+        ``previous_activity`` / ``same_end_as_next_activity``: the outer endpoint
+        of the chain then has a neighbour after all — the neighbouring
+        *activity* — so it drops back to optional, with that named as its
+        default."""
         specs = []
         for spec in ROAD_LEG_SPECS:
             if spec.name == "start_location":
-                if first:
+                if first and borrow_start:
+                    specs.append(replace(spec, default=(
+                        "the previous activity's place ('same_start_as_previous_"
+                        "activity' is on)")))
+                elif first:
                     specs.append(replace(spec, required=True, description=(
                         "where the drive departs from (the first leg has no "
                         "previous leg to inherit it from)")))
                 elif _stated(prev, "end_location"):
                     specs.append(spec)
             elif spec.name == "start_coordinate":
-                if first:
+                if first and borrow_start:
+                    specs.append(replace(spec, default=(
+                        "the previous activity's coordinate, else geocoded from "
+                        "'start_location' when maps are on")))
+                elif first:
                     specs.append(replace(spec, default=(
                         "geocoded from 'start_location' when maps are on")))
                 elif prev is not None and prev.get("end_coordinate") not in (None, ""):
                     specs.append(spec)
             elif spec.name == "end_location":
+                if last and borrow_end:
+                    specs.append(replace(spec, default=(
+                        "the next activity's place ('same_end_as_next_activity' "
+                        "is on)")))
+                    continue
                 stated_next = bool(_stated(nxt, "start_location"))
                 specs.append(spec if stated_next else replace(
                     spec, required=True, description=(
@@ -704,6 +729,11 @@ class _Validator:
                         "where the drive arrives (the last leg has no next leg "
                         "to inherit it from)")))
             elif spec.name == "end_coordinate":
+                if last and borrow_end:
+                    specs.append(replace(spec, default=(
+                        "the next activity's coordinate ('same_end_as_next_"
+                        "activity' is on) — which then has to have one")))
+                    continue
                 stated_next = nxt is not None and nxt.get(
                     "start_coordinate") not in (None, "")
                 specs.append(spec if stated_next else replace(
@@ -779,6 +809,135 @@ class _Validator:
             self.add("info", lp + ("gpx",), "'include_maps_in_render' is off, so "
                      "this GPX is parsed but no map is drawn from it (the viewer "
                      "still offers the file for download).")
+
+    def _road_shared_endpoints(self, act, path, siblings, index):
+        """Check a drive's ``same_start_as_previous_activity`` /
+        ``same_end_as_next_activity`` against the day around it.
+
+        The flag says an end of the drive *is* the neighbouring activity's place,
+        so it needs a neighbour that names one — the model raises otherwise, and
+        every raise it can make is reported here as an error on the flag itself.
+        The arrival additionally has to end up located, since it is a point on the
+        drawn route.
+
+        The matching ``display_*_on_maps`` switch is then redundant rather than
+        wrong (the pin is the neighbour's own), which is worth an info: it is the
+        one place a switch is set and the number that appears isn't a new one."""
+        legs = act.get("legs")
+        legs = legs if isinstance(legs, list) and legs else None  # else: _road_legs
+        if _truthy(act.get("same_start_as_previous_activity")):
+            self._shared_start(act, path, self._raw_neighbour(siblings, index, -1),
+                               legs)
+        if _truthy(act.get("same_end_as_next_activity")):
+            self._shared_end(act, path, self._raw_neighbour(siblings, index, +1),
+                             legs)
+
+    def _shared_start(self, act, path, prev, legs):
+        fpath = path + ("same_start_as_previous_activity",)
+        if prev is None:
+            self.add("error", fpath, "'same_start_as_previous_activity' is set on "
+                     "the day's first activity — there is no previous activity to "
+                     "take the departure from.")
+            return
+        first = legs[0] if legs and isinstance(legs[0], dict) else {}
+        if not _stated(first, "start_location") and not self._raw_place_name(prev, "end"):
+            self.add("error", fpath, "'same_start_as_previous_activity' is set, "
+                     "but the previous activity ({other}) names no place to "
+                     "depart from — give it a name, or the first leg a "
+                     "'start_location'.", other=repr(self._raw_title(prev)))
+        if _truthy(act.get("display_start_on_maps")):
+            self.add("info", path + ("display_start_on_maps",),
+                     "'display_start_on_maps' adds nothing here: "
+                     "'same_start_as_previous_activity' is on, so the departure "
+                     "wears the previous activity's own pin rather than a second "
+                     "number for the same place.")
+
+    def _shared_end(self, act, path, nxt, legs):
+        fpath = path + ("same_end_as_next_activity",)
+        if nxt is None:
+            self.add("error", fpath, "'same_end_as_next_activity' is set on the "
+                     "day's last activity — there is no next activity to take the "
+                     "arrival from.")
+            return
+        last = legs[-1] if legs and isinstance(legs[-1], dict) else {}
+        if not _stated(last, "end_location") and not self._raw_place_name(nxt, "start"):
+            self.add("error", fpath, "'same_end_as_next_activity' is set, but the "
+                     "next activity ({other}) names no place to arrive at — give "
+                     "it a name, or the last leg an 'end_location'.",
+                     other=repr(self._raw_title(nxt)))
+        if (not _stated(last, "end_coordinate")
+                and self._raw_place_coord(nxt, "start") is None):
+            self.add("error", fpath, "'same_end_as_next_activity' is set, but the "
+                     "next activity ({other}) has no 'coordinate' — a drive's "
+                     "arrival is a point on its route, so it has to be located. "
+                     "Give that activity a coordinate, or the last leg an "
+                     "'end_coordinate'.", other=repr(self._raw_title(nxt)))
+        if _truthy(act.get("display_end_on_maps")):
+            self.add("info", path + ("display_end_on_maps",),
+                     "'display_end_on_maps' adds nothing here: "
+                     "'same_end_as_next_activity' is on, so the arrival wears the "
+                     "next activity's own pin rather than a second number for the "
+                     "same place.")
+
+    @staticmethod
+    def _raw_neighbour(siblings, index, step):
+        """The nearest activity dict before/after ``index`` that is somewhere you
+        can be — mirroring ``models.activities._neighbour``, buffers skipped
+        (free time is a length, not a location)."""
+        i = index + step
+        while 0 <= i < len(siblings):
+            entry = siblings[i]
+            if isinstance(entry, dict) and entry.get("type") != "buffer":
+                return entry
+            i += step
+        return None
+
+    @staticmethod
+    def _raw_place_name(entry, side):
+        """The name of the place an activity dict puts you at — its ``"start"``
+        side (where it begins) or its ``"end"`` side (where it leaves you). The
+        raw-JSON twin of ``models.activities._place_name``, and it must stay in
+        step with it.
+
+        Only a road tells the two sides apart, being the one activity that is two
+        places. Everywhere else both sides are its single location, named by
+        whichever of ``name`` / ``restaurant`` / ``area`` it carries — the three
+        never collide, so one lookup covers every type."""
+        if entry.get("type") == "road":
+            legs = entry.get("legs")
+            if not isinstance(legs, list) or not legs:
+                return ""
+            leg = legs[0] if side == "start" else legs[-1]
+            return _stated(leg, "start_location" if side == "start"
+                           else "end_location")
+        for key in ("name", "restaurant", "area"):
+            named = _stated(entry, key)
+            if named:
+                return named
+        return ""
+
+    def _raw_place_coord(self, entry, side):
+        """``(lat, long)`` of the place :meth:`_raw_place_name` names, or ``None``
+        — the raw-JSON twin of ``models.activities._place_coord``. A road keeps
+        its endpoints on its legs and carries no ``coordinate`` of its own, so
+        reading that key for every type would call every drive unlocated."""
+        if entry.get("type") == "road":
+            legs = entry.get("legs")
+            if not isinstance(legs, list) or not legs:
+                return None
+            leg = legs[0] if side == "start" else legs[-1]
+            if not isinstance(leg, dict):
+                return None
+            return self._leg_point(leg.get(
+                "start_coordinate" if side == "start" else "end_coordinate"))
+        return self._leg_point(entry.get("coordinate"))
+
+    @staticmethod
+    def _raw_title(entry):
+        """A short name for an activity dict, for a message that has to point at
+        one. Its place name when it has one, else just its type."""
+        return (_Validator._raw_place_name(entry, "start")
+                or str(entry.get("type") or "activity"))
 
     def _road_moved_fields(self, act, path):
         """Name a road field written on the older, waypoint-based shape. The

@@ -57,7 +57,11 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // REQUIRED" watermark). No field changed shape — but a cached day carries the
 // rendered PNGs, so a v18 entry would keep handing back watermarked maps for an
 // itinerary whose JSON never moved. Exactly the case the hash can't catch.
-const SCHEMA_VERSION = 19;
+// v20: `display_intermediate_point_on_maps` now defaults **on**, so every
+// multi-leg drive that never mentioned it pins its junctions — those pins join
+// the day's 1..N sequence, which renumbers everything after the drive. Same
+// shape, same JSON, different `map_pin` on most days: the hash can't see it.
+const SCHEMA_VERSION = 20;
 
 interface Entry {
   day: Day;

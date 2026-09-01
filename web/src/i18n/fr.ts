@@ -526,8 +526,14 @@ export const FR: Record<string, string> = {
   "Give the drive's final arrival a numbered pin on the day map. Defaults to off.":
     "Donner à l'arrivée finale du trajet une épingle numérotée sur la carte du jour. Désactivé par défaut.",
   "Pin the junctions": "Épingler les jonctions",
-  "Give every junction between two legs a numbered pin on the day map. With all three switches on, every named point of the drive is pinned. Defaults to off.":
-    "Donner à chaque jonction entre deux étapes une épingle numérotée sur la carte du jour. Avec les trois options activées, tous les points nommés du trajet sont épinglés. Désactivé par défaut.",
+  "Give every junction between two legs a numbered pin on the day map — splitting the drive there is what says the junction matters. Defaults to on, unlike the two ends: switch it off to leave the junctions marked only by the route's own small disc.":
+    "Donner à chaque jonction entre deux étapes une épingle numérotée sur la carte du jour — découper le trajet à cet endroit est précisément ce qui dit que la jonction compte. Activé par défaut, contrairement aux deux extrémités : désactivez-le pour ne laisser les jonctions marquées que par le petit disque de l'itinéraire.",
+  "Starts at the previous activity": "Part de l'activité précédente",
+  "The drive departs from wherever the previous activity is. You can then leave the first leg's From and its coordinate blank — they're filled in from that activity — and the departure shares its map pin instead of taking a second number for the same place. Errors if there is no previous activity. Defaults to off.":
+    "Le trajet part de là où se trouve l'activité précédente. Vous pouvez alors laisser vides le « De » de la première étape et sa coordonnée — ils sont repris de cette activité — et le départ partage son épingle plutôt que de prendre un second numéro pour le même lieu. Erreur s'il n'y a pas d'activité précédente. Désactivé par défaut.",
+  "Ends at the next activity": "Arrive à l'activité suivante",
+  "The drive arrives at wherever the next activity is. You can then leave the last leg's To and its coordinate blank — they're filled in from that activity, which must have a coordinate — and the arrival shares its map pin instead of taking a second number for the same place. Errors if there is no next activity. Defaults to off.":
+    "Le trajet arrive là où se trouve l'activité suivante. Vous pouvez alors laisser vides le « À » de la dernière étape et sa coordonnée — ils sont repris de cette activité, qui doit donc avoir une coordonnée — et l'arrivée partage son épingle plutôt que de prendre un second numéro pour le même lieu. Erreur s'il n'y a pas d'activité suivante. Désactivé par défaut.",
   "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional.":
     "Tout ce que les autres champs ne couvrent pas — l'état de la route, un tronçon panoramique, un péage ou un ferry. Facultatif.",
 
@@ -601,11 +607,11 @@ export const FR: Record<string, string> = {
   From: "De",
   To: "À",
   "the previous leg's arrival": "l'arrivée de l'étape précédente",
-  "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival.":
-    "D'où part cette étape. Laissez vide sur toute étape sauf la première : elle reprend alors l'arrivée de l'étape précédente.",
+  "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival. The first leg may leave it blank too when the drive starts at the previous activity.":
+    "D'où part cette étape. Laissez vide sur toute étape sauf la première : elle reprend alors l'arrivée de l'étape précédente. La première étape peut aussi le laisser vide si le trajet part de l'activité précédente.",
   "the next leg's departure": "le départ de l'étape suivante",
-  "Where this hop arrives. Required on the last leg; on an earlier one the next leg's departure can name it instead.":
-    "Où arrive cette étape. Obligatoire sur la dernière étape ; sur une étape antérieure, le départ de l'étape suivante peut le nommer à la place.",
+  "Where this hop arrives. Required on the last leg — unless the drive ends at the next activity; on an earlier one the next leg's departure can name it instead.":
+    "Où arrive cette étape. Obligatoire sur la dernière étape — sauf si le trajet arrive à l'activité suivante ; sur une étape antérieure, le départ de l'étape suivante peut le nommer à la place.",
   "Driving time": "Temps de conduite",
   "Driving time for this hop. Optional, but validation warns when it's missing.":
     "Temps de conduite de cette étape. Facultatif, mais la validation avertit s'il manque.",

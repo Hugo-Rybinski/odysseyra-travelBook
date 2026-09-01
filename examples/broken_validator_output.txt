@@ -42,6 +42,8 @@
 ⚠️  line 42: this road's leg (Bad figures → Too long) should give a duration and a 'distance_km' — missing: distance_km.
 ⚠️  line 42: this road's leg (Too long → ?) should give a duration and a 'distance_km' — missing: distance_km.
 ℹ️  line 42: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 42: optional field 'same_start_as_previous_activity' is missing — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own departure).
+ℹ️  line 42: optional field 'same_end_as_next_activity' is missing — whether the drive arrives at the next activity's place — the last leg may then leave out its 'end_location' / 'end_coordinate', and the arrival shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own arrival).
 ℹ️  line 42: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 42: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 42: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
@@ -116,6 +118,7 @@
 ℹ️  line 61: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
 ℹ️  line 61: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ℹ️  line 61: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+⚠️  line 64: the night of 2026-06-11 has no accommodation and no overnight transport — you have nowhere to sleep.
 ℹ️  line 64: optional field 'city' is missing — the city/region label. Expected any text. Defaulting to "" .
 ℹ️  line 64: optional field 'description' is missing — an intro paragraph for the day. Expected any text. Defaulting to "".
 ℹ️  line 64: optional field 'bank_holiday' is missing — whether the day is a public holiday where you are — shown as a banner above the day's activities. Expected true or false. Defaulting to false (an ordinary day).
@@ -147,7 +150,9 @@
 ℹ️  line 79: optional field 'distance_km' is missing — the driving distance in km for the whole drive. Expected a number. Defaulting to none (not shown).
 ℹ️  line 79: optional field 'display_start_on_maps' is missing — whether the drive's departure gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
 ℹ️  line 79: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
-ℹ️  line 79: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 79: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 79: optional field 'same_start_as_previous_activity' is missing — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own departure).
+ℹ️  line 79: optional field 'same_end_as_next_activity' is missing — whether the drive arrives at the next activity's place — the last leg may then leave out its 'end_location' / 'end_coordinate', and the arrival shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own arrival).
 ℹ️  line 79: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 79: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 79: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
@@ -161,7 +166,9 @@
 ℹ️  line 80: optional field 'distance_km' is missing — the driving distance in km for the whole drive. Expected a number. Defaulting to none (not shown).
 ℹ️  line 80: optional field 'display_start_on_maps' is missing — whether the drive's departure gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
 ℹ️  line 80: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
-ℹ️  line 80: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 80: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 80: optional field 'same_start_as_previous_activity' is missing — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own departure).
+ℹ️  line 80: optional field 'same_end_as_next_activity' is missing — whether the drive arrives at the next activity's place — the last leg may then leave out its 'end_location' / 'end_coordinate', and the arrival shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own arrival).
 ℹ️  line 80: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 80: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 80: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
@@ -178,7 +185,9 @@
 ℹ️  line 81: optional field 'distance_km' is missing — the driving distance in km for the whole drive. Expected a number. Defaulting to none (not shown).
 ℹ️  line 81: optional field 'display_start_on_maps' is missing — whether the drive's departure gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
 ℹ️  line 81: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
-ℹ️  line 81: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 81: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 81: optional field 'same_start_as_previous_activity' is missing — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own departure).
+ℹ️  line 81: optional field 'same_end_as_next_activity' is missing — whether the drive arrives at the next activity's place — the last leg may then leave out its 'end_location' / 'end_coordinate', and the arrival shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own arrival).
 ℹ️  line 81: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
 ℹ️  line 81: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
 ℹ️  line 81: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
@@ -188,169 +197,271 @@
 ℹ️  line 81: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ℹ️  line 81: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
 ⚠️  line 82: field 'waypoints' is no longer read on a road — the drive's stops are its legs now: one leg per hop, its arrival in 'end_location' / 'end_coordinate', and any route-shaping points in that leg's own 'waypoints'.
-❌  line 87: field 'type' is invalid ('night train') — the transport type. Expected one of: plane, train, bus, taxi, ferry, other (must be one of: plane, train, bus, taxi, ferry, other).
-❌  line 87: field 'website' is invalid ('not-a-link') — a link to the carrier's website. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
-❌  line 87: required field 'legs' is missing — the hops this booking moves you over (a single-hop booking has one). Expected a non-empty array of {start, end, start_date, start_time, …} objects.
-❌  line 87: price currency 'CHF' is neither the default currency (EU) nor a declared secondary currency — add it to defaults.secondary_currencies or use a known currency.
-⚠️  line 87: field 'start_date' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
-⚠️  line 87: field 'start_time' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
-⚠️  line 87: field 'end_time' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
-⚠️  line 87: 'status' is set but 'booking_number' is missing — a confirmed/booked booking usually has a reference.
-ℹ️  line 87: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
-ℹ️  line 87: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 87: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 87: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 87: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
-ℹ️  line 87: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-❌  line 88: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
-❌  line 88: field 'price' is invalid ('lots') — the price of the whole booking, every leg included. Expected a number (must be a number).
-❌  line 88: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
-⚠️  line 88: 'status' is set but 'booking_number' is missing — a confirmed/booked booking usually has a reference.
-ℹ️  line 88: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
-ℹ️  line 88: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 88: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 88: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 88: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 88: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
-ℹ️  line 88: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-❌  line 89: leg end_date (2026-06-10) is before start_date (2026-06-11).
-⚠️  line 89: field 'booking_number' belongs on the transport booking, not on a leg — one reservation covers every leg, so move it up.
-⚠️  line 89: field 'price' belongs on the transport booking, not on a leg — one reservation covers every leg, so move it up.
-⚠️  line 89: this leg has no duration and none can be inferred from its start/end times — add a 'duration', or an 'end_time'.
-⚠️  line 89: 'flight_number' is set but the transport type is 'bus', not 'plane'.
-ℹ️  line 89: optional field 'end_time' is missing — the arrival time. Expected a time HH:MM. Defaulting to none / inferred from start_time + duration.
-ℹ️  line 89: optional field 'start_tz' is missing — the departure time zone. Expected a UTC offset like '-04:00'. Defaulting to the trip's default timezone.
-ℹ️  line 89: optional field 'end_tz' is missing — the arrival time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 89: optional field 'duration' is missing — the travel time. Expected a duration like '4h20'. Defaulting to inferred from the two times.
-ℹ️  line 89: optional field 'train_number' is missing — the train number of this leg (trains only). Expected any text. Defaulting to "".
-ℹ️  line 89: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 91: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
-ℹ️  line 91: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 91: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 91: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 91: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
-ℹ️  line 91: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
-ℹ️  line 91: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 91: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 91: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-ℹ️  line 92: optional field 'end_date' is missing — the arrival date. Expected a date YYYY-MM-DD. Defaulting to inferred (+1 day if it crosses midnight).
-ℹ️  line 92: optional field 'start_tz' is missing — the departure time zone. Expected a UTC offset like '-04:00'. Defaulting to the trip's default timezone.
-ℹ️  line 92: optional field 'end_tz' is missing — the arrival time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 92: optional field 'duration' is missing — the travel time. Expected a duration like '4h20'. Defaulting to inferred from the two times.
-ℹ️  line 92: optional field 'flight_number' is missing — the flight number of this leg (planes only). Expected any text. Defaulting to "".
-ℹ️  line 92: optional field 'train_number' is missing — the train number of this leg (trains only). Expected any text. Defaulting to "".
-ℹ️  line 92: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-❌  line 94: a transport needs at least one leg in 'legs' — a single-hop booking is a one-entry array.
-ℹ️  line 94: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
-ℹ️  line 94: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 94: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 94: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 94: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 94: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
-ℹ️  line 94: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
-ℹ️  line 94: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 94: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 94: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-❌  line 95: 'legs' must be an array of {start, end, start_date, start_time, …} objects — one per hop.
-ℹ️  line 95: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
-ℹ️  line 95: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 95: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 95: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 95: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 95: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
-ℹ️  line 95: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
-ℹ️  line 95: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 95: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 95: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-❌  line 98: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
-⚠️  line 98: 'status' is set but 'booking_source' is missing — a confirmed/booked stay usually has a reference.
-⚠️  line 98: 'paid' is set but 'price' is missing — the payment state is given without an amount.
-ℹ️  line 98: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
-ℹ️  line 98: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
-ℹ️  line 98: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
-ℹ️  line 98: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 98: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 98: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 98: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 98: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 98: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 98: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
-❌  line 99: required field 'city' is missing — the town, for the cover overview. Expected any text.
-❌  line 99: accommodations 'Hotel A' and 'Hotel B' overlap on the same night(s) — you can only sleep in one place.
-ℹ️  line 99: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
-ℹ️  line 99: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
-ℹ️  line 99: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
-ℹ️  line 99: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 99: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 99: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 99: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
-ℹ️  line 99: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 99: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 99: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 99: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-ℹ️  line 99: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
-❌  line 100: required field 'name' is missing — the accommodation name. Expected any text.
-❌  line 100: field 'arrival' is invalid ('not-a-date') — the check-in date. Expected a date YYYY-MM-DD (Invalid date 'not-a-date', expected YYYY-MM-DD).
-❌  line 100: required field 'departure' is missing — the check-out date. Expected a date YYYY-MM-DD.
-❌  line 100: required field 'city' is missing — the town, for the cover overview. Expected any text.
-ℹ️  line 100: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
-ℹ️  line 100: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
-ℹ️  line 100: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
-ℹ️  line 100: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
-ℹ️  line 100: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 100: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 100: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
-ℹ️  line 100: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 100: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 100: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 100: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-ℹ️  line 100: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
-❌  line 103: car rental booking end (2026-06-08 09:00) must be after booking start (2026-06-11 20:00).
-⚠️  line 103: 'status' is set but 'booking_number' is missing — a confirmed/booked leg usually has a reference.
-⚠️  line 103: the car rental drop-off (10:00) overlaps an activity or transport on 2026-06-10.
-ℹ️  line 103: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
-ℹ️  line 103: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 103: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 103: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 103: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 103: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
-ℹ️  line 103: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 103: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 103: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 103: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 103: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 103: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
-ℹ️  line 103: optional field 'car_type' is missing — the car category. Expected one of: regular, small, suv, 4x4. Defaulting to "regular".
-ℹ️  line 103: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
-ℹ️  line 103: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
-ℹ️  line 103: optional field 'additional_drivers' is missing — the number of additional drivers. Expected a whole number. Defaulting to 0.
-ℹ️  line 103: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
-ℹ️  line 103: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
-❌  line 107: field 'booking_link' is invalid ('reservation-page') — a direct link to this reservation. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
-❌  line 107: field 'status' is invalid ('later') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
-❌  line 108: car rental pick-up (2026-06-07 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
-❌  line 108: car rental drop-off (2026-06-06 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
-❌  line 108: car rental drop-off (2026-06-06 10:00) is before the pick-up (2026-06-07 10:00).
-⚠️  line 108: 'paid' is set but 'price' is missing — the payment state is given without an amount.
-ℹ️  line 108: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
-ℹ️  line 108: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 108: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 108: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 108: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
-ℹ️  line 108: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
-ℹ️  line 108: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
-ℹ️  line 108: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 108: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
-ℹ️  line 108: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 85: optional field 'city' is missing — the city/region label. Expected any text. Defaulting to "" .
+ℹ️  line 85: optional field 'description' is missing — an intro paragraph for the day. Expected any text. Defaulting to "".
+ℹ️  line 85: optional field 'bank_holiday' is missing — whether the day is a public holiday where you are — shown as a banner above the day's activities. Expected true or false. Defaulting to false (an ordinary day).
+❌  line 89: 'same_start_as_previous_activity' is set on the day's first activity — there is no previous activity to take the departure from.
+ℹ️  line 89: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 89: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 89: optional field 'same_end_as_next_activity' is missing — whether the drive arrives at the next activity's place — the last leg may then leave out its 'end_location' / 'end_coordinate', and the arrival shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own arrival).
+ℹ️  line 89: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 89: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
+ℹ️  line 89: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
+ℹ️  line 89: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 89: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 89: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 89: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 91: optional field 'start_location' is missing — where this hop departs from. Expected any text. Defaulting to the previous activity's place ('same_start_as_previous_activity' is on).
+ℹ️  line 91: optional field 'start_coordinate' is missing — the departure point on the map. Expected an object with a 'lat' and a 'long'. Defaulting to the previous activity's coordinate, else geocoded from 'start_location' when maps are on.
+ℹ️  line 91: optional field 'duration' is missing — how long this hop takes to drive. Expected a duration like '1h30' or '45 min'. Defaulting to none (not shown).
+ℹ️  line 91: optional field 'distance_km' is missing — this hop's driving distance in km. Expected a number. Defaulting to none (not shown).
+ℹ️  line 91: optional field 'off_road' is missing — whether this hop runs off-road. Expected true or false. Defaulting to false (and the drive counts as off-road only when every leg is).
+ℹ️  line 91: optional field 'waypoints' is missing — intermediate points the hop's route bends through, in order from its start to its end. Expected an array of {lat, long} coordinates. Defaulting to [] (the route runs straight between the hop's endpoints).
+ℹ️  line 91: optional field 'gpx' is missing — a GPX recording of this hop, drawn as its line on the day map (instead of the routed guess). Expected the .gpx file base64-encoded (gzip allowed). Defaulting to none (the hop's line is routed through its endpoints).
+ℹ️  line 92: optional field 'meal_type' is missing — which meal it is. Expected one of: breakfast, lunch, dinner, brunch, snack, picnic, meal. Defaulting to inferred from the start time.
+ℹ️  line 92: optional field 'restaurant' is missing — the restaurant name. Expected any text. Defaulting to "".
+ℹ️  line 92: optional field 'area' is missing — the town/region to eat in (used when no restaurant is named). Expected any text. Defaulting to "".
+ℹ️  line 92: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
+ℹ️  line 92: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 92: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 92: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
+ℹ️  line 92: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 92: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+❌  line 93: 'same_start_as_previous_activity' is set, but the previous activity ('meal') names no place to depart from — give it a name, or the first leg a 'start_location'.
+❌  line 93: 'same_end_as_next_activity' is set, but the next activity ('Unlocated') has no 'coordinate' — a drive's arrival is a point on its route, so it has to be located. Give that activity a coordinate, or the last leg an 'end_coordinate'.
+ℹ️  line 93: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 93: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 93: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
+ℹ️  line 93: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
+ℹ️  line 93: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 93: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 93: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 93: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 94: 'display_start_on_maps' adds nothing here: 'same_start_as_previous_activity' is on, so the departure wears the previous activity's own pin rather than a second number for the same place.
+ℹ️  line 94: 'display_end_on_maps' adds nothing here: 'same_end_as_next_activity' is on, so the arrival wears the next activity's own pin rather than a second number for the same place.
+ℹ️  line 95: optional field 'start_location' is missing — where this hop departs from. Expected any text. Defaulting to the previous activity's place ('same_start_as_previous_activity' is on).
+ℹ️  line 95: optional field 'start_coordinate' is missing — the departure point on the map. Expected an object with a 'lat' and a 'long'. Defaulting to the previous activity's coordinate, else geocoded from 'start_location' when maps are on.
+ℹ️  line 95: optional field 'end_location' is missing — where this hop arrives. Expected any text. Defaulting to the next activity's place ('same_end_as_next_activity' is on).
+ℹ️  line 95: optional field 'end_coordinate' is missing — the arrival point on the map. Expected an object with a 'lat' and a 'long'. Defaulting to the next activity's coordinate ('same_end_as_next_activity' is on) — which then has to have one.
+ℹ️  line 95: optional field 'duration' is missing — how long this hop takes to drive. Expected a duration like '1h30' or '45 min'. Defaulting to none (not shown).
+ℹ️  line 95: optional field 'distance_km' is missing — this hop's driving distance in km. Expected a number. Defaulting to none (not shown).
+ℹ️  line 95: optional field 'off_road' is missing — whether this hop runs off-road. Expected true or false. Defaulting to false (and the drive counts as off-road only when every leg is).
+ℹ️  line 95: optional field 'waypoints' is missing — intermediate points the hop's route bends through, in order from its start to its end. Expected an array of {lat, long} coordinates. Defaulting to [] (the route runs straight between the hop's endpoints).
+ℹ️  line 95: optional field 'gpx' is missing — a GPX recording of this hop, drawn as its line on the day map (instead of the routed guess). Expected the .gpx file base64-encoded (gzip allowed). Defaulting to none (the hop's line is routed through its endpoints).
+⚠️  line 96: this activity (Unlocated) has no duration and none can be inferred from its start/end times — add a 'duration', or a 'start_time' and 'end_time'.
+ℹ️  line 96: optional field 'category' is missing — the kind of place, shown as the badge. Expected one of: museum, church, building, viewpoint, ruins, castle, temple, street, natural park, mountain, lake, beach, waterfall, other. Defaulting to "other".
+ℹ️  line 96: optional field 'address' is missing — the address. Expected any text. Defaulting to "".
+ℹ️  line 96: optional field 'description' is missing — a description. Expected any text. Defaulting to "".
+ℹ️  line 96: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
+ℹ️  line 96: optional field 'website' is missing — a link to the venue's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 96: optional field 'opening_days' is missing — the days it opens (the visit is checked against them). Expected weekday names like 'tue-sun', 'monday, thursday' or 'mon-fri, sun'. Defaulting to every day (no closed-day check).
+ℹ️  line 96: optional field 'opening_hours' is missing — the hours it opens (the visit is checked against them). Expected time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00'. Defaulting to all day (no opening-hours check).
+ℹ️  line 96: optional field 'activities' is missing — nested points of interest, hikes and meals. Expected an array of point_of_interest, hike or meal objects, each with a 'type'. Defaulting to [] (none nested).
+ℹ️  line 96: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 96: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 96: optional field 'duration' is missing — how long the activity lasts. Expected a duration like '1h30' or '45 min'. Defaulting to inferred from end_time, else 0.
+ℹ️  line 96: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 96: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+❌  line 97: 'same_end_as_next_activity' is set, but the next activity ('road') names no place to arrive at — give it a name, or the last leg an 'end_location'.
+ℹ️  line 97: optional field 'display_start_on_maps' is missing — whether the drive's departure gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 97: optional field 'display_end_on_maps' is missing — whether the drive's final arrival gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 97: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 97: optional field 'same_start_as_previous_activity' is missing — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false. Defaulting to false (the drive states its own departure).
+ℹ️  line 97: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 97: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
+ℹ️  line 97: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
+ℹ️  line 97: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 97: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 97: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 97: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 98: optional field 'start_coordinate' is missing — the departure point on the map. Expected an object with a 'lat' and a 'long'. Defaulting to geocoded from 'start_location' when maps are on.
+ℹ️  line 98: optional field 'end_location' is missing — where this hop arrives. Expected any text. Defaulting to the next activity's place ('same_end_as_next_activity' is on).
+ℹ️  line 98: optional field 'duration' is missing — how long this hop takes to drive. Expected a duration like '1h30' or '45 min'. Defaulting to none (not shown).
+ℹ️  line 98: optional field 'distance_km' is missing — this hop's driving distance in km. Expected a number. Defaulting to none (not shown).
+ℹ️  line 98: optional field 'off_road' is missing — whether this hop runs off-road. Expected true or false. Defaulting to false (and the drive counts as off-road only when every leg is).
+ℹ️  line 98: optional field 'waypoints' is missing — intermediate points the hop's route bends through, in order from its start to its end. Expected an array of {lat, long} coordinates. Defaulting to [] (the route runs straight between the hop's endpoints).
+ℹ️  line 98: optional field 'gpx' is missing — a GPX recording of this hop, drawn as its line on the day map (instead of the routed guess). Expected the .gpx file base64-encoded (gzip allowed). Defaulting to none (the hop's line is routed through its endpoints).
+❌  line 99: field 'same_start_as_previous_activity' is invalid ('maybe') — whether the drive departs from the previous activity's place — the first leg may then leave out its 'start_location' / 'start_coordinate', and the departure shares that activity's map pin instead of taking a number of its own. Expected true or false (must be true or false).
+❌  line 99: 'same_end_as_next_activity' is set on the day's last activity — there is no next activity to take the arrival from.
+ℹ️  line 99: optional field 'display_start_on_maps' is missing — whether the drive's departure gets a numbered map pin. Expected true or false. Defaulting to false (the drive is drawn as a route only).
+ℹ️  line 99: optional field 'display_intermediate_point_on_maps' is missing — whether each junction between two legs gets a numbered map pin. Expected true or false. Defaulting to true (splitting the drive there is what says the junction matters — set it false to leave the junctions unpinned).
+ℹ️  line 99: optional field 'description' is missing — anything about the drive the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 99: optional field 'guidebook_pages' is missing — the guidebook page(s) covering this activity. Expected page numbers like '14', '15-18' or '16, 23, 25-30'. Defaulting to "".
+ℹ️  line 99: optional field 'activities' is missing — nested meals (a stop along the drive). Expected an array of meal objects, each with a 'type'. Defaulting to [] (none nested).
+ℹ️  line 99: optional field 'start_time' is missing — the clock time the activity starts. Expected a time HH:MM. Defaulting to the previous activity's end, or the day's default start.
+ℹ️  line 99: optional field 'end_time' is missing — the clock time the activity ends. Expected a time HH:MM. Defaulting to start_time + duration.
+ℹ️  line 99: optional field 'start_tz' is missing — the start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 99: optional field 'end_tz' is missing — the end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+❌  line 101: required field 'start_location' is missing — where the drive departs from (the first leg has no previous leg to inherit it from). Expected any text.
+ℹ️  line 101: optional field 'start_coordinate' is missing — the departure point on the map. Expected an object with a 'lat' and a 'long'. Defaulting to geocoded from 'start_location' when maps are on.
+ℹ️  line 101: optional field 'duration' is missing — how long this hop takes to drive. Expected a duration like '1h30' or '45 min'. Defaulting to none (not shown).
+ℹ️  line 101: optional field 'distance_km' is missing — this hop's driving distance in km. Expected a number. Defaulting to none (not shown).
+ℹ️  line 101: optional field 'off_road' is missing — whether this hop runs off-road. Expected true or false. Defaulting to false (and the drive counts as off-road only when every leg is).
+ℹ️  line 101: optional field 'waypoints' is missing — intermediate points the hop's route bends through, in order from its start to its end. Expected an array of {lat, long} coordinates. Defaulting to [] (the route runs straight between the hop's endpoints).
+ℹ️  line 101: optional field 'gpx' is missing — a GPX recording of this hop, drawn as its line on the day map (instead of the routed guess). Expected the .gpx file base64-encoded (gzip allowed). Defaulting to none (the hop's line is routed through its endpoints).
+❌  line 106: field 'type' is invalid ('night train') — the transport type. Expected one of: plane, train, bus, taxi, ferry, other (must be one of: plane, train, bus, taxi, ferry, other).
+❌  line 106: field 'website' is invalid ('not-a-link') — a link to the carrier's website. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
+❌  line 106: required field 'legs' is missing — the hops this booking moves you over (a single-hop booking has one). Expected a non-empty array of {start, end, start_date, start_time, …} objects.
+❌  line 106: price currency 'CHF' is neither the default currency (EU) nor a declared secondary currency — add it to defaults.secondary_currencies or use a known currency.
+⚠️  line 106: field 'start_date' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
+⚠️  line 106: field 'start_time' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
+⚠️  line 106: field 'end_time' belongs on a transport leg, not on the booking — move it into 'legs', where the model reads it.
+⚠️  line 106: 'status' is set but 'booking_number' is missing — a confirmed/booked booking usually has a reference.
+ℹ️  line 106: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
+ℹ️  line 106: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 106: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 106: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 106: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
+ℹ️  line 106: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+❌  line 107: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
+❌  line 107: field 'price' is invalid ('lots') — the price of the whole booking, every leg included. Expected a number (must be a number).
+❌  line 107: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
+⚠️  line 107: 'status' is set but 'booking_number' is missing — a confirmed/booked booking usually has a reference.
+ℹ️  line 107: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
+ℹ️  line 107: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 107: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 107: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 107: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 107: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
+ℹ️  line 107: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+❌  line 108: leg end_date (2026-06-10) is before start_date (2026-06-11).
+⚠️  line 108: field 'booking_number' belongs on the transport booking, not on a leg — one reservation covers every leg, so move it up.
+⚠️  line 108: field 'price' belongs on the transport booking, not on a leg — one reservation covers every leg, so move it up.
+⚠️  line 108: this leg has no duration and none can be inferred from its start/end times — add a 'duration', or an 'end_time'.
+⚠️  line 108: 'flight_number' is set but the transport type is 'bus', not 'plane'.
+ℹ️  line 108: optional field 'end_time' is missing — the arrival time. Expected a time HH:MM. Defaulting to none / inferred from start_time + duration.
+ℹ️  line 108: optional field 'start_tz' is missing — the departure time zone. Expected a UTC offset like '-04:00'. Defaulting to the trip's default timezone.
+ℹ️  line 108: optional field 'end_tz' is missing — the arrival time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 108: optional field 'duration' is missing — the travel time. Expected a duration like '4h20'. Defaulting to inferred from the two times.
+ℹ️  line 108: optional field 'train_number' is missing — the train number of this leg (trains only). Expected any text. Defaulting to "".
 ℹ️  line 108: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
-ℹ️  line 108: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
-ℹ️  line 108: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
-ℹ️  line 108: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
-ℹ️  line 108: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
-ℹ️  line 108: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
-ℹ️  line 108: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
-❌  line 112: field 'car_type' is invalid ('spaceship') — the car category. Expected one of: regular, small, suv, 4x4 (must be one of: regular, small, suv, 4x4).
-❌  line 113: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
-❌  line 113: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
+ℹ️  line 110: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
+ℹ️  line 110: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 110: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 110: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 110: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 110: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
+ℹ️  line 110: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 110: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 110: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+ℹ️  line 111: optional field 'end_date' is missing — the arrival date. Expected a date YYYY-MM-DD. Defaulting to inferred (+1 day if it crosses midnight).
+ℹ️  line 111: optional field 'start_tz' is missing — the departure time zone. Expected a UTC offset like '-04:00'. Defaulting to the trip's default timezone.
+ℹ️  line 111: optional field 'end_tz' is missing — the arrival time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 111: optional field 'duration' is missing — the travel time. Expected a duration like '4h20'. Defaulting to inferred from the two times.
+ℹ️  line 111: optional field 'flight_number' is missing — the flight number of this leg (planes only). Expected any text. Defaulting to "".
+ℹ️  line 111: optional field 'train_number' is missing — the train number of this leg (trains only). Expected any text. Defaulting to "".
+ℹ️  line 111: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+❌  line 113: a transport needs at least one leg in 'legs' — a single-hop booking is a one-entry array.
+ℹ️  line 113: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
+ℹ️  line 113: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 113: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 113: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 113: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 113: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 113: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
+ℹ️  line 113: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 113: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 113: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+❌  line 114: 'legs' must be an array of {start, end, start_date, start_time, …} objects — one per hop.
+ℹ️  line 114: optional field 'name' is missing — what to call the whole booking. Expected any text. Defaulting to the route through its legs (A → B → C).
+ℹ️  line 114: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 114: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 114: optional field 'website' is missing — a link to the carrier's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 114: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 114: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 114: optional field 'description' is missing — a short note about the whole booking (a leg's own note goes on the leg). Expected any text. Defaulting to "".
+ℹ️  line 114: optional field 'price' is missing — the price of the whole booking, every leg included. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 114: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 114: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+❌  line 117: field 'status' is invalid ('maybe') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
+⚠️  line 117: 'status' is set but 'booking_source' is missing — a confirmed/booked stay usually has a reference.
+⚠️  line 117: 'paid' is set but 'price' is missing — the payment state is given without an amount.
+ℹ️  line 117: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
+ℹ️  line 117: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
+ℹ️  line 117: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
+ℹ️  line 117: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 117: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 117: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 117: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 117: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 117: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 117: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
+❌  line 118: required field 'city' is missing — the town, for the cover overview. Expected any text.
+❌  line 118: accommodations 'Hotel A' and 'Hotel B' overlap on the same night(s) — you can only sleep in one place.
+ℹ️  line 118: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
+ℹ️  line 118: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
+ℹ️  line 118: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
+ℹ️  line 118: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 118: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 118: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 118: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 118: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 118: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 118: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 118: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+ℹ️  line 118: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
+❌  line 119: required field 'name' is missing — the accommodation name. Expected any text.
+❌  line 119: field 'arrival' is invalid ('not-a-date') — the check-in date. Expected a date YYYY-MM-DD (Invalid date 'not-a-date', expected YYYY-MM-DD).
+❌  line 119: required field 'departure' is missing — the check-out date. Expected a date YYYY-MM-DD.
+❌  line 119: required field 'city' is missing — the town, for the cover overview. Expected any text.
+ℹ️  line 119: optional field 'type' is missing — the kind of accommodation. Expected one of: hotel, camping, b&b, other. Defaulting to "hotel".
+ℹ️  line 119: optional field 'address' is missing — the street address. Expected any text. Defaulting to "".
+ℹ️  line 119: optional field 'contact' is missing — a phone or email. Expected any text. Defaulting to "".
+ℹ️  line 119: optional field 'booking_source' is missing — where it was booked. Expected any text. Defaulting to "".
+ℹ️  line 119: optional field 'website' is missing — a link to the property's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 119: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 119: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 119: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 119: optional field 'price' is missing — the price. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 119: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 119: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+ℹ️  line 119: optional field 'breakfast_included' is missing — whether breakfast is included. Expected true or false. Defaulting to false.
+❌  line 122: car rental booking end (2026-06-08 09:00) must be after booking start (2026-06-11 20:00).
+⚠️  line 122: 'status' is set but 'booking_number' is missing — a confirmed/booked leg usually has a reference.
+⚠️  line 122: the car rental drop-off (10:00) overlaps an activity or transport on 2026-06-10.
+ℹ️  line 122: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
+ℹ️  line 122: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 122: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 122: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 122: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 122: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
+ℹ️  line 122: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 122: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 122: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 122: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 122: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 122: optional field 'paid' is missing — the payment state. Expected 'paid' or 'to pay'. Defaulting to none (no badge).
+ℹ️  line 122: optional field 'car_type' is missing — the car category. Expected one of: regular, small, suv, 4x4. Defaulting to "regular".
+ℹ️  line 122: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
+ℹ️  line 122: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
+ℹ️  line 122: optional field 'additional_drivers' is missing — the number of additional drivers. Expected a whole number. Defaulting to 0.
+ℹ️  line 122: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+ℹ️  line 122: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+❌  line 126: field 'booking_link' is invalid ('reservation-page') — a direct link to this reservation. Expected a link like 'https://example.com' (must be a link like 'https://example.com').
+❌  line 126: field 'status' is invalid ('later') — the reservation status. Expected 'booked' or 'confirmed' (must be 'booked' or 'confirmed').
+❌  line 127: car rental pick-up (2026-06-07 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
+❌  line 127: car rental drop-off (2026-06-06 10:00) is outside the booking period (2026-06-08 09:00 → 2026-06-11 20:00).
+❌  line 127: car rental drop-off (2026-06-06 10:00) is before the pick-up (2026-06-07 10:00).
+⚠️  line 127: 'paid' is set but 'price' is missing — the payment state is given without an amount.
+ℹ️  line 127: optional field 'dropoff_location' is missing — where you drop off the car. Expected any text. Defaulting to the pick-up location.
+ℹ️  line 127: optional field 'booking_start_tz' is missing — the booking start time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 127: optional field 'booking_end_tz' is missing — the booking end time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 127: optional field 'pickup_tz' is missing — the pick-up time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 127: optional field 'dropoff_tz' is missing — the drop-off time zone. Expected a UTC offset like '+02:00'. Defaulting to the trip's default timezone.
+ℹ️  line 127: optional field 'company' is missing — the rental company. Expected any text. Defaulting to "".
+ℹ️  line 127: optional field 'booking_number' is missing — the reservation reference. Expected any text. Defaulting to "".
+ℹ️  line 127: optional field 'website' is missing — a link to the rental company's website. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 127: optional field 'booking_link' is missing — a direct link to this reservation. Expected a link like 'https://example.com'. Defaulting to none (no link shown).
+ℹ️  line 127: optional field 'status' is missing — the reservation status. Expected 'booked' or 'confirmed'. Defaulting to none (no badge).
+ℹ️  line 127: optional field 'description' is missing — a short note for whatever the other fields don't cover. Expected any text. Defaulting to "".
+ℹ️  line 127: optional field 'price' is missing — the rental price. Expected a number. Defaulting to none (no price shown).
+ℹ️  line 127: optional field 'currency' is missing — the currency this price is in. Expected a 3-letter ISO code like 'USD'. Defaulting to the trip's default currency.
+ℹ️  line 127: optional field 'car_model' is missing — the car make/model. Expected any text. Defaulting to "".
+ℹ️  line 127: optional field 'contact' is missing — a phone or email for the rental company. Expected any text. Defaulting to "".
+ℹ️  line 127: optional field 'pickup_duration' is missing — how long the pick-up takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+ℹ️  line 127: optional field 'dropoff_duration' is missing — how long the drop-off takes. Expected a duration like '30 min'. Defaulting to none (not shown).
+❌  line 131: field 'car_type' is invalid ('spaceship') — the car category. Expected one of: regular, small, suv, 4x4 (must be one of: regular, small, suv, 4x4).
+❌  line 132: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
+❌  line 132: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-74 error(s), 39 warning(s), 241 info.
+81 error(s), 41 warning(s), 343 info.

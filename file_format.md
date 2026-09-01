@@ -377,7 +377,9 @@ description. It works the same on a nested activity.
 | `distance_km` |  | Driving distance for the whole drive | number | positive number | none |
 | `display_start_on_maps` |  | Give the departure a numbered map pin | boolean | `true` / `false` | `false` |
 | `display_end_on_maps` |  | Give the final arrival a numbered map pin | boolean | `true` / `false` | `false` |
-| `display_intermediate_point_on_maps` |  | Give every junction between two legs a numbered map pin | boolean | `true` / `false` | `false` |
+| `display_intermediate_point_on_maps` |  | Give every junction between two legs a numbered map pin | boolean | `true` / `false` | `true` |
+| `same_start_as_previous_activity` |  | The drive departs from the previous activity's place | boolean | `true` / `false` | `false` |
+| `same_end_as_next_activity` |  | The drive arrives at the next activity's place | boolean | `true` / `false` | `false` |
 | `description` |  | Anything the other fields don't cover | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering the drive | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `activities` |  | Nested meals (a stop along the drive) | array | `meal` objects, each with a `type` (see below) | `[]` |
@@ -417,6 +419,11 @@ arrival. Where both sides state it, the **earlier leg's `end_*` wins**, and
 validation warns when the two disagree (a differing name, or coordinates a
 kilometre or more apart): the drive can't jump between the two.
 
+The first leg's `start_*` and the last leg's `end_*` are the two ends the chain
+can't fill in — unless the road sets
+[`same_start_as_previous_activity` / `same_end_as_next_activity`](#a-drive-that-shares-an-end-with-its-neighbour),
+which hand that end to the neighbouring **activity** instead.
+
 The departure *coordinate* is the one point that stays optional: with maps on it
 is geocoded from `start_location` when absent (and
 [`geocode`](README.md#geocode--bake-in-coordinates) fills every endpoint of every
@@ -445,15 +452,26 @@ leg's flag is the drive's.
 
 A drive is drawn as a **route**, not as pins: with maps on, its line runs from
 the departure through every leg, with a small accent disc on each named point.
-The three `display_*_on_maps` switches — all **off** — additionally give those
-points a **numbered pin**, joining the day's `1..N` sequence in timeline order
-(so a pinned drive shifts the numbers of everything after it):
+The three `display_*_on_maps` switches additionally give those points a
+**numbered pin**, joining the day's `1..N` sequence in timeline order (so a
+pinned drive shifts the numbers of everything after it):
 
-| Switch | Pins |
-| ------ | ---- |
-| `display_start_on_maps` | the very first `start_location` |
-| `display_intermediate_point_on_maps` | every junction between two legs |
-| `display_end_on_maps` | the very last `end_location` |
+| Switch | Pins | Default |
+| ------ | ---- | ------- |
+| `display_start_on_maps` | the very first `start_location` | `false` |
+| `display_intermediate_point_on_maps` | every junction between two legs | **`true`** |
+| `display_end_on_maps` | the very last `end_location` | `false` |
+
+**The junctions are pinned by default; the two ends are not.** Splitting a drive
+at a place is what says the place matters, and a junction has nothing else on the
+page to identify it — so a multi-leg drive numbers its junctions unless you set
+`display_intermediate_point_on_maps` to `false`. The two ends are usually the
+activity before and the activity after (you leave the château and arrive at the
+hotel), which already carry numbers of their own; pinning them by default would
+put two on one place. Say they're the same place with
+[`same_start_as_previous_activity` / `same_end_as_next_activity`](#a-drive-that-shares-an-end-with-its-neighbour)
+instead, and set an end's switch only for a departure or arrival that really is
+a place of its own.
 
 Turn on all three and **every named point of the drive is pinned**. As with any
 other pin, a point whose coordinate says `"show_on_map": false` is left out, and
@@ -462,6 +480,47 @@ the departure's on the drive's title, each arrival's on that leg's row. This is
 why a **one-leg** drive with a pinned arrival prints its leg row after all
 (normally it doesn't, the title saying the same thing) — a pin number is
 unreadable without the name beside it.
+
+#### A drive that shares an end with its neighbour
+
+Most drives on a day begin where the last activity left you and end where the
+next one starts: you leave the château you just visited and drive to the town
+you're about to walk around. Two switches say so — both **off** by default:
+
+| Switch | Says |
+| ------ | ---- |
+| `same_start_as_previous_activity` | the drive departs from the **previous** activity's place |
+| `same_end_as_next_activity` | the drive arrives at the **next** activity's place |
+
+Each does two independent things.
+
+**It fills the endpoint in.** That leg endpoint becomes optional: leave the first
+leg's `start_location` / `start_coordinate` or the last leg's `end_location` /
+`end_coordinate` out and they are taken from that activity — its name and its
+`coordinate`. This is a *fallback*: an endpoint you write yourself still wins, so
+you can name the drive's end "Amboise — car park" while the visit is "Château
+d'Amboise".
+
+**It shares the map pin.** That end never takes a number of its own — it wears
+the neighbouring activity's, on the map and in the day's itinerary alike. One
+place keeps one number, which is the reason to set the switch even when you spell
+the endpoint out. The matching `display_*_on_maps` switch then adds nothing
+(validation says so as an info); the pin still appears, as the neighbour's.
+
+The "previous / next activity" is the one written next to the drive in `activities`,
+**skipping buffers** — free time is a length, not a place, so `[museum, 45 min
+buffer, drive]` departs from the museum. Three things are **errors**:
+
+* there is no previous / next activity at all (the drive is first or last in the
+  day) — the switch has nothing to resolve against;
+* that activity names no place (an unnamed meal, say) and the leg doesn't either;
+* for an arrival only: that activity has no `coordinate` and the last leg has no
+  `end_coordinate`. A drive's arrival is a point on the drawn route, so it has to
+  be located — the same requirement the last leg always carried.
+
+Drives are settled in order, so one drive can hand its arrival to the next
+drive's departure. Two drives each pointing at the other resolve to nothing and
+error: neither states the junction they share.
 
 The whole-trip map is unaffected: there a pin carries the **day**, not the stop,
 and it already shows every named road point.

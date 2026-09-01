@@ -291,12 +291,11 @@
           "distance_km": 72,
           "start_time": "11:00",
           "duration": "1h",
+          "same_end_as_next_activity": true,
           "legs": [
             {
               "start_location": "Tours",
-              "start_coordinate": { "lat": 47.39, "long": 0.6942 },
-              "end_location": "Château de Chambord",
-              "end_coordinate": { "lat": 47.6161, "long": 1.5169 }
+              "start_coordinate": { "lat": 47.39, "long": 0.6942 }
             }
           ]
         },
@@ -365,7 +364,6 @@
           "start_time": "08:30",
           "duration": "4h",
           "display_start_on_maps": true,
-          "display_intermediate_point_on_maps": true,
           "legs": [
             {
               "start_location": "Amboise",
@@ -468,6 +466,7 @@
           "distance_km": 55,
           "duration": "1h",
           "description": "Un trajet lent le long de la Dordogne plutôt que la route intérieure, plus rapide.",
+          "same_start_as_previous_activity": true,
           "legs": [
             {
               "start_location": "Beynac-et-Cazenac",

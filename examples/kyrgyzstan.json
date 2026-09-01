@@ -103,7 +103,7 @@
       "title": "Red rocks & fairy canyon",
       "description": "The Seven Bulls formation and the Skazka canyon on the south shore.",
       "activities": [
-        { "type": "road", "distance_km": 30, "display_intermediate_point_on_maps": true,
+        { "type": "road", "distance_km": 30,
           "legs": [
             { "start_location": "Karakol", "start_coordinate": { "lat": 42.4817, "long": 78.4003 },
               "end_location": "Jeti-Oguz", "end_coordinate": { "lat": 42.3520, "long": 78.2340 },

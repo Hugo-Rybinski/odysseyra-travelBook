@@ -263,6 +263,7 @@
           "type": "road",
           "distance_km": 96,
           "duration": "2h05",
+          "display_intermediate_point_on_maps": false,
           "legs": [
             {
               "start_location": "Gavarnie",

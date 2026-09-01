@@ -242,7 +242,9 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km for the whole drive (each leg carries its own too). Optional." },
     { key: "display_start_on_maps", label: "Pin the departure", kind: "bool", help: "Give the drive's departure a numbered pin on the day map. Defaults to off — a drive is drawn as a route, and its pins are opt-in." },
     { key: "display_end_on_maps", label: "Pin the arrival", kind: "bool", help: "Give the drive's final arrival a numbered pin on the day map. Defaults to off." },
-    { key: "display_intermediate_point_on_maps", label: "Pin the junctions", kind: "bool", help: "Give every junction between two legs a numbered pin on the day map. With all three switches on, every named point of the drive is pinned. Defaults to off." },
+    { key: "display_intermediate_point_on_maps", label: "Pin the junctions", kind: "bool", defaultOn: true, help: "Give every junction between two legs a numbered pin on the day map — splitting the drive there is what says the junction matters. Defaults to on, unlike the two ends: switch it off to leave the junctions marked only by the route's own small disc." },
+    { key: "same_start_as_previous_activity", label: "Starts at the previous activity", kind: "bool", help: "The drive departs from wherever the previous activity is. You can then leave the first leg's From and its coordinate blank — they're filled in from that activity — and the departure shares its map pin instead of taking a second number for the same place. Errors if there is no previous activity. Defaults to off." },
+    { key: "same_end_as_next_activity", label: "Ends at the next activity", kind: "bool", help: "The drive arrives at wherever the next activity is. You can then leave the last leg's To and its coordinate blank — they're filled in from that activity, which must have a coordinate — and the arrival shares its map pin instead of taking a second number for the same place. Errors if there is no next activity. Defaults to off." },
     { key: "description", label: "Description", kind: "textarea", help: "Anything about the drive the other fields don't cover — road conditions, a scenic stretch, a toll or ferry. Optional." },
     GUIDEBOOK_FIELD,
   ],
@@ -287,8 +289,8 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
 // and the last its own arrival. The route-shaping `waypoints` are a sub-array of
 // bare coordinates, so they have no field spec of their own.
 export const ROAD_LEG_FIELDS: FieldSpec[] = [
-  { key: "start_location", label: "From", kind: "text", placeholder: "the previous leg's arrival", help: "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival." },
-  { key: "end_location", label: "To", kind: "text", placeholder: "the next leg's departure", help: "Where this hop arrives. Required on the last leg; on an earlier one the next leg's departure can name it instead." },
+  { key: "start_location", label: "From", kind: "text", placeholder: "the previous leg's arrival", help: "Where this hop departs from. Leave it blank on any leg but the first: it then reuses the previous leg's arrival. The first leg may leave it blank too when the drive starts at the previous activity." },
+  { key: "end_location", label: "To", kind: "text", placeholder: "the next leg's departure", help: "Where this hop arrives. Required on the last leg — unless the drive ends at the next activity; on an earlier one the next leg's departure can name it instead." },
   { key: "duration", label: "Driving time", kind: "duration", placeholder: "1h30 / 45 min", help: "Driving time for this hop. Optional, but validation warns when it's missing." },
   { key: "distance_km", label: "Distance (km)", kind: "number", help: "Driving distance for this hop. Optional, but validation warns when it's missing." },
   { key: "off_road", label: "Off-road", kind: "bool", help: "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off." },

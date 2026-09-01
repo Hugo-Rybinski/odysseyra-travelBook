@@ -153,10 +153,44 @@ class DayMaps:
     main: RenderedMap | None = None
     areas: list[tuple[str, RenderedMap]] = field(default_factory=list)  # (area title, map)
     numbers: dict = field(default_factory=dict)  # id(activity) -> its pin number
+    # id(object) -> the activity whose pin it wears instead of one of its own
+    # (see `pin_aliases`). The value is the object, not its id, so holding this
+    # dict keeps the target alive — an id() key of a freed object would collide.
+    aliases: dict = field(default_factory=dict)
 
     def number_for(self, act) -> int | None:
-        """The pin number for ``act`` on whichever map it appears (or None)."""
-        return self.numbers.get(id(act))
+        """The pin number for ``act`` on whichever map it appears (or None).
+
+        Resolved through ``aliases`` so a drive's shared end reads the number of
+        the activity it shares its place with — which is only numbered later in
+        the pass, hence the lookup at read time rather than a copied value."""
+        label = self.numbers.get(id(act))
+        if label is None:
+            shared = self.aliases.get(id(act))
+            if shared is not None:
+                return self.numbers.get(id(shared))
+        return label
+
+
+def pin_aliases(day) -> dict:
+    """``{id(object): the activity it borrows a pin from}`` for ``day``.
+
+    A drive with ``same_start_as_previous_activity`` /
+    ``same_end_as_next_activity`` says that end of it *is* the neighbouring
+    activity's place, so it must not earn a second number for the same point —
+    :func:`resolve_day` draws no pin there and this maps the object the renderers
+    ask about onto the one that does. Those objects are the same two the pins
+    always hung off: the **road** carries its departure's label and the last
+    waypoint its arrival's."""
+    out: dict = {}
+    for act in getattr(day, "activities", []) or []:
+        if getattr(act, "kind", "") != "road":
+            continue
+        if act.start_shared_with is not None:
+            out[id(act)] = act.start_shared_with
+        if act.end_shared_with is not None and act.waypoints:
+            out[id(act.waypoints[-1])] = act.end_shared_with
+    return out
 
 
 @dataclass
@@ -273,8 +307,10 @@ def resolve_day(day, itinerary, cache):
             # sequence here, in timeline order, so the numbers still read down
             # the page: the departure is the road's own pin, each pinned
             # junction/arrival is its waypoint's.
-            if act.display_start_on_maps and a and (
-                    act.coordinate is None or act.coordinate.show_on_map):
+            # `start_shared_with` bows out of the sequence: the departure is the
+            # previous activity's place, which is pinned already (`pin_aliases`).
+            if (act.display_start_on_maps and a and act.start_shared_with is None
+                    and (act.coordinate is None or act.coordinate.show_on_map)):
                 main.append(_Pt(act.start or act.title, a[0], a[1], act))
             for wp in act.pinned_waypoints():
                 main.append(_Pt(wp.location, wp.coordinate.lat, wp.coordinate.long, wp))
@@ -307,7 +343,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
     """Build the main day map and any per-area detail maps (PIL images)."""
     main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
     accent = _hex_to_rgb(itinerary.cover_color)
-    result = DayMaps()
+    result = DayMaps(aliases=pin_aliases(day))
 
     # main map: activities numbered 1..N
     main_points = [(p.lat, p.long) for p in main_pts]

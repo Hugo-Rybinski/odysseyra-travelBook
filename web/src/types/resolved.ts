@@ -117,8 +117,8 @@ export interface Activity extends Scheduled {
   off_road?: boolean;
   // Which of the drive's own points earn a numbered pin on the day map — the
   // departure (the road's own `map_pin`), the final arrival, and the junctions
-  // in between (each on its waypoint). All default off; a day cached before v18
-  // carries none of them.
+  // in between (each on its waypoint). The two ends default off, the junctions
+  // **on**; a day cached before v18 carries none of them.
   display_start_on_maps?: boolean;
   display_end_on_maps?: boolean;
   display_intermediate_point_on_maps?: boolean;

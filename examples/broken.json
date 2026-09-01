@@ -81,6 +81,25 @@
         { "type": "road", "start": "Old shape", "coordinate": { "lat": 1, "long": 2 }, "off_road": true,
           "waypoints": [ { "coordinate": { "lat": 1, "long": 2 }, "location": "Nowhere" } ] }
       ]
+    },
+    {
+      "date": "2026-06-12",
+      "title": "Roads sharing an end with a neighbour",
+      "activities": [
+        { "type": "road", "same_start_as_previous_activity": true, "display_start_on_maps": true,
+          "duration": "1h", "distance_km": 5,
+          "legs": [ { "end_location": "Nowhere", "end_coordinate": { "lat": 1, "long": 2 } } ] },
+        { "type": "meal" },
+        { "type": "road", "same_start_as_previous_activity": true, "same_end_as_next_activity": true,
+          "display_start_on_maps": true, "display_end_on_maps": true,
+          "duration": "1h", "distance_km": 5, "legs": [ {} ] },
+        { "type": "point_of_interest", "name": "Unlocated" },
+        { "type": "road", "same_end_as_next_activity": true, "duration": "1h", "distance_km": 5,
+          "legs": [ { "start_location": "C", "end_coordinate": { "lat": 1, "long": 2 } } ] },
+        { "type": "road", "same_start_as_previous_activity": "maybe", "same_end_as_next_activity": true,
+          "display_end_on_maps": true, "duration": "1h", "distance_km": 5,
+          "legs": [ { "end_location": "B", "end_coordinate": { "lat": 1, "long": 2 } } ] }
+      ]
     }
   ],
   "transport": [

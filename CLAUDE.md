@@ -372,12 +372,20 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     now fills **every** leg endpoint (`maps/writeback.py`) — something the old
     shape couldn't do for a waypoint, since its coordinate was required up front.
   - **A drive can pin its own points** — `display_start_on_maps`,
-    `display_end_on_maps`, `display_intermediate_point_on_maps`, all **off**. A
+    `display_end_on_maps`, `display_intermediate_point_on_maps`. A
     road is a *route*; these give its departure, its final arrival and its
     junctions a **numbered pin** as well, joining the day's `1..N` sequence in
     timeline order (`resolve_day` appends them where the road sits, so the
     numbers still read down the page and everything after a pinned drive shifts).
-    All three on = every named point pinned, which is the whole rule. The pin is
+    All three on = every named point pinned, which is the whole rule. **The
+    junction switch defaults on, the two ends off**: splitting a drive at a place
+    is what says the place matters, and a junction has nothing else on the page
+    to identify it, while the two ends are usually the activity before and after
+    — already numbered, so pinning them by default would put two numbers on one
+    place (that is what the `same_*_as_*_activity` pair below is for). Because
+    every multi-leg drive that never mentioned the switch now pins its junctions
+    and renumbers the rest of its day, that default needed a `SCHEMA_VERSION`
+    bump (**v20**) — same shape, same JSON, different `map_pin`. The pin is
     keyed by object identity like every other (`DayMaps.numbers[id(obj)]`): the
     **road** object carries the departure's label — so `pin_label(road)` /
     `act.map_pin` needed no new plumbing — and each pinned waypoint carries its
@@ -415,6 +423,65 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     The whole-trip map is deliberately untouched: a pin there carries the
     **day**, not the stop, and `tripGeo.ts`'s model fallback already draws every
     named road point.
+  - **A drive can share an end with the activity beside it** —
+    `same_start_as_previous_activity` / `same_end_as_next_activity`, both
+    **off**. Most drives on a day leave where the last activity left you and
+    arrive where the next one starts; these say so, and do **two independent
+    things**:
+    - **They fill the endpoint in.** The one endpoint the leg chain can't
+      deduce — the first leg's `start_*`, the last leg's `end_*` — may be left
+      blank and is taken from that activity's place name and `coordinate`. Only a
+      *fallback*: an endpoint you write yourself wins, so the drive can end at
+      "Amboise — car park" while the visit is "Château d'Amboise".
+    - **They share the map pin.** That end never takes a number of its own,
+      whatever `display_start_on_maps` / `display_end_on_maps` say — it wears the
+      neighbour's, on the map and in the day's itinerary alike. One place, one
+      number. This is the half worth having even with the endpoint spelled out,
+      and it is what the user asked for in those words; the validator turns the
+      now-redundant `display_*` switch into an **info** rather than dropping it.
+
+    Only `Day.from_dict` can settle this — `Road.from_dict` sees one activity —
+    so `models/activities.py`'s `resolve_shared_road_endpoints(activities)` runs
+    there, **before** `schedule_activities`, so "the next activity" is still the
+    one the JSON wrote next rather than an inserted buffer. `_road_chain` gained
+    `borrow_start`/`borrow_end` purely to stop raising on the blank endpoint, and
+    `Waypoint.coordinate` is typed optional for that one transient state (the
+    pending arrival, filled in before the day is observable). Buffers are
+    **skipped** when looking for the neighbour: free time is a length, not a
+    place, so `[museum, 45 min buffer, drive]` departs from the museum. Roads are
+    settled left to right, so one drive can hand its arrival to the next drive's
+    departure; two pointing at each other resolve to nothing and raise, which is
+    the honest answer. Three things raise, all of them reported by the validator
+    too (`_road_shared_endpoints` → `_shared_start`/`_shared_end`): no
+    neighbouring activity at all (the drive is first or last in the day), one
+    that names no place, and — for an arrival — one with no `coordinate`, since a
+    drive's arrival is a point on the drawn route.
+    - **No renderer changed, in either language.** The pin is aliased at
+      *lookup* time: `maps/build.py`'s `pin_aliases(day)` maps `id(road)` →
+      the previous activity and `id(waypoints[-1])` → the next one, `DayMaps`
+      carries it, and `number_for` falls through to it (the target is numbered
+      later in the same pass, so a copied value would be empty). Those are the
+      **same two objects** the pins always hung off — the road carries its
+      departure's label, the last waypoint its arrival's — so `pin_label` /
+      `_stamp_pins` → `map_pin` → `ActivityTitle` / `RoadVia` all work
+      untouched. `resolve_day` and `Road.pinned_waypoints` just stop emitting a
+      pin of their own there.
+    - **No `SCHEMA_VERSION` bump.** The resolved doc gains no field (the flags
+      are *input*, consumed by the model; the Edit tab reads them from
+      `source.ts`) and a road without them resolves byte-identically, so a
+      cached day can't be masking anything.
+    - The validator needs raw-JSON twins of the model's accessors —
+      `_raw_place_name` / `_raw_place_coord` beside `_place_name` /
+      `_place_coord`, **keep the pairs in step**. Two traps they exist for: a
+      *road* neighbour is two places (its start side is its first leg's
+      departure, its end side its last leg's arrival), and a road carries no
+      `coordinate` of its own any more, so reading that key for every type would
+      report every drive as unlocated.
+    - `examples/france.json` exercises both halves: *Renaissance châteaux* drops
+      the last leg's `end_location`/`end_coordinate` entirely (the next activity
+      *is* Château de Chambord — the duplication the flag exists to remove), and
+      *Castles & caves* keeps `Beynac-et-Cazenac` written out and takes only the
+      pin. `broken.json`'s last day carries every error and both infos.
   - **A leg may carry a `gpx`** — stored exactly like a hike's (base64, gzip
     tolerated, `models/gpx.py`) but used for one thing only: `maps/build.py`'s
     `_road_route` draws **that leg** from the recording instead of routing it, so
@@ -743,9 +810,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **Examples are kept in sync and tested.** `examples/france.json` (the flagship:
   a valid, feature-rich France tour, maps on — also the web viewer's **Demo**) and
   `examples/france_fr.json` (same trip in French — build with `--lang fr`);
-  `examples/pyrenees.json` (valid, English — the one example with
-  `auto_sized_buffer` **off** and a fixed `buffer`, so both spacing paths stay
-  rendered), `examples/pyrenees_pieces/` (the same
+  `examples/pyrenees.json` (valid, English — the designated **opt-out** example,
+  so the paths a default-on switch would otherwise hide stay rendered:
+  `auto_sized_buffer` **off** with a fixed `buffer`, and its 3-leg drive sets
+  `display_intermediate_point_on_maps` **false**), `examples/pyrenees_pieces/` (the same
   trip split into per-file fragments for `stitch` — a test asserts it reassembles
   `pyrenees.json` exactly, so keep the two in sync), `examples/pyrenees_fr.json`
   (same trip in French — build with `--lang fr`), `examples/kyrgyzstan.json`
