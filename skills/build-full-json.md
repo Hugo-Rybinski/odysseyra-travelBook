@@ -39,14 +39,33 @@ the sources print them — the choice only governs the prose you write.
 
 1. Read **all** the source material first. Note which document each fact comes
    from — you will report conflicts between them at the end.
-2. Build one JSON object with the top-level shape below. Fill only what the
+2. **Inventory the tracks before you write anything.** List every GPX (and
+   KML/KMZ) file you were given, and for each one note what it records, what its
+   name says its two ends are, and the coordinates of its **first and last**
+   points. That list is both an assignment sheet — every file has to end up
+   attached to a hike or a road leg — and a gazetteer: it locates places that
+   appear in no other document, and a road leg's arrival *must* be located. See
+   *Mining a GPX for coordinates*, below.
+3. Build one JSON object with the top-level shape below. Fill only what the
    sources actually state; leave everything else out so the tool applies its
    defaults.
-3. **Self-check** the JSON against the "Global rules" and the "Before you emit
+4. **Self-check** the JSON against the "Global rules" and the "Before you emit
    it" checklist at the end — you have no validator, so this manual pass is your
    only safety net.
-4. Output the finished JSON, then report the gaps and the inconsistencies (see
+5. Output the finished JSON, then report the gaps and the inconsistencies (see
    the end of this document).
+
+**Mining a GPX for coordinates.** A GPX is not only a line to embed — it is a
+list of surveyed points, and its **two ends are places**. Its first trackpoint is
+where whatever it records begins and its last one is where it ends, so a file
+called `road-cauterets-to-gite-du-clot.gpx` hands you the coordinate of the
+*Gîte du Clot*: use it for the road leg that arrives there, for the next leg that
+departs from there, and for the accommodation of that name — which no booking
+voucher or guidebook will ever locate. Do this **before** you start
+writing, because a road leg's arrival is a coordinate you are not allowed to omit
+(*Every arrival of a drive must be located*), and "the sources don't say where it
+is" is usually false when a track ends at it. Copy the point exactly, taking
+`long` from the point's `lon` attribute.
 
 **Mining an MBOX for booking links.** When the source includes an MBOX export
 (e.g. a Gmail label saved via Google Takeout), treat each confirmation email as
@@ -309,9 +328,9 @@ day:
   Name only those two even if the drive passes through others — the road's
   legs carry the rest. Never chain three (`"A → B → C"`).
 - **A day out of town that returns to the same base** → keep the **base town**,
-  not the excursion: a day hiking in Ala Archa out of Bishkek is `"Bishkek"`, not
-  `"Ala Archa National Park"`. Use an **area** name only when the day genuinely
-  belongs to it rather than to a town (`"Cirque de Gavarnie"`).
+  not the excursion: a day hiking to the Lac de Gaube out of Cauterets is
+  `"Cauterets"`, not `"Lac de Gaube"`. Use an **area** name only when the day
+  genuinely belongs to it rather than to a town (`"Cirque de Gavarnie"`).
 - **A travel-only day** (you fly out and sleep aboard, or in transit) → where the
   day *starts*: france.json's departure day is `"New York"`.
 
@@ -532,9 +551,9 @@ Each **leg** is an object:
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `start_location` | **yes on the first leg** | text | Where the hop departs from. On any later leg, omit it and it reuses the previous leg's `end_location`. On the first leg it may be omitted too when the road sets `same_start_as_previous_activity`. |
-| `start_coordinate` | no | `{ "lat": .., "long": .. }` | The departure point. Omit on a later leg to reuse the previous leg's `end_coordinate`. Only set coordinates you actually know. |
+| `start_coordinate` | no | `{ "lat": .., "long": .. }` | The departure point. On the **first** leg this is the one coordinate of the whole drive that may be left out — it is geocoded from `start_location` — but give it whenever you have it. On a later leg, omit it: it reuses the previous leg's `end_coordinate`. |
 | `end_location` | **yes on the last leg** | text | Where the hop arrives. On an earlier leg the next leg's `start_location` can name it instead; on the last leg it may be omitted when the road sets `same_end_as_next_activity`. |
-| `end_coordinate` | **yes unless the next leg's `start_coordinate` gives it** | `{ "lat": .., "long": .. }` | The arrival point — it is plotted on the map, so it must resolve. |
+| `end_coordinate` | **yes** — see *Every arrival of a drive must be located* | `{ "lat": .., "long": .. }` | Where this hop arrives, as a point on the **drawn route**. Satisfied instead by the next leg's `start_coordinate`, or — on the last leg only — by the next activity's `coordinate` when `same_end_as_next_activity` is on. Nothing else fills it in: an arrival nobody locates is a hard **error**. |
 | `duration` | recommended | duration (`"45 min"`) | Driving time for this hop. |
 | `distance_km` | recommended | positive number | Driving distance for this hop. |
 | `off_road` | no | boolean | `true` if **this hop** runs off-road. |
@@ -550,6 +569,30 @@ Each **leg** is an object:
   coordinates are a kilometre or more apart, and the earlier leg's `end_*` is
   what gets used. What no leg names at all is an **error**: the first leg must
   give its own departure and the last its own arrival.
+- **Every arrival of a drive must be located.** This is where a road differs from
+  every other activity, and it is the commonest error in a generated file. A road
+  is a *route drawn on the map*, so each point it is drawn through has to be a
+  real coordinate:
+
+  | Point of the drive | Where its coordinate comes from |
+  |---|---|
+  | the first leg's departure | its own `start_coordinate`, else **geocoded from `start_location`** — the only point of a drive that may go unlocated |
+  | every junction (leg N's arrival = leg N+1's departure) | leg N's `end_coordinate`, **or** leg N+1's `start_coordinate` — one of the two is **required** |
+  | the last leg's arrival | its own `end_coordinate` — **or** the next activity's `coordinate`, and only when `same_end_as_next_activity` is on |
+
+  So the global "only set coordinates you actually know" does **not** excuse a
+  missing `end_coordinate`: here you have to go and *find* it before you can
+  write the leg. Look, in this order: a KML/KMZ; the **two ends of a supplied GPX
+  track** (see the `gpx` bullet below — that is where a guest house or a trailhead
+  named in no other document is usually hiding); a coordinate the same place
+  already carries elsewhere in the file (its own `point_of_interest`, that night's
+  accommodation, another day's leg); its address.
+
+  If you genuinely cannot locate a junction, **do not split the drive there** —
+  merge the two hops into one leg and name the place in the road's `description`
+  instead. An unlocated junction is an error; an unsplit drive is just less
+  detail. Never leave a `"FIXME"` in a coordinate, and never guess one to fill
+  the hole.
 - **A named stop is a leg; a bend in the road is a waypoint.** Split the drive
   into a leg per place the reader should see (each prints as its own row with its
   own duration/distance and a *Navigate* link). Points that only **shape the
@@ -560,6 +603,27 @@ Each **leg** is an object:
   own duration/`distance_km` cover it, since the drive *is* that hop.
 - Keep the leg `duration`s adding up to no more than the road's own `duration`;
   `validate` warns if they don't fit the drive.
+- **A drive taken in both directions is one set of figures.** When the trip
+  drives `A → B` and later drives `B → A` back along the same road, everything
+  the source gives for one direction applies to the other: the same
+  `distance_km`, the same `duration`, the same `gpx`. Fill **both** directions
+  from it — a source that timed only the outbound is not a reason for the return
+  hop to print nothing, and `validate` warns on the bare one either way. It works
+  in both directions of *reading*, too: figures stated only for the way back are
+  equally the figures for the way out.
+  - **Attach the recording to both legs, unchanged.** A GPX is a line on a map,
+    which draws the same whichever way it was driven; never reverse, re-order or
+    re-write the XML to "match" the return direction (the copy-it-byte-for-byte
+    rule holds), and never synthesize a mirrored file.
+  - **Match the splits.** When one direction is written as more legs than the
+    other, apportion the figures rather than repeating the total: out via
+    `Cauterets → Gîte du Clot → Pont d'Espagne` and back as one
+    `Pont d'Espagne → Cauterets` hop of 12 km means the two outbound legs carry
+    the parts that add up to 12 km, and each direction's own GPX goes on the hop
+    it records.
+  - **Only when it really is the same road.** A deliberate loop — up over one
+    pass, back over another — is two different drives: reuse nothing, and if the
+    source times only one of them, leave the other's figures out.
 - **Off-road belongs to the hop.** When the source says one stretch is rough —
   paved to the village, then 5 km of track — set `off_road: true` on **that leg**
   alone; its row carries an `OFF-ROAD` chip. A drive that is off-road from end to
@@ -600,21 +664,32 @@ Each **leg** is an object:
      If they are 3 km or more apart, do **not** set it — the names agreeing is
      then a coincidence of naming, not one place. If only one side has a
      coordinate, treat the names as the whole answer and use step 1's verdict.
-
-  ~3 km is roughly a town and its outskirts: a château and its village, a museum
-  and its car park, a trailhead and the hamlet below it. Two different villages
-  in one valley are usually further apart than that.
+     ~3 km is roughly a town and its outskirts: a château and its village, a
+     museum and its car park, a trailhead and the hamlet below it. Two different
+     villages in one valley are usually further apart than that.
+  3. **For an arrival, the neighbour has to be located.** The switch *borrows* a
+     coordinate; it never invents one. So `same_end_as_next_activity` needs the
+     next activity to carry a `coordinate` — or the last leg to keep its own
+     `end_coordinate` — and step 2's "neither has one" branch is an **error**
+     here, not a green light (a departure is fine unlocated; an arrival is a
+     point on the drawn route). Locate that activity first, then set the switch.
+     `same_start_as_previous_activity` needs only a *named* previous activity.
 
   - Still **write the endpoint out** whenever the source names it — the switch is
     then only about the shared pin, which is the half worth having. Omit the
     endpoint only when the source really gives no name of its own for it.
   - Never set a switch to paper over a **different** place. "Drive from the hotel
     car park" after a visit to the old town is two places; write the departure.
+  - **Never set a switch to dodge a coordinate you don't have.** It states a fact
+    about the trip — "the drive ends where the next visit begins" — it is not a
+    way to leave an endpoint blank. If you don't know where the arrival is, the
+    switch doesn't help you: the error just moves onto the flag.
   - It is an **error** when there is no previous / next activity (the drive is
     first or last in the day), when that activity names no place, or — for an
     arrival — when it has no `coordinate` and the last leg has no
     `end_coordinate`. Check the neighbour before setting the switch.
-  - Worked examples, from `examples/france.json`:
+  - Worked examples, all from `examples/france.json` — the last one is that same
+    trip with the POI's `coordinate` left out, which is how this goes wrong:
 
     | Drive end | Neighbour | Names | Distance | Set it? |
     |---|---|---|---|---|
@@ -624,6 +699,7 @@ Each **leg** is an object:
     | arrives `Toulouse-Blagnac Airport` | meal `Le Comptoir du Terminal` | the restaurant is *in* the airport | 0.0 km | ✅ |
     | departs `Chambord` | meal `Le Grand Saint-Michel` | the restaurant faces the château | 0.25 km | ✅ |
     | arrives `Hôtel des Grands Boulevards` | meal `Bistrot Vivienne` | a hotel and a bistro are two businesses | 0.63 km | ❌ — step 1 fails, so the distance never matters |
+    | arrives `Lourdes` | POI `Sanctuaire Notre-Dame de Lourdes` with **no `coordinate`** | same place | unknown | ❌ **error** — the arrival ends up nowhere. Locate the POI and it becomes ✅; otherwise keep the leg's own `end_coordinate` |
 - **A leg's `gpx` is only ever a file the user gave you.** If the trip material
   contains a `.gpx` for a drive (or a segment of one), attach it to the leg it
   records, base64-encoded, and drop that leg's `waypoints` — the recording
@@ -632,6 +708,19 @@ Each **leg** is an object:
   recording is a wrong map drawn with total confidence. Nothing else about the
   leg changes: keep its stated `duration` / `distance_km` rather than measuring
   them off the file.
+- **A supplied GPX locates both ends of the hop it records.** Its **first**
+  trackpoint *is* that leg's departure and its **last** one *is* that leg's
+  arrival, so read the two out of the file and write them as `start_coordinate` /
+  `end_coordinate` (`lat` from the point's `lat`, `long` from its `lon` — copied,
+  not rounded). A leg carrying a `gpx` therefore has **no excuse** for an
+  unlocated arrival. The file's name and its `<name>` element usually say which
+  places those two points are: `road-cauterets-to-gite-du-clot.gpx` ends at the
+  **Gîte du Clot**, so its last point is that gîte's coordinate — for this leg,
+  for the next leg that departs from there, *and* for the accommodation of the
+  same name, which no other document in the trip located. Two tracks meeting at
+  one place will not land on the identical point
+  (they were recorded separately); a gap under 1 km is the same place, so take
+  either — see *Nearby coordinates aren't a conflict*.
 - A road's **`description` is optional and holds only what no other field can**:
   the state of the road, a scenic or difficult stretch, a pass that may be shut,
   a toll, a ferry crossing, where to refuel. It is **not** the place to restate
@@ -792,6 +881,18 @@ Rules:
 - The two bullets above about *measuring* apply to a hike only. A road leg's
   `duration` and `distance_km` stay exactly as the source states them — the
   track's measurements are never substituted.
+- **Mine every track for coordinates before deciding a place can't be located.**
+  A track's first and last points are the coordinates of the places it runs
+  between — a trailhead, a pass, a guest house, a road junction — and they are
+  usually the only record of them (see *A supplied GPX locates both ends of the
+  hop it records*, under `road`, and *A GPX track locates the places at its two
+  ends*, in the global rules).
+- **Use every file you were given, and use one twice when the trip does.** Each
+  GPX records something the trip contains; attach each to the hike or leg it
+  records, attach the same file to **both** legs when the drive is taken there and
+  back (see *A drive taken in both directions is one set of figures*), and if a
+  file is genuinely left over, name it in the gaps report rather than dropping it
+  in silence.
 
 #### Type `meal` — a stop to eat
 
@@ -1296,10 +1397,22 @@ values, so a real run would cite all three under *Looked up online*.
 - When a value is unknown but the field is **required**, leave a clear `"FIXME"`
   placeholder so it stands out to the user (the tool's validator will also flag
   it later).
-- **Only set coordinates you actually know — never guess them.**
+- **Only set coordinates you actually know — never guess them.** With one
+  standing exception: a **road leg's arrival** is not optional, so there you go
+  and find the coordinate instead of leaving it out — see *Every arrival of a
+  drive must be located*.
 - **A KML/KMZ file is the principal source of truth for coordinates.** When one
   is provided, take every `coordinate` from it. If another document states
   different coordinates for the same place, trust the KML/KMZ.
+- **A GPX track locates the places at its two ends.** Its first and last
+  trackpoints are coordinates for whatever it runs between, so mine every
+  supplied track before concluding that a place cannot be located — and use those
+  points wherever that place appears: a road leg's `start_coordinate` /
+  `end_coordinate`, a `point_of_interest`, a `place`, a `hike`, or an
+  **accommodation** (a stay's `coordinate` also fixes its map pin and the day's
+  sunrise/sunset reference). It ranks alongside the KML/KMZ, above prose. The
+  track's *name* — the filename and its `<name>` element — is what tells you
+  which places its two ends are.
 - **Nearby coordinates aren't a conflict.** Two sources pinning the same place
   **less than 1 km apart** are describing the same spot — a car park vs. the
   entrance, a town centroid vs. a specific address. Keep the authoritative one
@@ -1433,6 +1546,25 @@ You cannot run the validator, so verify these by hand:
   `waypoints` or `off_road` of its own (all four moved onto the legs), every
   road's `legs` is non-empty, the first leg names its `start_location`, the last
   its `end_location`, and each junction written on both sides matches.
+- **Every drive is located:** walk each road's legs and confirm every **arrival**
+  has a coordinate — its own `end_coordinate`, the next leg's `start_coordinate`,
+  or (last leg only, with `same_end_as_next_activity` on) a next activity that
+  really carries a `coordinate`. The very first departure of a drive is the only
+  point allowed to be unlocated. This is a hard error, and the one most often
+  found in a generated file.
+- **Every `same_end_as_next_activity` has a *located* neighbour** — the switch
+  borrows the next activity's `coordinate`, it never stands in for one — and
+  every `same_start_as_previous_activity` has a previous activity that names a
+  place. Neither switch was used to leave an endpoint blank that you simply
+  didn't know.
+- **Both directions of a there-and-back drive carry the same figures:** the
+  return legs have a `duration`, a `distance_km` and the `gpx` of the way out
+  (apportioned when one direction has more legs), unless the two directions
+  genuinely follow different roads.
+- **Every supplied GPX is placed:** each file you were given sits on the hike or
+  leg it records — on *both* legs when that road is driven twice — and the
+  coordinates at its ends were used for the places they identify. Any file left
+  over is named in the gaps report.
 - **No provenance in the prose:** no `description`/`summary` mentions a GPX, a
   KML, an email, a screenshot, a source name, your own uncertainty, or
   `[to be checked]` — no exceptions.

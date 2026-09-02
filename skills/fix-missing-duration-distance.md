@@ -156,24 +156,49 @@ the missing fields.
 
 ### Road / road leg — missing `distance_km` and/or `duration`
 
-Take the leg's **origin** and **destination** coordinates from the leg chain (see
-above). Build a Google Maps **directions** link and read the distance off it:
+**First, look for the same drive in the other direction.** A trip that drives
+`A → B` and later `B → A` along the same road has one distance and one driving
+time, so a figure written on either direction answers for both. Before you leave
+a blank, search the whole JSON for a leg (or a one-leg road) running between the
+same two places the other way round, and if it carries the missing field,
+pre-fill it from there — no `[to be checked]` tag, since it comes from the user's
+own file, and cite it as its JSON path instead of a link.
+
+Here a day drives up the valley and back down again, and only the way down was
+measured:
+
+```
+- **Road leg** Cauterets → Pont d'Espagne · `days[6].activities[4].legs[0]`
+  - distance_km: 12 · from the return leg `days[6].activities[6].legs[0]` (Pont d'Espagne → Cauterets)
+```
+
+Two cautions. Only do it when it is genuinely the **same road** — a loop that
+comes back over a different pass is a different drive, and two same-named
+endpoints with a detour on one side are not comparable. And when one direction is
+split into more legs than the other, the totals match but the individual legs do
+not: say so and leave the split as a blank
+(`distance_km: ______ · the return hop is 12 km for both of these legs
+together`) rather than putting the whole figure on one leg.
+
+Otherwise, take the leg's **origin** and **destination** coordinates from the leg
+chain (see above). Build a Google Maps **directions** link and read the distance
+off it:
 
 ```
 https://www.google.com/maps/dir/?api=1&origin=<ORIGIN>&destination=<DEST>&travelmode=driving
 ```
 
-- Prefer coordinates — `origin=42.8746,74.5698&destination=42.8306,75.2806`.
+- Prefer coordinates — `origin=47.4132,0.9857&destination=46.5802,0.3404`.
 - If a coordinate is unknown, use the place name instead (URL-encoded):
-  `origin=Bichkek&destination=Tokmok`.
+  `origin=Amboise&destination=Poitiers`.
 - If the leg carries route-shaping `waypoints`, add them so the distance follows
-  the real road: `&waypoints=42.90,74.80|42.88,75.05`.
+  the real road: `&waypoints=47.10,0.70|46.80,0.55`.
 
 Entry (only lists the fields the warning flagged):
 
 ```
-- **Road leg** Bichkek → Tokmok · `days[2].activities[0].legs[0]`
-  - distance_km: ______ · [open in Google Maps](https://www.google.com/maps/dir/?api=1&origin=42.8746,74.5698&destination=42.8306,75.2806&travelmode=driving)
+- **Road leg** Amboise → Poitiers · `days[4].activities[0].legs[0]`
+  - distance_km: ______ · [open in Google Maps](https://www.google.com/maps/dir/?api=1&origin=47.4132,0.9857&destination=46.5802,0.3404&travelmode=driving)
   - duration: ______
 ```
 
@@ -188,16 +213,16 @@ source** and a short **verbatim quote** from that page showing the figure, so th
 user can verify without re-searching:
 
 ```
-- **Hike** Promenade sur les rives du Son-Koul · `days[2].activities[1].activities[0]`
-  - distance_km: 6 [to be checked]
-    - source: [AllTrails — Son-Kul lakeshore](https://www.alltrails.com/…)
-    - quote: "Length 6.1 km • Elevation gain 120 m • Out & back"
-  - elevation_m: 250 [to be checked]
-    - source: [Caravanistan — Son-Kul](https://caravanistan.com/…)
-    - quote: "a gentle 250 m climb up to the ridge above the camp"
-  - duration: 2h [to be checked]
-    - source: [AllTrails — Son-Kul lakeshore](https://www.alltrails.com/…)
-    - quote: "Average completion time 2 h 5 min"
+- **Hike** Vézère valley riverside path · `days[5].activities[4]`
+  - distance_km: 5 [to be checked]
+    - source: [AllTrails — Montignac to Thonac riverside](https://www.alltrails.com/…)
+    - quote: "Length 5.2 km • Elevation gain 40 m • Point to point"
+  - elevation_m: 40 [to be checked]
+    - source: [AllTrails — Montignac to Thonac riverside](https://www.alltrails.com/…)
+    - quote: "Length 5.2 km • Elevation gain 40 m • Point to point"
+  - duration: 1h30 [to be checked]
+    - source: [Vallée de la Vézère — walks](https://www.lascaux-dordogne.com/…)
+    - quote: "comptez 1 h 30 de marche entre Montignac et Thonac"
 ```
 
 - Give a link **and** a quote for each value. If two values come from the same
@@ -214,9 +239,9 @@ user can verify without re-searching:
 No link, no inference — just a blank to fill:
 
 ```
-- **Point of interest** Musée national d'Histoire · `days[1].activities[0]`
+- **Point of interest** Musée du Louvre · `days[1].activities[2]`
   - duration: ______
-- **Transport leg** Bishkek → Osh (plane) · `transport[1].legs[0]`
+- **Transport leg** New York JFK → Paris CDG (plane) · `transport[0].legs[0]`
   - duration: ______
 ```
 
