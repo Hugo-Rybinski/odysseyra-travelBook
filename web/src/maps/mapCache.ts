@@ -61,7 +61,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // multi-leg drive that never mentioned it pins its junctions — those pins join
 // the day's 1..N sequence, which renumbers everything after the drive. Same
 // shape, same JSON, different `map_pin` on most days: the hash can't see it.
-const SCHEMA_VERSION = 20;
+// v21: a day's points are folded before they're numbered — same name within a
+// kilometre is one place, so it wears one pin and one number (`fold_pins`).
+// Again no field changed shape, but a place named twice used to take two
+// numbers and everything after it shifted, so `map_pin` moves on any day that
+// repeats a place.
+const SCHEMA_VERSION = 21;
 
 interface Entry {
   day: Day;

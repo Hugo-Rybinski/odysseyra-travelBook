@@ -165,6 +165,20 @@ visible there. Each pin's label (number, `*`, or area letter) also appears as a
 small disc next to that activity's title in the itinerary, so there's no separate
 map key.
 
+**One place, one pin.** A day often names the same spot twice — a drive's
+junction is the next drive's departure, an out-and-back passes its turning point
+on the way there and back, the village you park in is also the sight you visit.
+Two of a day's points that carry the **same name** and sit **within a kilometre**
+of each other are treated as one place: they share a single pin and a single
+number, so the sequence counts places rather than mentions. The comparison
+ignores case, accents and the curly/straight apostrophe, so a name typed by hand
+and the same name copied from elsewhere still match — but it is a *name* match, so
+`Cauterets — car park` stays its own place, distinct from `Cauterets`. Same name
+much further apart (two towns of one name on a long driving day) keeps two pins,
+and so do two different names at one spot. The rule applies to the numbered day
+map and to an area's lettered pins; the whole-trip map is unaffected (its pins
+carry the day, and it merges a day's neighbours on its own, coarser rule).
+
 The book also opens with a **whole-trip map page**, right after the cover: one
 full-page map holding every day's located points, each pinned with its **day
 number** (not the per-day `1..N` / `*` / `A, B, C…`, which only mean something
@@ -634,6 +648,15 @@ a validation error.
 | `route` |  | Route shape | string | `loop` \| `back_and_forth` \| `one_way` | `"back_and_forth"` |
 | `gpx` |  | The trail's GPX file, drawn as a trail map + elevation profile | string | the `.gpx` file base64-encoded (gzip allowed) | none |
 | `activities` |  | Nested meals (a stop along the hike) | array | `meal` objects, each with a `type` (see below) | `[]` |
+
+**Distances and climbs are rounded when shown.** Write the figure you have —
+nothing rewrites your file — but the book, the viewer and the calendar export all
+print it rounded, since a routed distance and an altimeter's ascent are estimates
+and the useful precision falls off with the magnitude. A **distance** shows to
+0.1 km below 10 km, to 0.5 km up to and including 20 km, and to whole km above it
+(so `12.3` prints as `12.5 km`, `345.7` as `346 km`). A **climb** shows to 5 m
+below 100 m and to 10 m from there up (`47` → `45 m`, `784` → `780 m`). This
+applies to a road's and a leg's `distance_km` too.
 
 For a `loop` / `back_and_forth` hike, `end` should equal `start` (or be omitted)
 — validation warns otherwise; for a `one_way` hike, `end` should differ from

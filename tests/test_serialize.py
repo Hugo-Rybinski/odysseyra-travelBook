@@ -13,7 +13,7 @@ from odysseyra_travelbook import Itinerary, to_dict
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 PYRENEES = EXAMPLES / "pyrenees.json"
-KYRGYZSTAN = EXAMPLES / "kyrgyzstan.json"
+FRANCE = EXAMPLES / "france.json"
 
 
 def _load(path):
@@ -30,7 +30,7 @@ def _all_activities(day):
 
 def test_output_is_pure_json():
     # dumps() would raise on any non-serializable value (date/time/dataclass).
-    for path in (PYRENEES, KYRGYZSTAN):
+    for path in (PYRENEES, FRANCE):
         blob = json.dumps(_load(path))
         assert json.loads(blob)  # round-trips
 
@@ -111,11 +111,11 @@ def test_per_day_associations_are_precomputed():
 
 
 def test_coordinates_are_carried_through():
-    # kyrgyzstan is the maps-on example with explicit coordinates.
-    d = _load(KYRGYZSTAN)
+    # france is the maps-on example with explicit coordinates throughout.
+    d = _load(FRANCE)
     located = [a for day in d["days"] for a in _all_activities(day)
                if a.get("coordinate")]
-    assert located, "kyrgyzstan has explicitly located activities"
+    assert located, "france has explicitly located activities"
     c = located[0]["coordinate"]
     assert set(c) == {"lat", "long", "show_on_map"}
     assert isinstance(c["lat"], (int, float))
@@ -281,7 +281,7 @@ def test_map_pin_defaults_to_none_and_reflects_stamp():
     # Every activity/accommodation carries a `map_pin` key; it is None unless a
     # caller (the PWA bridge, from the rendered day maps) stamps `_map_pin` on
     # the model object.
-    it = Itinerary.from_json_file(KYRGYZSTAN)
+    it = Itinerary.from_json_file(FRANCE)
     plain = to_dict(it)
     for day in plain["days"]:
         for act in _all_activities(day):

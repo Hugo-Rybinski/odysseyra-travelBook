@@ -310,6 +310,38 @@ export function fmtWeekdayRuns(runs: [string, string][], lang: Lang): string {
     .join(", ");
 }
 
+/* -- display rounding for the two measured figures ---------------------------
+ * Both are estimates — a distance is routed or read off a guidebook, a climb is
+ * accumulated off a GPS altimeter — and the precision a reader can use falls
+ * off with the magnitude: 8.4 km of walking is a different afternoon from 8.7,
+ * while 341 km of driving and 342 are the same day behind the wheel. So the
+ * step coarsens as the number grows. The mirror of `models/parsers.py`'s
+ * `round_km` / `round_elevation`, which the PDF and the `.ics` use — keep the
+ * two in step. Unit-less on purpose: some callers put a `+` or an `↑` in front.
+ */
+
+/** A distance in km snapped to 0.1 below 10, 0.5 up to 20, whole km above. */
+export function roundKm(value: number): number {
+  const step = value < 10 ? 0.1 : value <= 20 ? 0.5 : 1;
+  return Math.round(Math.round(value / step) * step * 10) / 10;
+}
+
+/** A climb in metres snapped to 5 below 100, and to 10 from there up. */
+export function roundElevation(value: number): number {
+  const step = value < 100 ? 5 : 10;
+  return Math.round(value / step) * step;
+}
+
+/** `"8.4 km"` — a rounded distance with its unit, `""` when unset. */
+export function fmtKm(value: number | null | undefined): string {
+  return value == null ? "" : `${roundKm(value)} km`;
+}
+
+/** `"780 m"` — a rounded climb with its unit, `""` when unset. */
+export function fmtElevation(value: number | null | undefined): string {
+  return value == null ? "" : `${roundElevation(value)} m`;
+}
+
 /** Fill {placeholders} in a label template. */
 export function fill(
   template: string,

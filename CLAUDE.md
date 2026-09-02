@@ -14,7 +14,7 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 # printing errors-only to stderr, then it builds anyway)
 odysseyra-travelBook build examples/pyrenees.json -o out.pdf
 odysseyra-travelBook examples/pyrenees.json -o out.pdf            # implies build
-odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o out_fr.pdf
+odysseyra-travelBook build examples/france_fr.json --lang fr -o out_fr.pdf
 odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
 odysseyra-travelBook build examples/pyrenees.json --maps -o out.pdf   # per-day maps
 odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
@@ -242,6 +242,37 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   the day's **zoom (area) maps** — as a pin only, never part of their extent,
   which is fixed by the area's own points, so the zoom/centering is identical
   with or without it (a stay outside the rendered frame simply isn't visible).
+- **One place, one pin.** A day names the same spot more than once as a matter
+  of course — a drive's junction is the next drive's departure, an out-and-back
+  passes its turning point twice, the village you park in is also the sight you
+  walk to — and every mention used to earn its own number, so a place wore two
+  or three pins stacked on each other and `N` counted mentions rather than
+  places. `maps/build.py`'s **`fold_pins`** groups the day's located points
+  before they are numbered: two join when their names key alike (`_pin_key` —
+  accents stripped, case folded, quote/dash variants unified, whitespace
+  collapsed, so a name typed by hand and one lifted out of a GPX match) **and**
+  they sit within `PIN_MERGE_KM` (**1 km**). Both halves are load-bearing: the
+  name alone would merge two different `Sainte-Marie`s at opposite ends of a
+  driving day, and proximity alone would merge the museum with the café across
+  the square, which are two stops wanting two numbers. A candidate is measured
+  against the group's **first** member — the point the pin is actually drawn
+  at — so a chain of near-misses can't drift a group across a valley, and a
+  nameless point never merges. The whole group maps onto the one label, so the
+  itinerary's discs, the map's pins and the legend agree with no extra plumbing
+  (`number_for` is unchanged; this is a different mechanism from
+  `pin_aliases`, which is driven by the `same_*_as_*_activity` flags rather than
+  by the data, and the two compose). It applies to the numbered main map **and**
+  to an area's lettered A/B/C…, and it must be computed identically in the
+  static renderer (`render_day_maps`) and the interactive one
+  (`web/src/pyodide/bridge.py`'s `_day_geo`) or the two disagree about what "3"
+  is — both call `fold_pins`. Deliberately **not** applied to the whole-trip
+  map, whose pin carries the *day* and which already collapses a day's
+  neighbours on its own `_TRIP_PIN_GRID` (~4 km); nor to the night's stay `*`,
+  which is a distinct marker rather than a number. No example merges anything
+  today (a drive's final arrival isn't pinned by default), so the example PDFs
+  are unchanged — `tests/test_pin_folding.py` is where the behaviour lives.
+  Because it changes an existing resolved-`Day` field's *value*, it needed a
+  `SCHEMA_VERSION` bump (**v21**).
 - **The whole-trip map** (`maps/build.py`'s `render_trip_map`, drawn by
   `pdf/trip_map.py` on its own page after the cover) is a **port of the viewer's
   🗺️ Overview map** (`web/src/render/tripGeo.ts`) — every day's points merged into
@@ -315,9 +346,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     consecutive activities, skips a gap a manual `buffer` already fills, and
     rounds down to `AUTO_BUFFER_STEP` (5 min — a residual under 5 min is
     unspent, so the day may end up to 4 min early). A stretch where *no*
-    activity has a length is skipped: `kyrgyzstan.json` gives almost no
-    durations, and spreading would have turned it into a page of multi-hour
-    buffers around instant sights. `defaults.buffer` is
+    activity has a length is skipped: a day written with no durations at all
+    (some trips are) would otherwise spread into a page of multi-hour buffers
+    around instant sights. `defaults.buffer` is
     **superseded, not stacked**: the validator's `_buffer_coherence` warns when
     both are set and the auto one wins. Because a day's whole timeline moves,
     this needed a `SCHEMA_VERSION` bump (v14).
@@ -659,8 +690,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `skills/build-full-json.md` carves it out as the one field an LLM is told to
   look up rather than take from the source documents. No example sets it: no day
   of `france.json` (Sept 4–11, 2026) or `pyrenees.json` (June 8–11, 2026) is a
-  real French holiday, and `kyrgyzstan.json` is dateless, so flagging one would
-  contradict that skill guidance. `broken.json` carries an invalid value for the
+  real French holiday, so flagging one would contradict that skill guidance. `broken.json` carries an invalid value for the
   validator's `V_BOOL`, and `tests/test_bank_holiday.py` covers the rest.
 - **The `misc` group and its `emergency_contacts`.** A third top-level config
   group for trip-wide reference data that belongs to no point on the timeline —
@@ -751,6 +781,25 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   — converted amounts show 2 decimals below 25, whole at/above). The validator
   errors on a price currency that is neither the default nor a declared
   secondary, and on malformed `secondary_currencies` entries.
+- **Distances and climbs are rounded for *display* only.** Both are estimates —
+  a distance is routed or copied off a guidebook, an ascent is accumulated from
+  a GPS altimeter — and the precision a reader can use falls off with the
+  magnitude, so the step coarsens as the number grows: a **distance** to 0.1 km
+  below 10 km, to 0.5 km up to and including 20 km, to whole km above; a
+  **climb** to 5 m below 100 m and to 10 m from there up. `models/parsers.py`
+  holds `round_km`/`round_elevation` plus the `format_km`/`format_elevation`
+  that add the unit (and return `""` for `None`, since every caller drops them
+  into a `·`-joined parts list); the viewer mirrors all four in
+  `render/format.ts` as `roundKm`/`roundElevation`/`fmtKm`/`fmtElevation` —
+  **keep the two in step**, there is no JS test runner, so
+  `tests/test_figure_rounding.py` is the contract both sides implement. It is
+  **display-only**: the JSON, the model and the resolved doc keep the value as
+  written, so nothing round-trips through a rounded figure and the Edit tab
+  shows what the file says. Applied everywhere a figure is *printed* — a road's
+  and a hike's summary line, a VIA leg's row, a hike GPX profile's `↑`/`↓` and
+  total length, and the `.ics` `Distance:`/`Elevation:` details. Deliberately
+  **not** applied to the profile chart's high/low marks: those are altitudes
+  (axis scale), not a climb.
 - **Validation has three levels**, filtered by `--verbose`: ❌ errors (missing
   required, invalid value, incoherence), ⚠️ warnings (soft inconsistencies:
   nowhere-to-sleep, city mismatch, hike route/endpoints, ends-after-`end_time`…),
@@ -792,8 +841,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   page, in both renderers: `pdf/days.py`'s `day()` decides and passes the
   leftover to `_day_stay(day, moon=…)`, and `DayCard.tsx`'s `StayBar` shows its
   emoji only when `!day.sun`. So the bar still carries the moon when the sun
-  times are off *or* unavailable (no usable reference — every `kyrgyzstan.json`
-  day, `france.json` day 1).
+  times are off *or* unavailable (no usable reference — `france.json` day 1,
+  or any undated trip).
   The two ends are located separately by `sun_for` via mirrored chains, so a day
   you change town gets both right: the **sunset** at `sun_reference` (that
   night's accommodation → the day's own **last** located stop → the nearest dated
@@ -818,27 +867,29 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `auto_sized_buffer` **off** with a fixed `buffer`, and its 3-leg drive sets
   `display_intermediate_point_on_maps` **false**), `examples/pyrenees_pieces/` (the same
   trip split into per-file fragments for `stitch` — a test asserts it reassembles
-  `pyrenees.json` exactly, so keep the two in sync), `examples/pyrenees_fr.json`
-  (same trip in French — build with `--lang fr`), `examples/kyrgyzstan.json`
-  (maps-on, explicit coordinates, sparse OSM region — some sights intentionally
-  unpinned; a test asserts it validates clean), `examples/broken.json` (exercises
-  every validator rule).
+  `pyrenees.json` exactly, so keep the two in sync), and `examples/broken.json`
+  (exercises every validator rule). There is **one French example**
+  (`france_fr.json`) and **one maps-on trip** (`france.json`) — `pyrenees_fr.json`
+  and `kyrgyzstan.json` were dropped as a second copy of coverage that
+  `france_fr.json` and `france.json` already give, so a format change no longer
+  has to be mirrored into five valid files. Anything that needs a *dateless* or
+  a *duration-less* trip therefore builds its own fixture (see
+  `test_sun.py`'s `test_undated_trip_has_no_sun_times`) rather than reaching for
+  an example.
   `examples/broken_validator_output.txt` is a **snapshot** compared by
   `test_validate.py`; whenever the JSON format or a message changes, regenerate it
   with `UPDATE_SNAPSHOTS=1 pytest`.
 - **Re-render the example PDFs after every code change.** The rendered PDFs are
   the primary way changes get reviewed, so keep them current — they are
   gitignored (`*.pdf`) and untracked, so nothing else updates them. Rebuild them
-  all (`france.json` and `kyrgyzstan.json` are maps-on via `include_maps_in_render`,
+  all (`france.json` / `france_fr.json` are maps-on via `include_maps_in_render`,
   so they need network for tiles/routes unless the cache is warm, but the build
   degrades gracefully offline):
   ```bash
   .venv/bin/odysseyra-travelBook build examples/france.json -o examples/france.pdf
   .venv/bin/odysseyra-travelBook build examples/france_fr.json --lang fr -o examples/france_fr.pdf
   .venv/bin/odysseyra-travelBook build examples/pyrenees.json -o examples/pyrenees.pdf
-  .venv/bin/odysseyra-travelBook build examples/pyrenees_fr.json --lang fr -o examples/pyrenees_fr.pdf
   .venv/bin/odysseyra-travelBook build examples/pyrenees.json --ink-saver -o examples/pyrenees_inksaver.pdf
-  .venv/bin/odysseyra-travelBook build examples/kyrgyzstan.json -o examples/kyrgyzstan.pdf
   ```
   (macOS Preview caches an open PDF — a rebuild only shows after reopening it.)
 - When adding/renaming a field or message, update **all** of:

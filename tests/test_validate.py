@@ -852,11 +852,6 @@ def test_booking_description_is_free_text_and_only_noted_when_absent():
     assert _errors(findings) == [], _messages(_errors(findings))
 
 
-def test_kyrgyzstan_example_has_no_errors():
-    findings = validate_text((EXAMPLES / "kyrgyzstan.json").read_text(encoding="utf-8"))
-    assert _errors(findings) == []
-
-
 def test_bad_coordinate_and_inference_country_are_errors():
     doc = {"travel_description": {"title": "T"},
            "defaults": {"inference_countries": ["France", "KG"]},

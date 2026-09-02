@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { Activity, HikeTrack, MapGeo } from "../types/resolved";
 import { downloadBytes, slugify } from "../file/saveExport";
-import { fill, tr, type Lang } from "./format";
+import { fill, fmtKm, roundElevation, roundKm, tr, type Lang } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { useAccent } from "./palette";
 import { useRouteGpx } from "./routeExport";
@@ -128,9 +128,9 @@ function ElevationProfile({
       <figcaption>
         <span className="hike-profile-title">{tr(lang, "hikeProfile")}</span>
         <span className="hike-profile-climb">
-          {fill(tr(lang, "hikeAscent"), { m: track.ascent_m ?? 0 })}
+          {fill(tr(lang, "hikeAscent"), { m: roundElevation(track.ascent_m ?? 0) })}
           {"  ·  "}
-          {fill(tr(lang, "hikeDescent"), { m: track.descent_m ?? 0 })}
+          {fill(tr(lang, "hikeDescent"), { m: roundElevation(track.descent_m ?? 0) })}
         </span>
       </figcaption>
       {/* The high mark rides inside the band's top-left corner (the padding
@@ -144,7 +144,7 @@ function ElevationProfile({
           preserveAspectRatio="none"
           role="img"
           aria-label={fill(tr(lang, "hikeProfileAlt"), {
-            km: geometry.km.toFixed(1),
+            km: roundKm(geometry.km),
             low: geometry.low,
             high: geometry.high,
           })}
@@ -165,7 +165,7 @@ function ElevationProfile({
       </div>
       <p className="hike-profile-axis">
         <span>{geometry.low} m</span>
-        <span>{geometry.km.toFixed(1)} km</span>
+        <span>{fmtKm(geometry.km)}</span>
       </p>
     </figure>
   );

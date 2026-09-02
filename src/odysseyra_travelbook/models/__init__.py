@@ -72,6 +72,10 @@ from .parsers import (
     _parse_route,
     _parse_time,
     _parse_tz,
+    format_elevation,
+    format_km,
+    round_elevation,
+    round_km,
 )
 from .transport import (
     TRANSPORT_TYPES,
@@ -94,6 +98,10 @@ __all__ = [
     "EmergencyContact",
     "parse_emergency_contacts",
     "format_money",
+    "format_elevation",
+    "format_km",
+    "round_elevation",
+    "round_km",
     "GpxTrack",
     "decode_gpx",
     "gpx_track",

@@ -1452,6 +1452,14 @@ values, so a real run would cite all three under *Looked up online*.
   round, keep the one from the more authoritative source (the GPX first, then the
   KML/KMZ). Past the tolerance nothing changes: take the authoritative figure and
   report the conflict, naming both.
+- **Don't round the figures yourself — write what the source says.** Every
+  renderer already rounds a distance and a climb for display, and by magnitude:
+  a distance to 0.1 km below 10 km, to 0.5 km up to 20 km, to whole km above; a
+  climb to 5 m below 100 m and to 10 m from there up. So `12.3` prints as
+  `12.5 km` and `784` as `780 m` whatever you write, and there is nothing to
+  gain from pre-rounding — while a value you round *down* loses information the
+  file could have kept. (The "write the roundest value" rule just above is about
+  choosing between two sources that disagree, not about tidying a single one.)
 - **One place, one name — normalise every name across the whole file.** Sources
   disagree on spelling far more often than on facts: `Sarlat-la-Caneda` vs
   `Sarlat-la-Canéda`, `St-Malo` vs `Saint-Malo`, `Florence` vs `Firenze`, `CDG`
@@ -1485,6 +1493,17 @@ values, so a real run would cite all three under *Looked up online*.
   - This is not cosmetic. A day's `city` must contain that night's accommodation
     `city` *spelled identically* or `validate` warns (see the `city` rules), and a
     reader can only match a stay to its day when the two agree.
+  - **The map pins depend on it.** Two of a day's points that share a name and
+    sit within a kilometre are drawn as **one pin with one number** — which is
+    what stops a junction you drive through twice, or a village you both park in
+    and visit, from wearing two numbers stacked on each other. The match ignores
+    case, accents and the curly apostrophe (so `Pont d’Espagne` and
+    `Pont d'Espagne` already merge), but nothing else: write `St-Malo` on one
+    leg and `Saint-Malo` on the next and the day gets two pins for one town. So
+    a road leg's `end_location` must be spelled exactly as the next leg's
+    `start_location`, and as the activity at that place, whenever they *are* that
+    place. Where they genuinely aren't, keep them apart on purpose —
+    `Cauterets — car park` is not `Cauterets`.
   - **List every name you unified in the inconsistency report** — the variants you
     saw, the form you kept, and why. This one *is* reported, unlike the price,
     size and coordinate tolerances above.

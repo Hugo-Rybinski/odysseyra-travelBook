@@ -20,6 +20,7 @@ from __future__ import annotations
 import io
 import logging
 
+from ..models import format_km, round_elevation
 from .base import FAINT, FONT, MUTED, _tint
 
 logger = logging.getLogger("odysseyra_travelbook.pdf")
@@ -132,10 +133,12 @@ class HikeMapMixin:
         head = self.t("Elevation profile")
         self.cell(self.get_string_width(head) + 1, _HEAD_H, head)
         # A non-empty profile means the file carried elevations, so the climb
-        # figures are always there to show alongside it.
+        # figures are always there to show alongside it — rounded for display
+        # like every other climb in the book (models/parsers.py), since they are
+        # accumulated off an altimeter.
         climb = "  ·  ".join((
-            self.t("↑ {m} m").format(m=round(track.ascent_m or 0)),
-            self.t("↓ {m} m").format(m=round(track.descent_m or 0)),
+            self.t("↑ {m} m").format(m=round_elevation(track.ascent_m or 0)),
+            self.t("↓ {m} m").format(m=round_elevation(track.descent_m or 0)),
         ))
         self.set_font(FONT, "", 7.5)
         self.set_text_color(*MUTED)
@@ -175,6 +178,6 @@ class HikeMapMixin:
         self.set_xy(x + 0.6, bottom + 0.2)
         self.cell(w / 2, _AXIS_H, f"{round(lo + pad)} m")
         self.set_xy(x + w / 2, bottom + 0.2)
-        self.cell(w / 2 - 0.6, _AXIS_H, f"{km:.1f} km", align="R",
+        self.cell(w / 2 - 0.6, _AXIS_H, format_km(km), align="R",
                   new_x="LMARGIN", new_y="NEXT")
         self.ln(0.5)

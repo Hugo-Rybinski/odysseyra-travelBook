@@ -5,7 +5,7 @@ from pathlib import Path
 from odysseyra_travelbook import Itinerary, build_pdf, format_findings, validate_text
 from odysseyra_travelbook.lang import LANGUAGES, fmt_date, tr
 
-EXAMPLE_FR = Path(__file__).resolve().parent.parent / "examples" / "pyrenees_fr.json"
+EXAMPLE_FR = Path(__file__).resolve().parent.parent / "examples" / "france_fr.json"
 
 
 def test_languages_available():
@@ -50,7 +50,9 @@ def test_validate_output_is_french():
 
 def test_build_pdf_french(tmp_path):
     it = Itinerary.from_json_file(EXAMPLE_FR)
-    out = build_pdf(it, tmp_path / "fr.pdf", lang="fr")
+    # maps off: the French example is maps-on, and a test has no business
+    # fetching tiles to prove the text renders.
+    out = build_pdf(it, tmp_path / "fr.pdf", lang="fr", maps=False)
     assert out.exists() and out.read_bytes().startswith(b"%PDF")
 
 

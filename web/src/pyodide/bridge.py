@@ -129,11 +129,15 @@ def _day_geo(itinerary, day, cache):
     accent colour and a bounds box. Mirrors render_day_maps' numbering
     (activities 1..N, the night's stay '*', area points A/B/C…) and its framing.
     ``None`` when the day has nothing locatable."""
-    from odysseyra_travelbook.maps.build import STAY_PIN, day_legs, resolve_day
+    from odysseyra_travelbook.maps.build import (STAY_PIN, day_legs, fold_pins,
+                                                 resolve_day)
 
     main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
-    points = [{"lat": p.lat, "long": p.long, "label": str(i), "title": p.label}
-              for i, p in enumerate(main_pts, start=1)]
+    # Same folding as the static map, so a place the day names twice carries one
+    # marker here too and the two renderings agree on what "3" is.
+    main_groups = fold_pins(main_pts)
+    points = [{"lat": g[0].lat, "long": g[0].long, "label": str(i), "title": g[0].label}
+              for i, g in enumerate(main_groups, start=1)]
     stay = itinerary.stay_for(day.date)
     stay_coord = None
     if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
@@ -143,9 +147,11 @@ def _day_geo(itinerary, day, cache):
 
     areas = []
     for title, pts in area_details:
-        coords = [(p.lat, p.long) for p in pts]
-        apoints = [{"lat": p.lat, "long": p.long, "label": chr(ord("A") + j), "title": p.label}
-                   for j, p in enumerate(pts)]
+        groups = fold_pins(pts)
+        coords = [(g[0].lat, g[0].long) for g in groups]
+        apoints = [{"lat": g[0].lat, "long": g[0].long,
+                    "label": chr(ord("A") + j), "title": g[0].label}
+                   for j, g in enumerate(groups)]
         # that night's stay ★ — a pin only, never part of `bounds` below, so it
         # can't widen the zoom (mirrors the static area map).
         if stay_coord is not None:

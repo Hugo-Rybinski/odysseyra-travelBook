@@ -108,6 +108,39 @@ def _format_duration(minutes: int | None) -> str:
     return f"{h}h{m:02d}" if m else f"{h}h"
 
 
+# -- display rounding for the two measured figures a book prints --------------
+# Both are estimates: a distance is routed or read off a guidebook, an ascent is
+# accumulated from a GPS altimeter. Printing every digit of one claims a
+# precision nobody has, and the precision a reader can *use* falls off with the
+# magnitude — 8.4 km of walking is a different afternoon from 8.7, while 341 km
+# of driving and 342 are the same day behind the wheel. So the step coarsens as
+# the number grows. The viewer computes the same thing in `render/format.ts`
+# (`roundKm` / `roundElevation`) — keep the two in step.
+
+
+def round_km(value: float) -> float:
+    """A distance in km snapped to 0.1 below 10, 0.5 up to 20, whole km above."""
+    step = 0.1 if value < 10 else (0.5 if value <= 20 else 1.0)
+    return round(round(value / step) * step, 1)
+
+
+def round_elevation(value: float) -> int:
+    """A climb in metres snapped to 5 below 100, and to 10 from there up."""
+    step = 5 if value < 100 else 10
+    return int(round(value / step) * step)
+
+
+def format_km(value) -> str:
+    """``"8.4 km"`` — a rounded distance with its unit, ``""`` when unset."""
+    return "" if value is None else f"{round_km(value):g} km"
+
+
+def format_elevation(value) -> str:
+    """``"780 m"`` — a rounded climb with its unit, ``""`` when unset. The ``+``
+    / ``↑`` a caller may put in front of it is the caller's."""
+    return "" if value is None else f"{round_elevation(value)} m"
+
+
 def _parse_bool(value) -> bool:
     if isinstance(value, bool):
         return value

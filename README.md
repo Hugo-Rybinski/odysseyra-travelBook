@@ -347,10 +347,8 @@ The browser viewer is a separate Vite/React app under `web/` (see its README).
 
 - `examples/france.json` — the flagship: a full, valid France tour (Paris → the Loire → the Dordogne → the Pyrenees) exercising most features, maps on. Also the in-browser **Demo**.
 - `examples/france_fr.json` — the same France tour authored in French (build with `--lang fr`).
-- `examples/pyrenees.json` — another full, valid itinerary.
+- `examples/pyrenees.json` — another full, valid itinerary, and the designated **opt-out** example: it switches off the defaults that are on (`auto_sized_buffer`, a drive's junction pins), so those code paths stay rendered somewhere.
 - `examples/pyrenees_pieces/` — that trip split into per-file fragments for `stitch` (a test asserts it reassembles `pyrenees.json` exactly).
-- `examples/pyrenees_fr.json` — the Pyrenees trip authored in French (build with `--lang fr`).
-- `examples/kyrgyzstan.json` — a maps-on itinerary with explicit coordinates in a region with sparser OSM coverage (a few sights deliberately have no coordinate, so aren't pinned).
 - `examples/broken.json` + `examples/broken_validator_output.txt` — an intentionally broken itinerary and the expected `validate` output (checked by a snapshot test).
 
 Whenever the JSON format or a validator message changes, regenerate the snapshot:

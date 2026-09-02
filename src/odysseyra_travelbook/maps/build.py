@@ -16,6 +16,7 @@ and so needs nothing but tiles.
 from __future__ import annotations
 
 import math
+import unicodedata
 from dataclasses import dataclass, field
 
 from .geocode import geocode
@@ -26,6 +27,10 @@ from .routing import route
 # numbered activity pins (1..N) and the lettered area pins (A/B/C…). It renders
 # on the PNG map, the PDF discs and the interactive markers (it's in DejaVu Sans).
 STAY_PIN = "★"
+
+# Kilometres per degree of latitude — the basis of every rough distance here.
+# Longitude is scaled by cos(latitude) at the point of interest.
+_KM_PER_DEG = 111.32
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -201,6 +206,80 @@ class _Pt:
     act: object = None      # the source activity, to map it back to its pin number
 
 
+# How close two same-named points must be to count as one place, in km. A day
+# routinely names the same spot several times — a drive's junction is also the
+# next drive's departure, the village you park in is also the POI you walk to,
+# an out-and-back day passes its turning point twice — and each mention used to
+# earn its own number, so one place wore two or three pins stacked on top of
+# each other and the day's numbering ran far past the number of places in it.
+# 1 km is "the same village / the same trailhead": close enough that two pins
+# would overlap on a page-width map, far enough not to swallow a neighbour.
+PIN_MERGE_KM = 1.0
+
+
+def _pin_key(name: str) -> str:
+    """``name`` reduced for comparison: accents stripped, case folded, the quote
+    and dash variants unified, whitespace collapsed.
+
+    The same place reaches us spelled by different hands — a road endpoint typed
+    by the user, a POI title, a name lifted out of a GPX file — so `Pont
+    d'Espagne`, `Pont d’Espagne` and `pont d'espagne` have to key alike. It stays
+    a *name* comparison though: `Cauterets — car park` is deliberately not
+    `Cauterets` (that distinction is why an endpoint can be written out even when
+    a neighbour would supply it), and the empty string keys to nothing, so a
+    nameless point never merges with another.
+    """
+    s = unicodedata.normalize("NFKD", name or "")
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    for ch in "‘’ʼ`":
+        s = s.replace(ch, "'")
+    for ch in "‐‑‒–—":
+        s = s.replace(ch, "-")
+    return " ".join(s.casefold().split())
+
+
+def _apart_km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Equirectangular km between two nearby points — ample at this scale, and it
+    needs no projection."""
+    kx = _KM_PER_DEG * math.cos(math.radians((a[0] + b[0]) / 2))
+    return math.hypot((b[1] - a[1]) * kx, (b[0] - a[0]) * _KM_PER_DEG)
+
+
+def fold_pins(pts: list[_Pt]) -> list[list[_Pt]]:
+    """Group a day's located points so that one *place* earns one pin.
+
+    Returns the groups in first-appearance order, each holding every ``_Pt`` that
+    resolved to it — so the caller labels the group once and maps that one label
+    onto all of their activities. Two points join when their names key alike
+    (:func:`_pin_key`) **and** they sit within :data:`PIN_MERGE_KM`: the name
+    alone would merge two different towns of the same name at opposite ends of a
+    driving day, and proximity alone would merge a museum with the café across
+    the square, which are two stops and want two numbers.
+
+    A point is compared against each group's **first** member — the one whose
+    coordinate the pin is actually drawn at — rather than against any member, so
+    "within a kilometre" means within a kilometre *of the pin* and a chain of
+    near-misses can't drift a group across a valley.
+    """
+    groups: list[list[_Pt]] = []
+    keys: list[str] = []
+    for p in pts:
+        key = _pin_key(p.label)
+        home = None
+        if key:
+            for grp, k in zip(groups, keys):
+                if k == key and _apart_km((grp[0].lat, grp[0].long),
+                                          (p.lat, p.long)) <= PIN_MERGE_KM:
+                    home = grp
+                    break
+        if home is None:
+            groups.append([p])
+            keys.append(key)
+        else:
+            home.append(p)
+    return groups
+
+
 class _Resolver:
     def __init__(self, itinerary, cache):
         self.it = itinerary
@@ -345,12 +424,16 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
     accent = _hex_to_rgb(itinerary.cover_color)
     result = DayMaps(aliases=pin_aliases(day))
 
-    # main map: activities numbered 1..N
-    main_points = [(p.lat, p.long) for p in main_pts]
-    main_labels = [str(i) for i in range(1, len(main_pts) + 1)]
-    for i, p in enumerate(main_pts, start=1):
-        if p.act is not None:
-            result.numbers[id(p.act)] = str(i)
+    # main map: places numbered 1..N. Points the day named twice for the same
+    # place share one pin and one number (`fold_pins`), so N counts places
+    # rather than mentions and the sequence still reads down the page.
+    main_groups = fold_pins(main_pts)
+    main_points = [(g[0].lat, g[0].long) for g in main_groups]
+    main_labels = [str(i) for i in range(1, len(main_groups) + 1)]
+    for i, grp in enumerate(main_groups, start=1):
+        for p in grp:
+            if p.act is not None:
+                result.numbers[id(p.act)] = str(i)
 
     # the night's stay, pinned with ★
     stay = itinerary.stay_for(getattr(day, "date", None))
@@ -359,11 +442,14 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
         main_labels.append(STAY_PIN)
         result.numbers[id(stay)] = STAY_PIN
 
-    # area detail maps: pins lettered A, B, C…
-    for _title, pts in area_details:
-        for j, p in enumerate(pts):
-            if p.act is not None:
-                result.numbers[id(p.act)] = chr(ord("A") + j)
+    # area detail maps: pins lettered A, B, C…, folded the same way (an area is
+    # small enough that two of its stops naming one place is the same story).
+    area_groups = [(title, fold_pins(pts)) for title, pts in area_details]
+    for _title, groups in area_groups:
+        for j, grp in enumerate(groups):
+            for p in grp:
+                if p.act is not None:
+                    result.numbers[id(p.act)] = chr(ord("A") + j)
 
     nodes = [c for line in route_nodes for c in line]
     legs = day_legs(day, itinerary)
@@ -378,15 +464,15 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
         img = render_map(all_coords, routes, main_points, accent, cache.tiles,
                          ink_saver=ink_saver, labels=main_labels, route_nodes=nodes,
                          legs=legs, lang=lang)
-        result.main = RenderedMap(img, [p.label for p in main_pts])
+        result.main = RenderedMap(img, [g[0].label for g in main_groups])
 
     stay_coord = None
     if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
         stay_coord = (stay.coordinate.lat, stay.coordinate.long)
 
-    for title, pts in area_details:
-        coords = [(p.lat, p.long) for p in pts]
-        letters = [chr(ord("A") + j) for j in range(len(pts))]
+    for title, groups in area_groups:
+        coords = [(g[0].lat, g[0].long) for g in groups]
+        letters = [chr(ord("A") + j) for j in range(len(groups))]
         # The extent is fixed by the area's own points (the first argument);
         # pins are the lettered points plus that night's stay ★. Passing the ★ as
         # a *pin only* — never in the extent — is what keeps the detail map's zoom
@@ -399,7 +485,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
             labels.append(STAY_PIN)
         img = render_map(coords, [], points, accent, cache.tiles,
                          ink_saver=ink_saver, labels=labels, lang=lang)
-        result.areas.append((title, RenderedMap(img, [p.label for p in pts])))
+        result.areas.append((title, RenderedMap(img, [g[0].label for g in groups])))
 
     return result
 
@@ -424,7 +510,6 @@ _OUTLIER_FACTOR = 6
 _OUTLIER_FLOOR_KM = 400
 _OUTLIER_MAX_SHARE = 1 / 3
 _OUTLIER_MIN_ANCHORS = 4  # below this there is no "cluster" to speak of
-_KM_PER_DEG = 111.32
 
 # How far apart two of a day's points must be to earn their own pin, in degrees
 # (~4-5 km). On paper a trip-zoom pin says only which day it is, so a city day's

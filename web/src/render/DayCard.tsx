@@ -8,7 +8,16 @@ import type {
   RenderedMap,
   TransportLeg,
 } from "../types/resolved";
-import { fill, fmtDate, fmtWeekdayRuns, tr, type Lang, type LabelKey } from "./format";
+import {
+  fill,
+  fmtDate,
+  fmtElevation,
+  fmtKm,
+  fmtWeekdayRuns,
+  tr,
+  type Lang,
+  type LabelKey,
+} from "./format";
 import { Clamp } from "./Clamp";
 import { ForecastChip } from "./forecast";
 import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
@@ -505,13 +514,13 @@ function ActivityDetails({
 
   if (act.type === "road") {
     if (act.duration_display) bits.push(act.duration_display);
-    if (act.distance_km != null) bits.push(`${act.distance_km} km`);
+    if (act.distance_km != null) bits.push(fmtKm(act.distance_km));
     // off-road shown as a chip beside the title
   } else if (act.type === "hike") {
     // route (loop / back-and-forth …) shown as a chip beside the title
     if (act.duration_display) bits.push(act.duration_display);
-    if (act.distance_km != null) bits.push(`${act.distance_km} km`);
-    if (act.elevation_m != null) bits.push(`+${act.elevation_m} m`);
+    if (act.distance_km != null) bits.push(fmtKm(act.distance_km));
+    if (act.elevation_m != null) bits.push(`+${fmtElevation(act.elevation_m)}`);
   } else if (act.type === "meal") {
     if (act.duration_display) bits.push(act.duration_display);
     if (act.area) bits.push(act.area);
@@ -650,7 +659,7 @@ function RoadVia({
       {legs.map((leg, i) => {
         const meta = [
           fmtDurationMin(leg.durationMin),
-          leg.distanceKm != null ? `${leg.distanceKm} km` : "",
+          fmtKm(leg.distanceKm),
         ].filter(Boolean);
         const nav = navUrl(provider, leg.destCoord, leg.dest ?? "");
         return (

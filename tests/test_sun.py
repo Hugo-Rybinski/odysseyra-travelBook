@@ -361,6 +361,13 @@ def test_examples_carry_sun_times():
 
 
 def test_undated_trip_has_no_sun_times():
-    # kyrgyzstan.json carries no dates at all — nothing to compute from.
-    it = Itinerary.from_json_file(str(EXAMPLES / "kyrgyzstan.json"))
+    """A trip with no dates anywhere has nothing to compute a sunrise from —
+    every example is dated, so the fixture is built here."""
+    it = Itinerary.from_dict({
+        "travel_description": {"title": "T"},
+        "days": [{"title": "d", "city": "Bishkek", "activities": [
+            {"type": "point_of_interest", "name": "Ala-Too Square",
+             "coordinate": {"lat": 42.8767, "long": 74.6034}}]}],
+    })
+    assert it.show_sun_times is True
     assert all(d["sun"] is None for d in to_dict(it)["days"])

@@ -6,7 +6,8 @@ from __future__ import annotations
 from datetime import time
 
 from ..lang import fmt_weekday_runs
-from ..models import Day, _format_duration, maps_url, moon_phase
+from ..models import (Day, _format_duration, format_elevation, format_km,
+                      maps_url, moon_phase)
 from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 
 
@@ -550,7 +551,7 @@ class DayMixin:
     def _details_road(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.distance_km is not None:
-            parts.append(f"{act.distance_km:g} km")
+            parts.append(format_km(act.distance_km))
         meta = "  ·  ".join(p for p in parts if p)
         legs = road_display_legs(act.start, act.waypoints)
         multi = len(legs) > 1
@@ -616,7 +617,7 @@ class DayMixin:
             if dur_min is not None:
                 meta.append(_format_duration(dur_min))
             if dist_km is not None:
-                meta.append(f"{dist_km:g} km")
+                meta.append(format_km(dist_km))
             if meta:
                 self.set_font(FONT, "", 8.5)
                 self.set_text_color(*FAINT)
@@ -713,9 +714,9 @@ class DayMixin:
     def _details_hike(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.distance_km is not None:
-            parts.append(f"{act.distance_km:g} km")
+            parts.append(format_km(act.distance_km))
         if act.elevation_m is not None:
-            parts.append(f"+{act.elevation_m:g} m")
+            parts.append("+" + format_elevation(act.elevation_m))
         parts.append(self.t(act.route_label))
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(x, w, meta, act.coordinate, act.start, act.name)
@@ -799,9 +800,9 @@ class DayMixin:
         # The "HIKE" badge marks the type; then distance / elevation / route.
         parts = []
         if hike.distance_km is not None:
-            parts.append(f"{hike.distance_km:g} km")
+            parts.append(format_km(hike.distance_km))
         if hike.elevation_m is not None:
-            parts.append(f"+{hike.elevation_m:g} m")
+            parts.append("+" + format_elevation(hike.elevation_m))
         parts.append(self.t(hike.route_label))
         if hike.duration_display:
             parts.append(hike.duration_display)

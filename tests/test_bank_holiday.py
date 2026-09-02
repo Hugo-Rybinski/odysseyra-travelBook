@@ -154,7 +154,7 @@ def test_the_strip_advances_the_cursor_past_itself():
 def test_the_label_and_advice_fit_the_page_in_both_languages():
     # The strip has one line: if either wording grows past the content width the
     # advice silently disappears, so measure both languages here instead.
-    for src, lang in (("pyrenees.json", "en"), ("pyrenees_fr.json", "fr")):
+    for src, lang in (("pyrenees.json", "en"), ("france_fr.json", "fr")):
         it = Itinerary.from_json_file(str(EXAMPLES / src))
         pdf = TravelPDF(it, lang, False, "google")
         pdf.add_page()

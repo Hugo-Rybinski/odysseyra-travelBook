@@ -84,7 +84,7 @@ def test_the_phase_is_always_named_now_that_the_line_owns_its_row():
     fall back to the emoji alone. In the body it has the full width, so every
     phase is named — in both languages."""
     for src, lang in (("france.json", "en"), ("france_fr.json", "fr"),
-                      ("pyrenees.json", "en"), ("pyrenees_fr.json", "fr")):
+                      ("pyrenees.json", "en")):
         for text, _ in _sky(src, lang):
             if not text or "," not in text:
                 continue

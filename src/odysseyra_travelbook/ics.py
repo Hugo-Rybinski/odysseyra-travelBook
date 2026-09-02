@@ -28,7 +28,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 from .lang import fmt_date, fmt_weekday_runs, tr
-from .models import Itinerary
+from .models import Itinerary, format_elevation, format_km
 from .models.currency import format_money
 
 __all__ = ["build_ics"]
@@ -177,7 +177,7 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
         location = ""
         if act.kind == "road":
             _detail(lines, "Type", tr("Drive", lang), lang)
-            _detail(lines, "Distance", _km(act.distance_km), lang)
+            _detail(lines, "Distance", format_km(act.distance_km), lang)
             # road-level flag, or any single leg marked off-road
             if act.off_road or any(w.off_road for w in act.waypoints):
                 _detail(lines, "Off-road", tr("Yes", lang), lang)
@@ -199,8 +199,8 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
             _detail(lines, "Description", act.description, lang)
             _detail(lines, "Guidebook", _pages(act, lang), lang)
         elif act.kind == "hike":
-            _detail(lines, "Distance", _km(act.distance_km), lang)
-            _detail(lines, "Elevation", _m(act.elevation_m), lang)
+            _detail(lines, "Distance", format_km(act.distance_km), lang)
+            _detail(lines, "Elevation", format_elevation(act.elevation_m), lang)
             _detail(lines, "Route", tr(act.route_label, lang), lang)
             _detail(lines, "Description", act.description, lang)
             _detail(lines, "Guidebook", _pages(act, lang), lang)
@@ -387,14 +387,6 @@ def _opening(act, lang: str) -> str:
     if opening.hours:
         parts.append(opening.hours_display)
     return ", ".join(parts)
-
-
-def _km(value) -> str:
-    return "" if value is None else f"{value:g} km"
-
-
-def _m(value) -> str:
-    return "" if value is None else f"{value:g} m"
 
 
 def _money(itin: Itinerary, amount, currency: str, paid, lang: str) -> str:

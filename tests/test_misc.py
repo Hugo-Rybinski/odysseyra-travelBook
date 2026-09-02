@@ -266,8 +266,7 @@ def test_a_book_with_contacts_still_builds(tmp_path, ink_saver):
 # -- the examples ----------------------------------------------------------
 
 @pytest.mark.parametrize("name", ["france.json", "france_fr.json",
-                                  "pyrenees.json", "pyrenees_fr.json",
-                                  "kyrgyzstan.json"])
+                                  "pyrenees.json"])
 def test_every_valid_example_lists_emergency_contacts(name):
     it = Itinerary.from_json_file(str(EXAMPLES / name))
     assert it.emergency_contacts, f"{name} should carry emergency contacts"
