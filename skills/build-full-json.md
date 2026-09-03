@@ -467,6 +467,7 @@ these fields; prose it cannot read).
 | "open every day, 10am–7pm" | — | `"10:00-19:00"` |
 | "Mon–Fri and Sun, 8am–8pm" | `"mon-fri, sun"` | `"08:00-20:00"` |
 | "Wed only, 2pm–5pm" | `"wednesday"` | `"14:00-17:00"` |
+| "Mon–Sat 9–5, Sun 10–5" | — | `"mon-sat 09:00-17:00; sun 10:00-17:00"` |
 
 Rules for the two values:
 
@@ -474,6 +475,17 @@ Rules for the two values:
 - **Keep a midday closure as two ranges** (`"09:00-12:00, 14:00-18:00"`). Never
   flatten it into one long span: the whole point is that a visit can be caught
   straddling the closure.
+- **Hours that differ by weekday go in `;`-separated groups**, each prefixed
+  with the days it applies to: `"mon-sat 09:00-17:00; sun 10:00-17:00"`. Write no
+  punctuation between the days and the times. A group naming **no** days is the
+  default for every day the others don't name, so `"09:00-17:00; sun 10:00-17:00"`
+  is "9-5, but 10-5 on Sundays". Never name the same day in two groups, and never
+  write two day-less groups — both are errors. Prefer this to dropping the odd
+  day: "Mon–Sat 9–5, Sun 10–5" is exactly the kind of line that wastes a morning.
+- **Naming weekdays in the hours also sets the open days.** If you write
+  `"mon-fri 09:00-17:00"` and no `opening_days`, the place is taken to be shut at
+  the weekend — which is usually what such a line means. State `opening_days`
+  as well when it doesn't.
 - **A closing day becomes the days it *is* open.** The fields say when it opens,
   so "closed Mondays" is `"tue-sun"`, not `"monday"`.
 - **Weekday names are English** (`monday`…`sunday`, or `mon`…`sun`) whatever
@@ -485,7 +497,8 @@ Rules for the two values:
   (the one field you *are* asked to supply from your own knowledge), opening
   hours change constantly and are wrong more often than they are useful — take
   them from the documents or leave them out.
-- **Seasonal or complicated hours don't fit.** If the source gives per-season
+- **Seasonal or complicated hours don't fit** — *per-weekday* hours now do (see
+  above), but per-*season* ones still don't. If the source gives per-season
   hours, last-admission rules or "closed the first Sunday of the month", put the
   simple year-round pair in the fields if there is one and put the nuance in the
   `description` as prose for the traveller; if there is no simple pair, leave
@@ -516,6 +529,9 @@ end-of-run gaps and inconsistency report, never in the JSON.
 | `duration` | duration (`"1h30"`, `"45 min"`) | How long it lasts. On a `place`, omitting it means "as long as its nested activities add up to" (see `place` below). |
 | `start_tz` / `end_tz` | UTC offset | Only if this activity is in a different timezone than the trip default. |
 | `detour` | boolean | `true` for a stop the traveller probably **won't** make but wants kept for reference — see *Detours* below. Default `false`. |
+| `price` | number | What this stop costs — an entrance fee, a guided visit, a meal. A bare amount, no currency symbol. **`0` means free and is worth stating** — see *Prices and contacts* below. |
+| `currency` | text | The 3-letter ISO code of `price`. Omit unless it differs from `defaults.currency`; it must be that or a declared secondary currency. |
+| `contact` | text | A phone number, an email, or how to get in (`"call the guardian to open the museum"`). Free text. |
 
 **Detours.** Set `detour: true` only when the source says the stop is optional —
 "if you have time", "worth a detour", "alternative if the weather turns", a
@@ -529,6 +545,30 @@ writing times on one only gets them dropped. A detour `meal` must state its
 `meal_type` — there is no start time to infer the category from. Keep it in the
 day's `activities` in the position it would be visited from, not at the end of
 the list.
+
+**Prices and contacts.** Any activity but a `buffer` may carry a `price` (plus a
+`currency`) and a `contact`. Both come **from the documents only** — like
+opening hours and unlike a day's `bank_holiday`, they are never looked up and
+never guessed: an invented entrance fee or phone number is worse than none.
+
+- **`price` is a bare amount, no symbol** — `12`, not `"€12"` or `"12 EUR"`. Put
+  the code in `currency` when it isn't the trip default, and only ever a code
+  the trip declares (`defaults.currency` or one of
+  `defaults.secondary_currencies`), or validation errors for want of a rate.
+- **State a free entry as `0`.** "Entry is free" is a fact worth carrying — it
+  prints as *Free* — and it reads quite differently from an omitted price, which
+  means nobody knows. Do not use `0` for "unknown".
+- **A price covering more than one person doesn't fit.** "1800 KGS for two" has
+  no field for the party size: put the per-item amount in `price` if the source
+  gives one, otherwise leave `price` out and say "1800 KGS for two" in the
+  `description`.
+- **`contact` is free text and never parsed** — a number in any local format, an
+  email, or an instruction like "if the museum is closed, call the guardian on
+  +996 700 732 984 to open it". That last kind is exactly what the field is for;
+  don't reduce it to the bare number and lose the instruction.
+- **There is no paid/to-pay flag on an activity.** A fee at the gate has nothing
+  to settle in advance. A pre-paid ticket that came with a reference belongs in
+  `transport`/`accommodation`/`car_rentals`, not here.
 
 **Map coordinates (any located activity may include these):** if the trip
 renders maps (`defaults.include_maps_in_render` on), an activity can carry a
@@ -814,13 +854,13 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `name` | **yes** | text | The place's name. |
-| `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `street`, `natural park`, `mountain`, `lake`, `beach`, `waterfall`, `other`. |
+| `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `street`, `natural park`, `mountain`, `mountain pass`, `lake`, `beach`, `waterfall`, `canyon`, `spring`, `market`, `other`. Pick the specific one when it fits — a bazaar is a `market`, a hot or sacred spring is a `spring`, a gorge is a `canyon`, a col is a `mountain pass` — and fall back to `other` only when none does. |
 | `address` | no | text | |
 | `description` | no | text | |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering this sight. Numbers only — see *Guidebook page references*. |
 | `website` | no | a link like `https://example.com` | The venue's website — shown as a clickable link. |
 | `opening_days` | no | weekday names / ranges (`"tue-sun"`, `"mon-fri, sun"`) | The days it opens. **Keep these whenever the source states them** — see *Opening days and hours*. |
-| `opening_hours` | no | `HH:MM-HH:MM` ranges (`"09:30-18:00"`, `"09:30-12:30, 14:00-18:00"`) | The hours it opens. **Keep these whenever the source states them** — see *Opening days and hours*. |
+| `opening_hours` | no | `HH:MM-HH:MM` ranges (`"09:30-18:00"`, `"09:30-12:30, 14:00-18:00"`), or `;`-separated day-prefixed groups (`"mon-sat 09:00-17:00; sun 10:00-17:00"`) | The hours it opens. **Keep these whenever the source states them** — see *Opening days and hours*. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | Nested sights/hikes/meals (see nesting). |
 
 #### Type `place` — a town/area grouping several stops
@@ -988,6 +1028,7 @@ journey is a one-leg booking; there is no flat form.
 | `duration` | no | duration (`"4h20"`) | inferred from the two times (timezone-aware) | Give it if the two times aren't both known. |
 | `flight_number` | no | text | none | **Planes only** — e.g. `"AF9"`. This leg's own flight. |
 | `train_number` | no | text | none | **Trains only** — e.g. `"TGV 8541"`. This leg's own train. |
+| `distance_km` | no | number | none | How far this leg covers. Worth keeping for a road transfer (`"30 km / 35 min"` in the source); a flight's is rarely stated and rarely useful. |
 | `description` | no | text | none | A **short note** about this leg for what its fields don't cover — a seat, a terminal, a baggage allowance. One or two sentences. |
 | `start_coordinate` / `end_coordinate` | no | `{ "lat": .., "long": .. }` | none | For maps; a dotted straight line is drawn between them on each day map the leg is in progress on (both days of an overnight leg) and on the whole-trip map. |
 

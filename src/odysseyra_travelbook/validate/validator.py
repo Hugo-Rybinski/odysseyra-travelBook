@@ -118,13 +118,25 @@ _ERROR_TEMPLATES = [
      "Invalid opening_days {value}, expected weekday names like 'tue-sun', "
      "'monday, thursday' or 'mon-fri, sun'"),
     (re.compile(r"^Invalid opening_hours (?P<value>.+), expected time ranges "
-                r"like '09:30-18:00' or '09:30-12:30, 14:00-18:00'$"),
+                r"like '09:30-18:00' or '09:30-12:30, 14:00-18:00', optionally "
+                r"per weekday as 'mon-sat 09:00-17:00; sun 10:00-17:00'$"),
      "Invalid opening_hours {value}, expected time ranges like '09:30-18:00' "
-     "or '09:30-12:30, 14:00-18:00'"),
+     "or '09:30-12:30, 14:00-18:00', optionally per weekday as "
+     "'mon-sat 09:00-17:00; sun 10:00-17:00'"),
     (re.compile(r"^opening_hours range (?P<value>.+) opens and closes at the "
                 r"same time — give the closing time, or drop the range$"),
      "opening_hours range {value} opens and closes at the same time — give the "
      "closing time, or drop the range"),
+    # the two ways per-weekday groups can leave a day's hours ambiguous
+    (re.compile(r"^opening_hours (?P<value>.+) has two groups with no weekdays "
+                r"— only one can be the default for the days nothing else "
+                r"names$"),
+     "opening_hours {value} has two groups with no weekdays — only one can be "
+     "the default for the days nothing else names"),
+    (re.compile(r"^opening_hours (?P<value>.+) names (?P<day>\w+) twice — a "
+                r"day can only have one set of hours$"),
+     "opening_hours {value} names {day} twice — a day can only have one set of "
+     "hours"),
     (re.compile(r"^(?P<name>.+) must be a number, got (?P<value>.+)$"),
      "{name} must be a number, got {value}"),
     # a hike's embedded GPX (models/gpx.py) — the wrapper is ours, the
@@ -439,6 +451,9 @@ class _Validator:
                               PLACE_SCHEDULE if kind == "place" else SCHEDULE)
             self._time_consistency(act, path, tz_aware=False)
             self._detour_coherence(act, path)
+            # An activity's fee is converted like any other price, so its
+            # currency has to be one the trip declares a rate for.
+            self._check_price_currency(act, path)
         self._magnitudes(act, path, kind)
         if kind == "buffer":
             if _dur(act.get("duration")) == 0:
@@ -614,6 +629,7 @@ class _Validator:
             # still shown — and a detour's are dropped, so that is worth saying
             # here as much as at the top level.
             self._detour_coherence(sub, spath)
+            self._check_price_currency(sub, spath)
             if kind == "hike":
                 self._hike_route_endpoints(sub, spath)
                 self._hike_gpx(sub, spath)
@@ -1733,12 +1749,16 @@ class _Validator:
                          name=act.title,
                          days=fmt_weekday_runs(opening.day_runs, self.lang,
                                                abbr=False))
-            if not opening.covers(act.start_time, act.end_time):
+            # `on=` is what picks the rule when the hours differ by weekday, so
+            # a Sunday visit is checked against the Sunday hours — and the
+            # message quotes those, not the union of every day's.
+            if not opening.covers(act.start_time, act.end_time, on=day.date):
                 self.add("warning", path,
                          "this visit ({visit}) falls outside the opening hours "
                          "of '{name}' ({hours}).",
                          visit=act.time_range or f"{act.start_time:%H:%M}",
-                         name=act.title, hours=opening.hours_display)
+                         name=act.title,
+                         hours=opening.hours_display_on(day.date))
 
     def _check_end_of_day(self, day_end):
         """Warn about any activity whose computed end time is after the day's

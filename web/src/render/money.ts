@@ -39,6 +39,23 @@ export function primaryMoney(price: Money, lang: "en" | "fr" = "en"): string {
   return formatMoney(price.amount, price.currency, lang);
 }
 
+/** An activity's fee as one inline string for its meta line — `€12  (≈ 1200 KGS)`.
+ *
+ * Zero is *not* nothing: a guidebook stating that entry is free is telling you
+ * something, so it reads "Free" rather than "€0". Mirrors `price_inline` in
+ * pdf/base.py — keep the two in step. */
+export function priceInline(
+  price: Money | null | undefined,
+  lang: "en" | "fr" = "en",
+  free = "Free",
+): string {
+  if (!price) return "";
+  if (price.amount === 0) return free;
+  const secondary = secondaryMoney(price, lang);
+  const primary = primaryMoney(price, lang);
+  return secondary ? `${primary}  (${secondary})` : primary;
+}
+
 /** The faded "(≈ $279 · £218)" secondary conversions, or "" if none. */
 export function secondaryMoney(price: Money, lang: "en" | "fr" = "en"): string {
   if (!price.secondaries.length) return "";

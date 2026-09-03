@@ -121,7 +121,7 @@
           "category": "museum",
           "address": "Rue de Rivoli, 75001 Paris",
           "opening_days": "wed-mon",
-          "opening_hours": "09:00-18:00",
+          "opening_hours": "09:00-18:00; fri 09:00-21:45",
           "start_time": "15:30",
           "duration": "2h30",
           "description": "Le musée le plus visité au monde — choisissez une aile (Denon pour les peintures italiennes) plutôt que de tout vouloir voir.",
@@ -153,6 +153,7 @@
         {
           "type": "point_of_interest",
           "name": "Cathédrale Notre-Dame de Paris",
+          "price": 0,
           "category": "church",
           "address": "6 Parvis Notre-Dame, 75004 Paris",
           "start_time": "08:30",
@@ -234,7 +235,7 @@
             {
               "type": "point_of_interest",
               "name": "Rue Mouffetard",
-              "category": "street",
+              "category": "market",
               "description": "Une rue de marché en pente, fromageries, boulangeries et cafés.",
               "coordinate": {
                 "lat": 48.842,
@@ -462,6 +463,7 @@
         {
           "type": "point_of_interest",
           "name": "Château de Beynac",
+          "contact": "+33 5 53 29 50 40",
           "category": "castle",
           "address": "24220 Beynac-et-Cazenac",
           "start_time": "09:30",
@@ -493,6 +495,7 @@
         {
           "type": "point_of_interest",
           "name": "Lascaux IV",
+          "contact": "reservation@lascaux.example",
           "category": "museum",
           "address": "Av. de Lascaux, 24290 Montignac",
           "opening_hours": "09:30-19:00",
@@ -771,6 +774,7 @@
       "legs": [
         {
           "start": "Paris Montparnasse",
+          "distance_km": 240,
           "end": "Tours",
           "start_coordinate": {
             "lat": 48.8414,

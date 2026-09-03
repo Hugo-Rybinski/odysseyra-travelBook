@@ -6,7 +6,7 @@ import type {
   Transport,
   TransportLeg,
 } from "../types/resolved";
-import { fill, fmtDate, tr, type Lang } from "./format";
+import { fill, fmtDate, fmtKm, tr, type Lang } from "./format";
 import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
 import { CardHead, Price, Status } from "./Parts";
 import { Clamp } from "./Clamp";
@@ -117,6 +117,11 @@ function legNumber(leg: TransportLeg, lang: Lang): string {
   return "";
 }
 
+// The hop's when-and-how-far line: its date, its times, and its distance
+// (rounded for display like every other distance in the book). Mirrors
+// `_leg_info` in pdf/transport.py — the distance sits here rather than with the
+// flight number because a leg with no number would otherwise have nowhere to
+// show it.
 function legDates(leg: TransportLeg, lang: Lang): string {
   const dateStr = leg.start_date
     ? fmtDate(leg.start_date, lang) +
@@ -124,7 +129,8 @@ function legDates(leg: TransportLeg, lang: Lang): string {
         ? ` → ${fmtDate(leg.end_date, lang)}`
         : "")
     : "";
-  return [dateStr, transportTimes(leg)].filter(Boolean).join("  ·  ");
+  const dist = leg.distance_km != null ? fmtKm(leg.distance_km) : "";
+  return [dateStr, transportTimes(leg), dist].filter(Boolean).join("  ·  ");
 }
 
 // One hop of a *multi-leg* booking: its position, where it goes, when, its own

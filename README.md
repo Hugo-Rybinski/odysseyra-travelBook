@@ -382,6 +382,25 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
+- **A drive nested inside a place** — let a
+  [`place`](file_format.md#place--a-place-a-town-say-grouping-several-nested-activities)
+  (and a `point_of_interest`) nest a
+  [`road`](file_format.md#road--a-drivetransfer), which
+  `NESTED_ACTIVITY_TYPES` currently allows nowhere. Itineraries routinely group
+  driving *inside* a site — a valley you drive 12 km up, walk in, and drive back
+  out of, written as one 3 h block — and today that has to be flattened into
+  `road → place → road` siblings (the road's
+  `same_start_as_previous_activity` / `same_end_as_next_activity` pair makes
+  them share one pin, so it reads well; what's lost is the driving
+  sitting *within* the block's own duration). The model side is a one-line table
+  entry, but a road is the one activity that isn't a *point*, and every
+  nested-activity consumer assumes it is one: `maps/build.py`'s place branch
+  turns each nested item into a single `_Pt`, so the drive would be pinned at its
+  departure and its route never drawn; `pdf/days.py`'s nested dispatch falls
+  through to `_nested_poi`, and there is no nested twin of `_road_title` /
+  `_road_waypoints` in either renderer. It also needs an answer to what an
+  **area zoom map**'s extent means when one member is a route rather than a
+  point — the one genuinely open design question here.
 - **Typed / grouped contacts** — the flat
   [`misc.emergency_contacts`](file_format.md#miscemergency_contacts) list is
   built (the book's last page, and the end of the viewer's Overview tab), but

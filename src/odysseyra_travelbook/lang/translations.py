@@ -81,9 +81,15 @@ _FR = {
     "street": "rue",
     "natural park": "parc naturel",
     "mountain": "montagne",
+    # The badge is uppercased and clipped to 14 characters, so "COL DE MONTAGNE"
+    # would lose its last letter — "col" is what a map legend says anyway.
+    "mountain pass": "col",
     "lake": "lac",
     "beach": "plage",
     "waterfall": "cascade",
+    "canyon": "canyon",
+    "spring": "source",
+    "market": "marché",
     "other": "autre",
     # -- PDF: transport --
     "GETTING AROUND": "SE DÉPLACER",
@@ -127,6 +133,10 @@ _FR = {
     # detail line. The weekday names come localized from lang/dates.py, and the
     # hours are digits only — so this is the only string to translate.
     "Open": "Ouvert",
+    # An activity's fee: what a zero price reads as (a stated free entry is
+    # information, not an absent price) — the viewer's `free` key mirrors it.
+    # "Contact" is further down, shared with the accommodation card's label.
+    "Free": "Gratuit",
     # Moon phases (in that line, or in the "tonight" section when the sun times
     # are off or don't fit).
     "New moon": "Nouvelle lune",
@@ -481,9 +491,19 @@ _FR = {
         "opening_days invalide {value}, attendu des noms de jours comme "
         "« tue-sun », « monday, thursday » ou « mon-fri, sun »",
     "Invalid opening_hours {value}, expected time ranges like '09:30-18:00' "
-    "or '09:30-12:30, 14:00-18:00'":
+    "or '09:30-12:30, 14:00-18:00', optionally per weekday as "
+    "'mon-sat 09:00-17:00; sun 10:00-17:00'":
         "opening_hours invalide {value}, attendu des plages horaires comme "
-        "« 09:30-18:00 » ou « 09:30-12:30, 14:00-18:00 »",
+        "« 09:30-18:00 » ou « 09:30-12:30, 14:00-18:00 », éventuellement par "
+        "jour sous la forme « mon-sat 09:00-17:00; sun 10:00-17:00 »",
+    "opening_hours {value} has two groups with no weekdays — only one can be "
+    "the default for the days nothing else names":
+        "opening_hours {value} a deux groupes sans jours — un seul peut servir "
+        "de valeur par défaut pour les jours que rien d'autre ne nomme",
+    "opening_hours {value} names {day} twice — a day can only have one set of "
+    "hours":
+        "opening_hours {value} nomme {day} deux fois — un jour ne peut avoir "
+        "qu'une seule plage d'horaires",
     "opening_hours range {value} opens and closes at the same time — give the "
     "closing time, or drop the range":
         "la plage opening_hours {value} ouvre et ferme à la même heure — "
@@ -648,6 +668,21 @@ _FR = {
         "de la journée",
     "false (a normal stop, scheduled on the timeline)":
         "false (une étape normale, placée dans le programme)",
+    # an activity's fee and contact (shared by every type, like `detour`)
+    "what this stop costs (an entrance fee, a guided visit, a meal) — 0 prints "
+    "as 'Free'":
+        "ce que coûte cette étape (un droit d'entrée, une visite guidée, un "
+        "repas) — 0 s'affiche « Gratuit »",
+    "a number without a currency symbol, like 12 or 7.5":
+        "un nombre sans symbole monétaire, comme 12 ou 7.5",
+    "the currency of 'price'": "la devise de « price »",
+    "a phone number, email or instructions for reaching this stop":
+        "un numéro de téléphone, un e-mail ou la marche à suivre pour joindre "
+        "cette étape",
+    # a transport leg's distance
+    "how far this leg covers, in km": "la distance couverte par ce trajet, en km",
+    "a number like 200 or 30.5": "un nombre comme 200 ou 30.5",
+    "none (no distance shown)": "aucune (pas de distance affichée)",
     "the day's title": "le titre du jour",
     "the city/region label": "le libellé de ville/région",
     "the day's date": "la date du jour",
@@ -793,9 +828,11 @@ _FR = {
         "tous les jours (pas de vérification des jours de fermeture)",
     "the hours it opens (the visit is checked against them)":
         "les horaires d'ouverture (la visite est vérifiée par rapport à eux)",
-    "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00'":
+    "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00', or per "
+    "weekday as 'mon-sat 09:00-17:00; sun 10:00-17:00'":
         "des plages horaires comme « 09:30-18:00 » ou "
-        "« 09:30-12:30, 14:00-18:00 »",
+        "« 09:30-12:30, 14:00-18:00 », ou par jour sous la forme "
+        "« mon-sat 09:00-17:00; sun 10:00-17:00 »",
     "all day (no opening-hours check)":
         "toute la journée (pas de vérification des horaires)",
     "the place name": "le nom du lieu",

@@ -406,12 +406,15 @@ class DayMixin:
         self.set_text_color(*(MUTED if meal.detour else self.accent))
         self.cell(0, 5, head, new_x="LMARGIN", new_y="NEXT")
 
-        meta = "  ·  ".join(p for p in (meal.duration_display, meal.address) if p)
+        meta = "  ·  ".join(
+            p for p in (meal.duration_display, meal.address,
+                        self.price_inline(meal.price, meal.currency)) if p)
         w = self.content_width - self.GUTTER
         self.set_xy(x, self.get_y())
         self._line_with_nav(x, w, meta, meal.coordinate, meal.address,
                             meal.restaurant, meal.area, size=8.5, h=4.5,
                             text_url=self._addr_url(meal.coordinate, meal.address))
+        self._contact_line(meal, x, w, size=8.5, h=4.5)
         self.ln(1.5)
 
     def _transport_row(self, t) -> None:
@@ -449,7 +452,8 @@ class DayMixin:
                             t.start, size=11, h=6, style="B", color=INK)
 
         meta = "  ·  ".join(
-            p for p in (t.duration_display, self._transport_booking(t)) if p
+            p for p in (t.duration_display, format_km(t.distance_km),
+                        self._transport_booking(t)) if p
         )
         if meta:
             self.set_x(x)
@@ -577,7 +581,9 @@ class DayMixin:
         parts = [act.duration_display]
         if act.distance_km is not None:
             parts.append(format_km(act.distance_km))
-        meta = "  ·  ".join(p for p in parts if p)
+        parts.append(self.price_inline(act.price, act.currency))
+        parts = [p for p in parts if p]
+        meta = "  ·  ".join(parts)
         legs = road_display_legs(act.start, act.waypoints)
         multi = len(legs) > 1
         if multi:
@@ -592,6 +598,7 @@ class DayMixin:
         # otherwise the only off-road marking on that road would be invisible.
         if act.off_road or (not multi and legs and legs[0][5]):
             self._chip(x, self.t("OFF-ROAD SECTIONS"))
+        self._contact_line(act, x, w)
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self._road_waypoints(x, w, act)
         self._render_nested(x, w, act.activities)
@@ -674,35 +681,66 @@ class DayMixin:
         day, so only what is known is printed. The viewer's `.act-opening` line
         is the same row from the same fields — keep the two in step. Neither
         renderer flags a visit that falls *outside* the hours; that is the
-        validator's warning, since the fix belongs in the JSON."""
+        validator's warning, since the fix belongs in the JSON.
+
+        Hours that differ by weekday (``opening.per_day``) are drawn as one part
+        per rule instead — ``Open   Mon–Sat 09:00–17:00  ·  Sun 10:00–17:00`` —
+        since the overall day run says nothing about which hours belong to which
+        day. A rule naming no days is the default and prints bare."""
         opening = getattr(act, "opening", None)
         if opening is None:
             return
         parts = []
-        if opening.day_runs:
-            parts.append(fmt_weekday_runs(opening.day_runs, self.lang))
-        if opening.hours:
-            parts.append(opening.hours_display)
-        label = self.t("Open") + "  "
+        if opening.per_day:
+            for rule in opening.rules:
+                days = (fmt_weekday_runs(rule.day_runs, self.lang) + " "
+                        if rule.day_runs else "")
+                parts.append(days + rule.hours_display)
+        else:
+            if opening.day_runs:
+                parts.append(fmt_weekday_runs(opening.day_runs, self.lang))
+            if opening.hours:
+                parts.append(opening.hours_display)
+        self._label_row(x, w, self.t("Open"), "  ·  ".join(parts), size, h)
+
+    def _label_row(self, x: float, w: float, label: str, text: str,
+                   size: float = 9, h: float = 5) -> None:
+        """One detail row led by a bold accent label — ``Open  Tue–Sun · …``,
+        ``Contact  +996 …``. Draws nothing without text."""
+        if not text:
+            return
+        lead = label + "  "
         self.set_x(x)
         self.set_font(FONT, "B", size)
         self.set_text_color(*self.accent)
-        lw = self.get_string_width(label)
-        self.cell(lw, h, label)
+        lw = self.get_string_width(lead)
+        self.cell(lw, h, lead)
         # multi_cell takes the cursor x as its left edge, so a wrapped second
         # line hangs under the text rather than under the label.
         self.set_font(FONT, "", size)
         self.set_text_color(*MUTED)
-        self.multi_cell(w - lw, h, "  ·  ".join(parts))
+        self.multi_cell(w - lw, h, text)
+
+    def _contact_line(self, act, x: float, w: float, size: float = 9,
+                      h: float = 5) -> None:
+        """An activity's ``contact`` as its own labelled row — a phone number is
+        looked up in a hurry, so it gets a label rather than being buried at the
+        end of the meta line. Free text, printed as written (the viewer's twin
+        additionally wraps a dialable one in a ``tel:`` link, which paper has no
+        use for)."""
+        self._label_row(x, w, self.t("Contact"), getattr(act, "contact", ""),
+                        size, h)
 
     def _details_point_of_interest(self, act, x: float, w: float) -> None:
         parts = [act.duration_display]
         if act.address:
             parts.append(act.address)
+        parts.append(self.price_inline(act.price, act.currency))
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(x, w, meta, act.coordinate, act.address, act.name,
                             text_url=self._addr_url(act.coordinate, act.address))
         self._opening_line(act, x, w)
+        self._contact_line(act, x, w)
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
         if act.website and not self.ink_saver:
             y = self.get_y()
@@ -711,7 +749,10 @@ class DayMixin:
         self._render_nested(x, w, act.activities)
 
     def _details_place(self, act, x: float, w: float) -> None:
-        self._line_with_nav(x, w, act.duration_display, act.coordinate, act.name)
+        parts = [act.duration_display, self.price_inline(act.price, act.currency)]
+        meta = "  ·  ".join(p for p in parts if p)
+        self._line_with_nav(x, w, meta, act.coordinate, act.name)
+        self._contact_line(act, x, w)
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self._render_nested(x, w, act.activities)
 
@@ -743,10 +784,12 @@ class DayMixin:
         if act.elevation_m is not None:
             parts.append("+" + format_elevation(act.elevation_m))
         parts.append(self.t(act.route_label))
+        parts.append(self.price_inline(act.price, act.currency))
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(x, w, meta, act.coordinate, act.start, act.name)
         if act.name and act.start and act.end:
             self._para(x, w, f"{act.start} → {act.end}")
+        self._contact_line(act, x, w)
         self._para_with_pill(x, w, act.description, act.guidebook_pages)
         self.hike_track(act, x, w)  # no-op without an embedded `gpx`
         self._render_nested(x, w, act.activities)
@@ -803,13 +846,16 @@ class DayMixin:
         self.set_text_color(*(MUTED if poi.detour else INK))
         self.multi_cell(tw, 5, poi.title)
 
-        meta = "  ·  ".join(p for p in (poi.duration_display, poi.address) if p)
+        meta = "  ·  ".join(
+            p for p in (poi.duration_display, poi.address,
+                        self.price_inline(poi.price, poi.currency)) if p)
         if meta or maps_url(poi.coordinate, poi.address, poi.name,
                             provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
                                 poi.name, size=8.5, h=4.5,
                                 text_url=self._addr_url(poi.coordinate, poi.address))
         self._opening_line(poi, tx, tw, size=8.5, h=4.5)
+        self._contact_line(poi, tx, tw, size=8.5, h=4.5)
         self._para_with_pill(tx, tw, poi.description, poi.guidebook_pages,
                              size=9, h=4.5)
         if poi.website and not self.ink_saver:
@@ -848,6 +894,7 @@ class DayMixin:
         parts.append(self.t(hike.route_label))
         if hike.duration_display:
             parts.append(hike.duration_display)
+        parts.append(self.price_inline(hike.price, hike.currency))
         meta = "  ·  ".join(p for p in parts if p)
         self._line_with_nav(tx, tw, meta, hike.coordinate, hike.start, hike.name,
                             size=8.5, h=4.5)
@@ -856,6 +903,7 @@ class DayMixin:
             self.set_font(FONT, "", 9)
             self.set_text_color(*MUTED)
             self.multi_cell(tw, 4.5, f"{hike.start} → {hike.end}")
+        self._contact_line(hike, tx, tw, size=8.5, h=4.5)
         self._para_with_pill(tx, tw, hike.description, hike.guidebook_pages,
                              size=9, h=4.5)
         self.hike_track(hike, tx, tw)  # no-op without an embedded `gpx`
@@ -893,13 +941,15 @@ class DayMixin:
         self.set_text_color(*(MUTED if meal.detour else self.accent))
         self.multi_cell(tw, 5, head)
 
-        parts = [p for p in (meal.duration_display, meal.address) if p]
+        parts = [p for p in (meal.duration_display, meal.address,
+                             self.price_inline(meal.price, meal.currency)) if p]
         meta = "  ·  ".join(parts)
         if meta or maps_url(meal.coordinate, meal.address, meal.restaurant,
                             meal.area, provider=self.map_provider):
             self._line_with_nav(tx, tw, meta, meal.coordinate, meal.address,
                                 meal.restaurant, meal.area, size=8.5, h=4.5,
                                 text_url=self._addr_url(meal.coordinate, meal.address))
+        self._contact_line(meal, tx, tw, size=8.5, h=4.5)
         self.ln(1)
 
 

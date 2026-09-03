@@ -1642,6 +1642,24 @@ body {
   font-weight: 600;
 }
 
+/* An activity's `contact`, styled as the opening row's twin — same labelled
+   shape, drawn right under it (see `_contact_line` in pdf/days.py). A dialable
+   or mailable value is a link; the PDF has no twin for that. */
+.act-details .act-contact {
+  margin: 3px 0 0;
+  color: var(--muted);
+}
+.act-contact-label {
+  margin-right: 7px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.act-details .act-contact a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+}
+
 /* inline external-link rows (Navigate / Website / Reservation) */
 .link-row {
   display: flex;

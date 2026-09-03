@@ -570,7 +570,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **Transport is a booking plus its `legs`.** What is reserved once — `type`,
   `name`, `booking_number`, `booking_source`, `website`, `booking_link`,
   `status`, `description`, `price`/`currency`/`paid` — sits on the `Transport`;
-  what moves once — the places, dates, times, `flight_number`/`train_number`, its
+  what moves once — the places, dates, times, `flight_number`/`train_number`,
+  `distance_km`, its
   own `description`, the endpoint coordinates — sits on each `TransportLeg`. `legs` is **required and
   non-empty**, so a single-hop booking is a one-leg booking and there is exactly
   one shape to consume. A round trip, or a flight with a connection, is finally
@@ -633,7 +634,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **Enums** (case-insensitive, validated in the model — the tuples in `models/`
   are the source of truth, so check them rather than this list): PoI `category`
   (museum/church/building/viewpoint/ruins/castle/temple/street/natural park/
-  mountain/lake/beach/waterfall/other, default `other`); hike `route`
+  mountain/mountain pass/lake/beach/waterfall/canyon/spring/market/other,
+  default `other` — the last four were added for trips where they are the
+  point, and `mountain pass` is the longest label that still fits the badge's
+  14-character clip whole, which `tests/test_activity_extras.py` pins); hike `route`
   (loop/back_and_forth/one_way, default back_and_forth);
   transport `type` (plane/train/bus/taxi/ferry/other, default other); accommodation
   `type` (hotel/camping/b&b/other, default hotel); car rental `car_type`
@@ -787,7 +791,35 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   week) and `opening_hours` (`09:30-18:00` / `09:30-12:30, 14:00-18:00`; a close
   before its open crosses midnight). Deliberately **compact strings, not
   objects**: a guidebook line ("Tue–Sun 9.30–12.30 & 2–6pm") transcribes as it
-  stands, and the Edit tab needs two text inputs. `models/opening.py` reduces
+  stands, and the Edit tab needs two text inputs.
+  - **The hours may differ by weekday**, as `;`-separated groups each optionally
+    prefixed with its days — `mon-sat 09:00-17:00; sun 10:00-17:00`, which is
+    the shape a museum with different Sunday hours actually has and the one
+    thing the single pair could not express. Staying inside the *same string*
+    is what keeps the compact-string decision above intact; no separator is
+    needed between the days and the times because a day spec never holds a
+    digit and a time range always opens with one (`_FIRST_DIGIT` is the seam).
+    A group naming **no** days is the default for every day the others don't,
+    so `09:00-17:00; fri 09:00-21:45` is the Louvre. Two groups naming the same
+    day, or two day-less groups, **raise**: either leaves a day ambiguous, and
+    there is no honest way to pick. When `opening_days` is absent but the hours
+    name weekdays, those *become* the open days — writing `mon-fri 09:00-17:00`
+    alone means shut at the weekend — while a default group leaves the set
+    empty, since it claims no day in particular.
+  - So `Opening` carries `days` + a tuple of `OpeningRule`s rather than one
+    `hours`, plus `per_day` (any rule names days) which is what picks between
+    the renderers' **two line shapes**: without it `Open  Tue–Sun · 09:30–18:00`,
+    with it one part per rule, `Open  Mon–Sat 09:00–17:00 · Sun 10:00–17:00` —
+    the overall day run says nothing about which hours belong to which day.
+    `hours`/`hours_display` survive as the union, so `if opening.hours` still
+    reads as "some hours are stated"; `hours_on(day)` / `hours_display_on(day)`
+    pick the day's rule, and **`covers()` gained an `on=` date** so a Sunday
+    visit is checked against the Sunday hours and the validator's warning quotes
+    those rather than the union. `on=None` falls back to every range on purpose:
+    a caller with no date must not report a Sunday visit as outside the weekday
+    hours. A plain single-group value parses to exactly one day-less rule, which
+    is what makes every file written before this render identically.
+  `models/opening.py` reduces
   both to one frozen `Opening` (`None` when neither is given, so *absent* means
   every day / all day rather than "unknown") carrying `day_runs` — the days
   folded back into `(first, last)` pairs, **wrapping the week** so a place shut
@@ -811,6 +843,43 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   never scheduled, so it gets the closed-day check but not the hours one.
   `skills/build-full-json.md` insists these be kept whenever the source states
   them, and — unlike `bank_holiday` — explicitly forbids looking them up.
+- **An activity's `price`/`currency` and `contact`.** What the stop costs and
+  who to call, parsed in `_sched` so they land on the `Activity` base and
+  **every type but a `buffer`** has them — a fee is a fee whether it buys a
+  museum, a guided walk or a dinner, and a restaurant's phone number is as
+  worth having as a monument's. Same shape as a booking's price (a bare amount
+  plus an optional ISO code defaulting to `defaults.currency`, validated
+  against the declared set by the *same* `_check_price_currency`, now called
+  from `_activity` and `_nested_activities` too).
+  - **`0` is meaningful and prints as `Free`.** A guidebook that says entry
+    costs nothing is telling you something an omitted price is not, so zero
+    survives everywhere: `price_inline` / `priceInline` render it as the word,
+    the `.ics` packs `Price: Free`, and `edit/serialize.ts`'s `SAFE_DEFAULTS`
+    deliberately **omits** `price` so save-time pruning can't turn "we checked,
+    it's free" back into "nobody knows" (there is a comment there saying so).
+  - **There is no `paid`**, unlike the three booked objects: a fee at the gate
+    has nothing to settle in advance, and a pre-paid ticket with a reference is
+    a booking. That also keeps this to "a figure and a phone number" rather
+    than dragging in the status/payment pill machinery.
+  - **`contact` is free text, never parsed** — the same call as
+    `misc.emergency_contacts`, and for the same reason: numbering is local and
+    half of these are instructions rather than numbers ("call the guardian to
+    open the museum" is the case the field exists for). Both renderers give it
+    its own labelled row under the details — `_contact_line` / `_label_row`,
+    which `_opening_line` now shares, and `.act-contact` — with the usual
+    paper-can't-do-it divergence: the viewer wraps a dialable/mailable value in
+    a `tel:`/`mailto:` link, reusing `EmergencyContacts.tsx`'s `DIALABLE` /
+    `MAILABLE` rules (keep the two in step).
+  - The price sits **inline at the end of the meta line** rather than in a bold
+    row of its own: `2h30 · Rue de Rivoli · €22 ($23.76, £18.70)`. A booking's
+    price is a headline; a stop's is one figure among the duration and the
+    address.
+  - `examples/france.json` already carried seven `price` values that the model
+    was silently dropping — the Louvre's 22, the Eiffel Tower's 29.4, and so on
+    — so this activated data the flagship example had been asking for. Notre-Dame
+    now states `price: 0` (it really is free) and day 6's two paying sights carry
+    a contact each, one email and one number, so both viewer link paths are
+    visible in the demo.
 - **Guidebook pages.** The four activity types that carry a `description` —
   `road`, `point_of_interest`, `place`, `hike` — also carry an optional
   `guidebook_pages` string: page numbers only (`14` / `15-18` /

@@ -136,7 +136,13 @@ def _opening(op) -> dict | None:
     neither). ``day_runs`` is the *folded* form — consecutive days already
     grouped into ``(first, last)`` pairs — so the viewer only has to name the
     weekdays, not work out the runs; ``hours_display`` is digits only, hence
-    language-neutral and precomputed once here."""
+    language-neutral and precomputed once here.
+
+    ``rules`` is the same thing per weekday group, and ``per_day`` says whether
+    any group names days — which is what picks between the viewer's two line
+    shapes, exactly as it does in the PDF. The flat ``hours``/``hours_display``
+    stay the union of every group, so a reader that ignores ``rules`` still sees
+    that hours are stated."""
     if op is None:
         return None
     return {
@@ -144,6 +150,16 @@ def _opening(op) -> dict | None:
         "day_runs": [list(run) for run in op.day_runs],
         "hours": [[f"{o:%H:%M}", f"{c:%H:%M}"] for o, c in op.hours],
         "hours_display": op.hours_display,
+        "per_day": op.per_day,
+        "rules": [
+            {
+                "days": list(rule.days),
+                "day_runs": [list(run) for run in rule.day_runs],
+                "hours": [[f"{o:%H:%M}", f"{c:%H:%M}"] for o, c in rule.hours],
+                "hours_display": rule.hours_display,
+            }
+            for rule in op.rules
+        ],
     }
 
 
@@ -206,6 +222,12 @@ def _activity(itin: Itinerary, act) -> dict:
         # but no clock time (the timeline pass left it out), and both renderers
         # mark it and draw it a step down in emphasis.
         "detour": act.detour,
+        # What the stop costs (an entrance fee, a guided visit, a meal) in the
+        # same structured shape as a booking's, and who to call about it. Every
+        # type carries both, so they sit on the common dict. ``paid`` is always
+        # None here: an activity has no payment state (see models/activities.py).
+        "price": _price(itin, act.price, act.currency, None),
+        "contact": act.contact,
         **_sched(act, itin.default_timezone),
     }
 
@@ -297,6 +319,7 @@ def _transport_leg(itin: Itinerary, leg) -> dict:
         "end_day_offset": leg.end_day_offset,
         "flight_number": leg.flight_number,
         "train_number": leg.train_number,
+        "distance_km": leg.distance_km,
         "description": leg.description,
         "coordinate": _coord(leg.coordinate),
         "start_coordinate": _coord(leg.start_coordinate),

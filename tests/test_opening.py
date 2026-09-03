@@ -18,6 +18,7 @@ from odysseyra_travelbook.models import to_dict
 from odysseyra_travelbook.models.opening import (
     WEEKDAYS,
     Opening,
+    OpeningRule,
     _parse_opening_days,
     _parse_opening_hours,
     parse_opening,
@@ -91,12 +92,16 @@ def test_bad_opening_days_are_rejected(value):
 # -- parsing the hours ----------------------------------------------------
 
 def test_opening_hours_parse_one_range():
-    assert _parse_opening_hours("09:30-18:00") == ((time(9, 30), time(18, 0)),)
+    # A plain value is one default rule (no weekdays), which is what keeps every
+    # file written before per-day hours parsing identically.
+    assert _parse_opening_hours("09:30-18:00") == (
+        OpeningRule(hours=((time(9, 30), time(18, 0)),)),)
 
 
 def test_opening_hours_keep_a_midday_closure_as_two_ranges():
     assert _parse_opening_hours("09:30-12:30, 14:00-18:00") == (
-        (time(9, 30), time(12, 30)), (time(14, 0), time(18, 0)))
+        OpeningRule(hours=((time(9, 30), time(12, 30)),
+                           (time(14, 0), time(18, 0)))),)
 
 
 def test_no_hours_means_all_day():
@@ -126,7 +131,7 @@ def test_neither_field_builds_no_opening():
 def test_either_field_alone_builds_one():
     assert parse_opening({"opening_days": "mon"}) == Opening(days=("monday",))
     assert parse_opening({"opening_hours": "09:00-17:00"}) == Opening(
-        hours=((time(9), time(17)),))
+        rules=(OpeningRule(hours=((time(9), time(17)),)),))
 
 
 @pytest.mark.parametrize("days,runs", [
@@ -220,6 +225,15 @@ def test_the_resolved_doc_carries_the_folded_and_displayable_forms():
         "day_runs": [["monday", "wednesday"], ["friday", "friday"]],
         "hours": [["09:30", "12:30"], ["14:00", "18:00"]],
         "hours_display": "09:30–12:30, 14:00–18:00",
+        # One default rule, so `per_day` is false and the viewer draws the
+        # days-then-hours line rather than one part per rule.
+        "per_day": False,
+        "rules": [{
+            "days": [],
+            "day_runs": [],
+            "hours": [["09:30", "12:30"], ["14:00", "18:00"]],
+            "hours_display": "09:30–12:30, 14:00–18:00",
+        }],
     }
 
 

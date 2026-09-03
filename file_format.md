@@ -369,8 +369,31 @@ starts at `defaults.start_time`, each next one at the previous item's end.
 | `start_tz` |  | Start time zone | string | UTC offset | `defaults.timezone` |
 | `end_tz` |  | End time zone | string | UTC offset | `defaults.timezone` |
 | `detour` |  | A stop kept for reference, left off the timeline (see below) | boolean | `true` / `false` | `false` |
+| `price` |  | What this stop costs — an entrance fee, a guided visit, a meal (see below) | number | a bare amount, no symbol (`12`, `7.5`) | none (no price shown) |
+| `currency` |  | The currency of `price` | string | 3-letter ISO code | `defaults.currency` |
+| `contact` |  | A phone, an email, or how to get in | string | any text | `""` |
 
 A tz label is only shown in the PDF when it differs from `defaults.timezone`.
+
+**Price and contact.** Both are available on every type but `buffer`, because a
+fee is a fee whether it buys a museum, a guided walk or a dinner, and a
+restaurant's phone number is as worth having as a monument's.
+
+- `price` is a bare amount, like a booking's, and `currency` must be
+  `defaults.currency` or one of `defaults.secondary_currencies` — otherwise
+  there is no rate to convert it with, and the validator errors. It is printed
+  at the end of the stop's figures line, with any secondary conversions faded
+  alongside.
+- **`0` is meaningful and prints as *Free*.** A guidebook stating that entry
+  costs nothing is telling you something an omitted price would not, so a zero
+  survives both renderers and the Edit tab's save-time pruning.
+- There is **no `paid`** flag, unlike transport / accommodation / car rental: a
+  fee at the gate has nothing to settle in advance. A pre-paid ticket is a
+  booking, not an activity.
+- `contact` is free text and is **never parsed** — it may be a number, an
+  email, or an instruction ("call the guardian to open the museum"). It gets its
+  own labelled row under the stop's details in both renderers; the viewer alone
+  wraps a dialable or mailable value in a `tel:` / `mailto:` link.
 
 **Detours.** `detour` marks a stop you probably *won't* make but want the book to
 carry anyway, in case the day goes differently — the cave you'd visit if the
@@ -596,13 +619,13 @@ built on the click and downloaded.
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Point-of-interest name | string | any text | — |
-| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `lake` \| `beach` \| `waterfall` \| `other` | `"other"` |
+| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `mountain pass` \| `lake` \| `beach` \| `waterfall` \| `canyon` \| `spring` \| `market` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
 | `website` |  | Link to the venue's website, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `opening_days` |  | The days it opens | string | weekday names / ranges (`tue-sun`, `mon-fri, sun`) | every day |
-| `opening_hours` |  | The hours it opens | string | `HH:MM-HH:MM` ranges (`09:30-18:00`, `09:30-12:30, 14:00-18:00`) | all day |
+| `opening_hours` |  | The hours it opens, optionally per weekday | string | `HH:MM-HH:MM` ranges (`09:30-18:00`, `09:30-12:30, 14:00-18:00`), or `;`-separated day-prefixed groups (`mon-sat 09:00-17:00; sun 10:00-17:00`) | all day |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
 **Opening days and hours.** Both are compact strings, so a guidebook line
@@ -618,15 +641,34 @@ transcribes as it stands rather than being taken apart into an object:
   is what lets a visit be caught straddling it. A range whose close is *before*
   its open crosses midnight (`"18:00-02:00"`). Leaving it out means **all day**.
 
+  The hours may also **differ by weekday**, written as `;`-separated groups each
+  optionally prefixed with the days it applies to:
+  `"mon-sat 09:00-17:00; sun 10:00-17:00"`. No punctuation is needed between the
+  days and the times — a day spec never contains a digit, and a time range
+  always starts with one. A group naming **no** days is the default for every day
+  no other group names, so `"09:00-17:00; sun 10:00-17:00"` reads as "9-5, but
+  10-5 on Sundays". Two groups may not name the same weekday, and there may be at
+  most one default group: either would leave a day's hours ambiguous, and both
+  are errors.
+
+  When `opening_days` is absent but the hours name weekdays, **those become the
+  open days** — `"mon-fri 09:00-17:00"` alone says the place is shut at the
+  weekend. A default group leaves the set empty, since it applies to every day
+  and claims none in particular.
+
 Both renderers print what is known under the address, as `Open   Tue–Sun  ·
 09:30–12:30, 14:00–18:00` (localized weekday names; the hours are digits, so
 they read the same in both languages), and the calendar export packs it as an
-`Open:` line. Neither renderer flags a visit falling *outside* the opening —
+`Open:` line. Per-weekday hours are drawn as one part per group instead —
+`Open   Mon–Sat 09:00–17:00  ·  Sun 10:00–17:00` — because the overall day run
+says nothing about which hours belong to which day. Neither renderer flags a visit falling *outside* the opening —
 **validation** does, with two warnings that read the day's *resolved* timeline
 (so a visit whose start time was inferred is checked like any other):
 
 * the visit lands on a weekday the place doesn't open;
-* the visit doesn't fit inside a single opening range.
+* the visit doesn't fit inside a single opening range — checked against **that
+  day's** group when the hours differ by weekday, and the warning quotes those
+  hours rather than the union of every day's.
 
 A nested stop is never put on the timeline, so it has no resolved time — the
 closed-day check still applies to it, the hours check can't.
@@ -857,6 +899,7 @@ which leaves the note to the itinerary row above rather than printing it twice.
 | `duration` |  | Travel time | string | duration | inferred from the two times |
 | `flight_number` |  | Flight number of this leg (planes only) | string | any text | `""` |
 | `train_number` |  | Train number of this leg (trains only) | string | any text | `""` |
+| `distance_km` |  | How far this leg covers, in km | number | a number (`200`, `30.5`) | none (no distance shown) |
 | `description` |  | A short note about this leg (a seat, a terminal, a baggage allowance) | string | any text | `""` |
 | `start_coordinate` |  | Departure point, for the maps | object | `{lat, long}` | none (never geocoded) |
 | `end_coordinate` |  | Arrival point, for the maps | object | `{lat, long}` | none (never geocoded) |

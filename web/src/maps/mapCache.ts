@@ -71,7 +71,13 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // before it, and every activity after it on that day moves earlier. A
 // v21-cached day carries the flag nowhere (so the row wouldn't be marked or
 // dimmed) *and* holds the old, later times.
-const SCHEMA_VERSION = 22;
+// v23: activities gained a `price` (an entrance fee, structured like a
+// booking's) and a `contact`; a point of interest's `opening` gained `per_day`
+// + `rules`, so hours that differ by weekday can be drawn per day; and a
+// transport leg gained `distance_km`. A v22-cached day carries none of them, so
+// the fee, the phone number, the Sunday hours and the leg's distance would all
+// be missing while the CLI printed them.
+const SCHEMA_VERSION = 23;
 
 interface Entry {
   day: Day;

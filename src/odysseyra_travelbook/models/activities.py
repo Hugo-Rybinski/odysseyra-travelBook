@@ -15,8 +15,10 @@ from .parsers import (
     _diff_minutes,
     _format_duration,
     _parse_bool,
+    _parse_currency,
     _parse_duration,
     _parse_float,
+    _parse_price,
     _parse_route,
     _parse_time,
     _parse_tz,
@@ -34,10 +36,25 @@ class Activity(Scheduled):
     rather than on it: it takes no time in the schedule, gets no buffer before
     it, and shows its ``duration`` (how long it *would* take) without any clock
     time, since it has none to have. See :func:`schedule_activities`.
+
+    ``price``/``currency`` are what the stop costs — an entrance fee, a guided
+    visit, a meal — in the same shape as a booking's (a bare amount plus an
+    optional ISO code defaulting to ``defaults.currency``). ``0`` is meaningful
+    and prints as *Free*: a guidebook that says entry costs nothing is telling
+    you something an omitted price would not. Unlike the three *booked* objects
+    there is no ``paid`` flag, because a fee at the gate has nothing to pay in
+    advance.
+
+    ``contact`` is free text — a phone number, an email, "call the guardian to
+    open the museum" — never parsed, exactly like an accommodation's, since
+    numbering is local and half of these are instructions rather than numbers.
     """
 
     coordinate: Coordinate | None = None  # optional map location
     detour: bool = False  # kept for reference; not placed on the timeline
+    price: float | None = None
+    currency: str = ""    # "" → the trip's default currency
+    contact: str = ""     # free text: phone / email / how to get in
 
 
 def _sched(d: dict) -> dict:
@@ -52,6 +69,12 @@ def _sched(d: dict) -> dict:
         # Every activity but a `buffer` can be a detour — a buffer *is* time, and
         # a detour is the absence of any (`Buffer.from_dict` doesn't come here).
         "detour": _parse_bool(d.get("detour", False)),
+        # What it costs and who to call, on every type for the same reason: a
+        # fee is a fee whether it buys a museum, a guided walk or a dinner, and
+        # a restaurant's phone number is as worth having as a monument's.
+        "price": _parse_price(d.get("price"), "activity price"),
+        "currency": _parse_currency(d.get("currency")),
+        "contact": str(d.get("contact", "")).strip(),
     }
 
 
@@ -368,7 +391,8 @@ class Road(Activity):
 
 POI_CATEGORIES = (
     "museum", "church", "building", "viewpoint", "ruins", "castle", "temple",
-    "street", "natural park", "mountain", "lake", "beach", "waterfall", "other",
+    "street", "natural park", "mountain", "mountain pass", "lake", "beach",
+    "waterfall", "canyon", "spring", "market", "other",
 )
 
 

@@ -79,6 +79,14 @@
           { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
           { "type": "meal", "restaurant": "Slow", "duration": "45 min" }
         ] },
+        { "type": "point_of_interest", "name": "Costly", "duration": "30 min",
+          "price": "twelve", "currency": "JPY", "contact": "+996 700 732 984" },
+        { "type": "point_of_interest", "name": "Two defaults", "duration": "30 min",
+          "opening_hours": "09:00-17:00; 10:00-18:00" },
+        { "type": "point_of_interest", "name": "Wednesday twice", "duration": "30 min",
+          "opening_hours": "mon-fri 09:00-17:00; wed 10:00-18:00" },
+        { "type": "point_of_interest", "name": "Nameless day group", "duration": "30 min",
+          "opening_hours": "someday 09:00-17:00" },
         { "type": "road", "legs": [] },
         { "type": "road", "legs": "not-an-array" },
         { "type": "road", "start": "Old shape", "coordinate": { "lat": 1, "long": 2 }, "off_road": true,
@@ -108,7 +116,7 @@
   "transport": [
     { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "website": "not-a-link", "status": "confirmed", "price": 120, "currency": "CHF" },
     { "type": "bus", "status": "maybe", "paid": "later", "price": "lots", "legs": [
-      { "start": "Pau", "end": "Lourdes", "start_date": "2026-06-11", "end_date": "2026-06-10", "start_time": "09:00", "flight_number": "AF999", "booking_number": "MOVE-ME", "price": 12 }
+      { "start": "Pau", "end": "Lourdes", "start_date": "2026-06-11", "end_date": "2026-06-10", "start_time": "09:00", "flight_number": "AF999", "booking_number": "MOVE-ME", "price": 12, "distance_km": "far" }
     ] },
     { "type": "train", "booking_number": "OK-1", "legs": [
       { "start": "Lourdes", "end": "Paris", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00" }

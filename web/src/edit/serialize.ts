@@ -38,6 +38,9 @@ const SAFE_DEFAULTS: Record<string, unknown> = {
   detour: false,
   breakfast_included: false,
   additional_drivers: 0,
+  // Deliberately **not** here: an activity's `price`. Zero is meaningful — a
+  // stated free entry prints as "Free" — so pruning it would silently turn
+  // "we checked, it's free" back into "we don't know".
 };
 
 // Recursively drop redundant content: empty strings, null, empty arrays/objects,

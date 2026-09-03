@@ -290,6 +290,19 @@ SCHEDULE = [
          "reference and left off the day's timeline",
          "true or false", "false (a normal stop, scheduled on the timeline)",
          V_BOOL),
+    # What the stop costs. Unlike the three booked objects there is no `paid`:
+    # a fee at the gate has nothing to settle in advance. 0 is meaningful and
+    # prints as "Free" rather than being treated as absent.
+    Spec("price", False, "what this stop costs (an entrance fee, a guided "
+         "visit, a meal) — 0 prints as 'Free'",
+         "a number without a currency symbol, like 12 or 7.5",
+         "none (no price shown)", V_NUMBER),
+    Spec("currency", False, "the currency of 'price'",
+         "a 3-letter ISO code like 'EUR'", "the trip's default currency",
+         V_CURRENCY),
+    Spec("contact", False,
+         "a phone number, email or instructions for reaching this stop",
+         "any text", '""'),
 ]
 
 # `place` is the one activity whose duration is inferred from what it *contains*,
@@ -373,7 +386,8 @@ ACTIVITY_SPECS = {
              "every day (no closed-day check)", V_OPENING_DAYS),
         Spec("opening_hours", False,
              "the hours it opens (the visit is checked against them)",
-             "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00'",
+             "time ranges like '09:30-18:00' or '09:30-12:30, 14:00-18:00', "
+             "or per weekday as 'mon-sat 09:00-17:00; sun 10:00-17:00'",
              "all day (no opening-hours check)", V_OPENING_HOURS),
         Spec("activities", False, "nested points of interest, hikes and meals",
              "an array of point_of_interest, hike or meal objects, each with a 'type'",
@@ -529,6 +543,8 @@ TRANSPORT_LEG_SPECS = [
          "any text", '""'),
     Spec("train_number", False, "the train number of this leg (trains only)",
          "any text", '""'),
+    Spec("distance_km", False, "how far this leg covers, in km",
+         "a number like 200 or 30.5", "none (no distance shown)", V_NUMBER),
     Spec("description", False, NOTE_DESC, "any text", '""'),
 ]
 

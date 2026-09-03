@@ -66,6 +66,14 @@ export interface SrcScheduled {
   // duration without a clock time, so a `start_time`/`end_time` written here is
   // dropped (their span becomes the duration). Defaults to false.
   detour?: boolean;
+  // What the stop costs: an entrance fee, a guided visit, a meal. A bare number
+  // with no symbol; `currency` defaults to `defaults.currency`. 0 is meaningful
+  // and prints as "Free". There is no `paid` — a fee at the gate has nothing to
+  // settle in advance.
+  price?: number;
+  currency?: string; // 3-letter ISO
+  // A phone number, email, or how to get in. Free text, never parsed.
+  contact?: string;
 }
 
 // One hop of a drive. Either endpoint may be left out when the neighbouring leg
@@ -127,6 +135,8 @@ export interface SrcPoi extends SrcScheduled {
   website?: string;
   // When it opens, checked against the visit by the validator. Compact strings:
   // "tue-sun" / "mon-fri, sun", and "09:30-18:00" / "09:30-12:30, 14:00-18:00".
+  // The hours may also differ by weekday, as ";"-separated groups each
+  // optionally prefixed with its days: "mon-sat 09:00-17:00; sun 10:00-17:00".
   opening_days?: string;
   opening_hours?: string;
   coordinate?: SrcCoordinate;
@@ -195,6 +205,7 @@ export interface SrcTransportLeg {
   duration?: string;
   flight_number?: string;
   train_number?: string;
+  distance_km?: number; // how far this hop covers
   description?: string;
   coordinate?: SrcCoordinate;
   start_coordinate?: SrcCoordinate;

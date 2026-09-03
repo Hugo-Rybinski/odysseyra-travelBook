@@ -147,6 +147,10 @@ const LABELS = {
     // abbreviations mirror lang/dates.py's `_WEEKDAY_ABBR`, Monday first — keep
     // both in step. The hours need no key: `hours_display` is digits only.
     open: "Open",
+    // What a zero `price` reads as — a stated free entry is information, not an
+    // absent price. Mirrors translations.py; the `contact` label above is
+    // shared with the accommodation card's.
+    free: "Free",
     wdMon: "Mon",
     wdTue: "Tue",
     wdWed: "Wed",
@@ -260,6 +264,7 @@ const LABELS = {
     bankHoliday: "Jour férié",
     bankHolidayNote: "Attendez-vous à des fermetures et à des horaires réduits.",
     open: "Ouvert",
+    free: "Gratuit",
     wdMon: "lun.",
     wdTue: "mar.",
     wdWed: "mer.",

@@ -92,6 +92,22 @@ export interface Opening {
   day_runs: [string, string][];
   hours: [string, string][]; // ["09:30", "12:30"] open/close pairs, in order
   hours_display: string; // "09:30–12:30, 14:00–18:00" — digits only, so shared
+  // True when the hours differ by weekday, i.e. some rule names days. This is
+  // what picks between the two line shapes — see `Opening` in DayCard.tsx and
+  // `_opening_line` in pdf/days.py, which must agree.
+  per_day?: boolean;
+  // One entry per `;`-separated group of `opening_hours`. A rule with no days
+  // is the default for every day the others don't name. Optional: a day cached
+  // before per-weekday hours existed carries only the flat fields above.
+  rules?: OpeningRule[];
+}
+
+// One set of hours and the weekdays it applies to.
+export interface OpeningRule {
+  days: string[];
+  day_runs: [string, string][];
+  hours: [string, string][];
+  hours_display: string;
 }
 
 export type ActivityType =
@@ -111,6 +127,15 @@ export interface Activity extends Scheduled {
   // so it has a `duration` but no `start_time`/`end_time`. Optional — a day
   // cached before the field existed has none.
   detour?: boolean;
+  // What the stop costs — an entrance fee, a guided visit, a meal — in the same
+  // structured shape as a booking's, so the conversions are precomputed. Every
+  // activity type carries it; `paid` is always null (an activity has no payment
+  // state). A zero amount is meaningful and renders as "Free".
+  price?: Money | null;
+  // A phone number, email, or how to get in ("call the guardian to open the
+  // museum"). Free text, never parsed. The viewer alone wraps a dialable or
+  // mailable value in a tel:/mailto: link.
+  contact?: string;
   activities?: Activity[]; // one level of nesting
 
   // buffer
@@ -174,6 +199,9 @@ export interface TransportLeg extends Scheduled {
   end_day_offset: number;
   flight_number: string;
   train_number: string;
+  // How far this hop covers. Per leg, like its times — an airport transfer is
+  // "30 km / 35 min". Optional: a day cached before the field existed has none.
+  distance_km?: number | null;
   // A short note for whatever the fields above don't carry (a seat, a terminal).
   // Per-leg — an outbound and a return rarely share one.
   description?: string;

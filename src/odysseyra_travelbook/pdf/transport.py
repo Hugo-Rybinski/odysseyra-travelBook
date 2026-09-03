@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..models import format_km
 from .base import FONT, INK, LIGHT, MUTED
 
 
@@ -111,9 +112,15 @@ class TransportMixin:
         return h
 
     def _leg_info(self, leg) -> str:
+        """The hop's when-and-how-far line: its date, its times, and its
+        ``distance_km`` (rounded for display like every other distance in the
+        book). The distance sits here rather than with the flight number
+        because it is a figure of the movement, and a leg with no number would
+        otherwise have nowhere to show it."""
         return "  ·  ".join(
             p for p in (self._transport_date(leg),
-                        self._transport_times(leg, day_marker=False)) if p
+                        self._transport_times(leg, day_marker=False),
+                        format_km(getattr(leg, "distance_km", None))) if p
         )
 
     def _leg_block(self, leg, cx: float, yy: float, inner_w: float,

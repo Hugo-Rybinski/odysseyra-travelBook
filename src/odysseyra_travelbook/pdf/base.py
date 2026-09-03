@@ -524,6 +524,23 @@ class _PDFBase(FPDF):
                 for s in it.secondary_currencies]
         return primary, (f"({', '.join(secs)})" if secs else "")
 
+    def price_inline(self, amount, currency: str) -> str:
+        """An activity's price as one string for a meta line — ``€12  (1200 KGS)``
+        — or ``""`` when there is none.
+
+        Zero is *not* nothing: a guidebook stating that entry is free is telling
+        you something, so it prints as ``Free`` rather than as ``€0``. Unlike a
+        booking's price this is inline rather than its own bold row: a stop's fee
+        is one figure among the duration and the address, not a reservation's
+        headline. The viewer's `priceInline` is the same rule — keep them in
+        step."""
+        if amount is None:
+            return ""
+        if amount == 0:
+            return self.t("Free")
+        primary, secondary = self.price_parts(amount, currency)
+        return f"{primary}  {secondary}" if secondary else primary
+
     def _draw_price(self, x: float, y: float, w: float, amount, currency: str) -> None:
         """Draw a price row: the default-currency amount in bold, followed by
         any secondary-currency conversions in a lighter, smaller face."""

@@ -81,9 +81,13 @@ export const POI_CATEGORIES = [
   "street",
   "natural park",
   "mountain",
+  "mountain pass",
   "lake",
   "beach",
   "waterfall",
+  "canyon",
+  "spring",
+  "market",
   "other",
 ] as const;
 export const HIKE_ROUTES = ["loop", "back_and_forth", "one_way"] as const;
@@ -211,6 +215,9 @@ export const SCHEDULED_FIELDS: FieldSpec[] = [
   { key: "start_tz", label: "Start tz", kind: "tz", inheritsFrom: "timezone", help: "Start time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "End time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
   { key: "detour", label: "Detour", kind: "bool", help: "A stop you probably won't make but want the book to carry anyway. It's left off the day's timeline — it takes no time and gets no buffer before it — and it's shown a step down in emphasis, with its duration but no start/end time (a time written here is dropped). Defaults to off." },
+  { key: "price", label: "Price", kind: "number", placeholder: "12 / 7.5", help: "What this stop costs — an entrance fee, a guided visit, a meal. A bare number with no currency symbol. 0 is meaningful and prints as \"Free\". There's no paid/to-pay flag: a fee at the gate has nothing to settle in advance." },
+  { key: "currency", label: "Currency", kind: "text", inheritsFrom: "currency", placeholder: "EUR", help: "The 3-letter ISO code of this price. Defaults to defaults.currency, and must be that or one of defaults.secondary_currencies so there's a rate to convert it with." },
+  { key: "contact", label: "Contact", kind: "text", placeholder: "+996 700 732 984", help: "A phone number, an email, or how to get in (\"call the guardian to open the museum\"). Free text, never parsed. Shown as its own labelled row; the viewer links a phone number or email." },
 ];
 
 // `place` is the one activity whose duration falls back to what it *contains*,
@@ -257,7 +264,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     GUIDEBOOK_FIELD,
     { key: "website", label: "Website", kind: "text", placeholder: "https://example.com", help: "Link to the venue's website, shown as a clickable link. Optional." },
     { key: "opening_days", label: "Opening days", kind: "text", placeholder: "tue-sun / mon-fri, sun", help: "The days it opens — weekday names, single days and/or ranges (e.g. tue-sun, mon-fri, sun). Shown under the address, and you get a warning if the visit falls on another day. Defaults to every day." },
-    { key: "opening_hours", label: "Opening hours", kind: "text", placeholder: "09:30-18:00 / 09:30-12:30, 14:00-18:00", help: "The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day." },
+    { key: "opening_hours", label: "Opening hours", kind: "text", placeholder: "09:30-18:00 / 09:30-12:30, 14:00-18:00", help: "The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Hours that differ by weekday go in \";\"-separated groups, each prefixed with its days (e.g. mon-sat 09:00-17:00; sun 10:00-17:00); a group with no days is the default for the rest. Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day." },
   ],
   place: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Place name", help: "Place name (e.g. a town) grouping the nested activities. Required." },
@@ -328,6 +335,7 @@ export const TRANSPORT_LEG_FIELDS: FieldSpec[] = [
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "Arrival time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
   { key: "flight_number", label: "Flight number", kind: "text", help: "Flight number of this leg (planes only), shown under its route. Optional." },
   { key: "train_number", label: "Train number", kind: "text", help: "Train number of this leg (trains only), shown under its route. Optional." },
+  { key: "distance_km", label: "Distance (km)", kind: "number", help: "How far this hop covers — an airport transfer is \"30 km / 35 min\". Shown beside its date and times. Optional." },
   { key: "description", label: "Description", kind: "textarea", placeholder: "Short note", help: "A short note about this leg — a seat, a terminal, a coach number. A note about the whole reservation goes on the booking instead. Optional." },
 ];
 

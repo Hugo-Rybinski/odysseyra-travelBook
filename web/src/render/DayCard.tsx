@@ -23,6 +23,7 @@ import { ForecastChip } from "./forecast";
 import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
+import { priceInline } from "./money";
 import {
   activityNav,
   fmtDurationMin,
@@ -506,13 +507,53 @@ function Opening({ act, lang }: { act: Activity; lang: Lang }) {
   const opening = act.opening;
   if (!opening) return null;
   const parts: string[] = [];
-  if (opening.day_runs?.length) parts.push(fmtWeekdayRuns(opening.day_runs, lang));
-  if (opening.hours_display) parts.push(opening.hours_display);
+  if (opening.per_day && opening.rules?.length) {
+    // Hours that differ by weekday: one part per rule, since the overall day
+    // run says nothing about which hours belong to which day. A rule naming no
+    // days is the default and prints bare. Same split as `_opening_line`.
+    for (const rule of opening.rules) {
+      const days = rule.day_runs?.length ? `${fmtWeekdayRuns(rule.day_runs, lang)} ` : "";
+      parts.push(days + rule.hours_display);
+    }
+  } else {
+    if (opening.day_runs?.length) parts.push(fmtWeekdayRuns(opening.day_runs, lang));
+    if (opening.hours_display) parts.push(opening.hours_display);
+  }
   if (!parts.length) return null;
   return (
     <p className="act-opening">
       <span className="act-opening-label">{tr(lang, "open")}</span>
       {parts.join("  ·  ")}
+    </p>
+  );
+}
+
+// `tel:` strips everything a dialler doesn't want but keeps a leading + and the
+// digits — including a short code like "112". Same rule as the emergency
+// directory's (EmergencyContacts.tsx), which is the other place a raw contact
+// string is offered as a link.
+const DIALABLE = /^\+?[\d\s.()/-]{2,}$/;
+const MAILABLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function contactHref(contact: string): string | null {
+  if (MAILABLE.test(contact)) return `mailto:${contact}`;
+  if (DIALABLE.test(contact)) return `tel:${contact.replace(/[^\d+]/g, "")}`;
+  return null; // an address, a sentence — nothing to hand an app
+}
+
+// An activity's `contact` as its own labelled row, mirroring the PDF's
+// `_contact_line` — a phone number is looked up in a hurry, so it gets a label
+// rather than being buried at the end of the meta line. One deliberate
+// divergence: a dialable or mailable value becomes a tel:/mailto: link, which
+// paper has no use for.
+function Contact({ act, lang }: { act: Activity; lang: Lang }) {
+  const contact = act.contact?.trim();
+  if (!contact) return null;
+  const target = contactHref(contact);
+  return (
+    <p className="act-contact">
+      <span className="act-contact-label">{tr(lang, "contact")}</span>
+      {target ? <a href={target}>{contact}</a> : contact}
     </p>
   );
 }
@@ -549,6 +590,11 @@ function ActivityDetails({
   } else if (act.type === "place") {
     if (act.duration_display) bits.push(act.duration_display);
   }
+
+  // What the stop costs, at the end of the figures on every type — the PDF puts
+  // it in the same position in its meta line. `Free` at zero, never "€0".
+  const fee = priceInline(act.price, lang, tr(lang, "free"));
+  if (fee) bits.push(fee);
 
   // The address is rendered as its own clickable AddressLink (navigate by the
   // address text) rather than as a plain bit, so it complements the
@@ -613,7 +659,15 @@ function ActivityDetails({
     }
   }
 
-  if (!chips.length && !trail && !description && !guidebook && !act.opening) return null;
+  if (
+    !chips.length &&
+    !trail &&
+    !description &&
+    !guidebook &&
+    !act.opening &&
+    !act.contact?.trim()
+  )
+    return null;
   return (
     <div className="act-details">
       {chips.length > 0 && (
@@ -627,6 +681,7 @@ function ActivityDetails({
         </p>
       )}
       <Opening act={act} lang={lang} />
+      <Contact act={act} lang={lang} />
       {trail && <p className="trail">{trail}</p>}
       {description ? (
         <Clamp className="desc" text={description} trailing={pill} />
@@ -751,7 +806,13 @@ function TransportRow({ t, lang }: { t: TransportLeg; lang: Lang }) {
           )}
           {t.overnight && <span className="chip filled">{tr(lang, "overnight")}</span>}
         </div>
-        {t.duration_display && <p className="chips-line accent">{t.duration_display}</p>}
+        {(t.duration_display || t.distance_km != null) && (
+          <p className="chips-line accent">
+            {[t.duration_display, t.distance_km != null ? fmtKm(t.distance_km) : ""]
+              .filter(Boolean)
+              .join("  ·  ")}
+          </p>
+        )}
         {booking && <p className="chips-line">{booking}</p>}
         {t.description && <Clamp className="act-note" text={t.description} />}
         <Links lang={lang} website={t.website} reservation={t.booking_link} />

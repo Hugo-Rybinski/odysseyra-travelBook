@@ -27,6 +27,7 @@ from .gpx_export import route_gpx
 from .opening import (
     WEEKDAYS,
     Opening,
+    OpeningRule,
     _parse_opening_days,
     _parse_opening_hours,
     parse_opening,
@@ -122,6 +123,7 @@ __all__ = [
     "moon_phase",
     "NESTED_ACTIVITY_TYPES",
     "Opening",
+    "OpeningRule",
     "parse_opening",
     "WEEKDAYS",
     "Place",

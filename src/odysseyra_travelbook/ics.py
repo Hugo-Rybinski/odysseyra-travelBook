@@ -214,6 +214,10 @@ def _activity_events(itin: Itinerary, day, day_no: int, day_date: date,
         nested = [a.title for a in getattr(act, "activities", []) or []]
         _detail(lines, "Includes", "; ".join(nested), lang)
         _detail(lines, "Duration", act.duration_display, lang)
+        # Every type carries these two, so they are packed once here rather than
+        # in each branch above. A zero price is "Free", not nothing.
+        _detail(lines, "Price", _activity_money(itin, act, lang), lang)
+        _detail(lines, "Contact", act.contact, lang)
 
         counter[0] += 1
         summary = _with_emoji(_ACTIVITY_EMOJI.get(act.kind, ""), act.title)
@@ -255,6 +259,7 @@ def _transport_events(itin: Itinerary, uid_base: str, lang: str,
                 "",
             ]
             _detail(lines, "Duration", leg.duration_display, lang)
+            _detail(lines, "Distance", format_km(leg.distance_km), lang)
             _detail(lines, "Flight number", leg.flight_number, lang)
             _detail(lines, "Train number", leg.train_number, lang)
             _detail(lines, "Booking number", leg.booking_number, lang)
@@ -377,16 +382,36 @@ def _pages(act, lang: str) -> str:
 def _opening(act, lang: str) -> str:
     """A point of interest's opening days/hours on one line — ``Tue–Sun, 09:30–
     12:30, 14:00–18:00`` ("" when it states neither). Only a point of interest
-    carries the field."""
+    carries the field.
+
+    Hours that differ by weekday become one part per rule (``Mon–Sat 09:00–
+    17:00, Sun 10:00–17:00``), the same split both renderers draw — the overall
+    day run wouldn't say which hours belong to which day."""
     opening = getattr(act, "opening", None)
     if opening is None:
         return ""
     parts = []
+    if opening.per_day:
+        for rule in opening.rules:
+            days = (fmt_weekday_runs(rule.day_runs, lang) + " "
+                    if rule.day_runs else "")
+            parts.append(days + rule.hours_display)
+        return ", ".join(parts)
     if opening.day_runs:
         parts.append(fmt_weekday_runs(opening.day_runs, lang))
     if opening.hours:
         parts.append(opening.hours_display)
     return ", ".join(parts)
+
+
+def _activity_money(itin: Itinerary, act, lang: str) -> str:
+    """An activity's fee for the ``Price:`` detail line — ``Free`` at zero, as
+    in both renderers, and no payment state (an activity has none)."""
+    if act.price is None:
+        return ""
+    if act.price == 0:
+        return tr("Free", lang)
+    return _money(itin, act.price, act.currency, None, lang)
 
 
 def _money(itin: Itinerary, amount, currency: str, paid, lang: str) -> str:

@@ -37,6 +37,7 @@ from .parsers import (
     _parse_currency,
     _parse_date,
     _parse_duration,
+    _parse_float,
     _parse_paid,
     _parse_price,
     _parse_time,
@@ -71,6 +72,12 @@ class TransportLeg(Scheduled):
     end_date: date | None = None  # arrival date (inferred for overnight legs)
     flight_number: str = ""  # planes only
     train_number: str = ""  # trains only
+    # How far this hop covers. A road's legs have always carried one; a transport
+    # leg's is just as much part of the hop (an airport transfer is "30 km /
+    # 35 min", and a ferry's crossing is a distance), and it is per **leg**
+    # rather than per booking for the same reason the times are. Rounded for
+    # display only, like every other distance in the book (`format_km`).
+    distance_km: float | None = None
     # A short note for whatever the fields above don't carry (seat, terminal,
     # baggage allowance…). Prose, drawn under the leg's booking line. Per-leg:
     # an outbound and a return rarely share a seat.
@@ -183,6 +190,8 @@ class TransportLeg(Scheduled):
             duration_min=_parse_duration(d.get("duration")),
             flight_number=str(d.get("flight_number", "")),
             train_number=str(d.get("train_number", "")),
+            distance_km=_parse_float(d.get("distance_km"),
+                                     "transport leg distance_km"),
             description=str(d.get("description", "")),
             coordinate=_parse_coordinate(d.get("coordinate")),
             start_coordinate=_parse_coordinate(d.get("start_coordinate"),

@@ -511,6 +511,16 @@ export const FR: Record<string, string> = {
   "A stop you probably won't make but want the book to carry anyway. It's left off the day's timeline — it takes no time and gets no buffer before it — and it's shown a step down in emphasis, with its duration but no start/end time (a time written here is dropped). Defaults to off.":
     "Une étape que vous ne ferez probablement pas mais que vous voulez garder dans le carnet. Elle reste hors du programme de la journée — elle ne prend pas de temps et n'a pas de pause avant elle — et s'affiche en retrait, avec sa durée mais sans horaire (un horaire saisi ici est ignoré). Désactivé par défaut.",
 
+  // An activity's fee and contact — offered on every type, like Detour above.
+  "12 / 7.5": "12 / 7,5",
+  'What this stop costs — an entrance fee, a guided visit, a meal. A bare number with no currency symbol. 0 is meaningful and prints as "Free". There\'s no paid/to-pay flag: a fee at the gate has nothing to settle in advance.':
+    "Ce que coûte cette étape — un droit d'entrée, une visite guidée, un repas. Un nombre seul, sans symbole monétaire. 0 est une information et s'affiche « Gratuit ». Pas d'indicateur payé/à payer : un droit d'entrée sur place n'a rien à régler à l'avance.",
+  "The 3-letter ISO code of this price. Defaults to defaults.currency, and must be that or one of defaults.secondary_currencies so there's a rate to convert it with.":
+    "Le code ISO à 3 lettres de ce prix. Par défaut defaults.currency ; il doit être celui-ci ou l'une des defaults.secondary_currencies pour qu'un taux de conversion existe.",
+  "+996 700 732 984": "+996 700 732 984",
+  'A phone number, an email, or how to get in ("call the guardian to open the museum"). Free text, never parsed. Shown as its own labelled row; the viewer links a phone number or email.':
+    "Un numéro de téléphone, un e-mail, ou comment entrer (« appeler le gardien pour ouvrir le musée »). Texte libre, jamais analysé. Affiché sur sa propre ligne intitulée ; la visionneuse transforme un numéro ou un e-mail en lien.",
+
   // Guidebook pages — one wording shared by road / POI / place / hike
   "Guidebook pages": "Pages du guide",
   "14 / 15-18 / 16, 23, 25-30": "14 / 15-18 / 16, 23, 25-30",
@@ -557,8 +567,8 @@ export const FR: Record<string, string> = {
   "The days it opens — weekday names, single days and/or ranges (e.g. tue-sun, mon-fri, sun). Shown under the address, and you get a warning if the visit falls on another day. Defaults to every day.":
     "Les jours d'ouverture — des noms de jours en anglais, jours seuls et/ou plages (ex. tue-sun, mon-fri, sun). Affichés sous l'adresse, avec un avertissement si la visite tombe un autre jour. Tous les jours par défaut.",
   "Opening hours": "Horaires d'ouverture",
-  "The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day.":
-    "Les horaires d'ouverture — une ou plusieurs plages HH:MM-HH:MM, pour qu'une fermeture le midi reste deux plages (ex. 09:30-12:30, 14:00-18:00). Affichés sous l'adresse, avec un avertissement si la visite tombe en dehors. Toute la journée par défaut.",
+  'The hours it opens — one or more HH:MM-HH:MM ranges, so a midday closure stays two ranges (e.g. 09:30-12:30, 14:00-18:00). Hours that differ by weekday go in ";"-separated groups, each prefixed with its days (e.g. mon-sat 09:00-17:00; sun 10:00-17:00); a group with no days is the default for the rest. Shown under the address, and you get a warning if the visit falls outside them. Defaults to all day.':
+    "Les horaires d'ouverture — une ou plusieurs plages HH:MM-HH:MM, pour qu'une fermeture le midi reste deux plages (ex. 09:30-12:30, 14:00-18:00). Des horaires qui changent selon le jour s'écrivent en groupes séparés par « ; », chacun précédé de ses jours (ex. mon-sat 09:00-17:00; sun 10:00-17:00) ; un groupe sans jours sert de valeur par défaut pour les autres. Affichés sous l'adresse, avec un avertissement si la visite tombe en dehors. Toute la journée par défaut.",
 
   // Place
   "Place name": "Nom du lieu",
@@ -658,6 +668,8 @@ export const FR: Record<string, string> = {
   "Train number": "Numéro de train",
   "Train number of this leg (trains only), shown under its route. Optional.":
     "Numéro de train de ce trajet (trains uniquement), affiché sous son itinéraire. Facultatif.",
+  'How far this hop covers — an airport transfer is "30 km / 35 min". Shown beside its date and times. Optional.':
+    "La distance couverte par ce trajet — un transfert d'aéroport fait « 30 km / 35 min ». Affichée à côté de sa date et de ses horaires. Facultatif.",
   "Booking number": "Numéro de réservation",
   "Reservation reference / PNR, covering every leg. Optional.":
     "Référence de réservation / PNR, valable pour tous les trajets. Facultatif.",
