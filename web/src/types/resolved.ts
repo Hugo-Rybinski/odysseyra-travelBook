@@ -107,6 +107,10 @@ export interface Activity extends Scheduled {
   title: string;
   coordinate: Coordinate | null;
   map_pin: string | null; // pin label on the day map (number / area letter), when maps ran
+  // A stop kept for reference rather than planned: left off the day's timeline,
+  // so it has a `duration` but no `start_time`/`end_time`. Optional — a day
+  // cached before the field existed has none.
+  detour?: boolean;
   activities?: Activity[]; // one level of nesting
 
   // buffer

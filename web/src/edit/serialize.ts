@@ -35,6 +35,7 @@ const SAFE_DEFAULTS: Record<string, unknown> = {
   same_start_as_previous_activity: false,
   same_end_as_next_activity: false,
   bank_holiday: false,
+  detour: false,
   breakfast_included: false,
   additional_drivers: 0,
 };

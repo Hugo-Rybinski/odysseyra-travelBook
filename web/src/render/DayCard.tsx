@@ -298,8 +298,17 @@ type TimelineItem =
   | { kind: "car"; event: CarEvent; sort: string };
 
 function mergeTimeline(day: Day): TimelineItem[] {
+  // A detour has no start time (it was left off the timeline), so it is merged
+  // at the time of the activity it follows — sorting it by its own missing time
+  // would sweep every detour to the head of the day, when the point is that it
+  // sits where the day would have taken it. Mirrors pdf/days.py's `_day_items`.
+  let at = "";
+  const acts = day.activities.map((act) => {
+    if (act.start_time) at = act.start_time;
+    return { kind: "act" as const, act, t: act.start_time ?? "", s: at };
+  });
   const items: (TimelineItem & { s: string })[] = [
-    ...day.activities.map((act) => ({ kind: "act" as const, act, t: act.start_time ?? "", s: act.start_time ?? "" })),
+    ...acts,
     ...day.transports.map((t) => ({ kind: "transport" as const, t, sort: t.start_time ?? "", s: t.start_time ?? "" })),
     ...day.car_events.map((event) => ({ kind: "car" as const, event, sort: event.start_time ?? "", s: event.start_time ?? "" })),
   ];
@@ -319,6 +328,8 @@ function Gutter({
   startTz,
   endTz,
   endDayOffset = 0,
+  detour,
+  lang,
 }: {
   label: string;
   start: string | null;
@@ -326,11 +337,18 @@ function Gutter({
   startTz?: string;
   endTz?: string;
   endDayOffset?: number;
+  // A detour is marked right where its (absent) start time would be — the one
+  // slot on the row that is empty precisely *because* it is a detour. The PDF
+  // instead leads the title with the pill `_detour_tag` draws; both mark it and
+  // dim the row (see `.act.detour` in index.css).
+  detour?: boolean;
+  lang?: Lang;
 }) {
   const showEnd = end && end !== start;
   return (
     <div className="gutter">
       <span className="type-badge">{label}</span>
+      {detour && lang && <span className="t-detour">{tr(lang, "detour")}</span>}
       {start && (
         <span className="t-start">
           {start}
@@ -410,13 +428,15 @@ function ActivityRow({
   const multiLeg = act.type === "road" && roadLegs(act.start ?? "", act.waypoints ?? []).length > 1;
   const nav = multiLeg ? "" : activityNav(provider, act);
   return (
-    <li className={`act ${act.type}`}>
+    <li className={`act ${act.type}${act.detour ? " detour" : ""}`}>
       <Gutter
         label={badgeLabel(act)}
         start={act.start_time}
         end={act.end_time}
         startTz={act.start_tz_label}
         endTz={act.end_tz_label}
+        detour={act.detour}
+        lang={lang}
       />
       <div className="act-body">
         <div className="act-title">

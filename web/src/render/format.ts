@@ -60,6 +60,12 @@ const LABELS = {
     elevation: "elevation",
     distance: "distance",
     offRoad: "off-road",
+    // The marker on a stop kept in the book but probably not made — shown in
+    // the gutter, where its (absent) start time would be (uppercased there by
+    // `.t-detour`). The PDF draws the same words as a small grey pill before the
+    // title (`_detour_tag`), with its French twin in translations.py: keep the
+    // two wordings in step.
+    detour: "Optional detour",
     navigate: "Navigate",
     website: "Website",
     reservation: "Reservation",
@@ -199,6 +205,7 @@ const LABELS = {
     elevation: "dénivelé",
     distance: "distance",
     offRoad: "hors-piste",
+    detour: "Détour optionnel",
     navigate: "Y aller",
     website: "Site web",
     reservation: "Réservation",

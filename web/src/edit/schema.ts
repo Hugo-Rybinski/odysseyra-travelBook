@@ -210,6 +210,7 @@ export const SCHEDULED_FIELDS: FieldSpec[] = [
   { key: "duration", label: "Duration", kind: "duration", placeholder: "1h30 / 45 min", help: "How long it lasts (e.g. 1h30, 45 min). Inferred from start/end when unset, else 0." },
   { key: "start_tz", label: "Start tz", kind: "tz", inheritsFrom: "timezone", help: "Start time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
   { key: "end_tz", label: "End tz", kind: "tz", inheritsFrom: "timezone", help: "End time zone (UTC offset). Defaults to defaults.timezone (GMT)." },
+  { key: "detour", label: "Detour", kind: "bool", help: "A stop you probably won't make but want the book to carry anyway. It's left off the day's timeline — it takes no time and gets no buffer before it — and it's shown a step down in emphasis, with its duration but no start/end time (a time written here is dropped). Defaults to off." },
 ];
 
 // `place` is the one activity whose duration falls back to what it *contains*,

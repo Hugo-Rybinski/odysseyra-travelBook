@@ -106,9 +106,15 @@ class CoverMixin:
 
     def _day_highlights(self, day) -> str:
         """A short, comma-joined summary of a day's notable items (in time
-        order), including transport legs."""
+        order), including transport legs.
+
+        A **detour** is never a highlight: it's the stop you probably won't
+        make, so promoting it to the cover would advertise the day as something
+        it isn't. The viewer's `highlightsOf` skips them too."""
         titles = []
         for item in self._day_items(day):
+            if getattr(item, "detour", False):
+                continue
             if item.kind in ("point_of_interest", "place", "hike"):
                 titles.append(item.title)
             elif item.kind == "road" and (item.duration_min or 0) > 60:
@@ -118,7 +124,8 @@ class CoverMixin:
                 titles.append(f"{ty} {item.title}".strip())
         if not titles:  # a pure transit/driving day — fall back to the drives
             titles = [f"{self.t('Road')} {a.title}".strip()
-                      for a in day.activities if a.kind == "road"]
+                      for a in day.activities
+                      if a.kind == "road" and not a.detour]
         return ", ".join(titles) if titles else "—"
 
     def _sleep_label(self, day) -> str:

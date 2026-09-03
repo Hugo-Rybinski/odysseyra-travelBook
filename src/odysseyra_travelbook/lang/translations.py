@@ -45,6 +45,10 @@ _FR = {
     # the same flag as a small pill on a single VIA leg's row
     "OFF-ROAD": "HORS-ROUTE",
     "VIA": "VIA",
+    # the grey pill leading a detour's title — a stop kept for reference rather
+    # than planned (the viewer mirrors it as the `detour` key in
+    # render/format.ts, shown in the gutter; keep the two wordings in step)
+    "OPTIONAL DETOUR": "DÉTOUR OPTIONNEL",
     # an activity's guidebook page reference, drawn in a lightened accent under
     # its description (the viewer mirrors this template in render/format.ts)
     "Guidebook p. {pages}": "Guide p. {pages}",
@@ -637,6 +641,13 @@ _FR = {
     "how long the activity lasts": "la durée de l'activité",
     "the start time zone": "le fuseau horaire de début",
     "the end time zone": "le fuseau horaire de fin",
+    "whether this stop is a detour: one you probably won't make, kept for "
+    "reference and left off the day's timeline":
+        "si cette étape est un détour : une étape que vous ne ferez "
+        "probablement pas, gardée pour référence et laissée hors du programme "
+        "de la journée",
+    "false (a normal stop, scheduled on the timeline)":
+        "false (une étape normale, placée dans le programme)",
     "the day's title": "le titre du jour",
     "the city/region label": "le libellé de ville/région",
     "the day's date": "la date du jour",
@@ -1057,6 +1068,16 @@ _FR = {
         "« buffer » est ignoré — « auto_sized_buffer » est activé (il l'est par "
         "défaut) et dimensionne les pauses pour remplir la journée. Supprimez "
         "l'un des deux.",
+    "a detour is left off the day's timeline, so its 'start_time' and "
+    "'end_time' are dropped — only the span between them is kept, as its "
+    "duration. Write that as a 'duration' instead.":
+        "un détour reste hors du programme de la journée : ses « start_time » "
+        "et « end_time » sont donc abandonnés — seul l'écart entre les deux est "
+        "conservé, comme sa durée. Écrivez-le plutôt en « duration ».",
+    "'{key}' is ignored — a detour is left off the day's timeline, so it has "
+    "no clock time (its duration is shown on its own).":
+        "« {key} » est ignoré — un détour reste hors du programme de la "
+        "journée, il n'a donc pas d'horaire (seule sa durée est affichée).",
     # -- validation: value-check messages (the parenthetical "(...)") --
     "must be a number": "doit être un nombre",
     "must be a number, not a boolean": "doit être un nombre, pas un booléen",

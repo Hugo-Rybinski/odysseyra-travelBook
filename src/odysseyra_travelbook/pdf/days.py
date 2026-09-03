@@ -138,12 +138,25 @@ class DayMixin:
 
     def _day_items(self, day):
         """Activities, same-day transports and car pick-up/drop-off events,
-        merged and sorted by start time."""
-        items = (list(day.activities)
-                 + self.itinerary.transports_on(day.date)
-                 + self.itinerary.car_events_on(day.date))
-        items.sort(key=lambda x: (x.start_time is None, x.start_time or time(0, 0)))
-        return items
+        merged and sorted by start time.
+
+        A **detour** has no start time (it was left off the timeline), so it is
+        merged at the time of the activity it follows instead — sorting it by its
+        own missing time would sweep every detour to the head of the day, when
+        the whole point is that it sits where the day would have taken it. The
+        sort is stable and the activities come first, so a tie keeps them in
+        written order. The viewer's `mergeTimeline` does the same; keep the two
+        in step."""
+        acts, at = [], None
+        for act in day.activities:
+            if act.start_time is not None:
+                at = act.start_time
+            acts.append((act, at))
+        items = (acts
+                 + [(t, t.start_time) for t in self.itinerary.transports_on(day.date)]
+                 + [(e, e.start_time) for e in self.itinerary.car_events_on(day.date)])
+        items.sort(key=lambda p: (p[1] is None, p[1] or time(0, 0)))
+        return [item for item, _ in items]
 
     def _day_stay(self, day, moon=None) -> None:
         """A compact bar at the bottom of the day's page for that night — an
@@ -297,7 +310,8 @@ class DayMixin:
         x = self.l_margin + self.GUTTER
         detail_w = self.content_width - self.GUTTER
 
-        self._badge(self.l_margin, top, self.GUTTER - 5, self._badge_label(act))
+        self._badge(self.l_margin, top, self.GUTTER - 5, self._badge_label(act),
+                    muted=act.detour)
         gw = self.GUTTER - 5
         if act.start_time is not None:
             stz = self._tz_label(act.start_tz)
@@ -315,14 +329,20 @@ class DayMixin:
                 self.cell(gw, 3.5, elbl, align="C")
 
         num = self.pin_label(act)
-        if not self._road_title(act, x, detail_w, top, num):
-            tx, tw = x, detail_w
+        # A detour's title is led by the DETOUR pill and set in muted grey: it's
+        # a stop kept for reference, so it reads a step below the day's real
+        # items (the gutter badge above is greyed for the same reason).
+        head = MUTED if act.detour else INK
+        lead = self._detour_tag(x, top + 0.6) if act.detour else 0
+        hx, hw = x + lead, detail_w - lead
+        if not self._road_title(act, hx, hw, top, num, color=head):
+            tx, tw = hx, hw
             if num:
-                wd = self._pin_disc(x, top + 0.6, num)
-                tx, tw = x + wd, detail_w - wd
+                wd = self._pin_disc(hx, top + 0.6, num)
+                tx, tw = hx + wd, hw - wd
             self.set_xy(tx, top)
             self.set_font(FONT, "B", 11)
-            self.set_text_color(*INK)
+            self.set_text_color(*head)
             self.multi_cell(tw, 6, act.title)
 
         # Type-specific details.
@@ -375,11 +395,15 @@ class DayMixin:
             head = label
         num = self.pin_label(meal)
         tx = x
+        if meal.detour:
+            tx += self._detour_tag(tx, top + 0.4)
         if num:
-            tx = x + self._pin_disc(x, top + 0.4, num)
+            tx += self._pin_disc(tx, top + 0.4, num)
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 9.5)
-        self.set_text_color(*self.accent)
+        # A meal's head is accent-colored — a detour's drops to grey, like every
+        # other detour title.
+        self.set_text_color(*(MUTED if meal.detour else self.accent))
         self.cell(0, 5, head, new_x="LMARGIN", new_y="NEXT")
 
         meta = "  ·  ".join(p for p in (meal.duration_display, meal.address) if p)
@@ -517,7 +541,8 @@ class DayMixin:
             return self.t("MEAL")
         return self.t("ROAD") if act.kind == "road" else self.t("HIKE")
 
-    def _road_title(self, act, x: float, w: float, top: float, dep_pin) -> bool:
+    def _road_title(self, act, x: float, w: float, top: float, dep_pin,
+                    color=INK) -> bool:
         """A drive's title with a disc beside **each** end it pins —
         ``(1) Amboise → (4) Sarlat-la-Canéda``.
 
@@ -542,7 +567,7 @@ class DayMixin:
         opts = dict(sep="  →  ", size=11, style="B")
         if self._route_width(ends, **opts) > w:
             return False
-        self._route_with_pins(x, top, ends, h=6, color=INK, **opts)
+        self._route_with_pins(x, top, ends, h=6, color=color, **opts)
         # match the `multi_cell` this stands in for: one line consumed, cursor
         # back at the left margin (`_meta_line` and friends re-set x, not y).
         self.set_xy(self.l_margin, top + 6)
@@ -731,12 +756,19 @@ class DayMixin:
         self.set_font(FONT, "B", 6)
         return self.get_string_width(label) + 3
 
-    def _nested_badge(self, x: float, y: float, label: str, w: float) -> None:
+    def _nested_badge(self, x: float, y: float, label: str, w: float,
+                      muted: bool = False) -> None:
         """A compact type badge drawn inline before a nested item's title — a
         smaller sibling of the gutter :meth:`_badge`, drawn at the fixed width
-        ``w`` so sibling badges align."""
+        ``w`` so sibling badges align. ``muted`` greys it for a detour, as
+        :meth:`_badge` does."""
         bh = 4.4
-        if self.ink_saver:
+        if muted:
+            self.set_draw_color(*FAINT)
+            self.set_line_width(0.25)
+            self.rect(x, y, w, bh, style="D")
+            text_col = MUTED
+        elif self.ink_saver:
             self.set_draw_color(*self.accent)
             self.set_line_width(0.3)
             self.rect(x, y, w, bh, style="D")
@@ -753,9 +785,14 @@ class DayMixin:
     def _nested_poi(self, x: float, w: float, poi, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
-        self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w)
+        self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w,
+                           muted=poi.detour)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        if poi.detour:
+            wd = self._detour_tag(tx, top + 0.2)
+            tx += wd
+            tw -= wd
         num = self.pin_label(poi)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
@@ -763,7 +800,7 @@ class DayMixin:
             tw -= wd
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 10)
-        self.set_text_color(*INK)
+        self.set_text_color(*(MUTED if poi.detour else INK))
         self.multi_cell(tw, 5, poi.title)
 
         meta = "  ·  ".join(p for p in (poi.duration_display, poi.address) if p)
@@ -784,9 +821,14 @@ class DayMixin:
     def _nested_hike(self, x: float, w: float, hike, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
-        self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w)
+        self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w,
+                           muted=hike.detour)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        if hike.detour:
+            wd = self._detour_tag(tx, top + 0.2)
+            tx += wd
+            tw -= wd
         num = self.pin_label(hike)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
@@ -794,7 +836,7 @@ class DayMixin:
             tw -= wd
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 10)
-        self.set_text_color(*INK)
+        self.set_text_color(*(MUTED if hike.detour else INK))
         self.multi_cell(tw, 5, hike.title)
 
         # The "HIKE" badge marks the type; then distance / elevation / route.
@@ -822,7 +864,8 @@ class DayMixin:
     def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
-        self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w)
+        self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w,
+                           muted=meal.detour)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
         label = self.t(meal.category).capitalize()
@@ -833,16 +876,21 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
+        if meal.detour:
+            wd = self._detour_tag(tx, top + 0.2)
+            tx += wd
+            tw -= wd
         num = self.pin_label(meal)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
             tx += wd
             tw -= wd
         # Accent-colored, bold head — echoing the non-nested meal row (see
-        # ``_meal``) rather than the INK title used for nested POIs / hikes.
+        # ``_meal``) rather than the INK title used for nested POIs / hikes; a
+        # detour drops to grey there too.
         self.set_xy(tx, top)
         self.set_font(FONT, "B", 9.5)
-        self.set_text_color(*self.accent)
+        self.set_text_color(*(MUTED if meal.detour else self.accent))
         self.multi_cell(tw, 5, head)
 
         parts = [p for p in (meal.duration_display, meal.address) if p]

@@ -118,6 +118,10 @@ function highlightsOf(day: Day, lang: Lang): string {
   for (const item of items) {
     if ("act" in item) {
       const a = item.act;
+      // A detour is never a highlight: it's the stop you probably won't make,
+      // so listing it here would advertise the day as something it isn't. The
+      // PDF cover's `_day_highlights` skips them too.
+      if (a.detour) continue;
       if (a.type === "point_of_interest" || a.type === "place" || a.type === "hike") {
         titles.push(a.title);
       } else if (a.type === "road" && (a.duration_min ?? 0) > 60) {
@@ -130,7 +134,7 @@ function highlightsOf(day: Day, lang: Lang): string {
   if (titles.length) return titles.join(", ");
 
   const drives = day.activities
-    .filter((a) => a.type === "road")
+    .filter((a) => a.type === "road" && !a.detour)
     .map((a) => `${tr(lang, "road")} ${a.title}`.trim());
   return drives.join(", ") || day.title || "—";
 }

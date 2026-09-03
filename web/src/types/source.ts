@@ -61,6 +61,11 @@ export interface SrcScheduled {
   duration?: string;
   start_tz?: string;
   end_tz?: string;
+  // A stop you probably won't make but want the book to carry anyway. It is
+  // left off the timeline — no minutes, no buffer before it — and shows its
+  // duration without a clock time, so a `start_time`/`end_time` written here is
+  // dropped (their span becomes the duration). Defaults to false.
+  detour?: boolean;
 }
 
 // One hop of a drive. Either endpoint may be left out when the neighbouring leg

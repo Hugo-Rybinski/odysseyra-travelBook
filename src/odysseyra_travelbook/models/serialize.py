@@ -202,6 +202,10 @@ def _activity(itin: Itinerary, act) -> dict:
         # for this build; ``None`` otherwise. Stamped onto the model object by the
         # caller (see the PWA bridge) from the rendered day maps.
         "map_pin": getattr(act, "_map_pin", None),
+        # A stop kept for reference rather than planned: it carries a duration
+        # but no clock time (the timeline pass left it out), and both renderers
+        # mark it and draw it a step down in emphasis.
+        "detour": act.detour,
         **_sched(act, itin.default_timezone),
     }
 

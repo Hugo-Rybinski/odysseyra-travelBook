@@ -248,9 +248,18 @@ class _PDFBase(FPDF):
         self.line(self.l_margin, y, self.w - self.r_margin, y)
         self.ln(2)
 
-    def _badge(self, x: float, y: float, w: float, label: str) -> None:
+    def _badge(self, x: float, y: float, w: float, label: str,
+               muted: bool = False) -> None:
+        """The gutter type badge. ``muted`` drops the accent for a grey outline
+        — the whole point of the accent is emphasis, so an item the day isn't
+        counting on (a detour) shouldn't wear it."""
         h = 5.6
-        if self.ink_saver:
+        if muted:
+            self.set_draw_color(*FAINT)
+            self.set_line_width(0.25)
+            self.rect(x, y + 0.3, w, h, style="D")
+            text_col = MUTED
+        elif self.ink_saver:
             self.set_draw_color(*self.accent)
             self.set_line_width(0.3)
             self.rect(x, y + 0.3, w, h, style="D")
@@ -263,6 +272,28 @@ class _PDFBase(FPDF):
         self.set_font(FONT, "B", 7)
         self.set_text_color(*text_col)
         self.cell(w, 4.8, label, align="C")
+
+    def _detour_tag(self, x: float, y: float, size: float = 6.5) -> float:
+        """OPTIONAL DETOUR as a small grey outline pill at ``(x, y)``, returning
+        its width — drawn immediately **before** a detour's title, the same way
+        a pin disc is, so the two compose (pin, then tag, then the title).
+
+        Grey rather than accent on purpose: this marks a stop the day is *not*
+        counting on, and the accent is what the book uses for emphasis. Sized
+        and positioned like :meth:`_pin_disc` so a row of either reads level.
+        Both renderers mark a detour and dim it; the viewer's twin is the
+        gutter's ``.t-detour`` label plus ``.act.detour`` (see index.css)."""
+        label = self.t("OPTIONAL DETOUR")
+        self.set_font(FONT, "B", size)
+        tw = self.get_string_width(label) + 3
+        h = 4.2
+        self.set_draw_color(*FAINT)
+        self.set_line_width(0.25)
+        self.rect(x, y + 0.9, tw, h, style="D")
+        self.set_xy(x, y + 1.1)
+        self.set_text_color(*MUTED)
+        self.cell(tw, h - 0.4, label, align="C")
+        return tw + 2
 
     def _meta_line(self, x: float, w: float, parts) -> None:
         parts = [p for p in parts if p]

@@ -368,8 +368,34 @@ starts at `defaults.start_time`, each next one at the previous item's end.
 | `duration` |  | How long it lasts | string | duration (`1h30`, `45 min`) | inferred from `end_time`; for a `place`, its nested activities' total; else 0 |
 | `start_tz` |  | Start time zone | string | UTC offset | `defaults.timezone` |
 | `end_tz` |  | End time zone | string | UTC offset | `defaults.timezone` |
+| `detour` |  | A stop kept for reference, left off the timeline (see below) | boolean | `true` / `false` | `false` |
 
 A tz label is only shown in the PDF when it differs from `defaults.timezone`.
+
+**Detours.** `detour` marks a stop you probably *won't* make but want the book to
+carry anyway, in case the day goes differently — the cave you'd visit if the
+weather turns, the museum an hour off the route. It is kept **beside** the day
+rather than on it:
+
+- it counts as **0 minutes** in the schedule, and **no buffer** is inserted
+  between it and the activity before it, so nothing after it moves;
+- it has **no clock time**: its `duration` is shown (how long the stop *would*
+  take) and its start/end are not. A `start_time` / `end_time` written on a
+  detour is therefore dropped — if you give both and no `duration`, the span
+  between them is kept as the duration and validation says so;
+- both renderers **mark it and draw it a step down in emphasis**: the PDF leads
+  the title with a small grey `OPTIONAL DETOUR` pill and greys the type badge,
+  the title and the description, the viewer puts `Optional detour` in the gutter
+  where the start time would be, greys the same two texts and dims the row;
+- it keeps its **map pin**: it's still a place you might end up at, so it stays
+  on the day map, numbered like any other located stop;
+- it is **not** a day highlight on the cover, and it is **not** in the calendar
+  export — a calendar entry is a time, and a detour has none.
+
+It works on every type except `buffer` (a buffer *is* time), nested activities
+included — a nested detour adds nothing to its container's inferred duration.
+A **detour `meal`** should state its `meal_type`: the category is normally
+inferred from the start time, and a detour has none (it falls back to lunch).
 
 **Guidebook pages.** The four types that carry a `description` — `road`,
 `point_of_interest`, `place` and `hike` — also accept an optional

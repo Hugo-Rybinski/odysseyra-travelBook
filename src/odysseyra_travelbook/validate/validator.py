@@ -438,6 +438,7 @@ class _Validator:
             self.check_object(act, path,
                               PLACE_SCHEDULE if kind == "place" else SCHEDULE)
             self._time_consistency(act, path, tz_aware=False)
+            self._detour_coherence(act, path)
         self._magnitudes(act, path, kind)
         if kind == "buffer":
             if _dur(act.get("duration")) == 0:
@@ -520,11 +521,14 @@ class _Validator:
     @staticmethod
     def _nested_duration(act):
         """True if a container's length is conveyed by a nested activity that
-        itself has a determinable duration."""
+        itself has a determinable duration. A nested **detour** conveys nothing:
+        the model leaves it out of the total for the same reason it leaves a
+        top-level one off the timeline."""
         nested = act.get("activities")
         if not isinstance(nested, list):
             return False
-        return any(isinstance(s, dict) and _obj_minutes(s) is not None
+        return any(isinstance(s, dict) and not _truthy(s.get("detour"))
+                   and _obj_minutes(s) is not None
                    for s in nested)
 
     @staticmethod
@@ -559,7 +563,11 @@ class _Validator:
 
     def _nested_duration_fit(self, act, path):
         """Warn when the nested activities' total (explicit) length exceeds the
-        container's own duration — they can't all fit inside it."""
+        container's own duration — they can't all fit inside it.
+
+        A nested detour is left out of the total, exactly as
+        ``models.activities.nested_duration_total`` leaves it out: it isn't
+        planned, so it isn't competing for the container's minutes."""
         nested = act.get("activities")
         if not isinstance(nested, list) or not nested:
             return
@@ -568,7 +576,7 @@ class _Validator:
             return
         total, known = 0, False
         for sub in nested:
-            if not isinstance(sub, dict):
+            if not isinstance(sub, dict) or _truthy(sub.get("detour")):
                 continue
             m = _obj_minutes(sub)
             if m is not None:
@@ -602,6 +610,10 @@ class _Validator:
                          "(got {kind}).", allowed=allowed, kind=repr(kind))
                 continue
             self.check_object(sub, spath, ACTIVITY_SPECS[kind], skip_optional=True)
+            # A nested stop is never scheduled, but its own stated times are
+            # still shown — and a detour's are dropped, so that is worth saying
+            # here as much as at the top level.
+            self._detour_coherence(sub, spath)
             if kind == "hike":
                 self._hike_route_endpoints(sub, spath)
                 self._hike_gpx(sub, spath)
@@ -1180,6 +1192,31 @@ class _Validator:
                  "'buffer' is ignored — 'auto_sized_buffer' is on (it is by "
                  "default) and sizes the buffers to fill the day instead. Drop one "
                  "of the two.")
+
+    def _detour_coherence(self, act, path):
+        """A detour is kept beside the day rather than on it, so a clock time
+        written on one is dropped — reported where the ignored value sits, since
+        nothing else would say it went. Both times together still settle the
+        *duration*, which is the one figure a detour shows, so that case reads
+        differently from a lone time."""
+        if not _truthy(act.get("detour")):
+            return
+        stated = [k for k in ("start_time", "end_time")
+                  if act.get(k) not in (None, "")]
+        if not stated:
+            return
+        if len(stated) == 2 and act.get("duration") in (None, ""):
+            self.add("warning", path + ("start_time",),
+                     "a detour is left off the day's timeline, so its "
+                     "'start_time' and 'end_time' are dropped — only the span "
+                     "between them is kept, as its duration. Write that as a "
+                     "'duration' instead.")
+            return
+        for key in stated:
+            self.add("warning", path + (key,),
+                     "'{key}' is ignored — a detour is left off the day's "
+                     "timeline, so it has no clock time (its duration is shown "
+                     "on its own).", key=key)
 
     def _maps_coherence(self, df, df_path):
         """Soft checks that only apply when maps are on: a located activity with

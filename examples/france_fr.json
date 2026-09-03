@@ -242,6 +242,20 @@
               }
             },
             {
+              "type": "point_of_interest",
+              "name": "Musée de Cluny",
+              "category": "museum",
+              "address": "28 Rue du Sommerard, 75005 Paris",
+              "duration": "1h",
+              "detour": true,
+              "description": "Le musée du Moyen Âge dans les thermes gallo-romains — les tapisseries de la Dame à la licorne. Gardé ici au cas où l'après-midi tournerait à la pluie.",
+              "website": "https://www.musee-moyenage.fr",
+              "coordinate": {
+                "lat": 48.8506,
+                "long": 2.3444
+              }
+            },
+            {
               "type": "meal",
               "meal_type": "snack",
               "restaurant": "Café de la Sorbonne",
@@ -489,6 +503,21 @@
           "coordinate": {
             "lat": 45.053,
             "long": 1.166
+          }
+        },
+        {
+          "type": "point_of_interest",
+          "name": "La Roque Saint-Christophe",
+          "category": "ruins",
+          "address": "24620 Peyzac-le-Moustier",
+          "duration": "1h15",
+          "detour": true,
+          "description": "Un kilomètre de terrasses et d'habitations taillées dans la falaise au-dessus de la Vézère, habitées du paléolithique à la Renaissance. Seulement si les grottes vont plus vite que prévu — c'est 20 min hors de la route.",
+          "website": "https://www.roque-st-christophe.com",
+          "price": 13,
+          "coordinate": {
+            "lat": 44.9808,
+            "long": 1.0742
           }
         },
         {

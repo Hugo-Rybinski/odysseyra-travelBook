@@ -515,6 +515,20 @@ end-of-run gaps and inconsistency report, never in the JSON.
 | `end_time` | time `HH:MM` | Clock end. |
 | `duration` | duration (`"1h30"`, `"45 min"`) | How long it lasts. On a `place`, omitting it means "as long as its nested activities add up to" (see `place` below). |
 | `start_tz` / `end_tz` | UTC offset | Only if this activity is in a different timezone than the trip default. |
+| `detour` | boolean | `true` for a stop the traveller probably **won't** make but wants kept for reference — see *Detours* below. Default `false`. |
+
+**Detours.** Set `detour: true` only when the source says the stop is optional —
+"if you have time", "worth a detour", "alternative if the weather turns", a
+bracketed *(optional)*. **Never guess it**: a stop the source lists plainly is a
+plain stop, and marking it a detour tells the traveller not to plan for it. A
+detour is left off the day's timeline — it costs no minutes and gets no buffer —
+so it is the right shape for a stop that would otherwise force you to invent room
+in a day that is already full. Give it a `duration` (how long it *would* take):
+that is the one figure printed, since a detour shows no start or end time, and
+writing times on one only gets them dropped. A detour `meal` must state its
+`meal_type` — there is no start time to infer the category from. Keep it in the
+day's `activities` in the position it would be visited from, not at the end of
+the list.
 
 **Map coordinates (any located activity may include these):** if the trip
 renders maps (`defaults.include_maps_in_render` on), an activity can carry a
@@ -1592,6 +1606,11 @@ You cannot run the validator, so verify these by hand:
   `guidebook_pages` value is digits, commas and ranges only (`"15-18"`, not
   `"pp. 15-18"`). Pages shared by an area's nested stops sit once on the
   container.
+- **Every `detour` came from the source:** the flag is set only where the source
+  called the stop optional ("if you have time", "worth a detour", "(optional)"),
+  never to make a crowded day fit. Each one carries a `duration`, no
+  `start_time`/`end_time` (they'd be dropped), a `meal_type` if it's a meal, and
+  sits where in the day it would be visited from.
 - **Every stated opening day/hour was kept:** each sight whose source printed
   opening days or hours carries them in `opening_days` / `opening_hours`, in
   24-hour time, with a midday closure left as two ranges — none of it dropped,

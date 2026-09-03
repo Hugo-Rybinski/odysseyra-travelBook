@@ -66,7 +66,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // Again no field changed shape, but a place named twice used to take two
 // numbers and everything after it shifted, so `map_pin` moves on any day that
 // repeats a place.
-const SCHEMA_VERSION = 21;
+// v22: an activity gained `detour`, and a detour is left off the timeline — so
+// it carries a duration but no `start_time`/`end_time`, no buffer is inserted
+// before it, and every activity after it on that day moves earlier. A
+// v21-cached day carries the flag nowhere (so the row wouldn't be marked or
+// dimmed) *and* holds the old, later times.
+const SCHEMA_VERSION = 22;
 
 interface Entry {
   day: Day;

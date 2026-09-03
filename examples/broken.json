@@ -70,8 +70,11 @@
           { "type": "meal", "restaurant": "R" },
           { "type": "point_of_interest", "name": "Outer", "activities": [
             { "type": "point_of_interest", "name": "Inner" }
-          ] }
+          ] },
+          { "type": "point_of_interest", "name": "Nested detour", "detour": true, "end_time": "16:00" }
         ] },
+        { "type": "point_of_interest", "name": "Maybe a detour", "detour": "perhaps", "duration": "30 min" },
+        { "type": "point_of_interest", "name": "Timed detour", "detour": true, "start_time": "14:00", "end_time": "15:00" },
         { "type": "point_of_interest", "name": "Overstuffed", "duration": "1h", "opening_hours": "10:00-10:00", "activities": [
           { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
           { "type": "meal", "restaurant": "Slow", "duration": "45 min" }

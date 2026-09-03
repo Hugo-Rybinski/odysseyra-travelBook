@@ -12,6 +12,7 @@ from .activities import (
     Activity,
     activity_from_dict,
     nested_duration_total,
+    resolve_detours,
     resolve_meal_categories,
     resolve_shared_road_endpoints,
     schedule_activities,
@@ -98,6 +99,11 @@ class Day:
         # so "the next activity" is still the one the JSON wrote next rather than
         # an inserted buffer.
         resolve_shared_road_endpoints(activities)
+        # A detour is kept beside the day rather than on it, so it loses its
+        # clock times (keeping its duration) before anything reads them. Here
+        # rather than in the timeline pass because it reaches nested activities
+        # too, which are never scheduled.
+        resolve_detours(activities)
         return cls(
             title=str(data["title"]),
             date=_parse_date(data.get("date")),

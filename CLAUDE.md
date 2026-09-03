@@ -672,6 +672,62 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   wraps them in `ClampProvider` (without it the notes would ignore the app's
   "show full descriptions" option). The `.ics` export packs it as a
   `Description:` detail line, the same label activities already use.
+- **An activity's `detour`.** An optional boolean (default false) on every
+  activity but a `buffer` (a buffer *is* time), marking a stop you probably
+  **won't** make but want the book to carry anyway. Parsed in
+  `models/activities.py`'s `_sched`, so it lands on the `Activity` base and every
+  type gets it, nested ones included.
+  - **It is kept beside the day rather than on it.** `resolve_detours` (run from
+    `Day.from_dict`, *before* the timeline pass, because it also reaches nested
+    activities — which are never scheduled) folds a stated `start_time`/
+    `end_time` pair into the `duration` and then **clears both times**;
+    `schedule_activities` pulls the detours out of the list, lays the rest out
+    untouched, and `_splice_detours` puts each one back after the activity it
+    followed (ahead of any buffer there, which belongs to the two scheduled stops
+    it separates). So a detour costs **0 minutes and no buffer**, and nothing
+    after it moves. Clearing the times in the model rather than hiding them per
+    renderer is what makes "a detour has no clock time" true in one place for all
+    five consumers (both books, the `.ics`, the validator's opening-hours check,
+    the forecast planner) — the last three already skip a timeless item, so they
+    needed **no code change at all**.
+  - **A detour still sorts where it was written.** Both merges key an activity
+    with no start time to the *last one seen* rather than to `None`
+    (`pdf/days.py`'s `_day_items`, `DayCard.tsx`'s `mergeTimeline`) — sorting on
+    its own missing time would sweep every detour to the head of the day. Keep
+    the two in step.
+  - **Marked, and a step down in emphasis** — the two things asked for, and the
+    one place the renderers deliberately differ in *form*: the PDF leads the
+    title with a small grey outline pill (`pdf/base.py`'s `_detour_tag`, sized
+    and positioned like `_pin_disc` so the two compose: pin, tag, title) and
+    greys the title plus the gutter/nested type badge (`_badge(muted=…)` /
+    `_nested_badge(muted=…)`); the viewer puts `Optional detour` in the
+    **gutter, where the absent start time would be** — the one slot that is
+    empty precisely because it's a detour — and dims the row (`.act.detour`,
+    `.t-detour`). Grey, never accent: the accent is what this book uses for
+    emphasis, and this is the opposite. The **title and the description share
+    that one grey**, so the row reads as a single de-emphasized block rather
+    than a grey heading over black prose — free in the PDF (every description is
+    already `MUTED`), an explicit `.act.detour … .desc` rule in the viewer,
+    where `.desc` inherits `--fg`. The wordings are the usual pair
+    (`"OPTIONAL DETOUR"` in `translations.py`, the `detour` key in
+    `render/format.ts` — uppercased by CSS there, so both read alike).
+  - **It keeps its map pin** (still a place you may end up at, so it stays on the
+    day map, numbered like any other located stop) but is **never a cover
+    highlight** (`_day_highlights` / `highlightsOf` skip it — the cover
+    advertises the day, and this isn't part of what it promises) and never a
+    calendar event.
+  - The validator adds `detour` to `SCHEDULE` (so `PLACE_SCHEDULE` inherits it)
+    plus `_detour_coherence`, which reports a clock time written on a detour
+    where the ignored value sits — nothing else would say it went. Its two other
+    halves are `_nested_duration` / `_nested_duration_fit`, which had to start
+    skipping nested detours to stay in step with `nested_duration_total`: a
+    detour isn't competing for its container's minutes.
+  - Because a day's whole timeline moves (and gains a flag), this needed a
+    `SCHEMA_VERSION` bump (**v22**). `examples/france.json` /`france_fr.json`
+    carry one of each — a top-level `La Roque Saint-Christophe` on day 6 and a
+    nested `Musée de Cluny` in the Latin Quarter — `broken.json` carries the
+    invalid value and both coherence wordings, and `tests/test_detour.py` covers
+    the rest.
 - **A day's `bank_holiday`.** An optional boolean (default false) marking a day
   that falls on a public holiday where you are. Both renderers open the day's
   body with a call-out banner — ahead of the intro *and* the day map, since it

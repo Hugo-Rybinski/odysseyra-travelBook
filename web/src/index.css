@@ -1339,6 +1339,36 @@ body {
   color: var(--accent);
 }
 
+/* A detour: a stop kept in the book but probably not made. It is marked in the
+   gutter where its (absent) start time would be, and drawn a step down in
+   emphasis — the type badge gives up the accent for a grey outline, the title
+   greys, and the row's body fades. The PDF does the same with a grey DETOUR
+   pill before the title plus a greyed badge (pdf/days.py, `_detour_tag`); keep
+   the two in step. After `.act.meal` on purpose, so a detour meal's title greys
+   rather than staying accented. */
+.t-detour {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.act.detour .type-badge {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.act.detour .act-body {
+  opacity: 0.82;
+}
+/* Title and prose in the one grey, so the row reads as a single de-emphasized
+   block rather than a grey heading over black text. (The PDF gets this for
+   free: it draws every description in MUTED already.) */
+.act.detour .act-title,
+.act.detour .act-details .desc {
+  color: var(--muted);
+}
+
 /* map-pin label disc, matching the pins drawn on the day map */
 .pin-disc {
   display: inline-flex;

@@ -27,9 +27,17 @@ from .scheduling import Scheduled
 @dataclass
 class Activity(Scheduled):
     """An item on a day's timeline: the shared :class:`Scheduled` fields plus an
-    optional map location."""
+    optional map location.
+
+    ``detour`` marks a stop you probably *won't* make but want the book to carry
+    anyway, in case the day goes differently — so it is kept beside the day
+    rather than on it: it takes no time in the schedule, gets no buffer before
+    it, and shows its ``duration`` (how long it *would* take) without any clock
+    time, since it has none to have. See :func:`schedule_activities`.
+    """
 
     coordinate: Coordinate | None = None  # optional map location
+    detour: bool = False  # kept for reference; not placed on the timeline
 
 
 def _sched(d: dict) -> dict:
@@ -41,6 +49,9 @@ def _sched(d: dict) -> dict:
         "start_tz": _parse_tz(d.get("start_tz")),
         "end_tz": _parse_tz(d.get("end_tz")),
         "coordinate": _parse_coordinate(d.get("coordinate")),
+        # Every activity but a `buffer` can be a detour — a buffer *is* time, and
+        # a detour is the absence of any (`Buffer.from_dict` doesn't come here).
+        "detour": _parse_bool(d.get("detour", False)),
     }
 
 
@@ -808,7 +819,16 @@ def schedule_activities(
       :func:`_auto_buffer_plan`. ``default_buffer_min`` is then ignored — the two
       are alternatives, not layers: a fixed 15 min between every stop and "fill
       the day" are two answers to the same question.
+    * a **detour** is left out of the walk entirely and spliced back where the
+      JSON wrote it (:func:`_splice_detours`), so it costs the day nothing: no
+      minutes, and no buffer between it and the activity before it.
     """
+    if any(act.detour for act in activities):
+        planned = [act for act in activities if not act.detour]
+        laid = schedule_activities(planned, day_start, default_buffer_min,
+                                   day_end, auto_sized_buffer)
+        return _splice_detours(laid, activities)
+
     if not auto_sized_buffer or day_end is None:
         return _lay_out(activities, day_start, default_buffer_min)
 
@@ -828,6 +848,58 @@ def schedule_activities(
         if plan.get(i):
             padded.append(Buffer(duration_min=plan[i], auto=True))
     return _lay_out(padded, day_start, 0)
+
+
+def resolve_detours(activities: list[Activity]) -> None:
+    """Take every detour off the clock, in place, nested ones included: it keeps
+    its ``duration`` — the one figure worth printing, since it says how long the
+    stop *would* take — and loses both clock times, because it has no place on
+    the timeline to have one.
+
+    A stated ``start_time``/``end_time`` pair is folded into the duration first,
+    so writing the visit as 10:00 → 11:30 and then marking it a detour still
+    prints "1h30" (the validator warns that the times themselves are dropped).
+    Doing it here rather than hiding the times per renderer is what makes "a
+    detour has no time" true everywhere at once — the two books, the calendar
+    export, the validator's opening-hours check.
+
+    Run from :meth:`Day.from_dict` before the timeline pass, which then only has
+    to leave the detours out of the walk (see :func:`schedule_activities`)."""
+    for act in activities:
+        if act.detour:
+            if act.duration_min is None:
+                act.duration_min = _item_minutes(act)
+            act.start_time = act.end_time = None
+        resolve_detours(getattr(act, "activities", []) or [])
+
+
+def _splice_detours(laid: list[Activity], original: list[Activity]) -> list[Activity]:
+    """Put the detours back into a laid-out day where the JSON wrote them —
+    immediately after the activity they followed (or at the head of the day, for
+    one written first), and ahead of any buffer that came after it: the buffer
+    belongs to the two scheduled activities it separates, not to the stop hanging
+    off between them.
+
+    Matching is by identity, since two activities written alike compare equal as
+    dataclasses."""
+    out = list(laid)
+    for i, act in enumerate(original):
+        if not act.detour:
+            continue
+        anchor = next((a for a in reversed(original[:i]) if not a.detour), None)
+        pos = 0 if anchor is None else _index_of(out, anchor) + 1
+        # several detours in a row keep the order they were written in
+        while pos < len(out) and out[pos].detour:
+            pos += 1
+        out.insert(pos, act)
+    return out
+
+
+def _index_of(items: list[Activity], target: Activity) -> int:
+    for i, item in enumerate(items):
+        if item is target:
+            return i
+    return len(items) - 1  # unreachable: `laid` never drops a real activity
 
 
 def _minute(t: time) -> int:
@@ -998,8 +1070,13 @@ def nested_duration_total(activities: list[Activity]) -> int | None:
     """The nested activities' lengths added up, or ``None`` when not one of them
     says how long it lasts (so there is nothing to conclude). Items that don't
     say simply contribute nothing — this is a floor for the container, not a
-    measurement of it."""
-    known = [m for m in (_item_minutes(a) for a in activities) if m is not None]
+    measurement of it.
+
+    A nested **detour** contributes nothing either, for the same reason a
+    top-level one takes no room on the timeline: the container is as long as what
+    you actually plan to do inside it."""
+    known = [m for m in (_item_minutes(a) for a in activities if not a.detour)
+             if m is not None]
     return sum(known) if known else None
 
 

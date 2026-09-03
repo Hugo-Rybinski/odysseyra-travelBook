@@ -507,6 +507,9 @@ export const FR: Record<string, string> = {
   "End tz": "Fuseau de fin",
   "End time zone (UTC offset). Defaults to defaults.timezone (GMT).":
     "Fuseau horaire de fin (décalage UTC). Par défaut defaults.timezone (GMT).",
+  Detour: "Détour",
+  "A stop you probably won't make but want the book to carry anyway. It's left off the day's timeline — it takes no time and gets no buffer before it — and it's shown a step down in emphasis, with its duration but no start/end time (a time written here is dropped). Defaults to off.":
+    "Une étape que vous ne ferez probablement pas mais que vous voulez garder dans le carnet. Elle reste hors du programme de la journée — elle ne prend pas de temps et n'a pas de pause avant elle — et s'affiche en retrait, avec sa durée mais sans horaire (un horaire saisi ici est ignoré). Désactivé par défaut.",
 
   // Guidebook pages — one wording shared by road / POI / place / hike
   "Guidebook pages": "Pages du guide",

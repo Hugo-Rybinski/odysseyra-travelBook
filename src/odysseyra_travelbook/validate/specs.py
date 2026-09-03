@@ -282,6 +282,14 @@ SCHEDULE = [
          "the trip's default timezone", V_TZ),
     Spec("end_tz", False, "the end time zone", "a UTC offset like '+02:00'",
          "the trip's default timezone", V_TZ),
+    # The wording stays short because it repeats on every activity in the book:
+    # the full rule (no minutes, no buffer, duration but no clock time) is in
+    # file_format.md and in the Edit tab's help.
+    Spec("detour", False,
+         "whether this stop is a detour: one you probably won't make, kept for "
+         "reference and left off the day's timeline",
+         "true or false", "false (a normal stop, scheduled on the timeline)",
+         V_BOOL),
 ]
 
 # `place` is the one activity whose duration is inferred from what it *contains*,
