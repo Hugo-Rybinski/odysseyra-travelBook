@@ -322,7 +322,9 @@ The format is documented in full — one table per object, each giving
 
 [`validate`](#validate--check-the-json) checks a file against all of it and
 reports line-numbered diagnostics; [`skills/build-full-json.md`](skills/build-full-json.md)
-is a self-contained guide for having an LLM write one from raw notes.
+is a self-contained guide for having an LLM write one from raw notes — or
+**update an existing file**, which it takes as the source of truth, ending with
+a recap of every field it added or changed.
 
 ## Development
 
@@ -390,6 +392,36 @@ they reuse of what's already here.
   has **two or more** other highlights; keep them below that, and keep the
   existing all-roads fallback for a pure transit day, which is the case the rule
   exists for. Two small functions, one rule, and they must move together.
+- **Print the coordinates in ink-saver mode** — `--ink-saver` drops every
+  `(Navigate)` link, not just its colour: `_line_with_nav` / `_nav_block_h` and
+  the cards' `has_links` all resolve the URL to `""`, because a link is accent
+  emphasis and the mode exists to stop spending accent. That leaves an
+  ink-saver book with no way at all to get from a printed address to the point
+  it means — which is the *printed* book, the one most likely to be read away
+  from a screen. Show the bare `lat, long` where the link would have gone, in
+  muted type. Decisions: how many decimals (5 ≈ 1 m, and it lands in rows that
+  measure themselves before drawing, since a one-line row in the PDF neither
+  wraps nor clips); whether `show_on_map: false` still prints them (that flag is
+  about the map, not the text, so probably yes); and whether the normal mode
+  should offer them too, next to the link rather than instead of it.
+- **Linkify a phone number or an email found *inside* freeform text** — the
+  viewer already turns a `contact` into a `tel:` / `mailto:` link, but only by
+  testing the **whole** value (`DIALABLE` / `MAILABLE` are anchored `^…$`), and
+  the same two rules are copy-pasted in `EmergencyContacts.tsx` and
+  `DayCard.tsx` — so consolidating them is step one whatever else happens. What
+  is missing is the same treatment for a number sitting in the middle of prose:
+  a `description` saying "book ahead on +996 312 44 55 66", a car rental's fuel
+  policy, a day's intro. Needs unanchored patterns plus span-splitting so only
+  the match becomes a link, and it has to survive the viewer's `Clamp` — prose
+  there is truncated and can carry a trailing pill, so linkifying after clamping
+  is the only order that works. The real risk is false positives: a loose
+  `DIALABLE` inside a sentence will happily claim `09:30-18:00`, `12 km` or a
+  guidebook page range, so the pattern has to be *stricter* than the whole-value
+  one, not looser. Whether the **PDF** gets a
+  twin is an open call rather than the usual "paper can't do it" — fpdf can emit
+  a link, and most PDF viewers honour `tel:` / `mailto:` — but it would print as
+  emphasis on a page where the number is already legible, and ink-saver would
+  suppress it anyway.
 - **Draw a ground transport leg as a road, not a dotted line** — a
   [leg](file_format.md#transportlegs) with both endpoints mapped is drawn as a
   straight dotted line whatever its `type` (`day_legs` in `maps/build.py`, the

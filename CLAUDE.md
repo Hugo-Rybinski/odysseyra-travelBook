@@ -1218,7 +1218,18 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     table, value format and rule) that turns raw text/screenshots into the
     **entire** itinerary as one `<title>.json`, needing no other file, no source
     code, and no tool. **Any JSON-format change must be mirrored here** — it is
-    authoritative alongside `file_format.md`.
+    authoritative alongside `file_format.md`. It runs in **two modes**: from
+    nothing, or — when an itinerary JSON is among the sources — **updating that
+    file**, which is then the base and the source of truth (every existing key
+    survives, including ones the guide doesn't document; the base's values
+    outrank the model's own re-derivation; its `title` and prose language are
+    kept), and the run ends with a **"Changes to the JSON"** recap listing every
+    field added, changed (`old → new`), newly-created object and migrated stale
+    key. That last part is why the retired aliases matter here: a base written
+    against the old shape (a `road` with its own `start`/`waypoints`, a
+    `transport` with a `date` and no `legs`, `default_*`…) has to be migrated to
+    build at all, and that is the one change the guide makes without a source
+    asking for it.
   - `fix-missing-duration-distance.md` — from a JSON + a list of validator
     warnings about missing duration/distance/elevation, builds a fill-in-the-blank
     Markdown worksheet (Google Maps links for road distances; web-inferred hike

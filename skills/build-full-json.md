@@ -1,8 +1,9 @@
 # Skill: build the full itinerary JSON
 
-**Output:** a single `<title>.json` — the **complete** itinerary in one file.
-The user will later turn it into a PDF with the `odysseyra-travelBook` tool; your job is
-only to produce correct JSON. You do **not** run any commands.
+**Output:** a single `<title>.json` — the **complete** itinerary in one file,
+whether you wrote it from scratch or updated one you were given. The user will
+later turn it into a PDF with the `odysseyra-travelBook` tool; your job is only
+to produce correct JSON. You do **not** run any commands.
 
 Use this skill when you want to turn a pile of source material (a trip brief,
 booking-confirmation emails, hotel/rental vouchers, screenshots, a day-by-day
@@ -10,6 +11,12 @@ plan, a guidebook PDF, links to blog posts, a KML/KMZ track — e.g. one exporte
 from a custom Google Map, a GPX track for a hike or off-road drive, or an MBOX
 export — e.g. a Gmail label exported via Google Takeout) **directly into one
 finished JSON file**.
+
+It covers **both** directions of that job: building the file from nothing, and
+**extending an itinerary JSON that already exists** — the far commoner case
+once a trip is under way, when a booking is confirmed, a day is rewritten or a
+GPX arrives. If one of the sources is an itinerary JSON, that file is the base
+and you edit it — see *If you were given an existing itinerary JSON*, below.
 
 **This document is self-contained.** Everything you need — the top-level shape,
 every object's fields, the value formats, and all the rules — is here; you do
@@ -20,7 +27,47 @@ JSON you emit must be correct on the first pass.
 **Start from a blank slate.** Work only from this skill and the documents
 provided in this conversation — do not draw on past memory, earlier
 conversations, or prior assumptions. If a fact is not in this skill or the
-supplied sources, it does not exist for this task.
+supplied sources, it does not exist for this task. (An itinerary JSON supplied
+*in* this conversation is one of those documents — see the next paragraph — and
+is the one thing you don't start blank on.)
+
+**If you were given an existing itinerary JSON, update it — don't rebuild it.**
+Any `.json` among the sources that has this shape (a `days` array, a
+`travel_description`) is the **base and the source of truth**, not another
+document to mine. Your output is that same file with the new material merged
+into it. That changes the job in five ways:
+
+- **Keep what's there.** Every existing key, value, order and spelling survives
+  unless a source contradicts it or the user asked you to change it. This
+  includes fields you'd not have written yourself and fields this skill doesn't
+  document — **never drop a key you don't recognise**; it may be newer than this
+  guide, and deleting it silently loses the user's work.
+- **The base outranks your own re-derivation.** Where the file already states a
+  `duration`, a `distance_km`, a coordinate or a piece of prose, that value
+  stands even if you would have computed or worded it differently. It is
+  user-supplied, and *Trust user-supplied details* applies to all of it. Only a
+  supplied source that actually disagrees can overrule it — and then it's a
+  conflict, reported as one.
+- **Write in the base's language.** The prose language is already settled by the
+  file; match it, and don't ask. (If the base's prose and the new material are
+  in different languages, write the new prose in the base's and say so in the
+  report.)
+- **Keep the file's identity.** The output keeps the base's `title`, so it keeps
+  the same `<title>.json` filename. Don't rename a trip you were asked to
+  extend.
+- **Migrate a stale shape, and say you did.** The renamed aliases are gone, so a
+  base written against an older format won't build: a `road` carrying its own
+  `start` / `coordinate` / `waypoints` / `off_road` instead of `legs`, a
+  `transport` entry with a `date` and no `legs`, a top-level `transports`, or any
+  of `default_start_time` / `default_end_time` / `default_buffer` /
+  `start_timezone` / `end_timezone` / `default`. Convert each to the current
+  shape (the field tables below are current), preserving the value, and list
+  every one in the recap. This is the one case where you change something no
+  source asked you to change.
+
+Everything else in this skill applies unchanged — the field tables, the formats,
+the global rules and the self-check all describe the file you are producing,
+whether you wrote it from nothing or inherited most of it.
 
 **Settle the language before you write anything.** The JSON is full of prose you
 author — `title`, `subtitle`, `summary`, every day's `title`/`description`, every
@@ -31,7 +78,8 @@ nothing states it — stop and ask the user which language to write in before
 proceeding.** Do not guess, and do not silently default to the sources' language.
 JSON **keys** and enum values are always English (`point_of_interest`, `loop`,
 `hotel`, …), and proper nouns, booking references and addresses stay exactly as
-the sources print them — the choice only governs the prose you write.
+the sources print them — the choice only governs the prose you write. A **base
+JSON settles all of this without asking**: its prose is the language.
 
 ---
 
@@ -39,6 +87,10 @@ the sources print them — the choice only governs the prose you write.
 
 1. Read **all** the source material first. Note which document each fact comes
    from — you will report conflicts between them at the end.
+   - **Check whether one of them is an itinerary JSON.** If so it is the base
+     (see *If you were given an existing itinerary JSON* above): read it right
+     through before touching anything, so you know what is already covered, and
+     keep it open as you work — every merge decision is against it.
 2. **Inventory the tracks before you write anything.** List every GPX (and
    KML/KMZ) file you were given, and for each one note what it records, what its
    name says its two ends are, and the coordinates of its **first and last**
@@ -48,12 +100,17 @@ the sources print them — the choice only governs the prose you write.
    *Mining a GPX for coordinates*, below.
 3. Build one JSON object with the top-level shape below. Fill only what the
    sources actually state; leave everything else out so the tool applies its
-   defaults.
+   defaults. **With a base file, merge into it instead** — same shape, same
+   rules, but you are editing rather than authoring, and every field you touch
+   goes on the recap list as you touch it (step 5). Keep that list while you
+   work; reconstructing it afterwards by re-reading your own output is how
+   changes get missed.
 4. **Self-check** the JSON against the "Global rules" and the "Before you emit
    it" checklist at the end — you have no validator, so this manual pass is your
    only safety net.
-5. Output the finished JSON, then report the gaps and the inconsistencies (see
-   the end of this document).
+5. Output the finished JSON, then report the gaps, the inconsistencies, and —
+   when you worked from a base file — **the recap of every field you added or
+   changed** (see the end of this document).
 
 **Mining a GPX for coordinates.** A GPX is not only a line to embed — it is a
 list of surveyed points, and its **two ends are places**. Its first trackpoint is
@@ -1677,7 +1734,42 @@ values, so a real run would cite all three under *Looked up online*.
     here disagreed with anything — it simply wasn't in the sources.
 - **Trust user-supplied details.** If the user adds or corrects a value by hand,
   keep it even when it isn't in the source document — treat it as ground truth,
-  not something to second-guess or overwrite.
+  not something to second-guess or overwrite. **A supplied base JSON is
+  user-supplied in its entirety**, so this covers every value already in it.
+- **Working from a base file? End with a recap of everything you changed.** Its
+  own heading — "**Changes to the JSON**" — after the gaps and the
+  inconsistencies, listing **every field you added or modified**, nothing
+  aggregated away. The user is going to review a diff against a file they wrote;
+  this is what tells them where to look.
+  - **One bullet per field**, each giving the **path**, what happened, and the
+    values. Paths use the JSON's own names and indices, and a day is easier to
+    find by its number than its position, so write
+    `days[5] (day 6) · activities[2] "Château de Chambord" · opening_hours`
+    rather than `days.5.activities.2.opening_hours`.
+  - **Group by kind, in this order:** *Added* (a field that wasn't there),
+    *Changed* (a field whose value you replaced — always `old → new`, both
+    written out), *Added objects* (a whole new day, activity, booking, leg,
+    stay, rental or contact, named and dated), *Migrated* (a stale key converted
+    to the current shape, `old key → new key`, and where the value went), and
+    *Removed* — which should be **empty**, so anything in it needs a reason
+    beside it.
+  - **Say why, in a clause.** Which source drove it: "from the Booking.com
+    confirmation", "measured off `hike-kolsuu.gpx`", "you asked for it". A
+    change with no source is one to look at twice — including yours.
+  - **Nothing silent.** A field you rewrote for consistency (a name unified, a
+    price rounded, prose retouched) is a change and belongs here even though no
+    new fact arrived. So does every stale key you migrated. If you find yourself
+    wanting to write "and various small fixes", that is exactly the bullet the
+    user needed.
+  - **Untouched is not reported.** This is a list of what moved, not an
+    inventory of the file — a base whose 200 fields you left alone yields no
+    bullets for them.
+  - It **overlaps** the other two reports on purpose and does not replace them:
+    a field you changed because two sources disagreed appears here (what you
+    wrote) and under the conflicts (why you picked it). A field you left empty
+    stays in the gaps report only — you didn't change it.
+  - When there was **no base file** — you built from nothing — skip this section
+    entirely rather than listing the whole file as "added".
 
 ## Before you emit it — self-check
 
@@ -1788,6 +1880,16 @@ You cannot run the validator, so verify these by hand:
 - **Every day has a `city`**, and that night's accommodation `city` appears
   inside it spelled identically (`"Amboise → Sarlat-la-Canéda"` for a stay in
   `"Sarlat-la-Canéda"`).
+- **Nothing was lost from the base file** (when there was one): every key it
+  carried is still present — including ones this skill doesn't document — every
+  day, booking, stay and rental it held is still there, its `title` is unchanged,
+  and its prose is in the same language it was. Diff your output against it
+  field by field; a key that vanished is the one failure the user cannot spot
+  from the rendered book.
+- **The recap covers every edit** (when there was a base): each added field,
+  each changed value with its `old → new`, each new object, and each migrated
+  stale key has a bullet — and no bullet describes something you didn't actually
+  change.
 - **Names are consistent:** each place appears under one spelling throughout —
   search the file for each town/site name and confirm there is no second variant
   (missing accent, abbreviation, translated form) left behind. **Every `address`
