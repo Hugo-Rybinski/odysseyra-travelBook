@@ -9,6 +9,7 @@ import type {
   TransportLeg,
 } from "../types/resolved";
 import {
+  catLabel,
   fill,
   fmtDate,
   fmtElevation,
@@ -24,6 +25,7 @@ import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./H
 import { AddressLink, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { priceInline } from "./money";
+import { MapFigure } from "./Parts";
 import {
   activityNav,
   fmtDurationMin,
@@ -36,19 +38,10 @@ import {
 // MapLibre is heavy (~300KB gz) and only needed for the interactive map, so it's
 // code-split into its own chunk loaded on demand (not parsed until interactive
 // is used). It's still precached, so it's served with the right MIME and works
-// offline; a failed load falls back to the static PNG via the error boundary.
+// offline; a failed load is caught by the error boundary and reported as a note,
+// *not* swapped for the static PNG — see `MapView` on why those two are
+// alternatives rather than a fallback chain.
 const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMapGL })));
-
-// A rendered day/area map (a base64 PNG from the Python renderer, pixel-identical
-// to the PDF) with an accent caption aligned to the PDF's map cards.
-function MapFigure({ rendered, caption }: { rendered: RenderedMap; caption: string }) {
-  return (
-    <figure className="day-map">
-      <figcaption>{caption}</figcaption>
-      <img src={rendered.image} alt={caption} loading="lazy" />
-    </figure>
-  );
-}
 
 // The small accent disc carrying an activity's map-pin label (number / area
 // letter / ★ stay), shown inline before its title — mirroring the PDF's pin discs.
@@ -156,24 +149,26 @@ function MapView({
   return staticMap ? <MapFigure rendered={staticMap} caption={caption} /> : null;
 }
 
-// Uppercase type label shown in the gutter badge, mirroring the PDF's
-// _badge_label (POIs use their category when it isn't the generic "other").
-function badgeLabel(act: Activity): string {
+// The type label shown in the gutter badge, mirroring the PDF's `_badge_label`
+// (POIs use their category when it isn't the generic "other", clipped to the
+// same 14 characters). Localized: these read as words, not codes, so a French
+// book shows RANDO and MUSÉE — `.type-badge` does the uppercasing in CSS.
+function badgeLabel(act: Activity, lang: Lang): string {
   switch (act.type) {
     case "road":
-      return "ROAD";
+      return tr(lang, "badgeRoad");
     case "hike":
-      return "HIKE";
+      return tr(lang, "badgeHike");
     case "meal":
-      return "MEAL";
+      return tr(lang, "badgeMeal");
     case "place":
-      return "PLACE";
+      return tr(lang, "badgePlace");
     case "point_of_interest":
       return act.category && act.category !== "other"
-        ? act.category.toUpperCase().slice(0, 14)
-        : "POINT";
+        ? catLabel(act.category, lang).slice(0, 14)
+        : tr(lang, "badgePoint");
     default:
-      return act.type.toUpperCase();
+      return act.type;
   }
 }
 
@@ -431,7 +426,7 @@ function ActivityRow({
   return (
     <li className={`act ${act.type}${act.detour ? " detour" : ""}`}>
       <Gutter
-        label={badgeLabel(act)}
+        label={badgeLabel(act, lang)}
         start={act.start_time}
         end={act.end_time}
         startTz={act.start_tz_label}

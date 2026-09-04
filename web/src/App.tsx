@@ -112,16 +112,26 @@ type View =
 // handle we can re-read later. `handle` shape is opaque here.
 type Source = OpenedFile;
 
-// Whether any hike in the trip carries an embedded GPX. Those draw an
-// interactive trail map of their own, independently of
-// `include_maps_in_render` — so the Options "Interactive maps" toggle must stay
-// live for a maps-off itinerary that has one.
+// Whether any hike in the trip carries an embedded GPX. Those draw a trail map
+// of their own, independently of `include_maps_in_render` — so the Options
+// "Interactive maps" toggle must stay live for a maps-off itinerary that has
+// one, and (see `wantsDayRender`) the per-day render still has work to do.
 function hasResolvedHikeTracks(itinerary: Itinerary | null): boolean {
   const any = (acts: ResolvedActivity[] | undefined): boolean =>
     (acts ?? []).some(
       (a) => (a.type === "hike" && !!a.track) || any(a.activities),
     );
   return (itinerary?.days ?? []).some((d) => any(d.activities));
+}
+
+// Whether the per-day map render (`renderDay`) has anything to produce for this
+// itinerary. Two independent reasons, matching bridge.py's `render_day`: the
+// trip draws day maps, or a hike carries a GPX whose **static** trail map comes
+// from the same pass (the interactive one needs no render — its geometry
+// arrives with the text). Without the second half, a maps-off trip with a
+// track showed no trail at all once interactive maps were switched off.
+function wantsDayRender(itinerary: Itinerary | null): boolean {
+  return !!itinerary?.maps.include_in_render || hasResolvedHikeTracks(itinerary);
 }
 
 export function App() {
@@ -427,7 +437,7 @@ export function App() {
         // Findings (to see why) so the user isn't stuck on a blank viewer.
         setView(model ? "viewer" : seeded ? "edit" : "findings");
 
-        if (model?.maps.include_in_render) void buildDayMaps(src.text, model.days.length);
+        if (wantsDayRender(model)) void buildDayMaps(src.text, model!.days.length);
         else mapRunRef.current++; // cancel any in-flight loop from a prior file
         await rememberHandle(src.handle);
         setCanReopen(!!src.handle || canReopen);
@@ -521,7 +531,7 @@ export function App() {
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.
   const onRedraw = useCallback(async () => {
-    if (!source || !itinerary?.maps.include_in_render) return;
+    if (!source || !itinerary || !wantsDayRender(itinerary)) return;
     setRedrawing(true);
     setError(null);
     try {
@@ -658,9 +668,9 @@ export function App() {
         setFindings(found);
         setSource((prev) => (prev ? { ...prev, text } : { name: "edited.json", text, handle: null }));
         setAppliedText(text); // preview now reflects the draft (dirty = false)
-        if (model?.maps.include_in_render && redrawMaps) {
+        if (wantsDayRender(model) && redrawMaps) {
           setMapsStale(false);
-          await buildDayMaps(text, model.days.length, true);
+          await buildDayMaps(text, model!.days.length, true);
         } else {
           // Plain apply (or maps off / unrenderable): don't refetch. Carried maps
           // stay on screen; suppress loaders for any day without one.

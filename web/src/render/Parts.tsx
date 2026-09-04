@@ -1,9 +1,23 @@
 // Small shared render bits: a price (default currency + faded conversions and a
-// paid/to-pay chip), a booked/confirmed status chip, and a collapsible card head.
+// paid/to-pay chip), a booked/confirmed status chip, a collapsible card head,
+// and the captioned figure a pre-rendered map PNG is drawn in.
 import type { ReactNode } from "react";
-import type { Money } from "../types/resolved";
+import type { Money, RenderedMap } from "../types/resolved";
 import { primaryMoney, secondaryMoney } from "./money";
 import { tr, type Lang } from "./format";
+
+/** One pre-rendered map image with its caption — a day's map, an area's zoom, or
+ * a hike's trail. Shown only with the Options interactive-maps toggle **off**
+ * (see `MapView` in DayCard.tsx): the PNG and the MapLibre map are alternatives,
+ * so a GL failure never substitutes this one. */
+export function MapFigure({ rendered, caption }: { rendered: RenderedMap; caption: string }) {
+  return (
+    <figure className="day-map">
+      <figcaption>{caption}</figcaption>
+      <img src={rendered.image} alt={caption} loading="lazy" />
+    </figure>
+  );
+}
 
 export function Price({ price, lang }: { price: Money | null; lang: Lang }) {
   if (!price) return null;

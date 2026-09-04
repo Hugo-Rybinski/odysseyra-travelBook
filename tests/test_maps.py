@@ -285,14 +285,40 @@ def test_tile_fetch_retries_transient_failures_but_not_a_4xx(monkeypatch, tmp_pa
 
     calls.clear()
 
+    def forbidden(url, timeout=20):
+        calls.append(url)
+        raise urllib.error.HTTPError(url, 403, "key required", None, None)
+
+    monkeypatch.setattr(maps, "http_get", forbidden)
+    with pytest.raises(urllib.error.HTTPError):
+        basemap.fetch_tile(6, 2, 2, tmp_path)
+    assert len(calls) == 1
+
+
+def test_a_404_tile_is_empty_country_not_a_failure(monkeypatch, tmp_path):
+    """A vector-tile server answers 404 for a tile holding no features, which
+    over empty country (a remote lake, a stretch of desert) is the truth rather
+    than an error — so it decodes to no layers instead of costing the whole
+    image, and caches as an empty file so a rebuild needs no request."""
+    import urllib.error
+
+    import odysseyra_travelbook.maps as maps
+    from odysseyra_travelbook.maps import basemap
+
+    monkeypatch.setattr(basemap.time, "sleep", lambda s: None)  # no real backoff
+    calls = []
+
     def gone(url, timeout=20):
         calls.append(url)
         raise urllib.error.HTTPError(url, 404, "nope", None, None)
 
     monkeypatch.setattr(maps, "http_get", gone)
-    with pytest.raises(urllib.error.HTTPError):
-        basemap.fetch_tile(6, 2, 2, tmp_path)
-    assert len(calls) == 1
+    assert basemap.fetch_tile(6, 3, 3, tmp_path) == {}
+    assert len(calls) == 1                       # not retried: it's an answer
+    f = tmp_path / "vec_6_3_3.mvt"
+    assert f.exists() and f.read_bytes() == b""
+    assert basemap.fetch_tile(6, 3, 3, tmp_path) == {}
+    assert len(calls) == 1                       # served from the empty cache
 
 
 def test_geocode_uses_http_get_seam(monkeypatch):

@@ -157,7 +157,17 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `Pillow`; everything networked goes through `maps.http_get` (`urllib`
   natively, a `fetch` shim in the browser) — `basemap.tile_bytes` retries a
   transient tile failure, since one rate-limited tile otherwise silently costs
-  the whole map.
+  the whole map. It also reads a **404 as an empty tile, not a failure**: a
+  vector-tile server answers that for a square holding no features, which over
+  empty country is the truth — and the map that most needs drawing is exactly
+  the one out where the tiles run thin (Köl-Suu's trail lost its whole map to a
+  single blank z13 square). It comes back as no bytes → `mvt.decode` → no
+  layers → bare background, and caches as an empty file so a rebuild costs no
+  request. Every **other** 4xx still raises, because those say the *request* is
+  wrong (a bad URL, a moved endpoint, a key now required) and must not degrade
+  into a book of blank maps. The browser shim raises the same
+  `urllib.error.HTTPError` with the same code, so both renderers get this from
+  the one place.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`,
   plus `weekday_name` and `fmt_weekday_runs` for a POI's opening days),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
@@ -303,11 +313,21 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   **independent of `include_maps_in_render`**: that governs the maps we *infer*
   for the trip, while attaching a GPX to a hike is itself the opt-in — a
   default-true switch gated behind a default-false one would never fire.
-  Both renderers draw map-then-profile from the same `track`, with two deliberate
-  differences: the PDF's map is a raster and its profile is drawn vector, while
-  the viewer's map is the interactive MapLibre one (no static PNG — the geometry
-  arrives with the text, not with the per-day map render) honouring the Options
-  interactive-maps toggle, and its profile is inline SVG. The viewer alone offers
+  Both renderers draw map-then-profile from the same `track`, with one deliberate
+  difference: the PDF's profile is drawn vector, the viewer's is inline SVG. The
+  **map** obeys the Options interactive-maps toggle like every other viewer map
+  — the MapLibre one when it's on (drawing straight away, since the geometry
+  arrives with the text), the static PNG when it's off. That PNG is
+  `track.map`, rendered per day by `bridge.py`'s `_stamp_hike_maps` and
+  therefore arriving with the day's other images rather than with the text; it
+  used not to exist at all, which left a hike showing its profile and no trail
+  whenever the toggle was off while the PDF printed both. Because the render is
+  per-day, `App.tsx`'s `wantsDayRender` runs the day loop for a trip that draws
+  **no** day maps but has a track — otherwise the one switch that is
+  deliberately independent of `include_maps_in_render` would depend on it after
+  all. Since the resolved `Day` gains a field, this needed a `SCHEMA_VERSION`
+  bump (**v24**) — which also covers the tile-404 fix changing every *rendered
+  image* inside a cached day. The viewer alone offers
   `(Get GPX track)` (`GpxDownloadLink`, drawn in the hike's chips line next to
   `(Navigate)`) — a `<button>`, not an `<a href>`, because inflating the payload
   is async so there is nothing to point at until the click; paper can't download
@@ -1127,8 +1147,62 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   toggle off (`DayCard.tsx`'s `MapView`). Substituting the PNG on a GL failure
   silently returns the rendering the user switched away from — one with no pan or
   zoom — so it reads as the map having lost its controls. A slot with nothing
-  locatable stays empty either way rather than claiming a failure. `TripMap.tsx`
-  and `HikeTrack.tsx` were already interactive-only (they have no PNG twin).
+  locatable stays empty either way rather than claiming a failure.
+  `HikeTrack.tsx` follows the same rule now that a hike's trail has a PNG twin
+  (`track.map`, above): MapLibre on, PNG off, and a GL failure shows the profile
+  alone rather than the map the user turned off. `TripMap.tsx` is the one that
+  stays interactive-only — the 🗺️ Overview is a whole-trip view you pan and
+  zoom, and its paper twin is the PDF's trip-map page.
+  The **figure** the PNG is drawn in is shared: `Parts.tsx`'s `MapFigure`, used
+  by both `MapView` and `HikeTrackFigure`, so a caption/markup change can't
+  drift between the two.
+- **A one-line row in the PDF neither wraps nor clips.** fpdf's `cell` draws
+  straight past its own width, so any single-line row carrying a value a user
+  can make arbitrarily long runs off the paper — and nothing reports it, because
+  the text is *there*, just past the margin. Three tools, and a rule for
+  choosing between them:
+  - **`_fit_text(text, w)`** (`pdf/base.py`) ellipsizes. Right only where the
+    full value is readable elsewhere in the book — the stay bar's name (also on
+    the accommodation page) and its address line (also its Navigate link), the
+    accommodation card's name (cut to the width its right-aligned badges leave).
+    A row that would *lose* information must wrap or drop a whole part instead;
+    the stay bar's sub line does both, dropping `·`-separated parts first and
+    only ellipsizing what's left when one part is itself too long.
+  - **`_route_with_pins(…, max_w=, indent=)`** (`pdf/day_map.py`) breaks a route
+    **between its ends**, after the arrow, so each name keeps its own pin disc —
+    which wrapping it as prose would lose (that is why `_road_title` declines
+    the job and falls back to a plain one-disc `multi_cell` instead). This is
+    what lets a VIA row take two lines: `_road_waypoints` measures the route and
+    its tail (figures + `OFF-ROAD` pill + Navigate) **before drawing anything**,
+    since the row's height decides whether it starts on this page, and lays them
+    out by the same greedy per-end rule the drawing uses so the two agree.
+  - **Measure each piece under the font it is drawn in.** `_inline_chip_width`
+    (and `_pin_disc`, and `_route_width`) *set* the font, so chaining
+    measurements in one expression silently measures later pieces in an earlier
+    piece's font — a Navigate link measured in the chip's 6 pt bold reads ~30 %
+    narrow, i.e. a row that overflows while claiming to fit.
+  The viewer needs none of this: CSS reflows, so its twins (`RoadVia`,
+  `.stay-note`, `Clamp`) wrap or clamp on their own.
+- **A label the PDF passes through `self.t()` needs a viewer twin.** The gutter
+  type badge is the case that got away: `pdf/days.py`'s `_badge_label`
+  localizes `ROAD`/`HIKE`/`MEAL`/`PLACE`/`POINT` and a POI's `category` through
+  `translations.py`, while `DayCard.tsx`'s `badgeLabel` returned hardcoded
+  English — so a French book printed `RANDO` and the viewer showed `HIKE`. Both
+  sides now read label keys (`badge*` / `cat*` in `render/format.ts`, plus
+  `catLabel` mirroring `POI_CATEGORIES`); the viewer uppercases in CSS
+  (`text-transform` on `.type-badge`) where the PDF does it in code, which is
+  why the keys are written in sentence case. Keep the two sets and the
+  14-character category clip in step.
+- **The PDF's page box is 10 mm, not the 18 mm the code reads as.**
+  `_PDFBase.__init__`'s `set_margins`/`set_auto_page_break`/`set_title` sat
+  **after the `return`** in `d()` for the file's whole life, so every book ever
+  printed used fpdf's defaults (10 mm sides and top, a 20 mm bottom break) and
+  the whole layout — the gutter, the card widths, the map height caps — was
+  measured against those. The three lines now live in `__init__` at the values
+  actually in force, so `set_title` finally fills the PDF's metadata title;
+  moving the margins to 18 mm is a **one-line, deliberate** change that narrows
+  the column by 16 mm, reflows every page and changes the page count, so it is a
+  design decision rather than a bug fix and hasn't been taken.
 - **`skills/`** holds LLM-facing docs:
   - `build-full-json.md` — a self-contained guide (it duplicates every field
     table, value format and rule) that turns raw text/screenshots into the

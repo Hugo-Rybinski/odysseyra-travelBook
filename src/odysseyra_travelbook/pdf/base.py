@@ -70,15 +70,23 @@ class _PDFBase(FPDF):
         self.map_provider = map_provider
         self.accent = _hex_to_rgb(itinerary.cover_color)
         self.default_tz = itinerary.default_timezone
+        self.set_title(itinerary.title)
+        # The page box. These two lines spent the file's whole life unreachable
+        # — they sat after the `return` in `d()` below — so every book ever
+        # printed used fpdf's defaults, and the whole layout (the gutter, the
+        # card widths, the map height caps) was measured against those. They are
+        # restated here at the values actually in force rather than "restored"
+        # to the 18 mm they were written with: narrowing the column by 16 mm
+        # reflows every page and changes the page count, which is a design
+        # decision and not a bug fix.
+        self.set_auto_page_break(auto=True, margin=20)
+        self.set_margins(left=10, top=10, right=10)
 
     def t(self, text: str) -> str:
         return tr(text, self.lang)
 
     def d(self, day, style: str) -> str:
         return fmt_date(day, style, self.lang)
-        self.set_auto_page_break(auto=True, margin=18)
-        self.set_margins(left=18, top=18, right=18)
-        self.set_title(itinerary.title)
 
     # -- page furniture -------------------------------------------------
     def footer(self) -> None:
@@ -294,6 +302,26 @@ class _PDFBase(FPDF):
         self.set_text_color(*MUTED)
         self.cell(tw, h - 0.4, label, align="C")
         return tw + 2
+
+    def _fit_text(self, text: str, w: float) -> str:
+        """``text`` cut back with an ellipsis until it fits ``w`` at the current
+        font, or unchanged when it already does.
+
+        fpdf's one-line ``cell`` neither wraps nor clips — it simply draws past
+        its own width — so any single-line row carrying a value the user can make
+        arbitrarily long (a hotel called "Yurt Camp Ali-Nur, Lake Song-Kul,
+        Kyrgyzstan, Юрточный лагерь…") has to be measured first, or it runs off
+        the page. Ellipsizing is the right answer only where the full text is
+        readable elsewhere in the book — a stay's name is also on the
+        accommodation page, an address is also its Navigate link — so a caller
+        that would be *losing* information should wrap or drop a part instead.
+        The font must already be set."""
+        if self.get_string_width(text) <= w:
+            return text
+        cut = len(text)
+        while cut and self.get_string_width(text[:cut].rstrip() + " …") > w:
+            cut -= 1
+        return text[:cut].rstrip() + " …" if cut else ""
 
     def _meta_line(self, x: float, w: float, parts) -> None:
         parts = [p for p in parts if p]
@@ -554,6 +582,12 @@ class _PDFBase(FPDF):
             self.set_font(FONT, "", 9)
             self.set_text_color(*FAINT)
             self.cell(w - pw, 5, "  " + secondary)
+
+    def _inline_chip_width(self, label: str) -> float:
+        """The width :meth:`_inline_chip` would draw ``label`` in — so a row that
+        ends in one can tell whether it still fits its column."""
+        self.set_font(FONT, "B", 6)
+        return self.get_string_width(label) + 3
 
     def _inline_chip(self, label: str) -> None:
         """A small filled pill drawn *inline*, at the cursor, inside a text row —

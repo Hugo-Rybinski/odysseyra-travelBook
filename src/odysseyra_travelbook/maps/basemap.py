@@ -174,12 +174,25 @@ def tile_bytes(url: str) -> bytes:
 
     A map is stitched from several tiles and any single failure loses the whole
     image (the caller swallows it), so one rate-limited tile in a burst would
-    silently cost a day's map — or, for the whole-trip map, a whole page."""
+    silently cost a day's map — or, for the whole-trip map, a whole page.
+
+    A **404 is not a failure**: a vector-tile server answers it for a tile that
+    holds no features, which over empty country (a high-altitude lake in
+    Kyrgyzstan, a stretch of desert) is the honest answer rather than an error.
+    Raising there cost the whole image for want of one blank square — the map
+    that most needs drawing, since a trail out in the middle of nowhere is
+    exactly where the tiles run out. It comes back as no bytes, which
+    :func:`mvt.decode` reads as no layers, so the square draws as bare
+    background. Every other 4xx still raises: those say the *request* is wrong
+    (a bad URL, a moved endpoint, a key now required), which must not degrade
+    into a book of blank maps."""
     last: Exception | None = None
     for attempt in range(TILE_RETRIES):
         try:
             return _maps.http_get(url)
         except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return b""      # an empty tile, not a failure
             if not (exc.code == 429 or exc.code >= 500):
                 raise           # 4xx: definitive (bad URL, moved, …)
             last = exc
@@ -195,7 +208,8 @@ def fetch_tile(z: int, x: int, y: int, tiles_dir: Path) -> dict[str, mvt.Layer]:
 
     The cached file keeps the wire bytes rather than the decode, so a warm cache
     is byte-identical to what the network served and stays valid across changes
-    to which layers we draw."""
+    to which layers we draw. An empty tile caches as an empty file — a rebuild
+    over blank country then costs no request at all."""
     f = tiles_dir / f"vec_{z}_{x}_{y}.mvt"
     if not f.exists():
         f.write_bytes(tile_bytes(VECTOR_URL.format(z=z, x=x, y=y)))

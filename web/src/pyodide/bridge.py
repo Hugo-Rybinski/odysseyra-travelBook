@@ -92,6 +92,47 @@ def _rendered_map(rendered) -> dict:
     return {"image": _png_data_uri(rendered.image), "legend": list(rendered.legend)}
 
 
+def _stamp_hike_maps(itinerary, day, day_out, cache) -> None:
+    """Render each hike's trail map from its GPX and merge it into the serialized
+    day, as ``track.map``.
+
+    The viewer's interactive trail map draws itself from the ``track`` geometry
+    that arrives with the text, so this is only ever needed with the Options
+    interactive-maps toggle **off** — the same alternative-not-fallback rule the
+    day maps follow (see ``DayCard``'s ``MapView``). Without it, switching
+    interactive maps off left a hike with its elevation profile and no trail at
+    all, while the PDF printed both.
+
+    Gated by ``defaults.include_hike_maps`` like every other reading of a
+    ``track``, and independent of ``include_maps_in_render`` — attaching the GPX
+    is the opt-in. Each hike is rendered in its own ``try``: one trail out where
+    the tiles run thin must not cost the day's other maps.
+
+    No ``lang`` on purpose, exactly as ``render_day`` renders the day map: the
+    on-screen PNG then names places the way the viewer's own MapLibre map does,
+    and the PDF it exports still goes through ``build(lang=…)``."""
+    if not getattr(itinerary, "include_hike_maps", True):
+        return
+    from odysseyra_travelbook.maps import render_hike_map
+
+    def walk(acts, out_acts):
+        for act, out in zip(acts, out_acts):
+            track = getattr(act, "track", None)
+            if track is not None and out.get("track"):
+                try:
+                    img = render_hike_map(track, itinerary.cover_color, cache)
+                    if img is not None:
+                        out["track"]["map"] = {"image": _png_data_uri(img),
+                                               "legend": []}
+                except Exception:
+                    pass  # offline / tile failure — the profile still draws
+            nested = getattr(act, "activities", None)
+            if nested and out.get("activities"):
+                walk(nested, out["activities"])
+
+    walk(day.activities, day_out["activities"])
+
+
 def _stamp_pins(dm, day, day_out, itinerary) -> None:
     """Copy each object's pin label (by object identity, via ``dm.number_for``)
     onto the matching serialized dict entry.
@@ -232,20 +273,26 @@ def render_day(text, index):
     """Render one day's maps (screen palette, never ink-saver) and return that
     day's serialized dict with the map images + pin labels merged in, for the UI
     to swap in place. Degrades gracefully — any failure returns the day mapless
-    (``map.main`` is null), never an error."""
+    (``map.main`` is null), never an error.
+
+    Two independent renders share one tile cache here: the day's own maps, and
+    the trail map of any hike carrying a GPX (see :func:`_stamp_hike_maps`). They
+    fail apart, because ``defaults.include_hike_maps`` is deliberately not gated
+    behind ``include_maps_in_render`` — a trip that draws no day maps can still
+    print its trails."""
     try:
         itinerary = _parsed(text)
         day = itinerary.days[index]
         day_out = to_dict(itinerary)["days"][index]
         day_out["map"] = {"main": None, "areas": [], "geo": None}
         try:
-            from odysseyra_travelbook.maps import Cache, render_day_maps
+            from odysseyra_travelbook.maps import Cache
             cache = Cache.open()
+        except Exception:
+            return json.dumps({"day": day_out})  # no cache dir: nothing to draw
+        try:
+            from odysseyra_travelbook.maps import render_day_maps
             dm = render_day_maps(day, itinerary, cache, ink_saver=False)
-            try:
-                cache.save()
-            except Exception:
-                pass
             day_out["map"] = {
                 "main": _rendered_map(dm.main) if dm.main else None,
                 "areas": [{"title": t, **_rendered_map(m)} for t, m in dm.areas],
@@ -256,6 +303,11 @@ def render_day(text, index):
             _stamp_pins(dm, day, day_out, itinerary)
         except Exception:
             pass  # offline / tile failure — leave the day mapless
+        _stamp_hike_maps(itinerary, day, day_out, cache)
+        try:
+            cache.save()
+        except Exception:
+            pass
     except Exception as exc:  # noqa: BLE001 — a bad index / parse is reportable
         return json.dumps({"error": str(exc)})
     return json.dumps({"day": day_out})

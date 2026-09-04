@@ -3,6 +3,7 @@ import type { Activity, HikeTrack, MapGeo } from "../types/resolved";
 import { downloadBytes, slugify } from "../file/saveExport";
 import { fill, fmtKm, roundElevation, roundKm, tr, type Lang } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
+import { MapFigure } from "./Parts";
 import { useAccent } from "./palette";
 import { useRouteGpx } from "./routeExport";
 
@@ -13,14 +14,20 @@ const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMa
 // over the basemap, then the elevation profile under it. Both come from the same
 // resolved `track` the Python model derived — keep the two renderers in step.
 //
-// Two deliberate differences from the print, both because a screen isn't paper:
-//   * the map is the interactive MapLibre one, with no static-PNG fallback. The
-//     PDF needs a raster; here the geometry is already in hand (it arrives with
-//     the text, not with the per-day map render), so the map draws immediately
-//     and pans and zooms. It follows the Options "interactive maps" toggle: with
-//     that off, the profile stands alone.
-//   * the profile is inline SVG rather than a drawn chart — same data, same
-//     shape, but it scales with the column and reflows on a phone.
+// One deliberate difference from the print, because a screen isn't paper: the
+// profile is inline SVG rather than a drawn chart — same data, same shape, but
+// it scales with the column and reflows on a phone.
+//
+// The map follows the Options "interactive maps" toggle, by the same
+// alternatives-not-a-fallback-chain rule as the day maps (see `MapView` in
+// DayCard.tsx): on, it is the MapLibre map, which draws straight away because
+// the geometry arrives with the text; off, it is the pre-rendered PNG that
+// bridge.py's `_stamp_hike_maps` puts on `track.map` with the day's other
+// images. A GL failure shows nothing rather than swapping the PNG in — the
+// static map is what the user switched *away* from, so substituting it reads as
+// the map having lost its controls. With the toggle off and no PNG yet (or none
+// possible, offline), the profile stands alone, as it does on paper when the
+// tiles can't be fetched.
 export function HikeTrackFigure({
   act,
   lang,
@@ -61,20 +68,25 @@ export function HikeTrackFigure({
 
   return (
     <div className="hike-track">
-      {interactive && geo && !failed && (
-        <MapErrorBoundary key={mapKey} onError={onFail} fallback={null}>
-          <Suspense
-            fallback={
-              <div className="day-map-loading" role="status" aria-live="polite">
-                <span className="spin" aria-hidden />
-                {tr(lang, "buildingMap")}
-              </div>
-            }
-          >
-            <DayMapGL geo={geo} caption={caption} onFail={onFail} />
-          </Suspense>
-        </MapErrorBoundary>
-      )}
+      {interactive ? (
+        geo &&
+        !failed && (
+          <MapErrorBoundary key={mapKey} onError={onFail} fallback={null}>
+            <Suspense
+              fallback={
+                <div className="day-map-loading" role="status" aria-live="polite">
+                  <span className="spin" aria-hidden />
+                  {tr(lang, "buildingMap")}
+                </div>
+              }
+            >
+              <DayMapGL geo={geo} caption={caption} onFail={onFail} />
+            </Suspense>
+          </MapErrorBoundary>
+        )
+      ) : track.map ? (
+        <MapFigure rendered={track.map} caption={caption} />
+      ) : null}
       <ElevationProfile track={track} lang={lang} accent={accent} />
     </div>
   );

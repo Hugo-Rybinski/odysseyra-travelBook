@@ -69,41 +69,61 @@ class DayMapMixin:
         pad = 2 * self.c_margin  # a cell's own left+right inner padding
         total = self.get_string_width(lead) + pad if lead else 0.0
         for i, (pin, name) in enumerate(ends):
-            if pin:
-                total += PIN_DISC_W
             text = name if i == len(ends) - 1 else name + sep
-            total += self.get_string_width(text) + pad
+            total += self._end_width(pin, text)
         return total
 
+    def _end_width(self, pin, text: str) -> float:
+        """The room one end of a route takes — its disc, its text and the cell's
+        own padding. The font must already be set (see :meth:`_route_width`)."""
+        return (PIN_DISC_W if pin else 0.0) + self.get_string_width(text) \
+            + 2 * self.c_margin
+
     def _route_with_pins(self, x: float, y: float, ends, *, sep: str, h: float,
-                         size: float, style: str, color, lead: str = "") -> float:
-        """``(1) Amboise  →  (4) Sarlat-la-Canéda`` — a route on one line with
-        each end's map pin **beside the name it labels**, not bunched at the
-        front. A pin number exists to point at one place, so a route with two
-        pinned ends needs two discs in the right two spots; the alternative
-        (both discs leading the line) reads as if they both belonged to the
-        departure.
+                         size: float, style: str, color, lead: str = "",
+                         max_w: float | None = None,
+                         indent: float = 0.0) -> tuple[float, float]:
+        """``(1) Amboise  →  (4) Sarlat-la-Canéda`` — a route with each end's map
+        pin **beside the name it labels**, not bunched at the front. A pin number
+        exists to point at one place, so a route with two pinned ends needs two
+        discs in the right two spots; the alternative (both discs leading the
+        line) reads as if they both belonged to the departure.
 
         ``ends`` is ``[(pin | None, name), …]`` and ``lead`` an optional prefix
-        (the VIA list's bullet). Returns the x it ended at. ``_pin_disc`` sets
-        its own font and colour, so both are re-applied for every text run."""
-        tx = x
+        (the VIA list's bullet). Returns the ``(x, y)`` it ended at.
+        ``_pin_disc`` sets its own font and colour, so both are re-applied for
+        every text run.
+
+        Given ``max_w`` the route breaks **between two ends** — after the arrow,
+        onto a fresh line indented by ``indent`` — rather than running off the
+        column. Two long place names are the one route that doesn't fit a line,
+        and paper can't reflow; breaking there keeps each name's disc against
+        it, which wrapping the whole thing as prose would lose (that is the
+        concession :meth:`_road_title` makes, and why it declines the job
+        instead). The break is greedy and per end, so a caller can predict the
+        line count from :meth:`_end_width` alone."""
+        tx, ty = x, y
 
         def run(text: str) -> None:
             nonlocal tx
             self.set_font(FONT, style, size)
             self.set_text_color(*color)
-            self.set_xy(tx, y)
+            self.set_xy(tx, ty)
             self.cell(self.get_string_width(text) + 2 * self.c_margin, h, text)
             tx = self.get_x()
 
         if lead:
             run(lead)
         for i, (pin, name) in enumerate(ends):
+            text = name if i == len(ends) - 1 else name + sep
+            self.set_font(FONT, style, size)
+            if i and max_w is not None and \
+                    tx + self._end_width(pin, text) > x + max_w:
+                tx, ty = x + indent, ty + h
             if pin:
-                tx += self._pin_disc(tx, y + (h - PIN_D) / 2, pin)
-            run(name if i == len(ends) - 1 else name + sep)
-        return tx
+                tx += self._pin_disc(tx, ty + (h - PIN_D) / 2, pin)
+            run(text)
+        return tx, ty
 
     def pin_label(self, act):
         """The pin label (number, area letter or '*') for ``act``, if it has one."""

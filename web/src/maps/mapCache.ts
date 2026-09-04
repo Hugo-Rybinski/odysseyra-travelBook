@@ -77,7 +77,14 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // transport leg gained `distance_km`. A v22-cached day carries none of them, so
 // the fee, the phone number, the Sunday hours and the leg's distance would all
 // be missing while the CLI printed them.
-const SCHEMA_VERSION = 23;
+// v24: a hike's `track` gained `map`, the static trail PNG shown when the
+// interactive-maps toggle is off (previously that toggle left a hike with its
+// elevation profile and no trail at all). And every rendered image moved: a
+// tile the basemap answers 404 for is empty country now, not a failure, so a
+// map framed on somewhere the tiles run thin — a high lake, a desert piste —
+// draws instead of being dropped whole. A v23 entry has neither: no trail PNG,
+// and possibly no day map where one is now perfectly renderable.
+const SCHEMA_VERSION = 24;
 
 interface Entry {
   day: Day;

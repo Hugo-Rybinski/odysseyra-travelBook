@@ -78,7 +78,9 @@ class AccommodationMixin:
         self.set_xy(cx, yy)
         self.set_font(FONT, "B", 13)
         self.set_text_color(*INK)
-        self.cell(inner_w - 46, 7, acc.name)
+        # 46 mm of the row is the badges' (drawn right-aligned just above), so
+        # the name is cut to what's left rather than running under them.
+        self.cell(inner_w - 46, 7, self._fit_text(acc.name, inner_w - 46))
         yy += 7
 
         if date_line:

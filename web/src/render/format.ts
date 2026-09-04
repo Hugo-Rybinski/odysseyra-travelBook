@@ -179,6 +179,34 @@ const LABELS = {
     wxUnknown: "Weather",
     wxPrecip: "☔ {p}%",
     wxWind: "💨 {v} km/h",
+    // The gutter's type badge, and a point of interest's category when it has
+    // one that isn't the generic "other" — the same English sources pdf/days.py
+    // localizes through translations.py in `_badge_label`, so keep the two sets
+    // in step. `.type-badge` uppercases them in CSS (the PDF does it in code),
+    // which is why they are written here in the case a sentence would use.
+    badgeRoad: "Road",
+    badgeHike: "Hike",
+    badgeMeal: "Meal",
+    badgePlace: "Place",
+    badgePoint: "Point",
+    catMuseum: "Museum",
+    catChurch: "Church",
+    catBuilding: "Building",
+    catViewpoint: "Viewpoint",
+    catRuins: "Ruins",
+    catCastle: "Castle",
+    catTemple: "Temple",
+    catStreet: "Street",
+    catNaturalPark: "Natural park",
+    catMountain: "Mountain",
+    catMountainPass: "Mountain pass",
+    catLake: "Lake",
+    catBeach: "Beach",
+    catWaterfall: "Waterfall",
+    catCanyon: "Canyon",
+    catSpring: "Spring",
+    catMarket: "Market",
+    catOther: "Other",
   },
   fr: {
     day: "Jour",
@@ -287,6 +315,32 @@ const LABELS = {
     wxUnknown: "Météo",
     wxPrecip: "☔ {p} %",
     wxWind: "💨 {v} km/h",
+    badgeRoad: "Route",
+    badgeHike: "Rando",
+    badgeMeal: "Repas",
+    badgePlace: "Lieu",
+    badgePoint: "Point",
+    catMuseum: "Musée",
+    catChurch: "Église",
+    catBuilding: "Bâtiment",
+    catViewpoint: "Point de vue",
+    catRuins: "Ruines",
+    catCastle: "Château",
+    catTemple: "Temple",
+    catStreet: "Rue",
+    catNaturalPark: "Parc naturel",
+    catMountain: "Montagne",
+    // "COL DE MONTAGNE" would lose its last letter to the badge's 14-character
+    // clip, and "col" is what a map legend says anyway (translations.py makes
+    // the same call for the PDF).
+    catMountainPass: "Col",
+    catLake: "Lac",
+    catBeach: "Plage",
+    catWaterfall: "Cascade",
+    catCanyon: "Canyon",
+    catSpring: "Source",
+    catMarket: "Marché",
+    catOther: "Autre",
   },
 } as const;
 
@@ -294,6 +348,38 @@ export type LabelKey = keyof (typeof LABELS)["en"];
 
 export function tr(lang: Lang, key: LabelKey): string {
   return LABELS[lang][key];
+}
+
+// A point of interest's `category` (models/activities.py's POI_CATEGORIES) →
+// its label key. Keep the two in step: a category the model accepts and this
+// map doesn't would fall back to the raw English value.
+const CATEGORY_KEYS: Record<string, LabelKey> = {
+  museum: "catMuseum",
+  church: "catChurch",
+  building: "catBuilding",
+  viewpoint: "catViewpoint",
+  ruins: "catRuins",
+  castle: "catCastle",
+  temple: "catTemple",
+  street: "catStreet",
+  "natural park": "catNaturalPark",
+  mountain: "catMountain",
+  "mountain pass": "catMountainPass",
+  lake: "catLake",
+  beach: "catBeach",
+  waterfall: "catWaterfall",
+  canyon: "catCanyon",
+  spring: "catSpring",
+  market: "catMarket",
+  other: "catOther",
+};
+
+/** A point of interest's category, localized — `museum` → `Museum` / `Musée`.
+ * An unknown value comes back as written, which is what the model would have
+ * rejected anyway; the PDF's `self.t(category)` degrades the same way. */
+export function catLabel(category: string, lang: Lang): string {
+  const key = CATEGORY_KEYS[category.toLowerCase()];
+  return key ? tr(lang, key) : category;
 }
 
 // The canonical weekday keys an `Opening` speaks in (models/opening.py's

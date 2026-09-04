@@ -259,7 +259,11 @@ class DayMixin:
         self.set_xy(nx, y + pad + 3.5)
         self.set_font(FONT, "B", 11)
         self.set_text_color(*INK)
-        self.cell(0, 5, name)
+        # The bar is one glance at the page foot, so a very long stay name is
+        # cut here rather than allowed off the page — it is printed in full on
+        # the accommodation page.
+        name_w = self.l_margin + self.content_width - pad - nx
+        self.cell(name_w, 5, self._fit_text(name, name_w))
 
         # The Navigate link sits inline right after the sub (address) line; it
         # reserves its own width so the sub is truncated to leave room for it.
@@ -269,6 +273,10 @@ class DayMixin:
         maxw = self.content_width - 2 * pad - 2
         while sub and "  ·  " in sub and self.get_string_width(sub) + nav_w > maxw:
             sub = sub.rsplit("  ·  ", 1)[0]
+        # Dropping whole parts is the better cut (each is a complete fact), but
+        # it bottoms out at one part — a single long address then still has to
+        # be ellipsized, or it takes the Navigate link off the page with it.
+        sub = self._fit_text(sub, maxw - nav_w)
         self.set_xy(cx, y + pad + 9)
         self.set_text_color(*MUTED)
         sub_w = self.get_string_width(sub)
@@ -615,6 +623,14 @@ class DayMixin:
         against its own town. The first row's departure pin comes from the road
         itself, which is where the day map's numbering puts it.
 
+        A row takes a second line — the route breaking after the arrow, the tail
+        dropping below it — when the names are too long to share one, which a
+        hand-written junction ("Départ de la seconde trace vers Köl-Tör") reaches
+        easily. Everything is measured before anything is drawn: the row's height
+        decides whether it starts on this page, and the pieces are laid out by
+        the same greedy rule `_route_with_pins` draws by, so the two agree. The
+        viewer needs none of this — CSS reflows `RoadVia` on its own.
+
         Hidden for a road with a single leg (a plain departure→arrival): the
         drive *is* that hop, so the title already carries every part of the row
         — the route, the duration, the distance, the Navigate link, and (since
@@ -636,39 +652,66 @@ class DayMixin:
         self.set_font(FONT, "B", 8)
         self.set_text_color(*low_accent)
         self.cell(0, 5, self.t("VIA"), new_x="LMARGIN", new_y="NEXT")
+        route = dict(sep="  →  ", size=9, style="", lead="•  ")
         for (src, dest, dur_min, dist_km, dest_wp, off_road), pin, src_pin in zip(
                 legs, pins, src_pins):
-            self._ensure_room(6)
-            row_y = self.get_y()
             ends = ((src_pin, src or "?"), (pin, dest or self.t("arrival")))
-            tx = self._route_with_pins(x + 3, row_y, ends, sep="  →  ", h=5,
-                                       size=9, style="", color=low_accent,
-                                       lead="•  ")
-            self.set_xy(tx, row_y)  # the discs moved the cursor; put it back
+            avail = w - 3               # the row is indented under the header
             meta = []
             if dur_min is not None:
                 meta.append(_format_duration(dur_min))
             if dist_km is not None:
                 meta.append(format_km(dist_km))
-            if meta:
+            mtext = "   " + "  ·  ".join(meta) if meta else ""
+            dest_coord = dest_wp.coordinate if dest_wp is not None else None
+            url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
+                                                     provider=self.map_provider)
+            nav = "  " + self.t("(Navigate)") if url else ""
+            # The tail — this leg's figures, its off-road pill and the Navigate
+            # link — shares the route's line when it fits and takes one of its
+            # own when it doesn't. Measured before anything is drawn, because
+            # the row's height decides whether it starts on this page at all.
+            # Each piece is measured under the font it will be *drawn* in, and
+            # `_inline_chip_width` changes the font — so these can't share one
+            # expression (measuring the link in the chip's 6 pt bold reads ~30 %
+            # narrow, which is a row that overflows while claiming to fit).
+            tail_w = 2 + self._inline_chip_width(self.t("OFF-ROAD")) if off_road else 0.0
+            self.set_font(FONT, "", 8.5)
+            if mtext:
+                tail_w += self.get_string_width(mtext) + 1
+            if nav:
+                tail_w += self.get_string_width(nav)
+            # Where the route ends, by the same greedy per-end rule
+            # `_route_with_pins(max_w=…)` draws by.
+            self.set_font(FONT, route["style"], route["size"])
+            lead_w = self.get_string_width(route["lead"]) + 2 * self.c_margin
+            dep_w = self._end_width(src_pin, ends[0][1] + route["sep"])
+            arr_w = self._end_width(pin, ends[1][1])
+            wrapped = lead_w + dep_w + arr_w > avail
+            end_x = lead_w + arr_w if wrapped else lead_w + dep_w + arr_w
+            lines = (2 if wrapped else 1) + (0 if end_x + tail_w <= avail else 1)
+            self._ensure_room(lines * 5 + 1)
+            row_y = self.get_y()
+            tx, ty = self._route_with_pins(x + 3, row_y, ends, h=5,
+                                           color=low_accent, max_w=avail,
+                                           indent=lead_w, **route)
+            if tx + tail_w > x + 3 + avail:
+                tx, ty = x + 3 + lead_w, ty + 5
+            self.set_xy(tx, ty)  # the discs moved the cursor; put it back
+            if mtext:
                 self.set_font(FONT, "", 8.5)
                 self.set_text_color(*FAINT)
-                mtext = "   " + "  ·  ".join(meta)
                 self.cell(self.get_string_width(mtext) + 1, 5, mtext)
             if off_road:
                 # a small pill on this leg's row — the road-level chip stays for
                 # a drive that is off-road as a whole
                 self.cell(2, 5, "")
                 self._inline_chip(self.t("OFF-ROAD"))
-            dest_coord = dest_wp.coordinate if dest_wp is not None else None
-            url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
-                                                     provider=self.map_provider)
-            if url:
-                label2 = self.t("(Navigate)")
+            if nav:
                 self.set_font(FONT, "", 8.5)
                 self.set_text_color(*self.accent)
-                self.cell(self.get_string_width("  " + label2), 5,
-                          "  " + label2, link=url)
+                self.cell(self.get_string_width(nav), 5, nav, link=url)
+            self.set_y(ty)
             self.ln(5)
 
     def _opening_line(self, act, x: float, w: float, size: float = 9,

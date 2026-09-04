@@ -1195,3 +1195,63 @@ def test_build_pdf_ink_saver(tmp_path):
     assert out.exists()
     assert out.read_bytes().startswith(b"%PDF")
     assert out.stat().st_size > 1000
+
+
+def test_fit_text_ellipsizes_a_value_too_long_for_its_row():
+    # fpdf's one-line `cell` neither wraps nor clips — it draws straight past its
+    # own width — so a row carrying a user-supplied name has to measure first.
+    from odysseyra_travelbook.pdf import TravelPDF
+    from odysseyra_travelbook.pdf.base import FONT
+
+    pdf = TravelPDF(Itinerary.from_json_file(EXAMPLE), "en", False, "google")
+    pdf.add_page()
+    pdf.set_font(FONT, "B", 11)
+
+    assert pdf._fit_text("Hôtel du Pic", 60) == "Hôtel du Pic"  # already fits
+    long = ("Yurt Camp Ali-Nur, Lake Song-Kul, Kyrgyzstan, "
+            "Юрточный лагерь Али Нур, на берегу озера Сон-Куль")
+    cut = pdf._fit_text(long, 60)
+    assert cut.endswith(" …") and len(cut) < len(long)
+    assert pdf.get_string_width(cut) <= 60
+    assert long.startswith(cut[:-2])  # the head is kept verbatim
+    assert pdf._fit_text(long, 1) == ""  # no room for anything
+
+
+def test_a_via_row_too_long_for_one_line_takes_two():
+    # A hand-written junction ("Départ de la seconde trace vers Köl-Tör") makes a
+    # route that can't share a line with its figures, its off-road pill and its
+    # Navigate link. The row then breaks after the arrow instead of running off
+    # the page — and its height is measured *before* it is drawn, so the row can
+    # be kept whole on the page.
+    from odysseyra_travelbook.models import activity_from_dict
+    from odysseyra_travelbook.pdf import TravelPDF
+
+    def road(a, b, c):
+        return activity_from_dict({
+            "type": "road",
+            "legs": [
+                {"start_location": a, "end_location": b, "duration": "1h",
+                 "distance_km": 40, "off_road": True,
+                 "end_coordinate": {"lat": 42.6, "long": 0.1}},
+                {"end_location": c, "duration": "2h", "distance_km": 60,
+                 "end_coordinate": {"lat": 42.7, "long": 0.2}},
+            ],
+        })
+
+    pdf = TravelPDF(Itinerary.from_json_file(EXAMPLE), "en", False, "google")
+    x, w = pdf.l_margin + pdf.GUTTER, pdf.content_width - pdf.GUTTER
+
+    def drawn_height(r) -> float:
+        pdf.add_page()
+        before = pdf.get_y()
+        pdf._road_waypoints(x, w, r)
+        return pdf.get_y() - before
+
+    short = drawn_height(road("Ax", "Bx", "Cx"))
+    long = drawn_height(road(
+        "Kegeti — début de la piste vers le lac Köl-Tör",
+        "Départ de la seconde trace vers le lac Köl-Tör",
+        "Départ de la randonnée du lac Köl-Tör par la rive",
+    ))
+    # Two legs: the short one is a line each, the long one two lines each.
+    assert long - short == pytest.approx(2 * 5, abs=0.01)

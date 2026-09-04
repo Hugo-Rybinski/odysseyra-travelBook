@@ -79,6 +79,13 @@ export interface HikeTrack {
   max_elevation_m: number | null;
   point_count: number; // points in the source file, before simplification
   bounds: [[number, number], [number, number]]; // [[minLat,minLong],[maxLat,maxLong]]
+  // The trail drawn over the basemap as a PNG, the twin of the day map's static
+  // image — shown when the Options interactive-maps toggle is off, and never
+  // alongside the MapLibre one (alternatives, not a fallback chain). Rendered
+  // per day by bridge.py's `_stamp_hike_maps`, so it arrives with the day's maps
+  // rather than with the text: absent until then, and absent for good if the
+  // tiles couldn't be fetched (the elevation profile draws either way).
+  map?: RenderedMap | null;
 }
 
 // A point of interest's opening days and hours (its `opening_days` /
