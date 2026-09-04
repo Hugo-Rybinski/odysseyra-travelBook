@@ -382,6 +382,62 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
+- **Drop the drives from a day's cover highlights when it has other stops** —
+  `pdf/cover.py`'s `_day_highlights` and `Cover.tsx`'s `highlightsOf` list every
+  drive over 60 minutes alongside the sights, so a full day reads
+  "Road Amboise → Sarlat, Château de Chambord, Cave of Font-de-Gaume" where the
+  drive is the least interesting third of it. Skip roads once the day already
+  has **two or more** other highlights; keep them below that, and keep the
+  existing all-roads fallback for a pure transit day, which is the case the rule
+  exists for. Two small functions, one rule, and they must move together.
+- **Draw a ground transport leg as a road, not a dotted line** — a
+  [leg](file_format.md#transportlegs) with both endpoints mapped is drawn as a
+  straight dotted line whatever its `type` (`day_legs` in `maps/build.py`, the
+  dashed pass in `maps/render.py`, `tripGeo.ts` in the viewer), on the reasoning
+  that its real path is unknown. That is true of a **plane** and a **ferry** and
+  should stay dotted; a **taxi** or **bus** drives on roads, and OSRM can route
+  it exactly as `_road_route` already routes a drive's leg. A **train** is the
+  open question: it is ground transport on a fixed path, but routing it over the
+  driving profile would draw a lie, so it probably stays dotted until there is a
+  rail source. Needs an answer for `other` too, and note that a routed leg would
+  start widening a printed map's extent, which legs
+  [deliberately never do](file_format.md#maps--coordinates).
+- **Pin the accommodations on the zoom maps** — an area's detail map already
+  carries *that night's* stay as a bare `*` (`resolve_day`'s area branch and
+  `bridge.py`'s `_day_geo`, a pin only, never part of the extent), but nothing
+  names it in the **static** map: `RenderedMap`'s legend is built from the
+  lettered groups alone, so the one marker you might actually be walking to is
+  the one with no caption (the interactive map is fine — `_day_geo` passes the
+  stay's name as the point's title). Give it a legend entry, and decide whether
+  a *neighbouring* night's stay inside the same frame should show too — a
+  two-night town is one area drawn twice today, each time pinning one hotel.
+- **Better hike trail maps** — `render_hike_map` draws the GPX line and nothing
+  else, so a trail reads as a shape with no story: no **direction** (an
+  out-and-back and a loop look alike, and neither says which end you start
+  from), and no **intermediate points** (the col, the lake, the refuge you turn
+  at). Arrowheads spaced along the line and a start/end marker are pure
+  `maps/render.py` drawing work over geometry `models/gpx.py` already carries.
+  The named points are the design question: they could come from the GPX's own
+  `<wpt>`s — which `_points_of` reads today only as a *last-resort source of the
+  line itself*, dropping the `<name>` that makes one worth pinning — or from the
+  hike's nested activities. Whichever it is, the track has to carry them (so it
+  bumps `SCHEMA_VERSION`) and the PDF's `pdf/hike_map.py` and the viewer's
+  `HikeTrack.tsx` both have to draw them.
+- **Reuse a pin number automatically in more cases** — `fold_pins` merges two of
+  a day's located points into one number when their **names** key alike *and*
+  they sit within `PIN_MERGE_KM`, and `pin_aliases` shares a number between a
+  drive's end and the activity beside it, but only where the JSON says so with
+  `same_start_as_previous_activity` / `same_end_as_next_activity`. So the
+  commonest duplicate is still hand-declared: a drive that ends at the
+  coordinate the next visit starts from wears a second number unless you
+  remember the flag. Merging on **coordinate alone** when two points are within
+  a few tens of metres would catch it — and would catch the unnamed points the
+  name rule refuses outright — without the flags. The care needed is the same
+  care `fold_pins` documents: the museum and the café across the square are two
+  stops wanting two numbers, so the radius has to be far tighter than the 1 km
+  the name rule can afford, and whatever is chosen must be computed identically
+  in `render_day_maps` and `_day_geo` or the two renderers disagree about what
+  "3" is. Bumps `SCHEMA_VERSION`, like every change to a `map_pin`.
 - **A drive nested inside a place** — let a
   [`place`](file_format.md#place--a-place-a-town-say-grouping-several-nested-activities)
   (and a `point_of_interest`) nest a
