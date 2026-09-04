@@ -428,6 +428,26 @@ it in both **double-books** the day. The same goes for an inter-city bus or
 ferry. A short local transfer *may* stay a `road` activity — the taxi across town
 to the airport, say — but the flight it delivers you to is a `transport` entry.
 
+**An airport or a station is not a stop.** When a terminal appears only because a
+flight, train, bus or ferry leaves from it or lands there, it belongs in that
+transport leg's `start` / `end` and **nowhere else** — never as a
+`point_of_interest`, a `place`, or the `name` of anything in `activities`. The
+leg already puts it in the day's timeline with its time, so a sight called
+*Charles de Gaulle Terminal 2E* adds a row that says nothing and a map pin on a
+car park. The same goes for a car rental's `pickup_location` /
+`dropoff_location` (which is a field, not an activity) and for the arrival of the
+`road` that drives you there — that is a leg endpoint, which is where an airport
+name is welcome.
+
+The **one** exception is a terminal the sources treat as somewhere to go: a
+station the guidebook covers as architecture, an airport with a museum or an
+observation deck you're told to visit, a market hall inside the concourse. It
+takes an explicit statement in the source material — "allow an hour for the
+Art-Deco booking hall", a guidebook page, a `description` about the building
+itself. "We have a four-hour layover" is not one: that is dead time, and if it
+needs to show at all it is a `buffer` or a nested `meal`, not a sight. When in
+doubt, leave it out and note it in the gaps report.
+
 **Guidebook page references go in `guidebook_pages`, never in the prose.** If the
 source cites guidebook pages for a place, activity, or zone (e.g. "Lonely Planet
 p. 142" or "see pp. 88–91"), put the **page numbers alone** in that activity's
@@ -732,6 +752,18 @@ Each **leg** is an object:
   - Still **write the endpoint out** whenever the source names it — the switch is
     then only about the shared pin, which is the half worth having. Omit the
     endpoint only when the source really gives no name of its own for it.
+  - **And write it in the neighbour's words.** Once steps 1–2 say the two are one
+    place, the leg should name it the way the activity does: `end_location:
+    "Château de Chambord"` when the next activity is the POI *Château de
+    Chambord*, not a second wording of the same spot ("Chambord", "the château
+    car park") — even where the source phrased the drive differently. This is the
+    *one place, one name* rule applied to the seam between a drive and the stop
+    beside it, and it is what makes the leg's row and the activity above it read
+    as one place instead of two. Reuse the name **as far as it goes**: a
+    departure whose previous activity is unlocated or unnamed keeps whatever the
+    source called it, and so does an end the switch check **rejected** — those
+    are different places and must stay written differently
+    (`Cauterets — car park` is not `Cauterets`).
   - Never set a switch to paper over a **different** place. "Drive from the hotel
     car park" after a visit to the old town is two places; write the departure.
   - **Never set a switch to dodge a coordinate you don't have.** It states a fact
@@ -818,11 +850,34 @@ straight line. Sampling a KML into `waypoints` is fine; re-encoding it as a
 leg's `gpx` is not — that field is reserved for a `.gpx` the user actually
 provided.
 
-**Link separate places with a `road`.** Between two consecutive activities that
-happen in different places (a different town, area, or trailhead), insert a
-`road` whose first leg departs from the first place and whose last leg arrives at
-the second. Skip it only when the two stops share the same area (nested under one
-`place`, or clearly in one town) — there's no leg to draw within a single place.
+**Link separate places with a `road` — but only over 10 km.** Between two
+consecutive activities that happen in different places (a different town, area,
+or trailhead), the trip has a drive the sources may not have written down. Add
+one **proactively only when the two places are more than 10 km apart**: a `road`
+whose first leg departs from the first place and whose last leg arrives at the
+second. Set `same_start_as_previous_activity` and `same_end_as_next_activity` on
+it — that is exactly what those two flags say, and it spares you inventing a
+name for either end — subject to their own check (the arrival still has to be
+located, by the next activity's `coordinate` or the leg's own; a drive the
+sources never mentioned is no excuse for an arrival nowhere).
+
+**At 10 km or less, add nothing — list it in the inconsistency report instead**,
+naming the two activities and the gap ("day 4: *Musée Bonnat* → *Église
+Saint-Vincent*, ~2 km apart, no transfer stated — walk, taxi or drive?"). A
+short hop is as likely to be a walk, a tram or a taxi as a drive, and the source
+staying silent about it usually means it isn't worth a row of its own; a `road`
+you invent there puts a fabricated drive with a fabricated duration on the page,
+where the report puts the question in front of the user. Skip it entirely — no
+road, no report — when the two stops plainly share one area (nested under one
+`place`, or two sights in the same old town): there is no leg to draw within a
+single place.
+
+Judging the distance needs no exact figure: if you have both coordinates, 0.1°
+of latitude is ~11 km, so **under 0.05° in both** is safely inside 10 km and
+**over 0.15° in either** is safely outside. Otherwise go by what the places are
+— two sights in one town are inside it, two towns or a town and a trailhead in
+the hills are outside. When you genuinely cannot tell, report it rather than
+adding the road.
 
 **Never chain roads — merge them into one.** When back-to-back roads form
 `A → B` then `B → C`, do **not** emit two road objects. Emit **one** road whose
@@ -926,9 +981,9 @@ Rules:
 - **Copy it byte-for-byte.** Don't trim, resample or reformat the XML; the tool
   simplifies the line and resamples the profile itself.
 - With a `gpx` present you may **omit** `distance_km` and `elevation_m` — the
-  tool measures both off the track. Write them only when a source gives a figure
-  you trust more (see *A GPX track is the principal source of truth*, below); a
-  written figure always wins over the measured one.
+  tool measures both off the track. Write them whenever a source states them: a
+  written figure always wins over the measured one, and the track's authority
+  stops at the geometry (see *A track's authority stops at geometry*, below).
 - A GPX without `<ele>` elevations is fine: the trail map still draws, there is
   just no profile, and `elevation_m` stays unmeasured (so give it if you know it).
   On a **road leg** elevations are never used at all.
@@ -1481,13 +1536,25 @@ values, so a real run would cite all three under *Looked up online*.
   difference of **0.005° or less in both** is safely under 1 km, more than
   **0.02° in either** is safely over, and in between it is worth estimating
   properly.
-- **A GPX track is the principal source of truth for a hike's (or off-road
-  drive's) figures.** When a GPX is provided for a hike, take its `distance_km`,
-  `elevation_m` and start/end from the track — or, better, embed the file itself
-  in the hike's `gpx` and let the tool measure them (see *Embedding a GPX track*). If the prose text states different
-  numbers, use the GPX values in the JSON — but flag the discrepancy in the
-  end-of-run inconsistency report (below), naming both figures. **Unless the gap
-  is within the tolerances just below** — then it is not a discrepancy at all.
+- **A track's authority stops at geometry.** A KML/KMZ or a GPX outranks the
+  written sources on *where* things are and *what line* was followed —
+  coordinates, the points a route runs through, the order they come in — because
+  that is what it records natively and prose can only approximate. On
+  **everything else the written sources are trusted**: a `distance_km`, an
+  `elevation_m`, a `duration`, a name, a date, a time, a price. So when the
+  guidebook says a hike is 12 km with 600 m of climb and the supplied track
+  measures 13.4 km and 655 m, write **12** and **600**.
+  - A recording is not the plan. A GPS wanders at every stop, an altimeter
+    drifts, and a track may cover a variant of the route or start from the car
+    park — so its total answers "what this device logged", while a written
+    figure has been checked by someone who did the walk.
+  - Take a figure off a track only when **no source states it**. That is also why
+    embedding a hike's `gpx` lets you leave `distance_km` / `elevation_m` out
+    entirely (the tool measures them, and any figure you *do* write wins) — see
+    *Embedding a GPX track*.
+  - Report the gap in the end-of-run inconsistency report, naming both values —
+    **unless it is inside the tolerances just below**, in which case it is not a
+    discrepancy at all.
 - **Small size differences aren't a conflict.** Two sources rarely agree to the
   metre on a distance, a climb or a duration, and reporting every such gap buries
   the conflicts that matter. Treat the values as **equal** — and leave them out
@@ -1502,10 +1569,10 @@ values, so a real run would cite all three under *Looked up online*.
 
   Within the tolerance, write the **roundest** of the values: the whole number
   over the decimal, the multiple of 10 or 5 over the awkward figure — `12` over
-  `12.4` km, `400` over `380` m, `"1h30"` over `"1h27"`. This is the one case
-  where a round prose figure outranks the GPX track. If two values are equally
-  round, keep the one from the more authoritative source (the GPX first, then the
-  KML/KMZ). Past the tolerance nothing changes: take the authoritative figure and
+  `12.4` km, `400` over `380` m, `"1h30"` over `"1h27"`. If two values are
+  equally round, keep the one from the source you trust more — and for a figure
+  that is a **written** source, never a track (see *A track's authority stops at
+  geometry*). Past the tolerance nothing changes: take the written figure and
   report the conflict, naming both.
 - **Don't round the figures yourself — write what the source says.** Every
   renderer already rounds a distance and a climb for display, and by magnitude:
@@ -1565,6 +1632,27 @@ values, so a real run would cite all three under *Looked up online*.
 - **After writing the JSON, report the gaps.** List the optional fields you left
   empty (with a one-line note on what each would add) so the user can fill in
   anything the source didn't cover.
+- **List every point you could not locate, under its own heading.** A
+  "**Missing coordinates**" section of the report naming *each* object that ended
+  up with no `coordinate`, one bullet apiece, with the day it sits on: every
+  `point_of_interest`, `place`, `hike` and `meal`, **every `accommodation`**,
+  each transport leg endpoint (`start_coordinate` / `end_coordinate`), each car
+  rental's pick-up and drop-off, and any road leg endpoint left to be geocoded
+  from its name. Say where you looked (no track ends there, no address, the
+  guidebook only names the town) so the user knows the sources were mined before
+  you gave up — see *Mining a GPX for coordinates*.
+  - It is a **list, not a count**: "6 places have no coordinate" is useless,
+    since the user's next move is to go and find each one.
+  - An **accommodation** with no `coordinate` deserves its own line even in a
+    short report. It is the only object that fixes *two* other things: the day's
+    map pin for the night's stay, and the sunrise/sunset reference for that day
+    and the next morning — so an unlocated hotel silently removes the sun line
+    from two days.
+  - Do this even when nothing else is missing, and even for the objects where a
+    coordinate is genuinely optional. A road leg's arrival is the one case that
+    is a hard **error** rather than a gap, so it appears here *and* has to be
+    fixed before the file is usable (*Every arrival of a drive must be
+    located*).
 - **Once you're done, report the inconsistencies.** Present them as a **bullet
   list**, one bullet per conflict, and for each one state clearly: *what* was in
   conflict (the field/place and the differing values, e.g. "arrival time: email
@@ -1660,6 +1748,18 @@ You cannot run the validator, so verify these by hand:
 - **No flights or trains in `activities`:** every plane/train (and inter-city
   bus/ferry) leg sits in the top-level `transport` array, exactly once — not also
   as a `road` or a `point_of_interest` inside the day.
+- **No airport or station is a stop:** every terminal name appears only as a
+  transport leg's `start`/`end`, a car rental's pick-up/drop-off, or a road leg
+  endpoint — never as a `point_of_interest` or `place` — unless the source
+  explicitly gives you something to visit there.
+- **Every written figure beat the track:** each `distance_km`, `elevation_m` and
+  `duration` is what a source states, with a measured value used only where no
+  source gave one. Tracks decided the coordinates and the route, nothing else.
+- **Every unstated transfer was handled the right way:** consecutive activities
+  in different places more than 10 km apart are joined by a `road`; at 10 km or
+  less no road was invented and the gap is a bullet in the inconsistency report.
+- **The report lists every unlocated point by name**, accommodations included —
+  not a count, and not silence.
 - **Every transport entry has a non-empty `legs` array**, with `start`, `end`,
   `start_date` and `start_time` on each leg — and nothing left at the booking
   level that belongs on a leg (a place, a date, a time, a flight/train number) or
