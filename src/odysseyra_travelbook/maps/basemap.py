@@ -30,6 +30,7 @@ the two stay consistent past z14.
 
 from __future__ import annotations
 
+import logging
 import math
 import time
 import urllib.error
@@ -41,6 +42,8 @@ from PIL import Image, ImageDraw
 from odysseyra_travelbook import maps as _maps  # call _maps.http_get so the browser override applies
 
 from . import mvt
+
+logger = logging.getLogger("odysseyra_travelbook.maps")
 
 # The same host and template the viewer pins in web/src/maps/carto.ts. Carto's
 # TileJSON shards over tiles-a/b/c/d; pinning one keeps the URLs identical
@@ -185,7 +188,13 @@ def tile_bytes(url: str) -> bytes:
     :func:`mvt.decode` reads as no layers, so the square draws as bare
     background. Every other 4xx still raises: those say the *request* is wrong
     (a bad URL, a moved endpoint, a key now required), which must not degrade
-    into a book of blank maps."""
+    into a book of blank maps.
+
+    That reading needs the status, which the **browser doesn't get** — Carto
+    sends no CORS header on a 404, so the response is blocked and the shim only
+    sees a network error. :func:`render_basemap` is where that case is caught,
+    by asking whether the source answered at all rather than what this one
+    square said; see its comment."""
     last: Exception | None = None
     for attempt in range(TILE_RETRIES):
         try:
@@ -464,10 +473,33 @@ def render_basemap(z, left, top, map_w, map_h, tiles_dir, *, scale=2, lang=None)
     ss = _ss_for(int(map_w * scale), int(map_h * scale))
     p = _Painter(z, left, top, map_w, map_h, scale, ss)
 
-    tiles = []
+    # One failed square must not cost the whole map, but a *broken source* must
+    # not degrade into a book of blank ones — so the policy is per render rather
+    # than per tile: draw whatever answered, and only raise when **nothing** did.
+    # `tile_bytes` already reads a 404 as an empty tile, which covers this under
+    # urllib; the browser can't, and that is what this is here for. Carto sends
+    # `Access-Control-Allow-Origin: *` on a tile it has and *no CORS header at
+    # all* on a 404, so a cross-origin 404 is blocked before the status is
+    # readable: `netbridge.ts` sees a bare NetworkError and reports status 0,
+    # indistinguishable from being offline. There is no way back from that — so
+    # instead of asking each tile whether its failure was fatal, ask the render
+    # whether the source answered at all. It did if any tile came back (an empty
+    # one counts: answering "nothing here" is an answer), and a wrong URL, a
+    # moved endpoint or a key now required fails every square, which still
+    # raises and still surfaces as a missing map rather than a blank one.
+    tiles, failures = [], []
     for zsrc, x, y in source_tiles(z, left, top, map_w, map_h):
         # The x index wraps the globe; y was already clamped to the pyramid.
-        tiles.append(((x, y), fetch_tile(zsrc, x % (2 ** zsrc), y, tiles_dir)))
+        try:
+            tiles.append(((x, y), fetch_tile(zsrc, x % (2 ** zsrc), y, tiles_dir)))
+        except Exception as exc:
+            failures.append(exc)
+    if failures and not tiles:
+        raise failures[0]
+    if failures:
+        logger.warning("%d of %d basemap tiles could not be fetched (%s); the "
+                       "map is drawn without them.", len(failures),
+                       len(failures) + len(tiles), failures[0])
 
     p.fills(tiles, "landcover", GREEN)
     p.fills(tiles, "park", GREEN)

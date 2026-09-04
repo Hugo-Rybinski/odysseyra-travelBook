@@ -165,9 +165,19 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   layers → bare background, and caches as an empty file so a rebuild costs no
   request. Every **other** 4xx still raises, because those say the *request* is
   wrong (a bad URL, a moved endpoint, a key now required) and must not degrade
-  into a book of blank maps. The browser shim raises the same
-  `urllib.error.HTTPError` with the same code, so both renderers get this from
-  the one place.
+  into a book of blank maps. **The browser never sees that status**, which is
+  why the rule can't live in `tile_bytes` alone: Carto sends
+  `Access-Control-Allow-Origin: *` on a tile it *has* and **no CORS header at
+  all** on the 404, so a cross-origin 404 is blocked before its status is
+  readable and `netbridge.ts` reports a bare `status: 0` — indistinguishable
+  from being offline (it retried it as transient and lost the map, so Köl-Suu's
+  trail came back in the CLI and stayed missing in the viewer). So the decision
+  is taken **per render** in `render_basemap`, which asks whether the *source*
+  answered rather than what one square said: draw whatever came back (an empty
+  tile counts — "nothing here" is an answer) and raise only when **every** tile
+  failed, which is what a wrong URL / moved endpoint / newly-required key does.
+  One policy, both renderers, and the "a broken source must not degrade into
+  blank maps" half is preserved.
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`,
   plus `weekday_name` and `fmt_weekday_runs` for a POI's opening days),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).

@@ -84,7 +84,13 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // map framed on somewhere the tiles run thin — a high lake, a desert piste —
 // draws instead of being dropped whole. A v23 entry has neither: no trail PNG,
 // and possibly no day map where one is now perfectly renderable.
-const SCHEMA_VERSION = 24;
+// v25: v24's blank-square rule never reached *this* renderer. Carto sends no
+// CORS header on the 404 it answers for a featureless tile, so in the browser
+// that tile arrives as an unreadable network error — the fix keyed on the status
+// could not fire, and a map over empty country still failed whole here while the
+// CLI drew it. Judged per render now, so a v24 entry can be missing exactly the
+// maps that most needed drawing (a high lake's trail, a desert piste).
+const SCHEMA_VERSION = 25;
 
 interface Entry {
   day: Day;

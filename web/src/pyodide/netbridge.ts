@@ -8,9 +8,16 @@
 // worker and not the page — the UI keeps painting its loader while tiles come
 // in. On the main-thread fallback it does freeze the page, as it always did.
 //
-// The three map endpoints (Carto tiles, OSRM, Nominatim) all send
-// `Access-Control-Allow-Origin: *`, so this works cross-origin with no proxy —
-// the app stays local-only.
+// The three map endpoints (Carto tiles, OSRM, Nominatim) send
+// `Access-Control-Allow-Origin: *` on a response they have, so this works
+// cross-origin with no proxy — the app stays local-only. They do **not** send it
+// on an error response: Carto answers 404 for a vector tile holding no features
+// (empty country, which is exactly where a trail map is most wanted) with no
+// CORS header at all, so the browser blocks it and a sync XHR throws a bare
+// NetworkError. `status` then reads 0 and there is no way to tell that 404 from
+// being offline — which is why the "one blank square isn't a failure" rule lives
+// in `maps/basemap.py`'s `render_basemap` (per render) and not in the status
+// check here or in `tile_bytes` (per tile).
 
 export interface SyncFetchResult {
   ok: boolean;

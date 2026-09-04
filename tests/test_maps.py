@@ -321,6 +321,41 @@ def test_a_404_tile_is_empty_country_not_a_failure(monkeypatch, tmp_path):
     assert len(calls) == 1                       # served from the empty cache
 
 
+def test_one_unfetchable_square_is_drawn_around_but_a_dead_source_raises(
+        monkeypatch, tmp_path):
+    """The blank-square rule has to hold for a failure whose *status* we never
+    see: Carto sends no CORS header on its 404, so in the browser an empty tile
+    arrives as a bare network error, indistinguishable from being offline. So
+    `render_basemap` judges the render rather than the tile — it draws whatever
+    answered, and only raises when nothing did."""
+    from odysseyra_travelbook.maps import basemap
+
+    monkeypatch.setattr(basemap.time, "sleep", lambda s: None)  # no real backoff
+    box = dict(z=6, left=6000.0, top=4000.0, map_w=600, map_h=400)
+    wanted = basemap.source_tiles(**box)
+    assert len(wanted) > 1, "the policy is only meaningful for a multi-tile map"
+    dead = wanted[0]
+
+    def one_hole(url, timeout=20):
+        if f"/{dead[0]}/{dead[1]}/{dead[2]}.mvt" in url:
+            raise OSError("blocked by CORS, status unreadable")
+        return b""                               # a real but featureless tile
+
+    monkeypatch.setattr(basemap._maps, "http_get", one_hole)
+    img, labels = basemap.render_basemap(**box, tiles_dir=tmp_path)
+    assert img.size == (1200, 800)               # drawn, minus the one square
+    assert labels == []
+
+    def all_dead(url, timeout=20):
+        raise OSError("nothing answers")
+
+    cold = tmp_path / "cold"                     # the first render warmed tmp_path
+    cold.mkdir()
+    monkeypatch.setattr(basemap._maps, "http_get", all_dead)
+    with pytest.raises(OSError):                 # a broken source, not a hole
+        basemap.render_basemap(**box, tiles_dir=cold)
+
+
 def test_geocode_uses_http_get_seam(monkeypatch):
     """Geocoding goes through the same seam and parses Nominatim's JSON body."""
     import odysseyra_travelbook.maps as maps
