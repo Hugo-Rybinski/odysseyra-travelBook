@@ -311,8 +311,8 @@ export const FR: Record<string, string> = {
   "Travel time and distance are missing.": "Le temps de trajet et la distance sont manquants.",
   "Check online to fill it.": "Vérifier en ligne pour le compléter.",
   "No nested activities.": "Aucune activité imbriquée.",
-  "No activities — a day needs at least one.":
-    "Aucune activité — un jour en nécessite au moins une.",
+  "No activities — fine if a booking covers this day.":
+    "Aucune activité — c'est normal si une réservation couvre cette journée.",
   "No secondary currencies.": "Aucune devise secondaire.",
   // The `misc` group and its emergency contacts
   Misc: "Divers",

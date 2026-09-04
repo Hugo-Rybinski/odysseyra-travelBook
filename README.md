@@ -302,8 +302,9 @@ See [`web/README.md`](web/README.md) for the viewer's architecture and internals
 
 ## JSON format
 
-Each day needs a `title`, each day needs at least one activity, and `days` must
-be non-empty; everything else is optional and falls back to a sensible default.
+Each day needs a `title` and `days` must be non-empty; everything else is
+optional and falls back to a sensible default — a day's `activities` included,
+since a day may be carried by a transport leg or a stay alone.
 
 The format is documented in full — one table per object, each giving
 **Required / Type / Format / Default** — in **[`file_format.md`](file_format.md)**:
@@ -384,14 +385,6 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
-- **Drop the drives from a day's cover highlights when it has other stops** —
-  `pdf/cover.py`'s `_day_highlights` and `Cover.tsx`'s `highlightsOf` list every
-  drive over 60 minutes alongside the sights, so a full day reads
-  "Road Amboise → Sarlat, Château de Chambord, Cave of Font-de-Gaume" where the
-  drive is the least interesting third of it. Skip roads once the day already
-  has **two or more** other highlights; keep them below that, and keep the
-  existing all-roads fallback for a pure transit day, which is the case the rule
-  exists for. Two small functions, one rule, and they must move together.
 - **Print the coordinates in ink-saver mode** — `--ink-saver` drops every
   `(Navigate)` link, not just its colour: `_line_with_nav` / `_nav_block_h` and
   the cards' `has_links` all resolve the URL to `""`, because a link is accent

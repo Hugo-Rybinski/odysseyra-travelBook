@@ -35,8 +35,11 @@ interface RawPoint {
 }
 
 // A day's explicit coordinates, walked in timeline order (one level of nesting).
-// Roads contribute their *named* waypoints — the arrival and any named stop —
-// rather than their departure, which is normally the previous activity's spot.
+// A **road contributes no pin at all** — not its departure, not its junctions,
+// not its arrival. At trip zoom a drive is a line, and pinning the places along
+// it only stacks more copies of the same day number on that line; the day map
+// is where a numbered junction identifies itself. The `day.map.geo` branch
+// below drops the same points, by the `from_road` flag the engine sets.
 function modelPoints(day: Day): RawPoint[] {
   const out: RawPoint[] = [];
   const push = (c: Coordinate | null | undefined, title: string) => {
@@ -45,11 +48,7 @@ function modelPoints(day: Day): RawPoint[] {
   const walk = (acts: Activity[]) => {
     for (const a of acts) {
       if (a.type === "buffer") continue;
-      if (a.type === "road") {
-        for (const w of a.waypoints ?? []) if (w.location) push(w.coordinate, w.location);
-      } else {
-        push(a.coordinate, a.title);
-      }
+      if (a.type !== "road") push(a.coordinate, a.title);
       if (a.activities?.length) walk(a.activities);
     }
   };
@@ -146,8 +145,9 @@ export function tripGeo(itinerary: Itinerary, lang: Lang): MapGeo | null {
       if (!accent) accent = geo.accent;
       for (const line of geo.routes) routes.push(line);
       // `geo.areas` is skipped: an area's nested points collapse into its single
-      // main pin at trip zoom, where they'd only be clutter.
-      for (const p of geo.points) add(p);
+      // main pin at trip zoom, where they'd only be clutter. So are a drive's
+      // own points (see `modelPoints`) — the drive is drawn as a route here.
+      for (const p of geo.points) if (!p.from_road) add(p);
     } else {
       for (const p of modelPoints(day)) add(p);
     }

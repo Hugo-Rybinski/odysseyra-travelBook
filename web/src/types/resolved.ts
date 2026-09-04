@@ -291,6 +291,11 @@ export interface MapPoint {
   long: number;
   label: string; // "1".."N", "★" (stay), or "A".."Z" (area)
   title: string;
+  // Set when the pin is one of a *drive's* own points (its departure, a
+  // junction, its arrival) rather than a stop of its own. The day map draws it
+  // like any other; the 🗺️ Overview drops it, where the drive is already a
+  // route. Absent, not false, when it isn't one.
+  from_road?: boolean;
 }
 
 // Structured geo for the interactive (MapLibre) day map — the same points,

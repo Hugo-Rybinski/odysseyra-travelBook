@@ -90,7 +90,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // could not fire, and a map over empty country still failed whole here while the
 // CLI drew it. Judged per render now, so a v24 entry can be missing exactly the
 // maps that most needed drawing (a high lake's trail, a desert piste).
-const SCHEMA_VERSION = 25;
+// v26: a day map's `geo.points` gained `from_road`, marking a pin that is one of
+// a drive's own points (its departure, a junction, its arrival). The 🗺️ Overview
+// drops those now — a drive is a line at trip zoom, and pinning the places along
+// it stacked copies of the same day number on it. A v25 entry has the flag
+// nowhere, so its drives' junctions would go on being pinned there.
+const SCHEMA_VERSION = 26;
 
 interface Entry {
   day: Day;

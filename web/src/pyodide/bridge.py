@@ -177,7 +177,14 @@ def _day_geo(itinerary, day, cache):
     # Same folding as the static map, so a place the day names twice carries one
     # marker here too and the two renderings agree on what "3" is.
     main_groups = fold_pins(main_pts)
-    points = [{"lat": g[0].lat, "long": g[0].long, "label": str(i), "title": g[0].label}
+    # `from_road` rides along so the 🗺️ Overview can drop a drive's own points
+    # (see `resolve_trip`, which does the same for the PDF's trip page) while
+    # this map still draws them. A folded group counts as a drive's only when
+    # *every* member is: a junction that keys alike to a real stop within a
+    # kilometre is that stop, and dropping it would lose a place.
+    points = [{"lat": g[0].lat, "long": g[0].long, "label": str(i),
+               "title": g[0].label,
+               **({"from_road": True} if all(p.from_road for p in g) else {})}
               for i, g in enumerate(main_groups, start=1)]
     stay = itinerary.stay_for(day.date)
     stay_coord = None

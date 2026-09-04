@@ -486,11 +486,16 @@ DAY_SPECS = [
     Spec("bank_holiday", False, "whether the day is a public holiday where you are "
          "— shown as a banner above the day's activities", "true or false",
          "false (an ordinary day)", V_BOOL),
-    # Required like any other field, so an absent key reads the same as a missing
-    # `title`. The *present but empty* case can't be a field check and stays in
-    # the validator's `_day` (an empty array is "present").
-    Spec("activities", True, "the day's items, in order (at least one)",
-         "a non-empty array of activity objects, each with a 'type'"),
+    # Optional, and empty is allowed: a travel day carried by one flight, or a
+    # night whose only entry is the hotel, has no timeline of its own and still
+    # prints a full page. Both spellings of "none" have to be accepted, because
+    # the Edit tab's save path prunes an empty array away (`edit/serialize.ts`),
+    # so its own output would fail a required check. The day with nothing on it
+    # *at all* is the validator's `_day` warning, which a field check couldn't
+    # see either way (an empty array is "present").
+    Spec("activities", False, "the day's items, in order",
+         "an array of activity objects, each with a 'type'",
+         "[] (no timeline of its own — a page of bookings, or a blank rest day)"),
 ]
 
 # A booking holds what is reserved once; its `legs` hold what moves once. The

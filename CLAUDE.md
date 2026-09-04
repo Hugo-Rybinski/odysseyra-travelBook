@@ -227,6 +227,26 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   exception to the top-level fallback**: it is read from its own object only,
   since it's new (no older shape to support) and a bare top-level
   `emergency_contacts` would read as a fifth content array.
+- **A day's `activities` is optional and may be empty** — unlike a booking's
+  `legs` or a road's, which really cannot be. A travel day carried by one
+  flight, or a night whose only entry is the hotel, has no timeline of its own,
+  and the page still prints its header band, that leg's row and the stay bar (as
+  do the viewer's day card and the `.ics`). It used to be a required,
+  non-empty-checked field, i.e. an **error** on a perfectly well-written day —
+  and one the Edit tab's own save path produced, since `edit/serialize.ts`
+  prunes an empty array away entirely, so emptying a day there and saving made
+  the file invalid. The absent key and the empty array are therefore the *same*
+  case, and neither renderer ever blocked on it (`build` reports errors without
+  refusing to print; the viewer never gated on them at all). What survives is a
+  **warning** from `validator.py`'s `_day` for a day with nothing on it *at
+  all*: no activities **and** no transport leg, accommodation night or car
+  pick-up/drop-off on the date. Judging that needs the resolved dates (a day's
+  `date` is normally inferred from its index), so `_booked_on` goes through the
+  memoized `_model()` — and when the file won't build, or a lone `day` fragment
+  is being validated, it can't tell and the warning fires. `pdf/days.py` already
+  omitted the *Itinerary* heading for an empty timeline; `DayCard.tsx` now skips
+  the whole `<ol className="timeline">`, whose padding would otherwise leave a
+  gap between the band and the stay bar.
 - **Maps & coordinates.** Every locatable object may carry an optional
   `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
   segments use `start_/end_coordinate` (a **road leg**, a transport **leg**) or
@@ -293,6 +313,20 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   are unchanged — `tests/test_pin_folding.py` is where the behaviour lives.
   Because it changes an existing resolved-`Day` field's *value*, it needed a
   `SCHEMA_VERSION` bump (**v21**).
+- **The cover's HIGHLIGHTS cell** (`pdf/cover.py`'s `_day_highlights` /
+  `Cover.tsx`'s `highlightsOf` — keep the two in step) lists a day's points of
+  interest, places and hikes, its long drives (>60 min) and its transport legs,
+  in time order. A **detour** is never one (see that bullet), and a **drive is
+  dropped once the day has two other stops**: the drive is how you got to them
+  rather than what the day is for, and this is a few words on a table row, so
+  `Road Amboise → Sarlat-la-Canéda` was crowding out the château it delivered
+  you to. Below two it stays, so a day of one visit plus a long transfer still
+  reads as both, and a day with *nothing* else still falls back to its drives —
+  short ones included, which is the case that fallback exists for. Only
+  *activities* count toward the two: a transport leg is not one, and a flight
+  day is exactly when the drive to the airport is worth naming. Four rows of
+  the examples changed (`france.json` days 4 and 7, `pyrenees.json` days 3 and
+  4); `tests/test_cover_highlights.py` is where the rule lives.
 - **The whole-trip map** (`maps/build.py`'s `render_trip_map`, drawn by
   `pdf/trip_map.py` on its own page after the cover) is a **port of the viewer's
   🗺️ Overview map** (`web/src/render/tripGeo.ts`) — every day's points merged into
@@ -306,7 +340,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `_TRIP_PIN_GRID` (~4 km) share one pin, since a page pin says only *which day*
   — a city day would otherwise fan into a pinwheel of identical numbers. The
   viewer's own note naming what it left out was removed (the user found it noise),
-  so neither renderer discloses trimmed geometry now.
+  so neither renderer discloses trimmed geometry now. Two kinds of point are
+  left out of both, for the same reason — at this zoom they say nothing the day
+  number doesn't: an **area's nested points** (they collapse into its one main
+  pin) and a **drive's own points** (its departure, junctions and arrival — see
+  the `display_*_on_maps` bullet; the drive is drawn as a route already).
 - **A hike's GPX.** A `hike` may carry `gpx`: the `.gpx` file base64-encoded
   (gzip transparently inflated, a `data:` prefix stripped, line wrapping fine).
   `models/gpx.py` reduces it to a `GpxTrack` — a simplified map line plus a
@@ -485,9 +523,22 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     — the title bunched its discs at the front then, so the number sat against
     the wrong town — and the row was pure duplication once the discs moved
     mid-line. `show_on_map: false` still suppresses a pin.
-    The whole-trip map is deliberately untouched: a pin there carries the
-    **day**, not the stop, and `tripGeo.ts`'s model fallback already draws every
-    named road point.
+    **None of these three pins reach the whole-trip map**, in either renderer.
+    A pin there carries the **day**, not the stop, and the drive is drawn as a
+    route — so its departure, its junctions and its arrival would only stack
+    more copies of that same day number along the line it is already drawn as,
+    and `display_intermediate_point_on_maps` being on by default meant every
+    multi-leg drive contributed several. The two paths that had to learn it are
+    `maps/build.py`'s `resolve_trip` (which filters `_Pt.from_road`, a flag
+    `resolve_day` sets on exactly the points this bullet is about) and
+    `tripGeo.ts`, both of whose sources drew them: its `modelPoints` fallback
+    walked a road's named waypoints explicitly, and its `day.map.geo` branch
+    took the day map's points wholesale, which is why `bridge.py`'s `_day_geo`
+    now marks a point `from_road` for it to skip — a folded pin group counts as
+    a drive's only when **every** member is, since a junction that keys alike to
+    a real stop within a kilometre *is* that stop. The *day* map is unchanged:
+    there a numbered junction is what identifies it. Since `map.geo.points`
+    gains a field, this needed a `SCHEMA_VERSION` bump (**v26**).
   - **A drive can share an end with the activity beside it** —
     `same_start_as_previous_activity` / `same_end_as_next_activity`, both
     **off**. Most drives on a day leave where the last activity left you and

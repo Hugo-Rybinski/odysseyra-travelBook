@@ -373,7 +373,7 @@ list of **activities**.
 | `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda") — **always fill it**, see below. |
 | `description` | no | text | none | An intro paragraph for the day — **always write one**, see below. |
 | `bank_holiday` | no | `true` / `false` | `false` | `true` if the day is a **public holiday** in the country you're in — **look these up**, see below. |
-| `activities` | **yes** | array (non-empty) | — | The ordered timeline — see below. |
+| `activities` | no | array | `[]` | The ordered timeline — see below. Empty is allowed for a day the sources give nothing to do: a travel day carried by one flight, or a night that is only the hotel. Never invent filler to avoid an empty one. |
 
 **How to fill a day's `city`.** It is printed in the day's header band beside the
 date, so it must be short — a place label, never a sentence. Fill it on **every**
@@ -484,6 +484,15 @@ the right slot: you lose nothing by keeping it out of `activities`, and putting
 it in both **double-books** the day. The same goes for an inter-city bus or
 ferry. A short local transfer *may* stay a `road` activity — the taxi across town
 to the airport, say — but the flight it delivers you to is a `transport` entry.
+
+**So a day may end up with an empty `activities`, and that is fine.** A day whose
+only content is one flight and a hotel has nothing left to put on its timeline
+once both are in their proper arrays — write `"activities": []` and move on. The
+day still prints its header band, that leg's row and the stay bar. Do **not**
+invent a stop, a buffer or a "settle in at the hotel" filler to avoid the empty
+array: a made-up activity is worse than a quiet day, and the validator's own
+message says as much (it warns only about a day with *nothing* on it at all — no
+activities and no leg, stay or car event either).
 
 **An airport or a station is not a stop.** When a terminal appears only because a
 flight, train, bus or ferry leaves from it or lands there, it belongs in that
@@ -670,7 +679,7 @@ entry, never a road.
 | `distance_km` | recommended | positive number | Driving distance for the **whole** drive. A road should carry a duration (its own/inferred times, or its legs') **and** a `distance_km`; `validate` warns naming either that's missing. |
 | `display_start_on_maps` | no | boolean | `true` to give the drive's departure a numbered map pin. Default `false`. |
 | `display_end_on_maps` | no | boolean | `true` to give the drive's final arrival a numbered map pin. Default `false`. |
-| `display_intermediate_point_on_maps` | no | boolean | Give every junction between two legs a numbered map pin. Default **`true`** — set it `false` only to *stop* pinning them. |
+| `display_intermediate_point_on_maps` | no | boolean | Give every junction between two legs a numbered map pin (on the **day** map — the whole-trip map never pins a drive's own points). Default **`true`** — set it `false` only to *stop* pinning them. |
 | `same_start_as_previous_activity` | no | boolean | `true` if the drive departs from the **previous** activity's place. The first leg's `start_location` / `start_coordinate` may then be omitted, and the departure shares that activity's map pin. Default `false`. |
 | `same_end_as_next_activity` | no | boolean | `true` if the drive arrives at the **next** activity's place. The last leg's `end_location` / `end_coordinate` may then be omitted, and the arrival shares that activity's map pin. Default `false`. |
 | `description` | no | text | Free prose for what the other fields can't say — see below. |
@@ -768,7 +777,9 @@ Each **leg** is an object:
   drive gets a pin. Note the defaults are **not** uniform:
   `display_intermediate_point_on_maps` is already **`true`**, so omitting it
   pins the junctions — write it out only as `false`, when the user wants them
-  unpinned. The two ends default `false`.
+  unpinned. The two ends default `false`. All three affect the **day** map only:
+  the whole-trip map never pins a drive's own points, since a pin there carries
+  the day number and the drive is drawn as a route.
 - **`same_start_as_previous_activity` / `same_end_as_next_activity` are facts,
   not presentation** — unlike the switches above, so do set them when the drive's
   end really is the neighbouring activity's place: "after the château, drive to

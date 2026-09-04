@@ -259,25 +259,30 @@ export function DayCard({
             <MapLoading lang={lang} />
           ) : null}
 
-          <ol className="timeline">
-            {timeline.map((item, i) =>
-              item.kind === "car" ? (
-                <CarEventRow key={i} event={item.event} lang={lang} />
-              ) : item.kind === "transport" ? (
-                <TransportRow key={i} t={item.t} lang={lang} />
-              ) : (
-                <ActivityRow
-                  key={i}
-                  act={item.act}
-                  lang={lang}
-                  dayMap={day.map}
-                  interactive={interactive}
-                  dayIndex={day.day_number - 1}
-                  roadIndex={roadOrdinals.get(item.act)}
-                />
-              ),
-            )}
-          </ol>
+          {/* A day may legitimately have nothing on its timeline — one flight,
+              or just the hotel. The list's own padding would then leave a gap
+              between the band and the stay bar, so it isn't drawn at all. */}
+          {timeline.length > 0 && (
+            <ol className="timeline">
+              {timeline.map((item, i) =>
+                item.kind === "car" ? (
+                  <CarEventRow key={i} event={item.event} lang={lang} />
+                ) : item.kind === "transport" ? (
+                  <TransportRow key={i} t={item.t} lang={lang} />
+                ) : (
+                  <ActivityRow
+                    key={i}
+                    act={item.act}
+                    lang={lang}
+                    dayMap={day.map}
+                    interactive={interactive}
+                    dayIndex={day.day_number - 1}
+                    roadIndex={roadOrdinals.get(item.act)}
+                  />
+                ),
+              )}
+            </ol>
+          )}
 
           <StayBar day={day} lang={lang} />
         </>

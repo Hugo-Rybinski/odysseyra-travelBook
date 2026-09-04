@@ -108,11 +108,22 @@ export function Cover({
 // Time-ordered highlights, mirroring the PDF cover: POIs / places / hikes,
 // long drives (>60 min), and transport legs — falling back to the drives, then
 // the day title.
+const STOP_TYPES = ["point_of_interest", "place", "hike"];
+
 function highlightsOf(day: Day, lang: Lang): string {
   const items = [
     ...day.activities.map((a) => ({ t: a.start_time ?? "", act: a })),
     ...day.transports.map((tp) => ({ t: tp.start_time ?? "", transport: tp })),
   ].sort((a, b) => a.t.localeCompare(b.t));
+
+  // A drive is dropped once the day has two other stops to advertise: it is how
+  // you got to them, not what the day is for, and this cell is a few words on a
+  // table row. Below two it stays, so a day of one visit and a long transfer
+  // still reads as both. Only activities count toward the two — a transport leg
+  // isn't one. Keep in step with the PDF cover's `_day_highlights`.
+  const stops = day.activities.filter(
+    (a) => !a.detour && STOP_TYPES.includes(a.type),
+  ).length;
 
   const titles: string[] = [];
   for (const item of items) {
@@ -122,9 +133,9 @@ function highlightsOf(day: Day, lang: Lang): string {
       // so listing it here would advertise the day as something it isn't. The
       // PDF cover's `_day_highlights` skips them too.
       if (a.detour) continue;
-      if (a.type === "point_of_interest" || a.type === "place" || a.type === "hike") {
+      if (STOP_TYPES.includes(a.type)) {
         titles.push(a.title);
-      } else if (a.type === "road" && (a.duration_min ?? 0) > 60) {
+      } else if (a.type === "road" && (a.duration_min ?? 0) > 60 && stops < 2) {
         titles.push(`${tr(lang, "road")} ${a.title}`.trim());
       }
     } else {

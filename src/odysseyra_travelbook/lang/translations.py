@@ -205,10 +205,12 @@ _FR = {
         "Attendu : un tableau d'objets hébergement. Valeur par défaut : [] "
         "(pas de page hébergement).",
     "each day must be an object": "chaque jour doit être un objet",
-    "a day's 'activities' must not be empty — every day needs at least one "
-    "activity.":
-        "le champ « activities » d'un jour ne doit pas être vide — chaque jour "
-        "a besoin d'au moins une activité.",
+    "this day has nothing on it — 'activities' is empty and no transport, "
+    "accommodation or car rental falls on this date. It will print as an empty "
+    "day.":
+        "cette journée est totalement vide — « activities » ne contient rien et "
+        "aucun transport, hébergement ni location de voiture ne tombe à cette "
+        "date. Elle sera imprimée telle quelle.",
     "each activity must be an object with a 'type'":
         "chaque activité doit être un objet avec un « type »",
     "a nested activity must be an object with a 'type' of one of: {allowed}.":
@@ -687,10 +689,13 @@ _FR = {
     "the city/region label": "le libellé de ville/région",
     "the day's date": "la date du jour",
     "an intro paragraph for the day": "un paragraphe d'intro pour le jour",
-    "the day's items, in order (at least one)":
-        "les éléments du jour, dans l'ordre (au moins un)",
-    "a non-empty array of activity objects, each with a 'type'":
-        "un tableau non vide d'objets activité, chacun avec un « type »",
+    "the day's items, in order":
+        "les éléments du jour, dans l'ordre",
+    "an array of activity objects, each with a 'type'":
+        "un tableau d'objets activité, chacun avec un « type »",
+    "[] (no timeline of its own — a page of bookings, or a blank rest day)":
+        "[] (pas de programme propre — une page de réservations, ou une "
+        "journée de repos vide)",
     "the departure address": "l'adresse de départ",
     "the arrival address": "l'adresse d'arrivée",
     "intermediate stops the route passes through":

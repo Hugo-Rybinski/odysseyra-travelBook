@@ -204,6 +204,12 @@ class _Pt:
     lat: float
     long: float
     act: object = None      # the source activity, to map it back to its pin number
+    # This point is one of a **drive's** own points (its departure, a junction,
+    # its arrival — `Road.display_*_on_maps`) rather than a stop of its own. The
+    # day map pins them like any other; the whole-trip map drops them, where a
+    # drive is already drawn as a route and its junctions would only crowd the
+    # day numbers. See `resolve_trip`.
+    from_road: bool = False
 
 
 # How close two same-named points must be to count as one place, in km. A day
@@ -390,9 +396,11 @@ def resolve_day(day, itinerary, cache):
             # previous activity's place, which is pinned already (`pin_aliases`).
             if (act.display_start_on_maps and a and act.start_shared_with is None
                     and (act.coordinate is None or act.coordinate.show_on_map)):
-                main.append(_Pt(act.start or act.title, a[0], a[1], act))
+                main.append(_Pt(act.start or act.title, a[0], a[1], act,
+                                from_road=True))
             for wp in act.pinned_waypoints():
-                main.append(_Pt(wp.location, wp.coordinate.lat, wp.coordinate.long, wp))
+                main.append(_Pt(wp.location, wp.coordinate.lat, wp.coordinate.long,
+                                wp, from_road=True))
             continue
         if act.kind == "place":
             nested = []
@@ -549,6 +557,12 @@ def resolve_trip(itinerary, cache):
       a day*; a place revisited on another day keeps its own pin, since the pin
       carries the day. That night's accommodation is a point like any other — the
       trip map has no ★, since at this zoom the day number is what matters.
+      A **drive's** own points are left out (`_Pt.from_road`): the drive is
+      already drawn as a route here, and its departure, junctions and arrival
+      would only stack more copies of the same day number along that line —
+      `display_intermediate_point_on_maps` is on by default, so a multi-leg
+      drive alone would have contributed several. They stay on the *day* map,
+      where a numbered junction is what identifies it.
     * ``routes`` — each day's drive geometries.
     * ``legs`` — one straight ``[origin, destination]`` pair per transport leg
       with both endpoints mapped. Taken from the trip's own transport list, so an
@@ -565,7 +579,7 @@ def resolve_trip(itinerary, cache):
     for n, day in enumerate(itinerary.days, start=1):
         label = str(n)
         main, day_routes, _nodes, _areas = resolve_day(day, itinerary, cache)
-        spots = [(p.lat, p.long) for p in main]
+        spots = [(p.lat, p.long) for p in main if not p.from_road]
         stay = itinerary.stay_for(getattr(day, "date", None))
         if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
             spots.append((stay.coordinate.lat, stay.coordinate.long))

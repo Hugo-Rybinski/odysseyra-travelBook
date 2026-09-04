@@ -687,6 +687,57 @@ def test_resolve_trip_pins_the_nights_stay(tmp_path):
     assert labels == ["1", "1"]   # the stay is day 1's pin too — no ★ at this zoom
 
 
+def _trip_with_a_pinned_drive():
+    """A day of one visit and a two-leg drive with every one of its own points
+    pinned — the departure, the junction and the arrival."""
+    return {
+        "travel_description": {"title": "T", "cover_color": "#2f6b4f"},
+        "defaults": {"include_maps_in_render": True},
+        "days": [{"title": "d", "date": "2026-06-01", "city": "X", "activities": [
+            {"type": "point_of_interest", "name": "Sight",
+             "coordinate": {"lat": 47.0, "long": 1.0}},
+            {"type": "road", "duration": "3h",
+             "display_start_on_maps": True,
+             "display_intermediate_point_on_maps": True,
+             "display_end_on_maps": True,
+             "legs": [
+                 {"start_location": "Amboise",
+                  "start_coordinate": {"lat": 47.4, "long": 0.98},
+                  "end_location": "Limoges",
+                  "end_coordinate": {"lat": 45.83, "long": 1.26}},
+                 {"end_location": "Sarlat",
+                  "end_coordinate": {"lat": 44.89, "long": 1.21}},
+             ]},
+        ]}],
+    }
+
+
+def test_a_day_map_pins_a_drives_own_points(tmp_path):
+    # The baseline the next test is a departure from: on a *day* map a numbered
+    # junction is what identifies it, so all three points earn a pin.
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_day
+
+    it = Itinerary.from_dict(_trip_with_a_pinned_drive())
+    main, _routes, _nodes, _areas = resolve_day(it.days[0], it, Cache.open(tmp_path))
+    assert [p.label for p in main] == ["Sight", "Amboise", "Limoges", "Sarlat"]
+    assert [p.from_road for p in main] == [False, True, True, True]
+
+
+def test_the_trip_map_leaves_out_a_drives_own_points(tmp_path):
+    """The whole-trip map draws the drive as a route, so pinning the places
+    along it would stack copies of the same day number on that line. Only the
+    day's actual stops are pinned there."""
+    from odysseyra_travelbook.maps import Cache
+    from odysseyra_travelbook.maps.build import resolve_trip
+
+    it = Itinerary.from_dict(_trip_with_a_pinned_drive())
+    points, labels, routes, _legs = resolve_trip(it, Cache.open(tmp_path))
+    assert points == [(47.0, 1.0)]      # the sight alone, not the drive's three
+    assert labels == ["1"]
+    assert routes, "the drive itself is still drawn"
+
+
 def test_trip_map_is_never_framed_on_a_leg_but_still_draws_it(monkeypatch, tmp_path):
     """A transatlantic departure must not frame a France tour on the ocean: like
     a day map, the trip map ignores legs when framing and lets the dotted line

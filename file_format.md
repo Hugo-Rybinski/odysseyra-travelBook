@@ -18,8 +18,9 @@ guide an LLM uses to write one of these from raw notes.
 - [`accommodations[]`](#accommodations)
 - [`car_rentals[]`](#car_rentals)
 
-Each day needs a `title`, each day needs at least one activity, and `days` must
-be non-empty; everything else is optional and falls back to a sensible default.
+Each day needs a `title` and `days` must be non-empty; everything else is
+optional and falls back to a sensible default — a day's `activities` included,
+since a day may be carried by a transport leg or a stay alone.
 
 ## Global structure
 
@@ -342,7 +343,14 @@ Every day needs a `title` and a non-empty `activities` array.
 | `date` |  | The day's date (matched to stays & transport) | string | `YYYY-MM-DD` | trip start date + the day's index |
 | `description` |  | Intro paragraph for the day | string | any text | `""` |
 | `bank_holiday` |  | The day is a public holiday where you are | bool | `true` / `false` | `false` |
-| `activities` | ✅ | The day's items (at least one) | array | activity objects | — |
+| `activities` |  | The day's items, in order | array | activity objects | `[]` (no timeline of its own) |
+
+**A day with no activities is allowed.** A travel day carried by one flight, or
+a night whose only entry is the hotel, has no timeline of its own — the page
+still prints its header band, that leg's row and the stay bar. The validator
+only *warns*, and only when nothing at all falls on the date: no activities and
+no transport leg, accommodation night or car pick-up/drop-off either. Neither
+renderer blocks on it.
 
 **Bank holidays.** Set `bank_holiday` on a day that falls on a public holiday in
 the country you're in — what's open, and how transport runs, changes. Both
@@ -535,6 +543,12 @@ put two on one place. Say they're the same place with
 [`same_start_as_previous_activity` / `same_end_as_next_activity`](#a-drive-that-shares-an-end-with-its-neighbour)
 instead, and set an end's switch only for a departure or arrival that really is
 a place of its own.
+
+**These pins are for the day map only.** The whole-trip map (the PDF's page
+after the cover, the viewer's 🗺️ Overview) leaves out all three, whatever the
+switches say: a pin there carries the **day number**, and the drive is already
+drawn as a route, so pinning the places along it would just stack copies of that
+one number along the line.
 
 Turn on all three and **every named point of the drive is pinned**. As with any
 other pin, a point whose coordinate says `"show_on_map": false` is left out, and
@@ -778,8 +792,9 @@ another app. It's screen-only: paper can't hand back a file.
 
 A meal is scheduled like any other activity (the shared `start_time` /
 `end_time` / `duration` fields above) but rendered compactly, like a slightly
-accented buffer row rather than a full card — e.g. **Lunch at Le Magret**. A
-named restaurant is also listed in the cover overview's highlights.
+accented buffer row rather than a full card — e.g. **Lunch at Le Magret**. It is
+not listed in the cover overview's highlights: those are the sights, hikes and
+journeys the day is *for*.
 
 `meal_type` is optional. If omitted it is inferred from the start time —
 **breakfast** before `defaults.breakfast_until` (10:00), **lunch** up to

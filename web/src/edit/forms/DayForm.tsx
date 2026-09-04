@@ -38,7 +38,7 @@ export function DayForm({ day, path, onChange }: DayFormProps) {
             label: t(ACTIVITY_TYPE_LABELS[ty]).toLowerCase(),
             make: () => newActivity(ty),
           }))}
-          emptyLabel={t("No activities — a day needs at least one.")}
+          emptyLabel={t("No activities — fine if a booking covers this day.")}
           renderItem={(a, _i, onItemChange, itemPath) => (
             <ActivityForm
               activity={a}

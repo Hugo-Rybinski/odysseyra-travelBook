@@ -25,7 +25,7 @@
 ⚠️  line 25: optional field 'contact' is missing — how to reach them — a phone number, an email or an address. Expected any text. Defaulting to "" (nothing to call — the entry is a label only).
 ⚠️  line 26: this emergency contact is empty — give it a 'name', a 'contact', or both, or drop it.
 ❌  line 27: each emergency contact must be an object with a 'name' and a 'contact'.
-❌  line 31: a day's 'activities' must not be empty — every day needs at least one activity.
+⚠️  line 31: this day has nothing on it — 'activities' is empty and no transport, accommodation or car rental falls on this date. It will print as an empty day.
 ⚠️  line 31: the day's city ('Lyon') doesn't match the accommodation city ('Paris').
 ℹ️  line 31: optional field 'description' is missing — an intro paragraph for the day. Expected any text. Defaulting to "".
 ℹ️  line 31: the night of 2026-06-09 has both an accommodation and an overnight transport — using the accommodation.
@@ -621,4 +621,4 @@
 ❌  line 143: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 143: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-88 error(s), 43 warning(s), 491 info.
+87 error(s), 44 warning(s), 491 info.

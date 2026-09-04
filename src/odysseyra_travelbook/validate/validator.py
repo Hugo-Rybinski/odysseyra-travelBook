@@ -379,7 +379,7 @@ class _Validator:
                      "days. Expected a non-empty array of day objects.")
         else:
             for i, day in enumerate(days):
-                self._day(day, ("days", i))
+                self._day(day, ("days", i), index=i)
 
         transport = data.get("transport")
         if transport is None:
@@ -415,17 +415,28 @@ class _Validator:
         return self.findings
 
     # -- day & activities ----------------------------------------------
-    def _day(self, day, path):
+    def _day(self, day, path, index=None):
         if not isinstance(day, dict):
             self.add("error", path, "each day must be an object")
             return
         self.check_object(day, path, DAY_SPECS)
         activities = day.get("activities")
-        # An absent key is the standard required-field error (DAY_SPECS); this is
-        # the case a field check can't see — the key is there, but empty.
-        if activities is not None and not activities:
-            self.add("error", path, "a day's 'activities' must not be empty — every "
-                     "day needs at least one activity.")
+        # A **warning**, not an error, and only when nothing else falls on the
+        # date: a travel day carried by one flight, or a night whose only entry
+        # is the hotel, has an empty timeline and is perfectly well written — the
+        # day page still prints its band, its stay bar and that leg's row. So the
+        # thing worth reporting is a day with nothing on it *at all*, and even
+        # that only softly: both books render it, and a deliberately blank rest
+        # day is a legitimate way to write one.
+        #
+        # An absent key and an empty array are the same case here. They can't be
+        # left to the field check (an empty array is "present", so it never sees
+        # one) and they mustn't diverge, because the Edit tab writes the day both
+        # ways — its save path prunes an empty array away entirely.
+        if not activities and not self._booked_on(index):
+            self.add("warning", path, "this day has nothing on it — 'activities' "
+                     "is empty and no transport, accommodation or car rental "
+                     "falls on this date. It will print as an empty day.")
         for j, act in enumerate(activities or []):
             self._activity(act, path + ("activities", j),
                            siblings=activities or [], index=j)
@@ -1699,6 +1710,25 @@ class _Validator:
             except ItineraryError:
                 self._model_cache = None
         return self._model_cache
+
+    def _booked_on(self, index):
+        """True when the day at ``index`` is covered by a transport leg, an
+        accommodation night or a car pick-up/drop-off — the associations the
+        resolved day carries beside its timeline, so an empty ``activities`` is
+        a day that still has something on its page.
+
+        Needs the model: a day's ``date`` is normally *inferred* from the trip
+        start plus its index, so the raw JSON usually doesn't say which date to
+        match a booking against. Returns False when there is no index (a lone
+        ``day`` fragment has no bookings to consult) or the file won't build —
+        i.e. when we can't tell, the warning is left to fire."""
+        itinerary = self._model()
+        if index is None or itinerary is None or index >= len(itinerary.days):
+            return False
+        when = itinerary.days[index].date
+        return bool(itinerary.transports_on(when)
+                    or itinerary.car_events_on(when)
+                    or itinerary.stay_for(when))
 
     def _resolved_activities(self):
         """Yield ``(built_day, raw_path, built_activity)`` for every non-buffer

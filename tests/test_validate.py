@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 
+import pytest
+
 from odysseyra_travelbook import format_findings, validate_text
 from odysseyra_travelbook.validate import load_with_lines
 
@@ -514,23 +516,65 @@ def test_empty_days_is_error():
         assert _errors(validate_text(json.dumps(doc)))
 
 
-def test_empty_activities_is_error():
+def test_a_day_with_nothing_on_it_warns_but_is_not_an_error():
+    # An empty timeline is never an error: the page still prints, so the most
+    # this can be is a soft note — and only for a day with nothing at all on it.
     doc = {"travel_description": {"title": "T"},
            "days": [{"title": "d", "activities": []}]}
-    msgs = _messages(_errors(validate_text(json.dumps(doc))))
-    assert "'activities' must not be empty" in msgs
-    # …and only that: an empty array *is* present, so the required-field check
-    # has nothing to say about it.
-    assert "required field 'activities' is missing" not in msgs
+    findings = validate_text(json.dumps(doc))
+    assert not _errors(findings)
+    assert "this day has nothing on it" in _messages(_warnings(findings))
 
 
-def test_missing_activities_is_the_standard_required_field_error():
-    # `activities` is a required field like `title` (DAY_SPECS), so an absent key
-    # reads the same as any other missing one rather than as "must not be empty".
+def test_an_absent_activities_key_is_the_same_case_as_an_empty_one():
+    # The Edit tab writes the day both ways — its save path prunes an empty
+    # array away — so the two must not diverge. Absent is an optional-field
+    # info plus the same warning; neither is an error.
     doc = {"travel_description": {"title": "T"}, "days": [{"title": "d"}]}
-    msgs = _messages(_errors(validate_text(json.dumps(doc))))
-    assert "required field 'activities' is missing" in msgs
-    assert "'activities' must not be empty" not in msgs
+    findings = validate_text(json.dumps(doc))
+    assert not _errors(findings)
+    assert "this day has nothing on it" in _messages(_warnings(findings))
+    assert "optional field 'activities' is missing" in _messages(_infos(findings))
+
+
+@pytest.mark.parametrize("booking", [
+    {"transport": [{"type": "train", "legs": [
+        {"start": "Paris", "end": "Lyon", "start_date": "2026-06-08",
+         "start_time": "09:00", "duration": "2h"}]}]},
+    {"accommodations": [{"name": "H", "city": "Lyon", "arrival": "2026-06-08",
+                         "departure": "2026-06-09"}]},
+    {"car_rentals": [{
+        "booking_start_date": "2026-06-08", "booking_start_time": "08:00",
+        "booking_end_date": "2026-06-09", "booking_end_time": "20:00",
+        "pickup_date": "2026-06-08", "pickup_time": "12:00",
+        "pickup_location": "Airport",
+        "dropoff_date": "2026-06-09", "dropoff_time": "18:00"}]},
+])
+def test_an_empty_day_a_booking_covers_says_nothing(booking):
+    """A travel day carried by one leg, or a night that is only the hotel, has
+    no timeline of its own and is perfectly well written — the day page still
+    prints that row and its stay bar, so there is nothing to report."""
+    doc = {"travel_description": {"title": "T"},
+           "days": [{"title": "d", "date": "2026-06-08", "activities": []}]}
+    doc.update(booking)
+    findings = validate_text(json.dumps(doc))
+    assert not _errors(findings)
+    assert "this day has nothing on it" not in _messages(_warnings(findings))
+
+
+def test_an_empty_day_matches_a_booking_by_its_inferred_date():
+    # A day's `date` is normally inferred from the trip start plus its index, so
+    # the check has to read the *resolved* dates: day 2 states no date at all
+    # and is still the day the leg departs on.
+    doc = {"travel_description": {"title": "T", "start_date": "2026-06-08"},
+           "days": [{"title": "d1", "activities": [
+                        {"type": "point_of_interest", "name": "P"}]},
+                    {"title": "d2", "activities": []}],
+           "transport": [{"type": "plane", "legs": [
+               {"start": "Lyon", "end": "Rome", "start_date": "2026-06-09",
+                "start_time": "09:00", "duration": "2h"}]}]}
+    findings = validate_text(json.dumps(doc))
+    assert "this day has nothing on it" not in _messages(_warnings(findings))
 
 
 def _one_day(activities, **extra):

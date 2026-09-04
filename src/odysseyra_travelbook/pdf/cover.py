@@ -110,14 +110,26 @@ class CoverMixin:
 
         A **detour** is never a highlight: it's the stop you probably won't
         make, so promoting it to the cover would advertise the day as something
-        it isn't. The viewer's `highlightsOf` skips them too."""
+        it isn't. The viewer's `highlightsOf` skips them too.
+
+        A **drive** is dropped once the day has two other stops to advertise: it
+        is how you got to them, not what the day is for, and this cell is a few
+        words on a table row — "Road Amboise → Sarlat-la-Canéda" crowds out the
+        château it delivered you to. Below two it stays, so a day of one visit
+        and a long transfer still reads as both, and a pure driving day still
+        falls back to its drives. Only *activities* count toward the two:
+        a transport leg isn't one, and a flight day is exactly when the drive
+        to the airport is worth naming."""
+        items = [it for it in self._day_items(day)
+                 if not getattr(it, "detour", False)]
+        stops = sum(1 for it in items
+                    if it.kind in ("point_of_interest", "place", "hike"))
         titles = []
-        for item in self._day_items(day):
-            if getattr(item, "detour", False):
-                continue
+        for item in items:
             if item.kind in ("point_of_interest", "place", "hike"):
                 titles.append(item.title)
-            elif item.kind == "road" and (item.duration_min or 0) > 60:
+            elif (item.kind == "road" and (item.duration_min or 0) > 60
+                    and stops < 2):
                 titles.append(f"{self.t('Road')} {item.title}".strip())
             elif item.kind == "transport":
                 ty = self.t(item.type).title() if item.type else ""
