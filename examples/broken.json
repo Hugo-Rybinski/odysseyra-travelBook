@@ -33,6 +33,7 @@
       "city": "Lyon",
       "date": "2026-06-09",
       "bank_holiday": "maybe",
+      "show_map": "sometimes",
       "activities": []
     },
     {
@@ -65,7 +66,7 @@
       "title": "Day three",
       "date": "2026-06-11",
       "activities": [
-        { "type": "place", "name": "Nested demo", "activities": [
+        { "type": "place", "name": "Nested demo", "show_map": "no thanks", "activities": [
           "just a name",
           { "type": "meal", "restaurant": "R" },
           { "type": "point_of_interest", "name": "Outer", "activities": [
@@ -76,7 +77,7 @@
         { "type": "point_of_interest", "name": "Maybe a detour", "detour": "perhaps", "duration": "30 min" },
         { "type": "point_of_interest", "name": "Timed detour", "detour": true, "start_time": "14:00", "end_time": "15:00" },
         { "type": "point_of_interest", "name": "Overstuffed", "duration": "1h", "opening_hours": "10:00-10:00", "activities": [
-          { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h" },
+          { "type": "hike", "name": "Long hike", "distance_km": 5, "duration": "2h", "show_map": 1.5 },
           { "type": "meal", "restaurant": "Slow", "duration": "45 min" }
         ] },
         { "type": "point_of_interest", "name": "Costly", "duration": "30 min",

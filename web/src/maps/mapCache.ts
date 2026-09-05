@@ -95,7 +95,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // drops those now — a drive is a line at trip zoom, and pinning the places along
 // it stacked copies of the same day number on it. A v25 entry has the flag
 // nowhere, so its drives' junctions would go on being pinned there.
-const SCHEMA_VERSION = 26;
+// v27: a day gained `show_map` and every activity gained one of its own — the
+// per-object twin of the trip's map switches (the day's overview map, a place's
+// zoom map, a hike's trail map). A v26 entry carries neither flag *and* was
+// rendered without them, so a day that switches its map off would keep serving
+// the map, its pin numbers and its area maps from the cache.
+const SCHEMA_VERSION = 27;
 
 interface Entry {
   day: Day;

@@ -86,6 +86,14 @@ class Day:
     # A public holiday where you are that day: both renderers open the day with a
     # call-out banner, since it changes what's open and how things run.
     bank_holiday: bool = False
+    # Whether this day draws its **overview map** — the numbered one at the top
+    # of the page — when the trip renders maps at all
+    # (`defaults.include_maps_in_render`). Off, the day's pins lose the map they
+    # were a legend for, so the numbered discs beside its activity titles go with
+    # it. Scoped to that one map: an activity's own map (a place's area zoom, a
+    # hike's trail) has its own `show_map`, and the whole-trip map still carries
+    # the day — that map belongs to the trip, not to the day.
+    show_map: bool = True
     activities: list[Activity] = field(default_factory=list)
 
     @classmethod
@@ -110,6 +118,7 @@ class Day:
             city=str(data.get("city", "")),
             description=str(data.get("description", "")),
             bank_holiday=_parse_bool(data.get("bank_holiday", False)),
+            show_map=_parse_bool(data.get("show_map", True)),
             activities=activities,
         )
 

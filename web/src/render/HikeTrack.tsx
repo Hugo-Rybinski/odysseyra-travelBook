@@ -65,10 +65,16 @@ export function HikeTrackFigure({
 
   if (!track) return null;
   const caption = fill(tr(lang, "hikeMapCaption"), { name: act.title });
+  // The hike's own `show_map` drops the trail **map**, both renderings of it,
+  // and nothing else: the profile below is a chart of figures the hike already
+  // states, and the GPX is still there to download. `defaults.include_hike_maps`
+  // remains the switch for the whole figure. Mirrors pdf/hike_map.py's
+  // `hike_track`, which gates `_hike_map` alone the same way.
+  const wantsMap = act.show_map !== false;
 
   return (
     <div className="hike-track">
-      {interactive ? (
+      {!wantsMap ? null : interactive ? (
         geo &&
         !failed && (
           <MapErrorBoundary key={mapKey} onError={onFail} fallback={null}>

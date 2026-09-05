@@ -46,6 +46,13 @@ class HikeMapMixin:
         A no-op when the hike embeds no ``gpx`` or the trip switched hike maps
         off. Each half degrades on its own: a tile failure loses the map but
         keeps the profile, and a GPX without elevations draws the map alone.
+
+        The hike's own ``show_map`` drops the **map** and nothing else — the
+        profile still draws, and the viewer still offers the GPX for download.
+        The field says *map*, and a profile is a chart of the numbers the hike
+        already states; ``defaults.include_hike_maps`` remains the switch for the
+        whole figure (it also keeps the geometry out of the resolved document,
+        which this can't: the profile needs it).
         """
         track = getattr(hike, "track", None)
         if track is None or not self._hike_maps_enabled():
@@ -54,7 +61,8 @@ class HikeMapMixin:
         # fixed, the column's isn't), so the profile takes the map's box rather
         # than the column's: the two then read as one stacked figure instead of
         # two charts of unrelated widths.
-        box = self._hike_map(hike, track, x, w)
+        box = (self._hike_map(hike, track, x, w)
+               if getattr(hike, "show_map", True) else None)
         self._hike_profile(track, *(box or (x, w)))
 
     # -- the trail map ---------------------------------------------------

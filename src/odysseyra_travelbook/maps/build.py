@@ -351,7 +351,7 @@ def day_legs(day, itinerary):
     return legs
 
 
-def resolve_day(day, itinerary, cache):
+def resolve_day(day, itinerary, cache, *, main: bool = True):
     """Return (main_points, routes, route_nodes, area_details) for a day.
 
     * ``main_points`` — ordered ``[_Pt]``, one per located point activity (a
@@ -362,17 +362,49 @@ def resolve_day(day, itinerary, cache):
     * ``route_nodes`` — ``[[(lat, long), …]]`` the named stops of each route
       (the departure plus each *named* waypoint), for the full-opacity node
       discs on the map. Unnamed route-shaping waypoints are excluded.
-    * ``area_details`` — ``[(title, [_Pt])]`` for places with >= 2 nested points.
+    * ``area_details`` — ``[(title, [_Pt])]`` for places with >= 2 nested points,
+      **unless that place set** ``show_map: false`` — then it draws no zoom map,
+      so there is nothing for its nested points to be resolved onto.
+
+    ``main=False`` (the day's own ``show_map`` is off) returns the first three
+    empty and resolves the areas alone: there is no overview map to place a
+    point, a route or a pin *number* on, and the geocoding and routing they would
+    need is work the day threw away. The areas survive because their maps are
+    switched separately, per place. Only the day's own map answers to this — the
+    whole-trip map calls with the default, since the pin there carries the day,
+    not the stop.
     """
     r = _Resolver(itinerary, cache)
     city = _anchor_city(day.city)
-    main: list[_Pt] = []
+    main_pts: list[_Pt] = []
     routes: list[list[tuple[float, float]]] = []
     route_nodes: list[list[tuple[float, float]]] = []
     areas: list[tuple[str, list[_Pt]]] = []
 
     for act in day.activities:
         if act.kind == "buffer":
+            continue
+        if act.kind == "place":
+            # Resolved even with the main map off: an area's own zoom map is
+            # gated by the *place*, not by the day.
+            nested = []
+            for sub in act.activities:
+                sc = r.point_coord(sub, city)
+                if sc:
+                    nested.append(_Pt(sub.title, sc[0], sc[1], sub))
+            if main:
+                coord = r.point_coord(act, city)
+                hidden = act.coordinate is not None and not act.coordinate.show_on_map
+                if coord is None and nested and not hidden:
+                    # fall back to the centroid of the area's located sub-points
+                    coord = (sum(p.lat for p in nested) / len(nested),
+                             sum(p.long for p in nested) / len(nested))
+                if coord:
+                    main_pts.append(_Pt(act.title, coord[0], coord[1], act))
+            if len(nested) >= 2 and act.show_map:
+                areas.append((act.title, nested))
+            continue
+        if not main:
             continue
         if act.kind == "road":
             # the departure (start/coordinate) plus the waypoints, in order —
@@ -396,39 +428,30 @@ def resolve_day(day, itinerary, cache):
             # previous activity's place, which is pinned already (`pin_aliases`).
             if (act.display_start_on_maps and a and act.start_shared_with is None
                     and (act.coordinate is None or act.coordinate.show_on_map)):
-                main.append(_Pt(act.start or act.title, a[0], a[1], act,
-                                from_road=True))
+                main_pts.append(_Pt(act.start or act.title, a[0], a[1], act,
+                                    from_road=True))
             for wp in act.pinned_waypoints():
-                main.append(_Pt(wp.location, wp.coordinate.lat, wp.coordinate.long,
-                                wp, from_road=True))
-            continue
-        if act.kind == "place":
-            nested = []
-            for sub in act.activities:
-                sc = r.point_coord(sub, city)
-                if sc:
-                    nested.append(_Pt(sub.title, sc[0], sc[1], sub))
-            coord = r.point_coord(act, city)
-            hidden = act.coordinate is not None and not act.coordinate.show_on_map
-            if coord is None and nested and not hidden:
-                # fall back to the centroid of the area's located sub-points
-                coord = (sum(p.lat for p in nested) / len(nested),
-                         sum(p.long for p in nested) / len(nested))
-            if coord:
-                main.append(_Pt(act.title, coord[0], coord[1], act))
-            if len(nested) >= 2:
-                areas.append((act.title, nested))
+                main_pts.append(_Pt(wp.location, wp.coordinate.lat,
+                                    wp.coordinate.long, wp, from_road=True))
             continue
         coord = r.point_coord(act, city)
         if coord:
-            main.append(_Pt(act.title, coord[0], coord[1], act))
-    return main, routes, route_nodes, areas
+            main_pts.append(_Pt(act.title, coord[0], coord[1], act))
+    return main_pts, routes, route_nodes, areas
 
 
 def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
                     lang: str | None = None) -> DayMaps:
-    """Build the main day map and any per-area detail maps (PIL images)."""
-    main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
+    """Build the main day map and any per-area detail maps (PIL images).
+
+    A day that set ``show_map: false`` draws no overview map — and therefore no
+    pin *numbers* either, since those are that map's legend and mean nothing
+    without it. Its places' zoom maps are unaffected: those answer to their own
+    ``show_map``, and keep their A/B/C lettering.
+    """
+    show_main = bool(getattr(day, "show_map", True))
+    main_pts, routes, route_nodes, area_details = resolve_day(
+        day, itinerary, cache, main=show_main)
     accent = _hex_to_rgb(itinerary.cover_color)
     result = DayMaps(aliases=pin_aliases(day))
 
@@ -445,7 +468,8 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
 
     # the night's stay, pinned with ★
     stay = itinerary.stay_for(getattr(day, "date", None))
-    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+    if (show_main and stay is not None and stay.coordinate is not None
+            and stay.coordinate.show_on_map):
         main_points.append((stay.coordinate.lat, stay.coordinate.long))
         main_labels.append(STAY_PIN)
         result.numbers[id(stay)] = STAY_PIN
@@ -460,7 +484,9 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
                     result.numbers[id(p.act)] = chr(ord("A") + j)
 
     nodes = [c for line in route_nodes for c in line]
-    legs = day_legs(day, itinerary)
+    # No overview map, so nothing for a leg's dotted line to be drawn on either
+    # — and no `all_coords`, which is what leaves `result.main` unset below.
+    legs = day_legs(day, itinerary) if show_main else []
     all_coords = list(main_points) + [c for line in routes for c in line]
     # Legs do NOT widen the extent: a transatlantic flight would zoom a day map
     # out to the ocean. It stays framed on the day's own pins and drives, with
@@ -570,6 +596,12 @@ def resolve_trip(itinerary, cache):
 
     Area detail points are skipped: an area's nested points collapse into its
     single main pin at trip zoom, where they would only add clutter.
+
+    A day's own ``show_map`` is deliberately **not** honored here (hence the
+    plain :func:`resolve_day` call): this map belongs to the trip, and its pin
+    says *which day*, so dropping a day would leave a hole in the trip's shape
+    rather than tidy one page. Switching off a day's overview map is a statement
+    about that page.
     """
     points: list[tuple[float, float]] = []
     labels: list[str] = []

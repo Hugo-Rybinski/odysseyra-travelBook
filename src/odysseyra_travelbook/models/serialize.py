@@ -228,6 +228,12 @@ def _activity(itin: Itinerary, act) -> dict:
         # None here: an activity has no payment state (see models/activities.py).
         "price": _price(itin, act.price, act.currency, None),
         "contact": act.contact,
+        # Whether this activity draws its **own** map — a place's zoom map, a
+        # hike's trail map. On the common dict like ``detour``, so the viewer
+        # reads one field wherever it draws one of those; inert on the types
+        # that have no map of their own. Not to be confused with
+        # ``coordinate.show_on_map``, which hides a *pin* on somebody else's map.
+        "show_map": act.show_map,
         **_sched(act, itin.default_timezone),
     }
 
@@ -468,6 +474,11 @@ def _day(itin: Itinerary, index: int, day) -> dict:
         "city": day.city,
         "description": day.description,
         "bank_holiday": day.bank_holiday,
+        # Whether the day draws its overview map. The renderers still receive
+        # whatever the map pass produced (its areas, a hike's trail), so this is
+        # what tells the viewer the empty main slot is a choice rather than a
+        # render still in flight.
+        "show_map": day.show_map,
         "activities": [_activity(itin, a) for a in day.activities],
         # Legs, not bookings: a day is moved by hops. Each carries its
         # booking's shared fields (see _transport_leg).

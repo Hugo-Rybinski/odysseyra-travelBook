@@ -373,6 +373,7 @@ list of **activities**.
 | `city` | no | text | none | City/region label (e.g. "Paris", or "Amboise → Sarlat-la-Canéda") — **always fill it**, see below. |
 | `description` | no | text | none | An intro paragraph for the day — **always write one**, see below. |
 | `bank_holiday` | no | `true` / `false` | `false` | `true` if the day is a **public holiday** in the country you're in — **look these up**, see below. |
+| `show_map` | no | `true` / `false` | `true` | Leave it out. Only emit `false` when the source (or the user) explicitly asks for this day's overview map to be dropped — see *Switching one map off*. |
 | `activities` | no | array | `[]` | The ordered timeline — see below. Empty is allowed for a day the sources give nothing to do: a travel day carried by one flight, or a night that is only the hotel. Never invent filler to avoid an empty one. |
 
 **How to fill a day's `city`.** It is printed in the day's header band beside the
@@ -664,6 +665,25 @@ is plotted by default;
 add `"show_on_map": false` to record one without drawing its pin. With
 `infer_coordinates_from_address` on, activities with no coordinate are geocoded
 from their `name`/`address`; otherwise only explicit coordinates appear.
+
+**Switching one map off (`show_map`).** A `day`, a `place` and a `hike` may each
+carry `show_map` (default `true`), which drops the one map that object draws:
+the day's **overview map** (and the numbered pin discs beside its activity
+titles, which are that map's legend), a place's **zoomed area map** (and its
+nested stops' `A, B, C…` letters), a hike's **trail map** (its elevation profile
+and its downloadable GPX are kept). The three are independent, and nothing else
+accepts the field — a `road` is drawn as a route on the day map, and a
+`point_of_interest` or a `meal` has no map of its own.
+
+- **Never emit it on your own initiative.** It is a presentation choice about a
+  document you are not looking at, and the default draws everything. Emit
+  `false` only when a source or the user says a map should not be drawn ("skip
+  the map for the Paris day", "the GPS trace is a mess — don't draw it"). When
+  *updating* an existing itinerary, keep whatever it already says.
+- **It is not `coordinate.show_on_map`.** They point opposite ways:
+  `show_on_map` hides an object's *pin* on somebody else's map, `show_map` drops
+  the map the object itself draws. A place with `show_map: false` still gets a
+  numbered pin on the day map.
 
 #### Type `road` — a drive or transfer
 
@@ -993,6 +1013,7 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 | `name` | **yes** | text | The place name. |
 | `description` | no | text | |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering the area — the right home for pages shared by its nested stops. |
+| `show_map` | no | `true` / `false` (default `true`) | Leave it out. `false` drops this place's zoomed area map — see *Switching one map off*. |
 | `activities` | no | array of `point_of_interest` / `hike` / `meal` | The things you do there. |
 
 **Group co-located stops under a `place`.** When several activities happen in the
@@ -1026,6 +1047,7 @@ silently overrides three real sub-durations.
 | `end` | no | text | End point. |
 | `route` | no | enum (default `back_and_forth`) | One of `loop`, `back_and_forth`, `one_way`. For `loop`/`back_and_forth`, `end` should match `start` (or be omitted); for `one_way`, `end` should differ. |
 | `gpx` | no | base64 string | The trail's `.gpx` file, base64-encoded (gzip accepted). Drawn as a trail map + elevation profile. **Only emit this when you were given the actual GPX file** — see *Embedding a GPX track* below. |
+| `show_map` | no | `true` / `false` (default `true`) | Leave it out. `false` drops this hike's trail map and keeps its elevation profile — see *Switching one map off*. |
 | `activities` | no | array of **meal** objects | Meal stops along the hike. |
 
 **Embedding a GPX track.** When a GPX file is available to you *as a file*, put

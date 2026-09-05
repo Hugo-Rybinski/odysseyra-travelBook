@@ -484,6 +484,11 @@ export const FR: Record<string, string> = {
   "Bank holiday": "Jour férié",
   "Switch on if the day is a public holiday where you are — the day then opens with a banner warning about closures and reduced hours. Defaults to off.":
     "Activez si le jour est un jour férié là où vous êtes — le jour s'ouvre alors sur une bannière signalant fermetures et horaires réduits. Désactivé par défaut.",
+  // `show_map`, one label per level: the day's overview map here, the place's
+  // area map and the hike's trail map with their own types below.
+  "Show the day map": "Afficher la carte du jour",
+  "Draw this day's overview map, with the numbered pins its activity titles refer to. Only does anything when the trip renders maps at all (Defaults → Include maps in render). Switch it off for a day the map says nothing about — the numbered discs go with it, since they were that map's legend. A place's zoomed area map and a hike's trail map are switched on those activities, and the whole-trip map keeps the day either way. Defaults to on.":
+    "Dessine la carte d'ensemble de ce jour, avec les pastilles numérotées auxquelles renvoient les titres de ses activités. N'a d'effet que si le voyage affiche des cartes (Valeurs par défaut → Inclure les cartes dans le rendu). Désactivez-la pour un jour dont la carte ne dit rien — les pastilles numérotées disparaissent avec elle, puisqu'elles en étaient la légende. La carte zoomée d'un lieu et la carte du tracé d'une randonnée se règlent sur ces activités, et la carte de tout le voyage garde le jour dans les deux cas. Activé par défaut.",
 
   // Scheduled (shared)
   "previous item's end / defaults.start_time":
@@ -574,6 +579,9 @@ export const FR: Record<string, string> = {
   "Place name": "Nom du lieu",
   "Place name (e.g. a town) grouping the nested activities. Required.":
     "Nom du lieu (ex. une ville) regroupant les activités imbriquées. Obligatoire.",
+  "Show the area map": "Afficher la carte du lieu",
+  "Draw the zoomed map of this place's nested activities (lettered A/B/C…), below the place on the day page. Switching it off leaves the place its own numbered pin on the day map — this is not the coordinate's “Show on map”, which hides that pin instead. Defaults to on.":
+    "Dessine la carte zoomée des activités imbriquées de ce lieu (lettrées A/B/C…), sous le lieu sur la page du jour. La désactiver laisse au lieu sa propre pastille numérotée sur la carte du jour — ce n'est pas le « Afficher sur la carte » de la coordonnée, qui masque cette pastille. Activé par défaut.",
 
   // Hike
   "Hike name": "Nom de la randonnée",
@@ -592,6 +600,9 @@ export const FR: Record<string, string> = {
   "GPX track": "Trace GPX",
   "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional.":
     "Un fichier .gpx du sentier, enregistré dans l'itinéraire lui-même. Dessiné sous forme de tracé et de profil altimétrique, et il complète la distance et le dénivelé si vous les laissez vides. Facultatif.",
+  "Show the trail map": "Afficher la carte du tracé",
+  "Draw the map of the GPX trail. The elevation profile is kept either way, and the GPX is still offered for download — this only drops the map. To hide the whole figure for every hike, use Defaults → Include hike maps. Defaults to on.":
+    "Dessine la carte du tracé GPX. Le profil altimétrique est conservé dans les deux cas, et le GPX reste téléchargeable — seule la carte disparaît. Pour masquer l'ensemble pour toutes les randonnées, utilisez Valeurs par défaut → Inclure les cartes de randonnée. Activé par défaut.",
   "GPX attached ({kb} KB encoded)": "GPX joint ({kb} Ko encodés)",
   "No GPX attached": "Aucun GPX joint",
   Clear: "Retirer",

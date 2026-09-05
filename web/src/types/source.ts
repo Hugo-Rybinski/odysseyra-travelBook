@@ -72,6 +72,12 @@ export interface SrcScheduled {
   // settle in advance.
   price?: number;
   currency?: string; // 3-letter ISO
+  // Whether this activity draws its **own** map: a `place`'s zoomed area map,
+  // a `hike`'s trail map. Those are the only two that have one, so it does
+  // nothing on the other types. Defaults to true. Not `coordinate.show_on_map`,
+  // which is the reverse — that hides this activity's pin on a map drawn by
+  // something else.
+  show_map?: boolean;
   // A phone number, email, or how to get in. Free text, never parsed.
   contact?: string;
 }
@@ -291,6 +297,11 @@ export interface SrcDay {
   date?: string;
   description?: string;
   bank_holiday?: boolean;
+  // Whether the day draws its overview map (and the numbered pins its activity
+  // titles refer to), when the trip renders maps at all. Defaults to true. An
+  // activity's own map has its own `show_map`, and the whole-trip map keeps the
+  // day either way.
+  show_map?: boolean;
   activities?: SrcActivity[];
 }
 

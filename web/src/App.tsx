@@ -119,7 +119,10 @@ type Source = OpenedFile;
 function hasResolvedHikeTracks(itinerary: Itinerary | null): boolean {
   const any = (acts: ResolvedActivity[] | undefined): boolean =>
     (acts ?? []).some(
-      (a) => (a.type === "hike" && !!a.track) || any(a.activities),
+      // A hike that switched its trail map off has no PNG to render either
+      // (bridge.py's `_stamp_hike_maps` skips it), so it is not a reason to run
+      // the day loop.
+      (a) => (a.type === "hike" && !!a.track && a.show_map !== false) || any(a.activities),
     );
   return (itinerary?.days ?? []).some((d) => any(d.activities));
 }

@@ -247,7 +247,13 @@ export function DayCard({
 
           {day.description && <Clamp className="day-intro" text={day.description} />}
 
-          {day.map ? (
+          {/* The day's own `show_map` is checked here rather than left to
+              `MapView` (which would draw nothing anyway — the engine empties
+              the main layer): without it the loader would spin for a map that
+              is never coming, since `mapExpected` only knows the *trip* renders
+              maps. A place's zoom map and a hike's trail are switched
+              separately, on those activities, so they still appear below. */}
+          {day.show_map === false ? null : day.map ? (
             <MapView
               geo={day.map.geo ?? null}
               staticMap={day.map.main}

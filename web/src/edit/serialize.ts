@@ -35,6 +35,9 @@ const SAFE_DEFAULTS: Record<string, unknown> = {
   same_start_as_previous_activity: false,
   same_end_as_next_activity: false,
   bank_holiday: false,
+  // A day's overview map, a place's area map, a hike's trail map — one key, and
+  // `true` means "drawn" at every level it appears at, so it prunes safely.
+  show_map: true,
   detour: false,
   breakfast_included: false,
   additional_drivers: 0,

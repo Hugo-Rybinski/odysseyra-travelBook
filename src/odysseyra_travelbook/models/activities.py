@@ -48,6 +48,15 @@ class Activity(Scheduled):
     ``contact`` is free text — a phone number, an email, "call the guardian to
     open the museum" — never parsed, exactly like an accommodation's, since
     numbering is local and half of these are instructions rather than numbers.
+
+    ``show_map`` is the per-activity twin of the trip's map switches: with maps
+    on, it decides whether *this* activity draws **its own** map — a ``place``'s
+    zoomed area map, a ``hike``'s trail map. Those are the only two activities
+    that have one, so it is inert on the rest (a drive is drawn as a route on the
+    day map, not as a map of its own). It is emphatically **not**
+    ``coordinate.show_on_map``, which is the other way round: that hides the
+    activity's *pin* on a map somebody else draws, while this one drops the map
+    the activity itself would draw. Both may be set, and they don't interact.
     """
 
     coordinate: Coordinate | None = None  # optional map location
@@ -55,6 +64,7 @@ class Activity(Scheduled):
     price: float | None = None
     currency: str = ""    # "" → the trip's default currency
     contact: str = ""     # free text: phone / email / how to get in
+    show_map: bool = True  # draw this activity's own map (a place's / a hike's)
 
 
 def _sched(d: dict) -> dict:
@@ -75,6 +85,10 @@ def _sched(d: dict) -> dict:
         "price": _parse_price(d.get("price"), "activity price"),
         "currency": _parse_currency(d.get("currency")),
         "contact": str(d.get("contact", "")).strip(),
+        # Whether this activity draws its own map (see `Activity`). Parsed here,
+        # so a nested `place`/`hike` gets it too — a nested hike carries a `gpx`
+        # and a trail map exactly like a top-level one.
+        "show_map": _parse_bool(d.get("show_map", True)),
     }
 
 

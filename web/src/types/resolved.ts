@@ -134,6 +134,11 @@ export interface Activity extends Scheduled {
   // so it has a `duration` but no `start_time`/`end_time`. Optional — a day
   // cached before the field existed has none.
   detour?: boolean;
+  // Whether this activity draws its own map — a `place`'s zoomed area map, a
+  // `hike`'s trail map (the elevation profile is kept either way). Inert on the
+  // types that have no map of their own. Optional, and absent means true: a day
+  // cached before the field existed drew both.
+  show_map?: boolean;
   // What the stop costs — an entrance fee, a guided visit, a meal — in the same
   // structured shape as a booking's, so the conversions are precomputed. Every
   // activity type carries it; `paid` is always null (an activity has no payment
@@ -385,6 +390,10 @@ export interface Day {
   // A public holiday where you are that day: the day opens with a call-out
   // banner. Optional — a doc resolved before the flag existed carries none.
   bank_holiday?: boolean;
+  // Whether the day draws its overview map. False leaves `map.main`/`map.geo`'s
+  // main layer empty on purpose — which is how the viewer tells a switched-off
+  // map from a render still in flight. Optional; absent means true.
+  show_map?: boolean;
   activities: Activity[];
   // The legs departing that day (not the bookings), each enriched with its
   // booking's shared fields.

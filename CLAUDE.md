@@ -282,6 +282,59 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   the day's **zoom (area) maps** — as a pin only, never part of their extent,
   which is fixed by the area's own points, so the zoom/centering is identical
   with or without it (a stay outside the rendered frame simply isn't visible).
+- **`show_map` — one map, one owner.** `include_maps_in_render` is
+  all-or-nothing for the trip; `show_map` (default **true**) is its per-object
+  twin, and the rule is that **every map is switched on the object that draws
+  it**: a **`Day`** owns its overview map, a **`place`** its zoomed area map, a
+  **`hike`** its trail map. Parsed in `models/activities.py`'s `_sched` (so a
+  nested `place`/`hike` gets it — a nested hike carries a `gpx` like any other)
+  and in `Day.from_dict`, serialized on both the day and the common activity
+  dict, and specced on **`place` and `hike` only** (`validate/specs.py`) since on
+  any other type it would switch off nothing — a `road` is drawn as a *route* on
+  the day map, and a POI or a meal has no map of its own. Three things are
+  load-bearing:
+  - **The day's map takes its pin numbers with it.** The `1..N` discs beside the
+    activity titles are that map's legend, so `maps/build.py`'s
+    `render_day_maps` passes `main=day.show_map` into `resolve_day`, which then
+    returns no main points, no routes and no route nodes — hence no
+    `DayMaps.numbers`, no `★`, and no `day_legs` either (a dotted leg with no
+    map to sit on). It also skips exactly the geocoding and OSRM routing that
+    map needed, which is the other half of "don't draw it". The **areas survive
+    that pass**: they answer to their own place, so `resolve_day` resolves them
+    either way and drops one only when `act.show_map` is false.
+  - **The whole-trip map is not the day's.** `resolve_trip` calls `resolve_day`
+    with the default `main=True`, so a day that hides its own page map still
+    contributes its pins there — the pin carries the *day*, and dropping it would
+    leave a hole in the trip's shape rather than tidy one page.
+  - **A hike loses its map, not its figure.** `pdf/hike_map.py`'s `hike_track`
+    gates `_hike_map` alone, so the elevation profile still draws (it's a chart
+    of numbers the hike already states, and it needs no tiles) and the viewer
+    still offers `(Get GPX track)`. `defaults.include_hike_maps` remains the
+    switch for the whole pair — it's the one that also keeps the geometry out of
+    the resolved doc, which this one can't: the profile needs it. This is also
+    the one `show_map` that works with `include_maps_in_render` **off**, because
+    the map it gates does.
+
+  It is emphatically **not `coordinate.show_on_map`**, which points the other
+  way: that hides an object's *pin* on a map something else draws, this drops the
+  map the object draws itself. Both can be set and they don't interact — a place
+  with `show_map: false` still wears its number on the day map. The two names are
+  a keystroke apart, so the distinction is spelled out in `file_format.md`'s
+  *Switching one map off* table, in the Edit tab's help text and in
+  `skills/build-full-json.md` (which also tells an LLM never to emit the field on
+  its own initiative: it's a presentation choice about a document it can't see).
+  Viewer twins: `DayCard.tsx` checks `day.show_map === false` *before* the
+  `mapExpected` loader (otherwise the spinner waits for a map that isn't coming —
+  `mapExpected` only knows the trip renders maps), `HikeTrackFigure` gates both
+  renderings of the trail on `act.show_map !== false`, the area maps need no check
+  because `bridge.py`'s `_day_geo`/`render_day` never emit a suppressed one, and
+  `App.tsx`'s `hasResolvedHikeTracks` stops counting a map-less hike as a reason
+  to run the day loop. Because the resolved `Day` gains a field at two levels
+  *and* its cached maps were rendered without the gate, this needed a
+  `SCHEMA_VERSION` bump (**v27**). No valid example sets it — a flagship whose
+  PDFs are the review artifact should print every map it can — so
+  `tests/test_show_map.py` is where the behaviour lives, with `broken.json`
+  carrying an invalid value at each of the three levels.
 - **One place, one pin.** A day names the same spot more than once as a matter
   of course — a drive's junction is the next drive's departure, an out-and-back
   passes its turning point twice, the village you park in is also the sight you
@@ -361,6 +414,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   **independent of `include_maps_in_render`**: that governs the maps we *infer*
   for the trip, while attaching a GPX to a hike is itself the opt-in — a
   default-true switch gated behind a default-false one would never fire.
+  Per-hike, the hike's own `show_map` drops the **map** and keeps the profile and
+  the download (see the `show_map` bullet); this switch is the one that withholds
+  the geometry, because it's the one that means *no hike figures at all*.
   Both renderers draw map-then-profile from the same `track`, with one deliberate
   difference: the PDF's profile is drawn vector, the viewer's is inline SVG. The
   **map** obeys the Options interactive-maps toggle like every other viewer map

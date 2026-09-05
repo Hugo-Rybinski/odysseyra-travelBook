@@ -220,7 +220,12 @@ by the Python engine (`validate(text, lang)`).
   each day's tiles are prefetched over its area so
   it also pans/zooms **offline** after one online view. With the toggle on the
   static images are never shown — a map that can't load says so instead (see
-  *Maps* above). MapLibre is code-split into its own
+  *Maps* above). A day that set `show_map: false` draws no overview map here
+  either (and its activity titles lose their numbered discs, which were that
+  map's legend), and a `place` with `show_map: false` draws no zoomed area map —
+  the engine simply never emits them, so both renderings agree; `DayCard.tsx`
+  checks the day's flag itself only to keep the per-day loader from waiting on a
+  map that isn't coming. MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
 - **A hike's GPX** (`render/HikeTrack.tsx`) — a `hike` that embeds a `gpx` gets
@@ -228,10 +233,14 @@ by the Python engine (`validate(text, lang)`).
   Python model derived (a simplified line + a distance-resampled profile; the
   original file inside it, for the download below). Both come with the resolved
   text, *not* with the per-day map render, so they appear immediately and work
-  with `include_maps_in_render` off. The map is the interactive MapLibre one with
-  **no static-PNG fallback** — there's nothing pre-rendered to fall back to, and
-  the geometry is already in hand — so it follows the **Interactive** toggle; with
-  it off, the profile stands alone. The profile is inline SVG (it scales with the
+  with `include_maps_in_render` off. The map follows the **Interactive** toggle
+  like every other: on, the MapLibre one (drawing straight away, since the
+  geometry arrives with the text); off, the static PNG `bridge.py`'s
+  `_stamp_hike_maps` puts on `track.map` with the day's other images. A GL
+  failure shows the profile alone rather than swapping in the map the user
+  switched away from. The hike's own `show_map: false` drops **both** renderings
+  of the trail and keeps the profile and the download — the field says *map*.
+  The profile is inline SVG (it scales with the
   column and reflows on a phone) where the PDF draws vector primitives; the two
   read the same because they read the same samples, so keep `HikeTrack.tsx` in
   step with `pdf/hike_map.py`. `defaults.include_hike_maps` (default **on**)

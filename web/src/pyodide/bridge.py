@@ -118,7 +118,11 @@ def _stamp_hike_maps(itinerary, day, day_out, cache) -> None:
     def walk(acts, out_acts):
         for act, out in zip(acts, out_acts):
             track = getattr(act, "track", None)
-            if track is not None and out.get("track"):
+            # A hike that switched its trail map off gets no PNG either — the
+            # profile is drawn from `track` and needs none (see hike_track in
+            # pdf/hike_map.py, whose gate this mirrors).
+            if (track is not None and out.get("track")
+                    and getattr(act, "show_map", True)):
                 try:
                     img = render_hike_map(track, itinerary.cover_color, cache)
                     if img is not None:
@@ -173,7 +177,12 @@ def _day_geo(itinerary, day, cache):
     from odysseyra_travelbook.maps.build import (STAY_PIN, day_legs, fold_pins,
                                                  resolve_day)
 
-    main_pts, routes, route_nodes, area_details = resolve_day(day, itinerary, cache)
+    # `main=` mirrors render_day_maps: a day that set ``show_map: false`` has no
+    # overview map, so this hands back a geo whose main layer is empty — the
+    # areas alone, which are switched per place. `MapView` then draws nothing for
+    # the day (its `hasGeo` test) while each place's zoom map still appears.
+    main_pts, routes, route_nodes, area_details = resolve_day(
+        day, itinerary, cache, main=bool(getattr(day, "show_map", True)))
     # Same folding as the static map, so a place the day names twice carries one
     # marker here too and the two renderings agree on what "3" is.
     main_groups = fold_pins(main_pts)
@@ -190,8 +199,11 @@ def _day_geo(itinerary, day, cache):
     stay_coord = None
     if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
         stay_coord = (stay.coordinate.lat, stay.coordinate.long)
-        points.append({"lat": stay_coord[0], "long": stay_coord[1],
-                       "label": STAY_PIN, "title": stay.name})
+        # ★ on the day map only when there *is* one; it stays a pin on the area
+        # maps below either way, which are the place's call, not the day's.
+        if getattr(day, "show_map", True):
+            points.append({"lat": stay_coord[0], "long": stay_coord[1],
+                           "label": STAY_PIN, "title": stay.name})
 
     areas = []
     for title, pts in area_details:
@@ -214,13 +226,21 @@ def _day_geo(itinerary, day, cache):
             # fitted extent — it just sits wherever it falls.
             "bounds": [[min(alats), min(alons)], [max(alats), max(alons)]],
         })
-    legs = day_legs(day, itinerary)
+    # No overview map means no layer for a leg's dotted line either (mirrors
+    # render_day_maps) — and it is what leaves the main layer wholly empty, which
+    # is how `MapView` knows to draw nothing at all rather than a map of one line.
+    legs = day_legs(day, itinerary) if getattr(day, "show_map", True) else []
     coords = ([(p["lat"], p["long"]) for p in points]
               + [(lat, lon) for line in routes for lat, lon in line])
     # As in the static map, legs don't widen the fitted extent (a transatlantic
     # flight would zoom the day out to the ocean) — unless they're all there is.
     if not coords:
         coords = [c for line in legs for c in line]
+    if not coords:
+        # Nothing in the main layer, but an area's zoom map may still be drawn
+        # (the day switched its own map off), and that map is reached *through*
+        # this object — so it has to survive, framed on what is left.
+        coords = [(p["lat"], p["long"]) for a in areas for p in a["points"]]
     if not coords:
         return None
     lats = [c[0] for c in coords]

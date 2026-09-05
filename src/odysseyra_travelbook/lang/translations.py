@@ -696,6 +696,26 @@ _FR = {
     "[] (no timeline of its own — a page of bookings, or a blank rest day)":
         "[] (pas de programme propre — une page de réservations, ou une "
         "journée de repos vide)",
+    # `show_map`, once per level it exists at: the day's overview map, a place's
+    # area map, a hike's trail map. Three separate wordings on purpose — each
+    # names the one map it switches, since that's the question a reader has.
+    "whether the day draws its overview map, with the numbered pins its "
+    "activity titles refer to (only when the trip renders maps at all)":
+        "si le jour dessine sa carte d'ensemble, avec les pastilles numérotées "
+        "auxquelles renvoient les titres de ses activités (seulement si le "
+        "voyage affiche des cartes)",
+    "true (the day's overview map is drawn)":
+        "true (la carte d'ensemble du jour est dessinée)",
+    "whether this place draws its zoomed area map of the nested activities "
+    "(it keeps its own pin on the day map either way)":
+        "si ce lieu dessine sa carte zoomée des activités imbriquées (il garde "
+        "sa propre pastille sur la carte du jour dans les deux cas)",
+    "true (the area map is drawn)": "true (la carte du lieu est dessinée)",
+    "whether this hike draws the trail map of its GPX (the elevation profile "
+    "is kept either way)":
+        "si cette randonnée dessine la carte du tracé de son GPX (le profil "
+        "altimétrique est conservé dans les deux cas)",
+    "true (the trail map is drawn)": "true (la carte du tracé est dessinée)",
     "the departure address": "l'adresse de départ",
     "the arrival address": "l'adresse d'arrivée",
     "intermediate stops the route passes through":

@@ -225,6 +225,31 @@ Turn it on to geocode the rest from their `name`/`address` at build time
 `defaults` — there is no build flag or export toggle for them, so the CLI and the
 viewer always produce the same map for a given file.
 
+#### Switching one map off
+
+`include_maps_in_render` is all-or-nothing for the trip. `show_map` (default
+`true`) is the per-object switch: **each of the three kinds of map is owned by
+the object it belongs to**, and each is switched on that object alone.
+
+| Set `show_map: false` on | and you lose | while keeping |
+| --- | --- | --- |
+| a **`day`** | its overview map, and the numbered pin discs beside its activity titles (they were that map's legend) | its places' zoom maps, its hikes' trail maps, and the day's pins on the whole-trip map |
+| a **`place`** | its zoomed area map, and its nested activities' `A, B, C…` letters | the place's own numbered pin on the day map |
+| a **`hike`** | the trail map of its `gpx` | the elevation profile, and the GPX itself (still offered for download in the viewer) |
+
+It does nothing on the other activity types: a `road` is drawn as a route on the
+day map rather than as a map of its own, and a `point_of_interest` or a `meal`
+has none either. A hike's is the one that works even with
+`include_maps_in_render` off, because its map does
+([`include_hike_maps`](#defaults) is the trip-wide switch for the whole hike
+figure, profile included).
+
+**`show_map` is not `coordinate.show_on_map`.** They point opposite ways:
+`show_on_map` hides this object's *pin* on a map something else draws, while
+`show_map` drops the map *this* object would draw. Both can be set, and they
+don't interact — a place with `show_map: false` still gets a numbered pin, and
+one with `show_on_map: false` still draws its zoom map.
+
 ### Sunrise & sunset
 
 Every day carries `☀️ Sunrise: 06:12, Sunset: 21:34` (in French,
@@ -343,6 +368,7 @@ Every day needs a `title` and a non-empty `activities` array.
 | `date` |  | The day's date (matched to stays & transport) | string | `YYYY-MM-DD` | trip start date + the day's index |
 | `description` |  | Intro paragraph for the day | string | any text | `""` |
 | `bank_holiday` |  | The day is a public holiday where you are | bool | `true` / `false` | `false` |
+| `show_map` |  | Draw the day's overview map (see [Switching one map off](#switching-one-map-off)) | bool | `true` / `false` | `true` |
 | `activities` |  | The day's items, in order | array | activity objects | `[]` (no timeline of its own) |
 
 **A day with no activities is allowed.** A travel day carried by one flight, or
@@ -696,6 +722,7 @@ closed-day check still applies to it, the hours check can't.
 | `name` | ✅ | Place name | string | any text | — |
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering the area | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
+| `show_map` |  | Draw the zoomed area map of the nested activities (see [Switching one map off](#switching-one-map-off)) | bool | `true` / `false` | `true` |
 | `activities` |  | Nested points of interest, hikes and meals | array | `point_of_interest`, `hike` or `meal` objects, each with a `type` (see below) | `[]` |
 
 **A place lasts what it contains.** A place has no length of its own — it *is*
@@ -731,6 +758,7 @@ a validation error.
 | `end` |  | End address | string | any text | `""` |
 | `route` |  | Route shape | string | `loop` \| `back_and_forth` \| `one_way` | `"back_and_forth"` |
 | `gpx` |  | The trail's GPX file, drawn as a trail map + elevation profile | string | the `.gpx` file base64-encoded (gzip allowed) | none |
+| `show_map` |  | Draw the trail map of the `gpx` — the elevation profile is kept either way (see [Switching one map off](#switching-one-map-off)) | bool | `true` / `false` | `true` |
 | `activities` |  | Nested meals (a stop along the hike) | array | `meal` objects, each with a `type` (see below) | `[]` |
 
 **Distances and climbs are rounded when shown.** Write the figure you have —
@@ -777,6 +805,11 @@ deliberately independent of `include_maps_in_render`: that one governs the maps
 inferred for the whole trip, while a GPX is a file you attached to one hike —
 attaching it *is* the opt-in. With the switch off the track isn't even sent to the
 viewer, so the geometry costs nothing.
+
+To drop the map for **one** hike, set that hike's `show_map` to `false`: the
+profile stays, and so does the downloadable GPX below — the trip-wide switch is
+the one that withholds the geometry, because it is the one that means "no hike
+figures at all".
 
 One difference between the two renderers, and it's on purpose: the PDF embeds a
 rendered raster map, the viewer draws the interactive one (the geometry is already

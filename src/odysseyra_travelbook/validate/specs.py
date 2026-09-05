@@ -398,6 +398,15 @@ ACTIVITY_SPECS = {
         Spec("description", False, "a description of the place", "any text", '""'),
         Spec("guidebook_pages", False, GUIDEBOOK_DESC, GUIDEBOOK_FORMAT, '""',
              V_PAGES),
+        # `show_map` is offered on the two activity types that draw a map of
+        # their own — here the area's zoom map, on a hike its trail map — and
+        # nowhere else, since on any other type it would switch off nothing.
+        # It does not hide the place's pin on the day map: that's the
+        # coordinate's `show_on_map`.
+        Spec("show_map", False,
+             "whether this place draws its zoomed area map of the nested "
+             "activities (it keeps its own pin on the day map either way)",
+             "true or false", "true (the area map is drawn)", V_BOOL),
         Spec("activities", False, "nested points of interest, hikes and meals",
              "an array of point_of_interest, hike or meal objects, each with a 'type'",
              "[] (none nested)"),
@@ -419,6 +428,12 @@ ACTIVITY_SPECS = {
              "a GPX file of the trail, drawn as a map plus an elevation profile",
              "the .gpx file base64-encoded (gzip allowed)",
              "none (no trail map or profile)", V_GPX),
+        # Parenthetical, not an em-dashed aside: the finding's own template
+        # already joins the field to its description with a dash.
+        Spec("show_map", False,
+             "whether this hike draws the trail map of its GPX (the elevation "
+             "profile is kept either way)",
+             "true or false", "true (the trail map is drawn)", V_BOOL),
         Spec("activities", False, "nested meals (a stop along the hike)",
              "an array of meal objects, each with a 'type'", "[] (none nested)"),
     ],
@@ -486,6 +501,13 @@ DAY_SPECS = [
     Spec("bank_holiday", False, "whether the day is a public holiday where you are "
          "— shown as a banner above the day's activities", "true or false",
          "false (an ordinary day)", V_BOOL),
+    # Scoped to the day's own overview map. An activity's map (a place's zoom, a
+    # hike's trail) has its own `show_map`, and the whole-trip map keeps the day
+    # either way — so the wording names the one map this switches.
+    Spec("show_map", False,
+         "whether the day draws its overview map, with the numbered pins its "
+         "activity titles refer to (only when the trip renders maps at all)",
+         "true or false", "true (the day's overview map is drawn)", V_BOOL),
     # Optional, and empty is allowed: a travel day carried by one flight, or a
     # night whose only entry is the hotel, has no timeline of its own and still
     # prints a full page. Both spellings of "none" have to be accepted, because

@@ -205,6 +205,7 @@ export const DAY_FIELDS: FieldSpec[] = [
   { key: "date", label: "Date", kind: "date", placeholder: "trip start + the day's index", help: "The day's date, matched to stays & transport. Defaults to the trip start date plus the day's index." },
   { key: "description", label: "Description", kind: "textarea", placeholder: "Intro paragraph for the day", help: "Intro paragraph for the day. Optional." },
   { key: "bank_holiday", label: "Bank holiday", kind: "bool", help: "Switch on if the day is a public holiday where you are — the day then opens with a banner warning about closures and reduced hours. Defaults to off." },
+  { key: "show_map", label: "Show the day map", kind: "bool", defaultOn: true, help: "Draw this day's overview map, with the numbered pins its activity titles refer to. Only does anything when the trip renders maps at all (Defaults → Include maps in render). Switch it off for a day the map says nothing about — the numbered discs go with it, since they were that map's legend. A place's zoomed area map and a hike's trail map are switched on those activities, and the whole-trip map keeps the day either way. Defaults to on." },
 ];
 
 // Shared scheduling fields (all activities except buffer).
@@ -270,6 +271,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Place name", help: "Place name (e.g. a town) grouping the nested activities. Required." },
     { key: "description", label: "Description", kind: "textarea", help: "A description. Optional." },
     GUIDEBOOK_FIELD,
+    { key: "show_map", label: "Show the area map", kind: "bool", defaultOn: true, help: "Draw the zoomed map of this place's nested activities (lettered A/B/C…), below the place on the day page. Switching it off leaves the place its own numbered pin on the day map — this is not the coordinate's “Show on map”, which hides that pin instead. Defaults to on." },
   ],
   hike: [
     { key: "name", label: "Name", kind: "text", required: true, placeholder: "Hike name", help: "Hike name. Required." },
@@ -281,6 +283,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "end", label: "End", kind: "text", help: "End address. For a loop/back-and-forth it should equal (or omit) start; for one-way it should differ. Optional." },
     { key: "route", label: "Route", kind: "enum", enum: HIKE_ROUTES, placeholder: "back_and_forth", help: "Route shape. Defaults to back_and_forth." },
     { key: "gpx", label: "GPX track", kind: "gpx", help: "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional." },
+    { key: "show_map", label: "Show the trail map", kind: "bool", defaultOn: true, help: "Draw the map of the GPX trail. The elevation profile is kept either way, and the GPX is still offered for download — this only drops the map. To hide the whole figure for every hike, use Defaults → Include hike maps. Defaults to on." },
   ],
   meal: [
     { key: "meal_type", label: "Meal type", kind: "enum", enum: MEAL_TYPES, placeholder: "inferred from start_time", help: "Which meal it is. Inferred from the start time when unset (breakfast/lunch/dinner); the others are explicit-only." },
