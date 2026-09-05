@@ -321,7 +321,12 @@ class DayMixin:
         self._badge(self.l_margin, top, self.GUTTER - 5, self._badge_label(act),
                     muted=act.detour)
         gw = self.GUTTER - 5
-        if act.start_time is not None:
+        # The gutter carries either the times or the DETOUR pill, never both: a
+        # detour has no clock time (`resolve_detours` clears them), so the pill
+        # takes the row they would have used, right under the badge.
+        if act.detour:
+            self._detour_tag(self.l_margin, top + 6.6, gw)
+        elif act.start_time is not None:
             stz = self._tz_label(act.start_tz)
             slbl = f"{act.start_time:%H:%M}" + (f" {stz}" if stz else "")
             self.set_xy(self.l_margin, top + 6.8)
@@ -337,17 +342,17 @@ class DayMixin:
                 self.cell(gw, 3.5, elbl, align="C")
 
         num = self.pin_label(act)
-        # A detour's title is led by the DETOUR pill and set in muted grey: it's
-        # a stop kept for reference, so it reads a step below the day's real
-        # items (the gutter badge above is greyed for the same reason).
+        # A detour's title is set in muted grey: it's a stop kept for reference,
+        # so it reads a step below the day's real items (the gutter badge and
+        # the pill under it are greyed for the same reason). The mark itself is
+        # in the gutter, not ahead of the title — a heading that opens with a
+        # pill buries the name of the place.
         head = MUTED if act.detour else INK
-        lead = self._detour_tag(x, top + 0.6) if act.detour else 0
-        hx, hw = x + lead, detail_w - lead
-        if not self._road_title(act, hx, hw, top, num, color=head):
-            tx, tw = hx, hw
+        if not self._road_title(act, x, detail_w, top, num, color=head):
+            tx, tw = x, detail_w
             if num:
-                wd = self._pin_disc(hx, top + 0.6, num)
-                tx, tw = hx + wd, hw - wd
+                wd = self._pin_disc(x, top + 0.6, num)
+                tx, tw = x + wd, detail_w - wd
             self.set_xy(tx, top)
             self.set_font(FONT, "B", 11)
             self.set_text_color(*head)
@@ -385,9 +390,16 @@ class DayMixin:
         meal type is explicit or inferred from the start time."""
         self._ensure_room(16)
         top = self.get_y()
+        start_page = self.page_no()
         x = self.l_margin + self.GUTTER
         gw = self.GUTTER - 5
-        if meal.start_time is not None:
+        # A meal row carries no type badge, so its gutter holds just the start
+        # time — and a detour has none, which leaves the slot for the pill (see
+        # `_activity`; a meal row is the same column, one item shorter).
+        floor = top
+        if meal.detour:
+            floor = top + 0.4 + self._detour_tag(self.l_margin, top + 0.4, gw)
+        elif meal.start_time is not None:
             self.set_xy(self.l_margin, top)
             self.set_font(FONT, "B", 8)
             self.set_text_color(*self.accent)
@@ -403,8 +415,6 @@ class DayMixin:
             head = label
         num = self.pin_label(meal)
         tx = x
-        if meal.detour:
-            tx += self._detour_tag(tx, top + 0.4)
         if num:
             tx += self._pin_disc(tx, top + 0.4, num)
         self.set_xy(tx, top)
@@ -423,6 +433,7 @@ class DayMixin:
                             meal.restaurant, meal.area, size=8.5, h=4.5,
                             text_url=self._addr_url(meal.coordinate, meal.address))
         self._contact_line(meal, x, w, size=8.5, h=4.5)
+        self._detour_floor(floor, start_page)
         self.ln(1.5)
 
     def _transport_row(self, t) -> None:
@@ -810,8 +821,15 @@ class DayMixin:
         self.set_font(FONT, "B", 8)
         self.set_text_color(*self.accent)
         self.cell(0, 5, self.t("INCLUDES"), new_x="LMARGIN", new_y="NEXT")
-        # A single badge width across the group so every title lines up.
+        # A single badge width across the group so every title lines up — and
+        # wide enough for the DETOUR pill when one of them is a detour,
+        # since the pill is stacked *under* its badge and shares this column
+        # (see `_detour_tag`). It's the group's width, not the detour's alone:
+        # the badges have to keep lining up, and a pill narrower than the badge
+        # above it wouldn't read as one block.
         badge_w = max(self._nested_badge_width(self._badge_label(s)) for s in activities)
+        if any(s.detour for s in activities):
+            badge_w = max(badge_w, self._detour_min_width())
         for sub in activities:
             if sub.kind == "hike":
                 self._nested_hike(x + 5, w - 5, sub, badge_w)
@@ -868,17 +886,31 @@ class DayMixin:
         self.set_text_color(*text_col)
         self.cell(w, 3.4, label, align="C")
 
+    def _detour_floor(self, floor: float, start_page: int) -> None:
+        """Hold the cursor at ``floor`` — the bottom of a detour's DETOUR pill,
+        or ``top`` for a row that has none (then a no-op, since the row has
+        already been drawn past it).
+
+        A row can be shorter than its own badge column: a nested title plus one
+        meta line is 9.5 mm, a meal row not much more, and the pill under the
+        badge would then overhang whatever comes next. Only when the row stayed
+        on this page — ``floor`` is otherwise a coordinate on the previous one,
+        and it would jump the cursor far down the new page (the same trap as
+        :meth:`_activity`'s own floor)."""
+        if self.page_no() == start_page:
+            self.set_y(max(self.get_y(), floor))
+
     def _nested_poi(self, x: float, w: float, poi, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
+        start_page = self.page_no()
         self._nested_badge(x, top + 0.4, self._badge_label(poi), badge_w,
                            muted=poi.detour)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        floor = top
         if poi.detour:
-            wd = self._detour_tag(tx, top + 0.2)
-            tx += wd
-            tw -= wd
+            floor = top + 5.5 + self._detour_tag(x, top + 5.5, badge_w)
         num = self.pin_label(poi)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
@@ -905,19 +937,20 @@ class DayMixin:
             y = self.get_y()
             self._link_row(tx, y, [(self.t("Website"), poi.website)], size=8.5)
             self.set_y(y + 4.5)
+        self._detour_floor(floor, start_page)
         self.ln(1)
 
     def _nested_hike(self, x: float, w: float, hike, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
+        start_page = self.page_no()
         self._nested_badge(x, top + 0.4, self._badge_label(hike), badge_w,
                            muted=hike.detour)
         tx = x + badge_w + 2
         tw = w - badge_w - 2
+        floor = top
         if hike.detour:
-            wd = self._detour_tag(tx, top + 0.2)
-            tx += wd
-            tw -= wd
+            floor = top + 5.5 + self._detour_tag(x, top + 5.5, badge_w)
         num = self.pin_label(hike)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
@@ -950,11 +983,13 @@ class DayMixin:
         self._para_with_pill(tx, tw, hike.description, hike.guidebook_pages,
                              size=9, h=4.5)
         self.hike_track(hike, tx, tw)  # no-op without an embedded `gpx`
+        self._detour_floor(floor, start_page)
         self.ln(1)
 
     def _nested_meal(self, x: float, w: float, meal, badge_w: float) -> None:
         self._ensure_room(14)
         top = self.get_y()
+        start_page = self.page_no()
         self._nested_badge(x, top + 0.4, self._badge_label(meal), badge_w,
                            muted=meal.detour)
         tx = x + badge_w + 2
@@ -967,10 +1002,9 @@ class DayMixin:
             head = self.t("{meal} near {area}").format(meal=label, area=meal.area)
         else:
             head = label
+        floor = top
         if meal.detour:
-            wd = self._detour_tag(tx, top + 0.2)
-            tx += wd
-            tw -= wd
+            floor = top + 5.5 + self._detour_tag(x, top + 5.5, badge_w)
         num = self.pin_label(meal)
         if num:
             wd = self._pin_disc(tx, top + 0.2, num)
@@ -993,6 +1027,7 @@ class DayMixin:
                                 meal.restaurant, meal.area, size=8.5, h=4.5,
                                 text_url=self._addr_url(meal.coordinate, meal.address))
         self._contact_line(meal, tx, tw, size=8.5, h=4.5)
+        self._detour_floor(floor, start_page)
         self.ln(1)
 
 

@@ -62,10 +62,12 @@ const LABELS = {
     offRoad: "off-road",
     // The marker on a stop kept in the book but probably not made — shown in
     // the gutter, where its (absent) start time would be (uppercased there by
-    // `.t-detour`). The PDF draws the same words as a small grey pill before the
-    // title (`_detour_tag`), with its French twin in translations.py: keep the
-    // two wordings in step.
-    detour: "Optional detour",
+    // `.t-detour`). The PDF draws the same word as a small grey pill in that
+    // same slot, under the type badge (`_detour_tag`), with its French twin in
+    // translations.py: keep the two wordings in step. One word, not "Optional
+    // detour": the badge column it has to fit is narrow, and the row is dimmed
+    // and untimed around it, which already says "optional".
+    detour: "Detour",
     navigate: "Navigate",
     website: "Website",
     reservation: "Reservation",
@@ -237,7 +239,7 @@ const LABELS = {
     elevation: "dénivelé",
     distance: "distance",
     offRoad: "hors-piste",
-    detour: "Détour optionnel",
+    detour: "Détour",
     navigate: "Y aller",
     website: "Site web",
     reservation: "Réservation",

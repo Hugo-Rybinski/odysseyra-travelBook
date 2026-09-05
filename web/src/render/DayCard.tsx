@@ -340,8 +340,8 @@ function Gutter({
   endDayOffset?: number;
   // A detour is marked right where its (absent) start time would be — the one
   // slot on the row that is empty precisely *because* it is a detour. The PDF
-  // instead leads the title with the pill `_detour_tag` draws; both mark it and
-  // dim the row (see `.act.detour` in index.css).
+  // marks the same slot, stacking `_detour_tag`'s pill under the badge;
+  // both mark it and dim the row (see `.act.detour` in index.css).
   detour?: boolean;
   lang?: Lang;
 }) {

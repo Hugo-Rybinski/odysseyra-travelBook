@@ -233,12 +233,16 @@ def test_a_nested_detour_does_not_count_against_its_container():
 # -- the PDF ---------------------------------------------------------------
 
 def _detour_tags(itinerary, lang="en"):
-    """The OPTIONAL DETOUR pills the day pages draw, in page order."""
+    """The DETOUR pills the day pages draw, as ``(x, label)`` in page
+    order — ``x`` being the column they were drawn in, which is the point: a
+    detour marks itself under its own type badge, top-level (the gutter, at the
+    left margin) or nested (the badge column, indented) alike."""
     pdf = TravelPDF(itinerary, lang, False, "google")
     drawn = []
     real = pdf._detour_tag
-    pdf._detour_tag = lambda x, y, size=6.5: (drawn.append(pdf.t("OPTIONAL DETOUR"))
-                                              or real(x, y, size))
+    pdf._detour_tag = lambda x, y, w, size=6: (
+        drawn.append((round(x, 1), pdf.t("DETOUR")))
+        or real(x, y, w, size))
     for i, day in enumerate(itinerary.days, 1):
         pdf.day(i, day)
     return drawn
@@ -252,7 +256,56 @@ def test_the_pill_marks_every_detour_row_and_nothing_else():
             _poi("Nested maybe", duration="1h", detour=True),
         ]},
     ]))
-    assert _detour_tags(it) == ["OPTIONAL DETOUR", "OPTIONAL DETOUR"]
+    assert [label for _, label in _detour_tags(it)] == ["DETOUR"] * 2
+
+
+def test_every_row_marks_itself_under_its_own_type_badge():
+    # The pill goes in the same column as the badge, in the rows the absent
+    # start/end times would have used — not ahead of the title, where it buried
+    # the name of the place. Top-level rows share the one gutter column, at the
+    # left margin; a nested row's is its group's badge column, indented past it.
+    it = Itinerary.from_dict(_doc([
+        {"type": "meal", "restaurant": "Maybe lunch", "meal_type": "lunch",
+         "duration": "1h", "detour": True},
+        _poi("Maybe", duration="1h", detour=True),
+        {"type": "place", "name": "Town", "duration": "2h", "activities": [
+            _poi("Nested maybe", duration="1h", detour=True),
+            {"type": "meal", "restaurant": "Nested maybe lunch",
+             "meal_type": "lunch", "duration": "1h", "detour": True},
+            {"type": "hike", "name": "Nested maybe walk", "distance_km": 3,
+             "duration": "1h", "detour": True},
+        ]},
+    ]))
+    xs = [x for x, _ in _detour_tags(it)]
+    assert len(xs) == 5
+    assert sorted(xs).count(10.0) == 2      # the gutter, at the left margin
+    nested = [x for x in xs if x != 10.0]
+    assert len(nested) == 3
+    assert len(set(nested)) == 1            # one badge column for the group
+
+
+def test_a_nested_group_widens_its_badges_to_fit_the_pill():
+    # The pill is stacked under its badge and shares that column, so the column
+    # has to be at least as wide as the pill's longest word — and it's the
+    # *group's* width, so the badges keep lining up.
+    def group(**detour):
+        return _doc([{"type": "place", "name": "Town", "duration": "2h",
+                      "activities": [_poi("Nested", duration="1h", **detour)]}])
+
+    def badge_widths(doc):
+        pdf = TravelPDF(Itinerary.from_dict(doc), "en", False, "google")
+        seen = []
+        real = pdf._nested_badge
+        pdf._nested_badge = lambda x, y, label, w, muted=False: (
+            seen.append(w) or real(x, y, label, w, muted))
+        for i, day in enumerate(pdf.itinerary.days, 1):
+            pdf.day(i, day)
+        return seen, pdf._detour_min_width()
+
+    plain, floor = badge_widths(group())
+    marked, _ = badge_widths(group(detour=True))
+    assert plain[0] < floor, "a POINT badge is narrower than the pill needs"
+    assert marked == [pytest.approx(floor)]
 
 
 def test_no_pill_when_no_activity_is_a_detour():
@@ -261,7 +314,7 @@ def test_no_pill_when_no_activity_is_a_detour():
 
 def test_the_pill_is_localized():
     it = Itinerary.from_dict(_doc([_poi("Maybe", duration="1h", detour=True)]))
-    assert _detour_tags(it, lang="fr") == ["DÉTOUR OPTIONNEL"]
+    assert [label for _, label in _detour_tags(it, lang="fr")] == ["DÉTOUR"]
 
 
 def test_a_detour_is_never_a_day_highlight():

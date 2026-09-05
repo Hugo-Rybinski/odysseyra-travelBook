@@ -414,10 +414,12 @@ rather than on it:
   take) and its start/end are not. A `start_time` / `end_time` written on a
   detour is therefore dropped — if you give both and no `duration`, the span
   between them is kept as the duration and validation says so;
-- both renderers **mark it and draw it a step down in emphasis**: the PDF leads
-  the title with a small grey `OPTIONAL DETOUR` pill and greys the type badge,
-  the title and the description, the viewer puts `Optional detour` in the gutter
-  where the start time would be, greys the same two texts and dims the row;
+- both renderers **mark it and draw it a step down in emphasis**, under the
+  row's type badge — which for a top-level row is the gutter, where the start
+  time would be: the PDF stacks a small grey `DETOUR` pill there and
+  greys the badge, the title and the description, the viewer puts
+  `Detour` in the same slot, greys the same two texts and dims the row.
+  A **nested** activity is marked the same way, under its own compact badge;
 - it keeps its **map pin**: it's still a place you might end up at, so it stays
   on the day map, numbered like any other located stop;
 - it is **not** a day highlight on the cover, and it is **not** in the calendar

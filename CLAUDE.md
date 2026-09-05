@@ -780,21 +780,44 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     (`pdf/days.py`'s `_day_items`, `DayCard.tsx`'s `mergeTimeline`) — sorting on
     its own missing time would sweep every detour to the head of the day. Keep
     the two in step.
-  - **Marked, and a step down in emphasis** — the two things asked for, and the
-    one place the renderers deliberately differ in *form*: the PDF leads the
-    title with a small grey outline pill (`pdf/base.py`'s `_detour_tag`, sized
-    and positioned like `_pin_disc` so the two compose: pin, tag, title) and
-    greys the title plus the gutter/nested type badge (`_badge(muted=…)` /
-    `_nested_badge(muted=…)`); the viewer puts `Optional detour` in the
-    **gutter, where the absent start time would be** — the one slot that is
-    empty precisely because it's a detour — and dims the row (`.act.detour`,
-    `.t-detour`). Grey, never accent: the accent is what this book uses for
+  - **Marked, and a step down in emphasis** — the two things asked for. Both
+    renderers put the mark **under the row's type badge, in the badge's own
+    column** — which for a top-level row is the gutter, *where the absent start
+    time would be*: the one slot that is empty precisely because it's a detour.
+    It is deliberately not ahead of the title, which is where the PDF used to
+    put it — a heading that opens with a pill buries the name of the place. The
+    PDF draws it with `pdf/base.py`'s `_detour_tag`, an outline pill filling the
+    column and returning its height, and greys the
+    title plus the gutter/nested type badge (`_badge(muted=…)` /
+    `_nested_badge(muted=…)`). The viewer's twin is `.t-detour` in the gutter
+    plus `.act.detour` dimming the row.
+    - **The label is one word — `DETOUR` / `DÉTOUR`** (`Detour` / `Détour` in
+      the viewer, which uppercases in CSS). It was `OPTIONAL DETOUR`, which
+      wanted 27.6 mm at 6.5 pt (French `DÉTOUR OPTIONNEL` 29.3) against the
+      gutter's 23 mm, so it had to set over two lines. "Optional" was also
+      saying what the row already says: it's dimmed, and it has no clock time.
+      `_detour_tag` still **wraps** greedily on spaces rather than drawing one
+      `cell`, because a badge column is narrow and this is the kind of label
+      that grows in translation — hence the returned height.
+    - **A nested row marks itself the same way**, under its own compact badge.
+      Two things make that work. `_render_nested` widens the group's shared
+      `badge_w` to `_detour_min_width()` (~16 mm) when *any* of the
+      group is a detour — the group's width, not the detour's, because the
+      badges have to keep lining up and a pill narrower than the badge above it
+      wouldn't read as one block. And `_detour_floor` holds the cursor at the
+      pill's bottom edge: a row can be shorter than its own badge column (a
+      nested title plus one meta line is 9.5 mm, a meal row not much more) and
+      the pill would overhang what follows. Guarded on `page_no()`, like
+      `_activity`'s floor, and passed the *measured* bottom so a wrapped label
+      is accounted for.
+
+    Grey, never accent: the accent is what this book uses for
     emphasis, and this is the opposite. The **title and the description share
     that one grey**, so the row reads as a single de-emphasized block rather
     than a grey heading over black prose — free in the PDF (every description is
     already `MUTED`), an explicit `.act.detour … .desc` rule in the viewer,
     where `.desc` inherits `--fg`. The wordings are the usual pair
-    (`"OPTIONAL DETOUR"` in `translations.py`, the `detour` key in
+    (`"DETOUR"` in `translations.py`, the `detour` key in
     `render/format.ts` — uppercased by CSS there, so both read alike).
   - **It keeps its map pin** (still a place you may end up at, so it stays on the
     day map, numbered like any other located stop) but is **never a cover

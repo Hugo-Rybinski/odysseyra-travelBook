@@ -281,27 +281,65 @@ class _PDFBase(FPDF):
         self.set_text_color(*text_col)
         self.cell(w, 4.8, label, align="C")
 
-    def _detour_tag(self, x: float, y: float, size: float = 6.5) -> float:
-        """OPTIONAL DETOUR as a small grey outline pill at ``(x, y)``, returning
-        its width — drawn immediately **before** a detour's title, the same way
-        a pin disc is, so the two compose (pin, then tag, then the title).
+    def _detour_min_width(self, size: float = 6) -> float:
+        """The narrowest column :meth:`_detour_tag` can set its label in — its
+        widest single word, padded.
+
+        A caller that *owns* its column (a nested item's badge column, sized to
+        its siblings' labels) has to widen it to at least this before drawing,
+        or the pill's longest word would run past its own box."""
+        self.set_font(FONT, "B", size)
+        return max(self.get_string_width(w)
+                   for w in self.t("DETOUR").split()) + 5
+
+    def _detour_tag(self, x: float, y: float, w: float,
+                    size: float = 6) -> float:
+        """DETOUR as a grey outline pill filling ``w`` at ``(x, y)``, returning
+        its height.
+
+        Drawn **under the type badge, in the badge's own column** — the gutter
+        for a top-level row, the nested badge column for a nested one — rather
+        than ahead of the title, which buried the name of the place. The slot
+        is free because a detour has **no clock time**: the model clears both
+        (``resolve_detours``), so the lines the start/end times would occupy
+        are exactly what this fills, and the mark lands beside the item instead
+        of inside its heading. It is also what the viewer has always done
+        (``.t-detour``, in the gutter where the absent start time would be), so
+        the two renderers agree on placement as well as meaning.
 
         Grey rather than accent on purpose: this marks a stop the day is *not*
-        counting on, and the accent is what the book uses for emphasis. Sized
-        and positioned like :meth:`_pin_disc` so a row of either reads level.
-        Both renderers mark a detour and dim it; the viewer's twin is the
-        gutter's ``.t-detour`` label plus ``.act.detour`` (see index.css)."""
-        label = self.t("OPTIONAL DETOUR")
+        counting on, and the accent is what the book uses for emphasis.
+
+        One word, so it sets on one line in both languages. It is still
+        **wrapped greedily on spaces** rather than drawn as a single `cell`,
+        because a badge column is narrow (the gutter is 23 mm, a nested one
+        ~16) and this label is the kind that grows in translation — the pill
+        then takes another line instead of running off the column, which is
+        also why the height is returned rather than assumed. It was two lines
+        itself until the label was shortened from 'OPTIONAL DETOUR' (27.6 mm at
+        6.5 pt; French 'DÉTOUR OPTIONNEL' 29.3)."""
         self.set_font(FONT, "B", size)
-        tw = self.get_string_width(label) + 3
-        h = 4.2
+        lines, cur = [], ""
+        for word in self.t("DETOUR").split():
+            trial = f"{cur} {word}".strip()
+            if cur and self.get_string_width(trial) > w - 2:
+                lines.append(cur)
+                cur = word
+            else:
+                cur = trial
+        if cur:
+            lines.append(cur)
+
+        lh = 2.9
+        h = 1.8 + lh * len(lines)
         self.set_draw_color(*FAINT)
         self.set_line_width(0.25)
-        self.rect(x, y + 0.9, tw, h, style="D")
-        self.set_xy(x, y + 1.1)
+        self.rect(x, y, w, h, style="D")
         self.set_text_color(*MUTED)
-        self.cell(tw, h - 0.4, label, align="C")
-        return tw + 2
+        for i, line in enumerate(lines):
+            self.set_xy(x, y + 0.7 + lh * i)
+            self.cell(w, lh, line, align="C")
+        return h
 
     def _fit_text(self, text: str, w: float) -> str:
         """``text`` cut back with an ellipsis until it fits ``w`` at the current

@@ -45,10 +45,10 @@ _FR = {
     # the same flag as a small pill on a single VIA leg's row
     "OFF-ROAD": "HORS-ROUTE",
     "VIA": "VIA",
-    # the grey pill leading a detour's title — a stop kept for reference rather
-    # than planned (the viewer mirrors it as the `detour` key in
-    # render/format.ts, shown in the gutter; keep the two wordings in step)
-    "OPTIONAL DETOUR": "DÉTOUR OPTIONNEL",
+    # the grey pill under a detour's type badge — a stop kept for reference
+    # rather than planned (the viewer mirrors it as the `detour` key in
+    # render/format.ts, shown in the same slot; keep the two wordings in step)
+    "DETOUR": "DÉTOUR",
     # an activity's guidebook page reference, drawn in a lightened accent under
     # its description (the viewer mirrors this template in render/format.ts)
     "Guidebook p. {pages}": "Guide p. {pages}",

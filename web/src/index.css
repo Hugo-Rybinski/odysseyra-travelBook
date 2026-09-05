@@ -1342,9 +1342,9 @@ body {
 /* A detour: a stop kept in the book but probably not made. It is marked in the
    gutter where its (absent) start time would be, and drawn a step down in
    emphasis — the type badge gives up the accent for a grey outline, the title
-   greys, and the row's body fades. The PDF does the same with a grey DETOUR
-   pill before the title plus a greyed badge (pdf/days.py, `_detour_tag`); keep
-   the two in step. After `.act.meal` on purpose, so a detour meal's title greys
+   greys, and the row's body fades. The PDF marks the same slot, stacking a grey
+   DETOUR pill under the badge (pdf/base.py, `_detour_tag`) and greying
+   it; keep the two in step. After `.act.meal` on purpose, so a detour meal's title greys
    rather than staying accented. */
 .t-detour {
   color: var(--muted);
