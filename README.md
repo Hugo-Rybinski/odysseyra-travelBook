@@ -385,6 +385,25 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
+- **Version the saved file automatically** — an itinerary is edited dozens of
+  times before the trip, and today nothing keeps the versions apart on disk. The
+  viewer has three save routes and each mismanages history in its own way: an
+  in-place save through a writable handle **overwrites** the file with no
+  previous copy anywhere, the download fallback drops `trip.json`,
+  `trip (1).json`, `trip (2).json`… into `~/Downloads` where nothing but the
+  timestamp says which is newest, and Save-as re-suggests the same
+  `slugify(title).json` every time (`draftFilename` in `App.tsx`). The PDF and
+  `.ics` exports name themselves from the same slug, so a folder ends up holding
+  several books with no way to tell which JSON produced which. Suggest
+  `<title>-v3.json` (or a `-2026-09-05` stamp) by reading the highest version
+  already present, and consider keeping the previous file rather than
+  overwriting it. Two calls to make: **the version belongs in the name, not in
+  the file** — a `travel_description.version` field would change the JSON on
+  every save, and the viewer's day cache is keyed by the itinerary's hash
+  (`docHash` in `maps/mapCache.ts`), so every save would miss the whole cache
+  and redraw every map; and the CLI should follow the same convention when it
+  derives `<input>.pdf`, or the two halves disagree about what a trip's files
+  are called.
 - **Print the coordinates in ink-saver mode** — `--ink-saver` drops every
   `(Navigate)` link, not just its colour: `_line_with_nav` / `_nav_block_h` and
   the cards' `has_links` all resolve the URL to `""`, because a link is accent
