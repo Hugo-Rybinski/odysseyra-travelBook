@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
-import { tr, type Lang } from "./format";
+import { fill, tr, type Lang } from "./format";
 import { todayISO, type CollapseView } from "./collapse";
 import { AccentContext, paletteVars } from "./palette";
 import { MapProviderContext, type MapProvider } from "./nav";
@@ -38,6 +38,15 @@ function collapsedFor(view: DayView, itinerary: Itinerary): Set<number> {
   }
   const current = currentDayNumber(itinerary);
   return new Set(all.filter((n) => n !== current));
+}
+
+// The days `collapse-past` considers past: dated strictly before today, so
+// today, the future and any undated day are left alone. Same rule as
+// `collapsedFor`'s branch — keep the two in step, since one hides what the
+// other collapses.
+function pastDayNumbers(itinerary: Itinerary): number[] {
+  const today = todayISO();
+  return itinerary.days.filter((d) => d.date && d.date < today).map((d) => d.day_number);
 }
 
 // The whole travel book, web-native: cover, one card per day, then the
@@ -100,10 +109,22 @@ export function Book({
   // stable; disabled for the transport/accommodation views so they do no work.
   const forecasts = useActivityForecasts(itinerary.days, showForecast && show === "travel");
 
+  // Which days are behind us, and whether they're on screen at all. On
+  // `collapse-past` a past day used to stay as a header band you could expand —
+  // so a trip halfway through opened on a stack of rows for days already
+  // travelled, and the day you actually want was below them. They are now
+  // folded away entirely, behind one line that shows or hides the lot; the
+  // other views are untouched, since "collapse all" is *asking* for the bands.
+  const past = useMemo(() => new Set(pastDayNumbers(itinerary)), [itinerary]);
+  const [showPast, setShowPast] = useState(false);
+  const foldPast = daysView === "collapse-past" && past.size > 0;
+
   // Re-apply the day-view preset when it changes or a different itinerary loads.
-  // Manual per-day toggles (below) live in `collapsed` and persist until then.
+  // Manual per-day toggles (below) live in `collapsed` and persist until then,
+  // as does a manual reveal of the past days.
   useEffect(() => {
     setCollapsed(collapsedFor(daysView, itinerary));
+    setShowPast(false);
   }, [daysView, itinerary]);
 
   const toggle = useCallback((n: number) => {
@@ -115,6 +136,10 @@ export function Book({
   }, []);
 
   const jump = useCallback((n: number) => {
+    // A folded-away past day has no element to scroll to, so reveal the run
+    // first — the cover's overview and the Overview tab both jump by day
+    // number and neither knows what's on screen.
+    if (past.has(n)) setShowPast(true);
     setCollapsed((prev) => {
       if (!prev.has(n)) return prev;
       const next = new Set(prev);
@@ -126,7 +151,7 @@ export function Book({
         .getElementById(`day-${n}`)
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, []);
+  }, [past]);
 
   // Land on the day the Overview tab asked for, once the days are on screen.
   useEffect(() => {
@@ -206,17 +231,34 @@ export function Book({
     <div className="book" style={style}>
       <Cover itinerary={itinerary} lang={lang} onJump={jump} />
       <div className="days">
-        {itinerary.days.map((day) => (
-          <DayCard
-            key={day.day_number}
-            day={day}
-            lang={lang}
-            collapsed={collapsed.has(day.day_number)}
-            onToggle={toggle}
-            mapExpected={itinerary.maps.include_in_render && showMapLoaders}
-            interactive={interactiveMaps}
-          />
-        ))}
+        {/* The past days' one line, in place of their bands. It sits at the top
+            of the list, where those days are — they're the start of the trip. */}
+        {foldPast && (
+          <button
+            type="button"
+            className="past-days"
+            aria-expanded={showPast}
+            onClick={() => setShowPast((s) => !s)}
+          >
+            <span className="past-days-caret" aria-hidden>
+              {showPast ? "▾" : "▸"}
+            </span>
+            {fill(tr(lang, showPast ? "hidePastDays" : "showPastDays"), { n: past.size })}
+          </button>
+        )}
+        {itinerary.days.map((day) =>
+          foldPast && !showPast && past.has(day.day_number) ? null : (
+            <DayCard
+              key={day.day_number}
+              day={day}
+              lang={lang}
+              collapsed={collapsed.has(day.day_number)}
+              onToggle={toggle}
+              mapExpected={itinerary.maps.include_in_render && showMapLoaders}
+              interactive={interactiveMaps}
+            />
+          ),
+        )}
       </div>
     </div>
     </ForecastProvider>

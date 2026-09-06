@@ -273,7 +273,12 @@ The header's burger menu switches between views:
   each day's Python-rendered overview map fills in — numbered pin discs next to
   activity titles, dotted transport legs, plus zoomed area maps — and an
   **Interactive** toggle swaps them for pan/zoom MapLibre maps that keep working
-  offline after one online view.
+  offline after one online view. Options → *Days* decides how the list starts:
+  on the default **Collapse past** the days already travelled are folded away
+  altogether — not even their header bands — behind one *Show past days (n)*
+  line that puts them back, so a trip halfway through opens on today rather than
+  on a stack of rows for days that are over. (Jumping to a past day from the
+  cover's day-by-day table reveals them on its own.)
 - **🗺️ Overview** — the trip at a glance: its title / date range / summary, the
   day-by-day table (clicking a row jumps into that day in the Travel view), and
   a single **whole-trip map** — every day's located points pinned with their day

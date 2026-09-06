@@ -252,6 +252,17 @@ by the Python engine (`validate(text, lang)`).
   was attached, not a re-export of the simplified line. It's a `<button>` rather
   than an `<a href>` because the decode is async — there is no URL to point at
   until the click.
+- **Past days are folded away, not just collapsed** — on Options → *Days* =
+  **Collapse past** (the default), `Book.tsx` renders no `DayCard` at all for a
+  day dated before today, putting one `.past-days` line at the top of the list
+  in their place; the other three views are untouched, since "collapse all" is
+  *asking* for the bands. Three things it has to get right: the past set is the
+  same rule `collapsedFor`'s `collapse-past` branch uses (keep the two in step —
+  one hides what the other collapses); switching the view or loading another
+  itinerary re-folds them, like the collapsed preset it sits beside; and `jump`
+  reveals the run before scrolling, because the cover's day-by-day table and the
+  Overview tab both jump by *day number* and neither knows what is on screen —
+  without that, jumping to a past day scrolls to an element that isn't there.
 - **A booking's short note** — the optional `description` on a transport leg,
   an accommodation or a car rental appears in **three** places, all as muted
   prose through `Clamp` (so the "show full descriptions" option applies): the

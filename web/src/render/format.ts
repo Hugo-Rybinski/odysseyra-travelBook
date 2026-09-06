@@ -41,6 +41,10 @@ const LABELS = {
     days: "days",
     nights: "nights",
     night: "night",
+    // The one line a folded-away run of past days leaves behind (Book.tsx).
+    // The count is in parentheses so neither wording has to agree in number.
+    showPastDays: "Show past days ({n})",
+    hidePastDays: "Hide past days ({n})",
     tonight: "Tonight",
     aboard: "aboard",
     freeTime: "Buffer",
@@ -220,6 +224,8 @@ const LABELS = {
     days: "jours",
     nights: "nuits",
     night: "nuit",
+    showPastDays: "Afficher les jours passés ({n})",
+    hidePastDays: "Masquer les jours passés ({n})",
     tonight: "Cette nuit",
     aboard: "à bord",
     freeTime: "Pause",

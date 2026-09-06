@@ -1172,6 +1172,36 @@ body {
   border-radius: 14px;
   overflow: hidden;
 }
+/* The single line the days already travelled are folded behind, on the
+   "collapse past" view. Deliberately quiet — dashed, muted, no card of its own
+   — so it reads as a seam in the list rather than as another day. */
+.past-days {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+.past-days:hover {
+  border-color: var(--accent-soft);
+  color: var(--fg);
+}
+.past-days:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.past-days-caret {
+  color: var(--accent);
+  line-height: 1;
+}
 .day-band {
   display: flex;
   align-items: center;
