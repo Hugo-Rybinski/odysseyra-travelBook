@@ -22,6 +22,7 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { downloadBytes, downloadText, slugify } from "./file/saveExport";
+import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
 import {
   docHash,
   getCachedDay,
@@ -157,6 +158,12 @@ export function App() {
   // are derived from these by comparison, so undo/redo/revert stay correct.
   const [appliedText, setAppliedText] = useState<string | null>(null);
   const [savedText, setSavedText] = useState<string | null>(null);
+  // The name of the last file this session *created* (Save as… / Download JSON).
+  // The version count continues from it rather than from `source.name`, so
+  // downloading twice in a row writes `(v02)` then `(v03)` instead of handing the
+  // browser the same name and letting it append its own `(1)`. Null until the
+  // first such save — before that the opened file is the reference.
+  const [lastWritten, setLastWritten] = useState<string | null>(null);
   // Online/offline, for gating geocoding (Nominatim needs the network).
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -420,6 +427,10 @@ export function App() {
         setItinerary(model);
         setRenderError(renderErr);
         setFindings(found);
+        // The file just opened is the version count's new reference — a name
+        // written for the *previous* itinerary must not carry over into this
+        // one's numbering.
+        setLastWritten(null);
 
         let seeded = false;
         try {
@@ -552,16 +563,33 @@ export function App() {
     }
   }, [source, itinerary, buildDayMaps]);
 
-  // A sensible filename for saving/downloading the draft.
-  const draftFilename = useCallback(
-    () => `${slugify(draft?.travel_description?.title || source?.name || "odysseyra")}.json`,
-    [draft, source],
-  );
+  // The name a save that **creates** a file should propose: `<slug> (vNN).json`.
+  //
+  // The two halves come from different places on purpose. The **base** is the
+  // trip's title, falling back to the open file's own name — the pre-existing
+  // rule, so renaming the trip renames the file. The **version** continues from
+  // whatever was last written or opened (`file/version.ts`), so it counts this
+  // document's revisions and keeps counting across a rename rather than
+  // restarting at v01 and shadowing the drafts already on disk.
+  //
+  // Parsed before slugifying, or the marker of the file we opened would be
+  // folded into the base and `trip (v03).json` would beget `trip-v03 (v01)`.
+  const nextFilename = useCallback(() => {
+    const written = parseVersionedName(lastWritten ?? source?.name ?? "");
+    const base = slugify(draft?.travel_description?.title || written.base || "odysseyra");
+    return formatVersionedName(base, nextVersion(written.version));
+  }, [draft, source, lastWritten]);
 
   // Save the draft (P4/P6): normalize (prune empties + safe defaults) and either
   // overwrite the opened file in place when we hold a writable handle, or fall
   // back to a download. `savedText` tracks the *unpruned* serialization so the
   // unsaved indicator compares like-for-like against the live draft.
+  //
+  // In place is the one route that does **not** advance the `(vNN)` marker: it
+  // writes through a handle that points at one existing file, and the FS Access
+  // API gives us no way to create its sibling without a picker. So Save keeps
+  // overwriting the version you opened, and the two routes that make a new file
+  // number it — which is also the split the buttons already describe.
   const onSave = useCallback(async () => {
     if (!draft) return;
     setSaving(true);
@@ -569,25 +597,33 @@ export function App() {
     try {
       const handle = source?.handle ?? null;
       if (canWriteHandle(handle)) await writeHandle(handle, serializeForSave(draft));
-      else downloadText(serializeForSave(draft), draftFilename());
+      else {
+        const name = nextFilename();
+        downloadText(serializeForSave(draft), name);
+        setLastWritten(name);
+      }
       setSavedText(serializeWithPaths(draft).text);
     } catch (e) {
       setError(String(e));
     } finally {
       setSaving(false);
     }
-  }, [draft, source, draftFilename]);
+  }, [draft, source, nextFilename]);
 
   // Save the draft to a new file (Chromium's Save-as picker); the new file
   // becomes the backing source so later in-place saves and "Reopen last" use it.
+  // The suggested name is the next version, but the picker lets the user rename
+  // freely — so the count continues from what came *back*, not from what we
+  // proposed.
   const onSaveAs = useCallback(async () => {
     if (!draft) return;
     setSaving(true);
     setError(null);
     try {
-      const opened = await saveAsJson(draftFilename(), serializeForSave(draft));
+      const opened = await saveAsJson(nextFilename(), serializeForSave(draft));
       if (opened) {
         setSource(opened);
+        setLastWritten(opened.name);
         await rememberHandle(opened.handle);
         setCanReopen((prev) => !!opened.handle || prev);
         setSavedText(serializeWithPaths(draft).text);
@@ -597,16 +633,19 @@ export function App() {
     } finally {
       setSaving(false);
     }
-  }, [draft, draftFilename]);
+  }, [draft, nextFilename]);
 
   // Download the draft as a .json file (always available; the only route where
-  // the FS Access API is absent, e.g. iOS Safari).
+  // the FS Access API is absent, e.g. iOS Safari). Every download is a new file
+  // in the download folder, so this one always takes the next version.
   const onDownloadJson = useCallback(() => {
     if (!draft) return;
     setError(null);
-    downloadText(serializeForSave(draft), draftFilename());
+    const name = nextFilename();
+    downloadText(serializeForSave(draft), name);
+    setLastWritten(name);
     setSavedText(serializeWithPaths(draft).text);
-  }, [draft, draftFilename]);
+  }, [draft, nextFilename]);
 
   // Revert the draft to the last saved/loaded baseline (P6). Recorded on the
   // undo stack, so a revert can itself be undone.
@@ -939,6 +978,7 @@ export function App() {
           saving={saving}
           canSaveInPlace={canWriteHandle(source?.handle)}
           hasSavePicker={hasSavePicker()}
+          nextFile={nextFilename()}
           onSave={onSave}
           onSaveAs={onSaveAs}
           onDownloadJson={onDownloadJson}

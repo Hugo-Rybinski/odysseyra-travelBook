@@ -197,9 +197,11 @@ export const FR: Record<string, string> = {
   "Saving…": "Enregistrement…",
   Save: "Enregistrer",
   "Saved ✓": "Enregistré ✓",
-  "Save to a new file": "Enregistrer dans un nouveau fichier",
+  // The two routes that create a file number it `(vNN)`; the name is a
+  // placeholder so the wording can put it where French wants it.
+  "Save to a new file, numbered {name}": "Enregistrer dans un nouveau fichier, numéroté {name}",
   "Save as…": "Enregistrer sous…",
-  "Download the itinerary as a .json file": "Télécharger l'itinéraire au format .json",
+  "Download the itinerary as {name}": "Télécharger l'itinéraire sous {name}",
   "Download JSON": "Télécharger le JSON",
   "Unapplied edits — the viewer and export still show the last applied version.":
     "Modifications non appliquées — la visionneuse et l'export affichent encore la dernière version appliquée.",

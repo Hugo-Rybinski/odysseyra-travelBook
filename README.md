@@ -293,7 +293,9 @@ The header's burger menu switches between views:
   live** as you type, anchoring each finding inline on its field; an **Apply
   changes** button pushes the draft into the viewer, findings and PDF export (the
   preview refreshes only on Apply). **Save** writes back to the opened file,
-  **Save as…** / **Download JSON** write a new one; there's **undo / redo /
+  **Save as…** / **Download JSON** write a new one — numbered
+  `<trip> (v01).json`, `(v02)`, … so a folder of drafts sorts in the order it
+  was written; there's **undo / redo /
   revert**, an autosave that survives reloads, coordinate helpers (paste
   "lat, long", or **geocode from address**), and normalize-on-save so a
   round-tripped file stays diff-clean.
@@ -385,25 +387,23 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
-- **Version the saved file automatically** — an itinerary is edited dozens of
-  times before the trip, and today nothing keeps the versions apart on disk. The
-  viewer has three save routes and each mismanages history in its own way: an
-  in-place save through a writable handle **overwrites** the file with no
-  previous copy anywhere, the download fallback drops `trip.json`,
-  `trip (1).json`, `trip (2).json`… into `~/Downloads` where nothing but the
-  timestamp says which is newest, and Save-as re-suggests the same
-  `slugify(title).json` every time (`draftFilename` in `App.tsx`). The PDF and
-  `.ics` exports name themselves from the same slug, so a folder ends up holding
-  several books with no way to tell which JSON produced which. Suggest
-  `<title>-v3.json` (or a `-2026-09-05` stamp) by reading the highest version
-  already present, and consider keeping the previous file rather than
-  overwriting it. Two calls to make: **the version belongs in the name, not in
-  the file** — a `travel_description.version` field would change the JSON on
-  every save, and the viewer's day cache is keyed by the itinerary's hash
-  (`docHash` in `maps/mapCache.ts`), so every save would miss the whole cache
-  and redraw every map; and the CLI should follow the same convention when it
-  derives `<input>.pdf`, or the two halves disagree about what a trip's files
-  are called.
+- **Carry the file's `(vNN)` into the exports, and into the CLI** — the Edit
+  tab now numbers the JSON it writes (`<slug> (v02).json`, see
+  [`web/README.md`](web/README.md)'s P4), but the **PDF** and **`.ics`** exports
+  still name themselves from the bare slug, so exporting twice overwrites the
+  first book and a folder can't say which JSON produced which. They should carry
+  the version of the file they were built from — the *current* one, not the next,
+  since an export renders the applied text rather than creating a new revision —
+  which is a different derivation from `nextFilename`'s and lives in the Options
+  tab rather than the editor. The CLI's `-o` default (`<input>.pdf`) should
+  follow the same convention or the two halves disagree about what a trip's files
+  are called. Two more pieces are missing on the editor side: **Save in place**
+  can't advance the marker (its handle points at one file, and the FS Access API
+  needs a directory handle to create that file's sibling), so a directory-handle
+  route would be needed to make every save a new version; and nothing ever reads
+  the folder, so the count continues from the file you opened rather than from
+  the highest version actually on disk — reopen an old `(v02)` with `(v05)`
+  beside it and the next save proposes `(v03)`.
 - **Print the coordinates in ink-saver mode** — `--ink-saver` drops every
   `(Navigate)` link, not just its colour: `_line_with_nav` / `_nav_block_h` and
   the cards' `has_links` all resolve the URL to `""`, because a link is accent

@@ -48,6 +48,10 @@ export interface EditPanelProps {
   saving: boolean;
   canSaveInPlace: boolean;
   hasSavePicker: boolean;
+  // The `<slug> (vNN).json` the two create-a-file routes will propose, shown in
+  // their tooltips so the numbering is visible before it happens. Save in place
+  // doesn't take it — it overwrites the version that's already open.
+  nextFile: string;
   onSave: () => void;
   onSaveAs: () => void;
   onDownloadJson: () => void;
@@ -78,6 +82,7 @@ export function EditPanel({
   saving,
   canSaveInPlace,
   hasSavePicker,
+  nextFile,
   onSave,
   onSaveAs,
   onDownloadJson,
@@ -176,7 +181,12 @@ export function EditPanel({
             </button>
           )}
           {hasSavePicker && (
-            <button className="btn subtle" onClick={onSaveAs} disabled={saving} data-tip={t("Save to a new file")}>
+            <button
+              className="btn subtle"
+              onClick={onSaveAs}
+              disabled={saving}
+              data-tip={t("Save to a new file, numbered {name}", { name: nextFile })}
+            >
               <span className="fade-label">{t("Save as…")}</span>
             </button>
           )}
@@ -184,7 +194,7 @@ export function EditPanel({
             className="btn subtle"
             onClick={onDownloadJson}
             disabled={saving}
-            data-tip={t("Download the itinerary as a .json file")}
+            data-tip={t("Download the itinerary as {name}", { name: nextFile })}
           >
             <span className="fade-label">{t("Download JSON")}</span>
           </button>

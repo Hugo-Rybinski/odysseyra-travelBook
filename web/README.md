@@ -335,6 +335,22 @@ README schema tables). It is being built in phases — see
   only route where the FS Access API is absent, e.g. iOS Safari). An
   unsaved-changes indicator is tracked separately from unapplied edits (Apply =
   preview, Save = disk).
+  The two routes that **create** a file number it — `<slug> (v01).json`,
+  `(v02)`, … — so a folder of drafts sorts in the order it was written instead
+  of filling with the browser's own `trip (1).json`, whose order says nothing.
+  `file/version.ts` parses and formats the marker; `App.tsx`'s `nextFilename`
+  takes the **base** from the trip's title (so renaming the trip renames the
+  file) and the **version** from the last file opened or written, so the count
+  follows the document across a rename rather than restarting. Three things are
+  deliberate: the marker lives in the **name and never in the JSON** (a
+  `travel_description.version` field would change the bytes on every save, and
+  the day cache is keyed by the itinerary's hash — so each save would miss the
+  whole cache and redraw every map for content that hadn't moved); **Save in
+  place does not advance it**, because its handle points at one existing file
+  and the API can't create that file's sibling without a picker; and the count
+  continues from the name Save-as hands **back**, not the one it proposed, since
+  the picker lets the user rename freely. The next name is shown in both
+  buttons' tooltips.
 - **P5:** coordinate helpers. Every add/remove/reorder, insert scaffold and enum
   picker already exists from P1; P5 adds **paste "lat, long"** (fills both fields
   at once) and **Geocode from address** on each coordinate — a Nominatim lookup
