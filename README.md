@@ -413,15 +413,6 @@ they reuse of what's already here.
   the folder, so the count continues from the file you opened rather than from
   the highest version actually on disk — reopen an old `(v02)` with `(v05)`
   beside it and the next save proposes `(v03)`.
-- **Print the coordinates in the *normal* mode too** — ink-saver now prints each
-  `(Navigate)` target's `lat, long` in place of the link it can't spend accent
-  on (`_nav_affordance` in `pdf/base.py`), which leaves the colour book the only
-  one you can't read a point out of. Adding them *beside* the link there is a
-  different call from standing in for it: the row already carries a duration, an
-  address and a price, and a 19-character pair on top of that is what pushes it
-  to a second line — so it wants to be a switch (a `defaults` field? a build
-  flag?) rather than the default, and the rows that measure themselves before
-  drawing would each have to reserve both.
 - **Linkify a phone number or an email found *inside* freeform text** — the
   viewer already turns a `contact` into a `tel:` / `mailto:` link, but only by
   testing the **whole** value (`DIALABLE` / `MAILABLE` are anchored `^…$`), and
@@ -452,15 +443,6 @@ they reuse of what's already here.
   rail source. Needs an answer for `other` too, and note that a routed leg would
   start widening a printed map's extent, which legs
   [deliberately never do](file_format.md#maps--coordinates).
-- **Pin the accommodations on the zoom maps** — an area's detail map already
-  carries *that night's* stay as a bare `*` (`resolve_day`'s area branch and
-  `bridge.py`'s `_day_geo`, a pin only, never part of the extent), but nothing
-  names it in the **static** map: `RenderedMap`'s legend is built from the
-  lettered groups alone, so the one marker you might actually be walking to is
-  the one with no caption (the interactive map is fine — `_day_geo` passes the
-  stay's name as the point's title). Give it a legend entry, and decide whether
-  a *neighbouring* night's stay inside the same frame should show too — a
-  two-night town is one area drawn twice today, each time pinning one hotel.
 - **Better hike trail maps** — `render_hike_map` draws the GPX line and nothing
   else, so a trail reads as a shape with no story: no **direction** (an
   out-and-back and a loop look alike, and neither says which end you start
@@ -507,13 +489,6 @@ they reuse of what's already here.
   `_road_waypoints` in either renderer. It also needs an answer to what an
   **area zoom map**'s extent means when one member is a route rather than a
   point — the one genuinely open design question here.
-- **Typed / grouped contacts** — the flat
-  [`misc.emergency_contacts`](file_format.md#miscemergency_contacts) list is
-  built (the book's last page, and the end of the viewer's Overview tab), but
-  every entry is an untyped `{name, contact}` pair. Giving a contact a *kind*
-  (embassy, insurer, host, local emergency number) would let both renderers
-  group the directory and let a per-country block be filled in from the
-  countries the trip actually visits.
 - **More `misc` reference lists** — the [`misc`](file_format.md#misc) group was
   added precisely so trip-wide data with no place on the timeline has somewhere
   to go, and it holds one list so far. Obvious neighbours: travel documents /
