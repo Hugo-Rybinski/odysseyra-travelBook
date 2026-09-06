@@ -1694,6 +1694,10 @@ body {
   white-space: nowrap;
   font-weight: 600;
   cursor: pointer;
+  /* Sit on the text baseline like the <a> beside it. A button's default
+     alignment is the UA's, which is not an <a>'s — and with padding and border
+     already stripped, baseline puts the two labels on exactly one line. */
+  vertical-align: baseline;
 }
 .gpx-link:hover {
   text-decoration: underline;
@@ -1701,6 +1705,15 @@ body {
 .gpx-error {
   font-size: 0.82rem;
   color: #b3261e;
+}
+/* A row's action links — `(Navigate)` and the GPX download/build — as one box
+   (see `LinkGroup`), so the line breaks *before* the pair rather than between
+   its halves: an inline-block moves to the next line whole when it doesn't fit
+   the space left on this one. Deliberately not `white-space: nowrap`, which
+   would keep them together at the cost of overflowing a card too narrow to hold
+   the pair at all — a box may still break inside itself as a last resort. */
+.link-group {
+  display: inline-block;
 }
 
 /* road VIA breakdown */
@@ -1722,6 +1735,17 @@ body {
   gap: 4px 10px;
   margin: 0 0 2px;
   font-size: 0.82rem;
+  /* One baseline for the whole row. The default `stretch` makes each part as
+     tall as the tallest — which a pinned leg's discs (1.35em) do — and then the
+     parts disagree about where inside that box their text goes, so the route,
+     the figures and the links each sat at a slightly different height. */
+  align-items: baseline;
+}
+/* The row's links keep the row's own 10px spacing between them: `LinkGroup`
+   passes no text separator here (the VIA row dots nothing), so the gap the flex
+   layout would have given them has to be restored inside the group. */
+.via-links > * + * {
+  margin-left: 10px;
 }
 .via-route {
   color: var(--fg);

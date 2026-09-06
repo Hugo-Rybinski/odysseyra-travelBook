@@ -22,7 +22,7 @@ import {
 import { Clamp } from "./Clamp";
 import { ForecastChip } from "./forecast";
 import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
-import { AddressLink, Links, NavLink } from "./Links";
+import { AddressLink, LinkGroup, Links, NavLink } from "./Links";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { priceInline } from "./money";
 import { MapFigure } from "./Parts";
@@ -637,11 +637,15 @@ function ActivityDetails({
   const chips: ReactNode[] = [];
   if (bits.length) chips.push(bits.join("  ·  "));
   if (address) chips.push(<AddressLink key="addr" address={address} />);
-  if (nav) chips.push(<NavLink key="nav" lang={lang} href={nav} />);
+  // The row's action links — Navigate and the GPX file — are collected apart
+  // from the text chips and pushed as **one** chip (see `LinkGroup`): they read
+  // as a pair, so a line break may fall before them but never between them.
+  const actions: ReactNode[] = [];
+  if (nav) actions.push(<NavLink key="nav" lang={lang} href={nav} />);
   // A hike carrying a GPX offers the file itself, alongside its other inline
   // links (renders nothing for every other activity).
   if (act.type === "hike" && act.track?.gpx)
-    chips.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
+    actions.push(<GpxDownloadLink key="gpx" act={act} lang={lang} />);
   // A drive's GPX normally sits on its leg's VIA row — but a one-leg drive
   // draws no VIA list at all, so the link had nowhere to go and simply
   // vanished. It is promoted to the road's own line instead, the same way a
@@ -650,7 +654,7 @@ function ActivityDetails({
     const legs = roadLegs(act.start ?? "", act.waypoints ?? []);
     if (legs.length === 1) {
       if (legs[0].gpx)
-        chips.push(
+        actions.push(
           <GpxDownload
             key="gpx"
             base64={legs[0].gpx}
@@ -659,11 +663,12 @@ function ActivityDetails({
           />,
         );
       else if (dayIndex != null && roadIndex != null)
-        chips.push(
+        actions.push(
           <GpxBuildLink key="gpx" dayIndex={dayIndex} roadIndex={roadIndex} legIndex={0} lang={lang} />,
         );
     }
   }
+  if (actions.length) chips.push(<LinkGroup key="actions">{actions}</LinkGroup>);
 
   if (
     !chips.length &&
@@ -754,21 +759,32 @@ function RoadVia({
             {meta.length > 0 && <span className="via-meta">{meta.join("  ·  ")}</span>}
             {/* the same small chip the road-level flag uses, on the rough leg */}
             {leg.offRoad && <span className="chip outline">{tr(lang, "offRoad")}</span>}
-            {/* the shared NavLink, so this row's links match the ones on every
-                other activity — and the GPX buttons sitting right beside it */}
-            {nav && <NavLink lang={lang} href={nav} />}
-            {/* the file this leg carries, or — for a leg with none — one the
-                app builds from the drawn route, which says so in its label */}
-            {leg.gpx ? (
-              <GpxDownload base64={leg.gpx} name={leg.dest || act.title} lang={lang} />
-            ) : dayIndex != null && roadIndex != null ? (
-              <GpxBuildLink
-                dayIndex={dayIndex}
-                roadIndex={roadIndex}
-                legIndex={i}
-                lang={lang}
-              />
-            ) : null}
+            {/* The shared NavLink, so this row's links match the ones on every
+                other activity, plus the leg's GPX — the file it carries, or,
+                for a leg with none, one the app builds from the drawn route
+                (which its label says). One `LinkGroup`, so the pair wraps
+                together and shares a baseline. */}
+            <LinkGroup sep="" className="via-links">
+              {[
+                nav ? <NavLink key="nav" lang={lang} href={nav} /> : null,
+                leg.gpx ? (
+                  <GpxDownload
+                    key="gpx"
+                    base64={leg.gpx}
+                    name={leg.dest || act.title}
+                    lang={lang}
+                  />
+                ) : dayIndex != null && roadIndex != null ? (
+                  <GpxBuildLink
+                    key="gpx"
+                    dayIndex={dayIndex}
+                    roadIndex={roadIndex}
+                    legIndex={i}
+                    lang={lang}
+                  />
+                ) : null,
+              ]}
+            </LinkGroup>
           </p>
         );
       })}

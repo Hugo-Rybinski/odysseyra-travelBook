@@ -1,6 +1,8 @@
 // A compact inline row of external links — Navigate (Google Maps), Website and
 // Reservation — shared across the day timeline and the section cards. Renders
 // nothing when there's nothing to link.
+import { Fragment, type ReactNode } from "react";
+
 import { tr, type Lang } from "./format";
 import { navUrl, useMapProvider } from "./nav";
 
@@ -29,6 +31,44 @@ export function Links({
         </a>
       ))}
     </p>
+  );
+}
+
+// A row's action links — `(Navigate)` and a GPX download / build — as **one**
+// inline-block, so a line break falls *before* the pair rather than between its
+// members. They answer the same question about the same place, and split across
+// two lines they read as two unrelated links. The PDF has the same rule where it
+// can: its VIA row measures the whole tail (figures, off-road pill, Navigate)
+// and moves it to a second line as a unit.
+//
+// Grouping also settles their vertical alignment. Inside a flex row (the VIA
+// list) each link is otherwise a flex item of its own — and a `<button>` centres
+// its content in the stretched item's box where an `<a>` does not, so the two
+// labels sat a few pixels apart whenever the row was taller than its text (which
+// a pinned leg's discs make it). As one item they lay out as ordinary inline
+// text on a shared baseline, and the group aligns as a whole.
+export function LinkGroup({
+  children,
+  sep = "  ·  ",
+  className = "",
+}: {
+  children: ReactNode[];
+  // The text between two links. The chips line dot-separates like its other
+  // parts; the VIA row passes "" and spaces them in CSS, matching its own gap.
+  sep?: string;
+  className?: string;
+}) {
+  const items = children.filter(Boolean);
+  if (!items.length) return null;
+  return (
+    <span className={["link-group", className].filter(Boolean).join(" ")}>
+      {items.map((c, i) => (
+        <Fragment key={i}>
+          {i > 0 ? sep : ""}
+          {c}
+        </Fragment>
+      ))}
+    </span>
   );
 }
 

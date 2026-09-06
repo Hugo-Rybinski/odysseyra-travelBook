@@ -727,7 +727,19 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     Navigate uses the shared `NavLink` (`.link .nav-inline`, and the `(Navigate)`
     parentheses the rest of the book prints) rather than a bare `.link` of its
     own — otherwise the row's three links came out in two different weights and
-    only two of the three were parenthesized. Three things are load-bearing:
+    only two of the three were parenthesized. **`(Navigate)` and the GPX link
+    also travel as a pair**, through `Links.tsx`'s `LinkGroup` (`.link-group`,
+    an `inline-block`): a line may break *before* them but not between them —
+    they answer the same question about the same place — and being one element
+    is also what puts their labels on one baseline, since as two flex items of a
+    `.via-leg` a `<button>` centres its text in the stretched item where an
+    `<a>` does not (`align-items: baseline` on the row settles the rest of it).
+    Deliberately not `white-space: nowrap`: the box may still break inside
+    itself on a card too narrow to hold the pair, rather than overflow. The PDF
+    keeps the pair rule where it has one — `_road_waypoints` measures the whole
+    tail (figures, `OFF-ROAD`, Navigate) and moves it down as a unit — and has
+    no GPX link to align, paper being unable to hand back a file.
+    Three things are load-bearing:
     - **A `<rte>`, not a `<trk>`.** The geometry was computed, so writing it as a
       track would hand a GPS a recording that never happened —
       `models/gpx_export.py` exists to keep that distinction (and is where the
