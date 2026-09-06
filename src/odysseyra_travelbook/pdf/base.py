@@ -12,6 +12,7 @@ from ..models import (
     DEFAULT_MAP_PROVIDER,
     Itinerary,
     _format_tz,
+    format_coordinate,
     format_money,
     maps_url,
 )
@@ -456,12 +457,35 @@ class _PDFBase(FPDF):
         self._guidebook_pill(x + last_w + gap, end_y - h + dy, pages, pill_size)
         self.set_y(end_y)
 
-    def _nav_geom(self, text: str, w: float, size: float, style: str) -> tuple:
-        """Shared geometry for the ``text`` + inline "(Navigate)" block: the
+    def _nav_affordance(self, coordinate, *query_parts) -> tuple[str, str]:
+        """The trailing "how do I get there" affordance for a location, as
+        ``(label, url)`` — ``("", "")`` when there is nothing to show.
+
+        Normally that's a clickable accent ``(Navigate)`` pointing at the
+        ``coordinate``, else at the first non-empty ``query_parts`` address or
+        place name (see :func:`maps_url`). Under ``ink_saver`` every hyperlink is
+        dropped — a link is accent emphasis, which is what the mode exists to
+        stop spending — so the label becomes the bare ``lat, long`` in muted
+        type and the url is empty. That leaves the *printed* book, the one most
+        likely to be read away from a screen, with a way to get from an address
+        to the point it means; before this it had none at all.
+
+        Only an object with a real ``coordinate`` gets that treatment: a
+        text-only nav target has no point to print, and its address is already
+        on the row the label would trail. An empty url is therefore what tells a
+        caller to draw the label unclickable and faint — the two always move
+        together."""
+        if not self.ink_saver:
+            url = maps_url(coordinate, *query_parts, provider=self.map_provider)
+            return (self.t("(Navigate)"), url) if url else ("", "")
+        return (format_coordinate(coordinate), "")
+
+    def _nav_geom(self, text: str, w: float, size: float, style: str,
+                  label: str) -> tuple:
+        """Shared geometry for the ``text`` + inline ``label`` block: the
         wrapped text lines, the width of the last one (in the text font), the
-        "(Navigate)" label and its width, and whether the label fits after the
-        last line. Leaves the font set to the text face."""
-        label = self.t("(Navigate)")
+        label and its width, and whether the label fits after the last line.
+        Leaves the font set to the text face."""
         self.set_font(FONT, style, size)
         lines = self.multi_cell(w, 5, text, dry_run=True, output="LINES") or [text]
         last_w = self.get_string_width(lines[-1])
@@ -475,14 +499,14 @@ class _PDFBase(FPDF):
                      size: float = 9, h: float = 5, style: str = "") -> float:
         """The height :meth:`_line_with_nav` will consume for these arguments
         (so cards can reserve exactly the right space)."""
-        # Mirror _line_with_nav: ink-saver draws no "(Navigate)", so no link
-        # width to reserve and never a dropped extra line.
-        url = "" if self.ink_saver else maps_url(coordinate, *query_parts,
-                                                 provider=self.map_provider)
+        # Mirror _line_with_nav, including which label it draws: under ink-saver
+        # that's the coordinates, which are wider than "(Navigate)" and so more
+        # likely to take a line of their own.
+        label, _ = self._nav_affordance(coordinate, *query_parts)
         if not text:
-            return h if url else 0
-        lines, _, _, _, fits = self._nav_geom(text, w, size, style)
-        if not url:
+            return h if label else 0
+        lines, _, _, _, fits = self._nav_geom(text, w, size, style, label)
+        if not label:
             return len(lines) * h
         return len(lines) * h if fits else (len(lines) + 1) * h
 
@@ -505,32 +529,37 @@ class _PDFBase(FPDF):
         only when it would not fit. With no text, just the link is drawn; with
         no locatable target, just the text. ``text_url`` (see :meth:`_addr_url`)
         makes the drawn ``text`` itself clickable — an address-based search that
-        complements the coordinate Navigate link. Advances the cursor below."""
-        url = maps_url(coordinate, *query_parts, provider=self.map_provider)
+        complements the coordinate Navigate link. Advances the cursor below.
+
+        Under ``ink_saver`` the trailing label is the bare ``lat, long`` in faint
+        type instead of the link (see :meth:`_nav_affordance`), and the drawn
+        text stops being clickable."""
+        label, url = self._nav_affordance(coordinate, *query_parts)
         if self.ink_saver:
-            # Ink-saver drops every hyperlink: no "(Navigate)" and no clickable
-            # address — just the plain text (or nothing when there's no text).
-            url = text_url = ""
+            text_url = ""  # ink-saver drops the address search too
         y = self.get_y()
-        if not text and not url:
+        if not text and not label:
             return
+        # A clickable label is accent emphasis; the unclickable coordinates
+        # ink-saver leaves in its place are secondary data, so they go faint.
+        label_col = self.accent if url else FAINT
         if not text:
             self.set_xy(x, y)
             self.set_font(FONT, "", size)
-            self.set_text_color(*self.accent)
-            self.cell(self.get_string_width(self.t("(Navigate)")), h,
-                      self.t("(Navigate)"), link=url)
+            self.set_text_color(*label_col)
+            self.cell(self.get_string_width(label), h, label, link=url)
             self.set_y(y + h)
             return
-        lines, last_w, label, label_w, fits = self._nav_geom(text, w, size, style)
+        lines, last_w, label, label_w, fits = self._nav_geom(text, w, size,
+                                                             style, label)
         n = len(lines)
         self.set_xy(x, y)
         self.set_text_color(*color)
         self.multi_cell(w, h, text, link=text_url)
-        if not url:
+        if not label:
             return
         self.set_font(FONT, "", size)
-        self.set_text_color(*self.accent)
+        self.set_text_color(*label_col)
         gap = self.get_string_width("  ")
         if fits:
             self.set_xy(x + last_w + gap, y + (n - 1) * h)

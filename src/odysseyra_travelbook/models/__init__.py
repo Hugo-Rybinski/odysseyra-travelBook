@@ -16,9 +16,11 @@ The model is split across submodules:
 from .accommodation import ACCOMMODATION_TYPES, Accommodation
 from .car_rental import CAR_TYPES, CarRental, CarRentalEvent, resolve_car_rental
 from .geo import (
+    COORD_DECIMALS,
     DEFAULT_MAP_PROVIDER,
     MAP_PROVIDERS,
     Coordinate,
+    format_coordinate,
     maps_url,
     _parse_coordinate,
 )
@@ -114,6 +116,8 @@ __all__ = [
     "Hike",
     "Itinerary",
     "maps_url",
+    "format_coordinate",
+    "COORD_DECIMALS",
     "MAP_PROVIDERS",
     "DEFAULT_MAP_PROVIDER",
     "ItineraryError",

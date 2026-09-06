@@ -48,6 +48,28 @@ def _parse_coordinate(value, name: str = "coordinate") -> Coordinate | None:
 MAP_PROVIDERS = ("google", "apple", "osm", "waze", "mapsme")
 DEFAULT_MAP_PROVIDER = "google"
 
+# Decimals a printed coordinate keeps. 5 is ~1 m at the equator — finer than any
+# hand-written travel coordinate is meant to be, and short enough to sit at the
+# end of a text row without pushing it to a second line.
+COORD_DECIMALS = 5
+
+
+def format_coordinate(
+    coordinate: "Coordinate | None", decimals: int = COORD_DECIMALS
+) -> str:
+    """``48.85837, 2.29448`` — a coordinate as text, ``""`` when there is none.
+
+    Used by the PDF's ink-saver mode, which drops every hyperlink and so prints
+    the point instead of linking to it. Trailing zeros are kept (``2.30000``):
+    every pair then reads at the same width down a page, and the fixed number of
+    decimals states the precision rather than implying the value is exact.
+
+    ``show_on_map`` is deliberately ignored — that flag hides the point's *pin*,
+    while this is the text beside its address."""
+    if coordinate is None:
+        return ""
+    return f"{coordinate.lat:.{decimals}f}, {coordinate.long:.{decimals}f}"
+
 
 def maps_url(
     coordinate: "Coordinate | None",

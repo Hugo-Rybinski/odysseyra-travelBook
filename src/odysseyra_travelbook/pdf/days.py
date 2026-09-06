@@ -7,7 +7,7 @@ from datetime import time
 
 from ..lang import fmt_weekday_runs
 from ..models import (Day, _format_duration, format_elevation, format_km,
-                      maps_url, moon_phase)
+                      moon_phase)
 from .base import FAINT, FONT, INK, LIGHT, MUTED, _tint
 
 
@@ -175,8 +175,8 @@ class DayMixin:
                      (self.t("Reservation"), acc.booking_link)]
             self._bottom_bar(acc.name, sub, right, pin=self.pin_label(acc),
                              links=links, moon=moon, note=acc.description,
-                             nav=maps_url(acc.coordinate, acc.address, where,
-                                          provider=self.map_provider),
+                             nav_coord=acc.coordinate,
+                             nav_query=(acc.address, where),
                              addr_url=self._addr_url(acc.coordinate, acc.address))
             return
         leg = self.itinerary.night_transport(day.date)
@@ -211,15 +211,18 @@ class DayMixin:
         return lines
 
     def _bottom_bar(self, name: str, sub: str, right: str = "", pin=None,
-                    links=None, nav: str = "", addr_url: str = "", moon=None,
-                    note: str = "") -> None:
+                    links=None, nav_coord=None, nav_query=(),
+                    addr_url: str = "", moon=None, note: str = "") -> None:
         # bar_h leaves ~3 mm below the sub line to match the padding above the
         # kicker (the sub cell ends at offset pad+9+4 = 17; 17 + 3 = 20). A row
         # of clickable links, when present, sits below the sub line and grows
         # the bar by 6 mm; the note (when there is one) grows it by its own
         # wrapped height, between the two.
-        if self.ink_saver:  # ink-saver drops every hyperlink
-            links, nav, addr_url = None, "", ""
+        # Ink-saver drops every hyperlink — but the stay's location survives as
+        # printed coordinates where its Navigate link was (`_nav_affordance`).
+        if self.ink_saver:
+            links, addr_url = None, ""
+        nav_label, nav = self._nav_affordance(nav_coord, *nav_query)
         links = [(label, url) for label, url in (links or []) if url]
         pad = 4
         note_lines = self._bar_note(note, self.content_width - 2 * pad - 2)
@@ -265,11 +268,12 @@ class DayMixin:
         name_w = self.l_margin + self.content_width - pad - nx
         self.cell(name_w, 5, self._fit_text(name, name_w))
 
-        # The Navigate link sits inline right after the sub (address) line; it
-        # reserves its own width so the sub is truncated to leave room for it.
-        nav_label = "  " + self.t("(Navigate)") if nav else ""
+        # The Navigate link — or, under ink-saver, the coordinates standing in
+        # for it — sits inline right after the sub (address) line; it reserves
+        # its own width so the sub is truncated to leave room for it.
+        nav_text = "  " + nav_label if nav_label else ""
         self.set_font(FONT, "", 8.5)
-        nav_w = self.get_string_width(nav_label)
+        nav_w = self.get_string_width(nav_text)
         maxw = self.content_width - 2 * pad - 2
         while sub and "  ·  " in sub and self.get_string_width(sub) + nav_w > maxw:
             sub = sub.rsplit("  ·  ", 1)[0]
@@ -281,9 +285,9 @@ class DayMixin:
         self.set_text_color(*MUTED)
         sub_w = self.get_string_width(sub)
         self.cell(sub_w, 4, sub, link=addr_url)
-        if nav:
-            self.set_text_color(*self.accent)
-            self.cell(nav_w, 4, nav_label, link=nav)
+        if nav_text:
+            self.set_text_color(*(self.accent if nav else FAINT))
+            self.cell(nav_w, 4, nav_text, link=nav)
 
         ny = y + pad + 13.5
         for line in note_lines:
@@ -539,7 +543,7 @@ class DayMixin:
         ) if p)
         coord = (cr.pickup_coordinate if ev.kind == "car_pickup"
                  else cr.dropoff_coordinate) or cr.coordinate
-        if meta or maps_url(coord, ev.location, provider=self.map_provider):
+        if meta or self._nav_affordance(coord, ev.location)[0]:
             self.set_xy(x, self.get_y())
             self._line_with_nav(x, detail_w, meta, coord, ev.location)
         if cr.description:
@@ -675,9 +679,8 @@ class DayMixin:
                 meta.append(format_km(dist_km))
             mtext = "   " + "  ·  ".join(meta) if meta else ""
             dest_coord = dest_wp.coordinate if dest_wp is not None else None
-            url = "" if self.ink_saver else maps_url(dest_coord, dest or "",
-                                                     provider=self.map_provider)
-            nav = "  " + self.t("(Navigate)") if url else ""
+            nav_label, url = self._nav_affordance(dest_coord, dest or "")
+            nav = "  " + nav_label if nav_label else ""
             # The tail — this leg's figures, its off-road pill and the Navigate
             # link — shares the route's line when it fits and takes one of its
             # own when it doesn't. Measured before anything is drawn, because
@@ -720,7 +723,9 @@ class DayMixin:
                 self._inline_chip(self.t("OFF-ROAD"))
             if nav:
                 self.set_font(FONT, "", 8.5)
-                self.set_text_color(*self.accent)
+                # accent for the link, faint for the coordinates ink-saver
+                # leaves in its place (as `_line_with_nav` does)
+                self.set_text_color(*(self.accent if url else FAINT))
                 self.cell(self.get_string_width(nav), 5, nav, link=url)
             self.set_y(ty)
             self.ln(5)
@@ -924,8 +929,7 @@ class DayMixin:
         meta = "  ·  ".join(
             p for p in (poi.duration_display, poi.address,
                         self.price_inline(poi.price, poi.currency)) if p)
-        if meta or maps_url(poi.coordinate, poi.address, poi.name,
-                            provider=self.map_provider):
+        if meta or self._nav_affordance(poi.coordinate, poi.address, poi.name)[0]:
             self._line_with_nav(tx, tw, meta, poi.coordinate, poi.address,
                                 poi.name, size=8.5, h=4.5,
                                 text_url=self._addr_url(poi.coordinate, poi.address))
@@ -1021,8 +1025,8 @@ class DayMixin:
         parts = [p for p in (meal.duration_display, meal.address,
                              self.price_inline(meal.price, meal.currency)) if p]
         meta = "  ·  ".join(parts)
-        if meta or maps_url(meal.coordinate, meal.address, meal.restaurant,
-                            meal.area, provider=self.map_provider):
+        if meta or self._nav_affordance(meal.coordinate, meal.address,
+                                        meal.restaurant, meal.area)[0]:
             self._line_with_nav(tx, tw, meta, meal.coordinate, meal.address,
                                 meal.restaurant, meal.area, size=8.5, h=4.5,
                                 text_url=self._addr_url(meal.coordinate, meal.address))

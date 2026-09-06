@@ -201,6 +201,12 @@ maps are off or nothing on the trip is located.
 "coordinate": { "lat": 43.0974, "long": -0.0583 }
 ```
 
+A coordinate is also what the object's **(Navigate)** link points at, and what
+an [ink-saver](README.md#build--render-the-pdf) PDF prints in that link's place
+(`43.09740, -0.05830` — 5 decimals, ≈1 m — since that book has no working
+links). `show_on_map: false` doesn't suppress it: the flag hides a *pin*, not
+the coordinate as text.
+
 Segment objects that go from A→B carry endpoint coordinates: a `transport`
 **leg** accepts `start_coordinate` / `end_coordinate` (they belong to the leg,
 which is what has a departure and an arrival — not to its booking), and

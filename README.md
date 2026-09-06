@@ -116,7 +116,7 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 | Option | Description |
 | ------ | ----------- |
 | `-o`, `--output PATH` | Output PDF path (default: `<input>.pdf`) |
-| `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing |
+| `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing. Drops every hyperlink, printing each **(Navigate)** target's `lat, long` instead |
 | `--maps` / `--no-maps` | Force per-day maps on/off, overriding `defaults.include_maps_in_render` |
 | `--map-provider google\|apple\|osm\|waze\|mapsme` | Which app the inline **(Navigate)** links open (default `google`) |
 | `--cache-dir PATH` | Where to cache map tiles / geocode / route results |
@@ -134,7 +134,11 @@ full-page **whole-trip map** follows the cover, holding every day's points at
 once, each pinned with its **day number** (see [Maps](file_format.md#maps--coordinates)).
 `--ink-saver` keeps the layout but swaps the big solid accent
 areas (cover banner, header bands, card backgrounds) for accent-colored text,
-outlined badges and thin rules — ideal for a home printer.
+outlined badges and thin rules — ideal for a home printer. It also drops every
+hyperlink, so wherever a **(Navigate)** link would have sat it prints that
+point's `lat, long` (5 decimals, ≈1 m) in faint type instead — a printed book is
+the one most likely to be read away from a screen, and typing the pair into a
+phone is the paper equivalent of tapping the link.
 
 ### `validate` — check the JSON
 
@@ -404,18 +408,15 @@ they reuse of what's already here.
   the folder, so the count continues from the file you opened rather than from
   the highest version actually on disk — reopen an old `(v02)` with `(v05)`
   beside it and the next save proposes `(v03)`.
-- **Print the coordinates in ink-saver mode** — `--ink-saver` drops every
-  `(Navigate)` link, not just its colour: `_line_with_nav` / `_nav_block_h` and
-  the cards' `has_links` all resolve the URL to `""`, because a link is accent
-  emphasis and the mode exists to stop spending accent. That leaves an
-  ink-saver book with no way at all to get from a printed address to the point
-  it means — which is the *printed* book, the one most likely to be read away
-  from a screen. Show the bare `lat, long` where the link would have gone, in
-  muted type. Decisions: how many decimals (5 ≈ 1 m, and it lands in rows that
-  measure themselves before drawing, since a one-line row in the PDF neither
-  wraps nor clips); whether `show_on_map: false` still prints them (that flag is
-  about the map, not the text, so probably yes); and whether the normal mode
-  should offer them too, next to the link rather than instead of it.
+- **Print the coordinates in the *normal* mode too** — ink-saver now prints each
+  `(Navigate)` target's `lat, long` in place of the link it can't spend accent
+  on (`_nav_affordance` in `pdf/base.py`), which leaves the colour book the only
+  one you can't read a point out of. Adding them *beside* the link there is a
+  different call from standing in for it: the row already carries a duration, an
+  address and a price, and a 19-character pair on top of that is what pushes it
+  to a second line — so it wants to be a switch (a `defaults` field? a build
+  flag?) rather than the default, and the rows that measure themselves before
+  drawing would each have to reserve both.
 - **Linkify a phone number or an email found *inside* freeform text** — the
   viewer already turns a `contact` into a `tel:` / `mailto:` link, but only by
   testing the **whole** value (`DIALABLE` / `MAILABLE` are anchored `^…$`), and

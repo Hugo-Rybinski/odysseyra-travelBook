@@ -120,7 +120,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `_notice` (the full-width call-out strip a day's `bank_holiday` opens with),
   `_badge`, `_pill`, `_chip`, `_inline_chip` (the small pill drawn *inside* a text
   row, unlike `_chip` which owns its line — a VIA leg's `OFF-ROAD`) — which then
-  render outlines + accent-colored text + thin rules instead of solid fills. `day_map.py`'s `DayMapMixin` embeds the per-day
+  render outlines + accent-colored text + thin rules instead of solid fills. It
+  also drops every hyperlink, printing the target's coordinates instead — see
+  the ink-saver bullet under "Key design decisions" and `_nav_affordance`.
+  `day_map.py`'s `DayMapMixin` embeds the per-day
   map (from `maps/`) after the intro plus a numbered legend, and each area's zoom
   map inline after it; it degrades gracefully (a map failure never breaks the build).
   `trip_map.py`'s `TripMapMixin.trip_map()` adds the **whole-trip map page** right
@@ -335,6 +338,43 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   PDFs are the review artifact should print every map it can — so
   `tests/test_show_map.py` is where the behaviour lives, with `broken.json`
   carrying an invalid value at each of the three levels.
+- **Ink-saver prints the point instead of linking to it.** `--ink-saver` drops
+  every hyperlink, not just its colour — a link is accent emphasis, which is
+  what the mode exists to stop spending — which used to leave the *printed*
+  book, the one most likely to be read away from a screen, with no way at all
+  to get from an address to the point it means. So wherever a `(Navigate)` link
+  would have sat, the bare `lat, long` is printed instead
+  (`models/geo.py`'s `format_coordinate`, **5 decimals** ≈ 1 m, trailing zeros
+  kept so every pair reads at one width). Four things are load-bearing:
+  - **One decision point, `pdf/base.py`'s `_nav_affordance(coordinate,
+    *query_parts)` → `(label, url)`.** It answers "what trails this row" for
+    every caller — `_line_with_nav`/`_nav_block_h` (the inline case, so the
+    transport, accommodation and car-rental cards inherit it), the VIA row's
+    per-leg link in `days.py`'s `_road_waypoints`, and the stay bar's
+    (`_bottom_bar`, which now takes `nav_coord`/`nav_query` rather than a
+    finished url so it can ask). **An empty url is what says "draw it
+    unclickable"**: the label then goes `FAINT` rather than accent, since
+    coordinates you can't tap are secondary data and not emphasis. Nothing else
+    may branch on `ink_saver` to decide this, or the two labels drift.
+  - **The coordinates are wider than `(Navigate)`** (19 characters against 10),
+    so `_nav_block_h` has to reserve *its* width — a card that reserved the
+    link's would clip or overrun. That's why `_nav_geom` takes the label as an
+    argument instead of naming it itself, and why
+    `tests/test_ink_saver_coordinates.py` asserts reserved height == drawn
+    height for both labels. The stay bar keeps its height regardless: it
+    truncates its address line to leave room (see the one-line-row convention).
+  - **Only an object with a real `coordinate` gets them.** `maps_url` also
+    accepts an address or place name, and a text-only target has no point to
+    print — its address is already on the row the label would trail.
+    `show_on_map: false` **does** print them: that flag hides the point's *pin*
+    on a map something else draws, this is the text beside its address, and the
+    two don't interact.
+  - **No viewer twin, and no `SCHEMA_VERSION` bump.** Ink-saver is a *print*
+    choice — the viewer offers it only as a PDF-export toggle (`Options.tsx`'s
+    `inkSaver` → `bridge.py`'s `build`) and its own screen always has working
+    links, so there is nothing in `web/src/render/` to keep in step. The
+    resolved `Day` is untouched. The wheel still needs rebuilding, since the
+    browser's export runs it.
 - **One place, one pin.** A day names the same spot more than once as a matter
   of course — a drive's junction is the next drive's departure, an out-and-back
   passes its turning point twice, the village you park in is also the sight you
