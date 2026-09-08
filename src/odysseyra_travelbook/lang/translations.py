@@ -41,9 +41,13 @@ _FR = {
     "HIKE": "RANDO",
     "MEAL": "REPAS",
     "TRANSPORT": "TRANSPORT",
-    "OFF-ROAD SECTIONS": "SECTIONS HORS-ROUTE",
+    # "piste" is the French for an unpaved road/track, which is what this flag
+    # means. It was "hors-route" here and "hors-piste" in the viewer
+    # (`render/format.ts`) — a skiing term — so the same chip read two
+    # different ways; both now say PISTE. Keep the pair in step.
+    "OFF-ROAD SECTIONS": "SECTIONS EN PISTE",
     # the same flag as a small pill on a single VIA leg's row
-    "OFF-ROAD": "HORS-ROUTE",
+    "OFF-ROAD": "PISTE",
     "VIA": "VIA",
     # the grey pill under a detour's type badge — a stop kept for reference
     # rather than planned (the viewer mirrors it as the `detour` key in
@@ -346,7 +350,7 @@ _FR = {
         "qui dessinent l'itinéraire dans les « waypoints » de cette étape",
     "set it on each leg that runs off-road (the drive counts as off-road when "
     "every one of its legs does)":
-        "indiquez-le sur chaque étape hors-route (le trajet n'est hors-route que "
+        "indiquez-le sur chaque étape en piste (le trajet n'est en piste que "
         "si toutes ses étapes le sont)",
     "the legs last {total} in total, longer than the road's own {parent} — the "
     "leg times don't fit the drive.":
@@ -834,9 +838,9 @@ _FR = {
     "how long this hop takes to drive": "le temps de conduite de cette étape",
     "this hop's driving distance in km":
         "la distance de conduite de cette étape en km",
-    "whether this hop runs off-road": "si cette étape est hors-route",
+    "whether this hop runs off-road": "si cette étape est en piste",
     "false (and the drive counts as off-road only when every leg is)":
-        "false (et le trajet n'est hors-route que si toutes ses étapes le sont)",
+        "false (et le trajet n'est en piste que si toutes ses étapes le sont)",
     "intermediate points the hop's route bends through, in order from its start "
     "to its end":
         "les points intermédiaires par lesquels passe l'itinéraire de l'étape, "
@@ -1203,7 +1207,7 @@ _FR = {
     "Type": "Type",
     "Drive": "Route",
     "Yes": "Oui",
-    "Off-road": "Hors-route",
+    "Off-road": "Piste",
     "Via": "Via",
     "Category": "Catégorie",
     "Address": "Adresse",

@@ -244,7 +244,7 @@ const LABELS = {
     nowhere: "aucun hébergement renseigné",
     elevation: "dénivelé",
     distance: "distance",
-    offRoad: "hors-piste",
+    offRoad: "piste",  // uppercased by `.chip.outline`; PDF twin: "PISTE"
     detour: "Détour",
     navigate: "Y aller",
     website: "Site web",
