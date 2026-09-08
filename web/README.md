@@ -288,7 +288,8 @@ by the Python engine (`validate(text, lang)`).
   leg (`DayMapGL`'s optional `legs` prop → a dashed line layer), from the trip's
   own `transports` list so an overnight leg is drawn once rather than on both of
   its days; a leg appears only when its JSON gives both a `start_coordinate` and
-  an `end_coordinate` with `show_on_map` (nothing infers them, and Python's day
+  an `end_coordinate` neither of which is hidden (`hide_on_map`; nothing infers
+  them, and Python's day
   maps don't map transport at all). It's interactive-only (there's no pre-rendered PNG of the whole trip to
   fall back to), so a tiles/style failure shows a note instead.
   **Outlier clusters are kept out of the initial view** so a "Manhattan → JFK"

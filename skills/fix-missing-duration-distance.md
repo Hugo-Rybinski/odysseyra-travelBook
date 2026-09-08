@@ -108,7 +108,8 @@ search **both** levels. Record the full path as the entry's locator.
 - **each end of each road leg** (`start_coordinate` / `end_coordinate`), and
 - a road leg's route-shaping `waypoints`, which are bare `{lat,long}` objects.
 
-`show_on_map: false` may also be present — ignore it here.
+`hide_on_map: true` (or its retired spelling `show_on_map: false`) may also be
+present — ignore it here.
 
 **Roads and their legs.** A `road` object holds a **`legs`** array — one entry
 per hop, in travel order — and nothing else about the route (there is no `start`,

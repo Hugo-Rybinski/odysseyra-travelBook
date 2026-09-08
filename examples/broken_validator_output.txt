@@ -67,6 +67,7 @@
 ⚠️  line 48: this leg departs from 'Elsewhere' but the previous one arrives at 'No coordinate of its own' — a drive can't jump between the two, and it is the previous leg's 'end_location' that is used.
 ℹ️  line 48: optional field 'waypoints' is missing — intermediate points the hop's route bends through, in order from its start to its end. Expected an array of {lat, long} coordinates. Defaulting to [] (the route runs straight between the hop's endpoints).
 ℹ️  line 48: optional field 'gpx' is missing — a GPX recording of this hop, drawn as its line on the day map (instead of the routed guess). Expected the .gpx file base64-encoded (gzip allowed). Defaulting to none (the hop's line is routed through its endpoints).
+⚠️  line 49: field 'show_on_map' is the retired spelling — it is read as 'hide_on_map': true, which means the opposite. Rename it (opening the file in the web viewer does this for you).
 ❌  line 50: field 'duration' is invalid ('nope') — how long this hop takes to drive. Expected a duration like '1h30' or '45 min' (Could not parse duration 'nope').
 ❌  line 50: field 'off_road' is invalid ('maybe') — whether this hop runs off-road. Expected true or false (must be true or false).
 ❌  line 50: distance_km must be a positive number (got -3).
@@ -628,4 +629,4 @@
 ❌  line 144: field 'paid' is invalid ('later') — the payment state. Expected 'paid' or 'to pay' (paid must be 'paid' or 'to pay', got 'later').
 ❌  line 144: field 'additional_drivers' is invalid (-1) — the number of additional drivers. Expected a whole number (must be zero or more).
 
-90 error(s), 44 warning(s), 495 info.
+90 error(s), 45 warning(s), 495 info.

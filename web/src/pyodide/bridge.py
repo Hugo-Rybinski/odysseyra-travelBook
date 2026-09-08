@@ -197,7 +197,7 @@ def _day_geo(itinerary, day, cache):
               for i, g in enumerate(main_groups, start=1)]
     stay = itinerary.stay_for(day.date)
     stay_coord = None
-    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+    if stay is not None and stay.coordinate is not None and not stay.coordinate.hide_on_map:
         stay_coord = (stay.coordinate.lat, stay.coordinate.long)
         # ★ on the day map only when there *is* one; it stays a pin on the area
         # maps below either way, which are the place's call, not the day's.

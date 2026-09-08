@@ -10,7 +10,7 @@
 export interface Coordinate {
   lat: number;
   long: number;
-  show_on_map: boolean;
+  hide_on_map: boolean;
 }
 
 export interface Money {

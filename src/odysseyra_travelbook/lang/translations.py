@@ -328,6 +328,12 @@ _FR = {
         "même lieu.",
     "field '{name}' is no longer read on a road — {where}.":
         "le champ « {name} » n'est plus lu sur une route — {where}.",
+    "field 'show_on_map' is the retired spelling — it is read as "
+    "'hide_on_map': {value}, which means the opposite. Rename it (opening the "
+    "file in the web viewer does this for you).":
+        "le champ « show_on_map » est l'ancienne graphie — il est lu comme "
+        "« hide_on_map » : {value}, qui a le sens inverse. Renommez-le (l'ouvrir "
+        "dans le visualiseur web le fait pour vous).",
     "move it to the first leg's 'start_location'":
         "déplacez-le dans le « start_location » de la première étape",
     "move it to the first leg's 'start_coordinate'":

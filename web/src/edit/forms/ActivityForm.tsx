@@ -83,7 +83,7 @@ function GapWarning({
 
 function srcCoord(c?: SrcCoordinate) {
   return c && c.lat != null && c.long != null
-    ? { lat: c.lat, long: c.long, show_on_map: c.show_on_map ?? true }
+    ? { lat: c.lat, long: c.long, hide_on_map: c.hide_on_map ?? false }
     : null;
 }
 

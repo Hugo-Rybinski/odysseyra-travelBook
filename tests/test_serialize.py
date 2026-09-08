@@ -117,7 +117,7 @@ def test_coordinates_are_carried_through():
                if a.get("coordinate")]
     assert located, "france has explicitly located activities"
     c = located[0]["coordinate"]
-    assert set(c) == {"lat", "long", "show_on_map"}
+    assert set(c) == {"lat", "long", "hide_on_map"}
     assert isinstance(c["lat"], (int, float))
     assert isinstance(c["long"], (int, float))
 

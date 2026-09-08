@@ -1291,7 +1291,7 @@ class _Validator:
             if not isinstance(sub, dict):
                 continue
             coord = sub.get("coordinate")
-            if isinstance(coord, dict) and _truthy(coord.get("show_on_map", True)):
+            if isinstance(coord, dict) and not _truthy(coord.get("hide_on_map", False)):
                 return True
         return False
 
@@ -1307,11 +1307,31 @@ class _Validator:
                         self.add("error", child,
                                  "field '{name}' is invalid — {error}.",
                                  name=key, error=self._terr(err))
+                    self._retired_show_on_map(value, child)
                 else:
                     self._walk_coordinates(value, child)
         elif isinstance(node, list):
             for i, item in enumerate(node):
                 self._walk_coordinates(item, path + (i,))
+
+    def _retired_show_on_map(self, coord, path):
+        """Name a coordinate's retired ``show_on_map``.
+
+        A **warning**, not an error, because the value is not lost: this is the
+        one retired key the model still reads (see ``Coordinate.from_dict`` —
+        it was *reversed* rather than moved, so ignoring it would plot the pin
+        the file asked to hide). So the document renders correctly as it
+        stands; what the warning says is that it is written on the older shape.
+        Opening it in the viewer rewrites the key (``edit/migrate.ts``), and
+        saving persists that."""
+        if not isinstance(coord, dict) or "show_on_map" not in coord:
+            return
+        shown = _truthy(coord.get("show_on_map"))
+        self.add("warning", path + ("show_on_map",),
+                 "field 'show_on_map' is the retired spelling — it is read as "
+                 "'hide_on_map': {value}, which means the opposite. Rename it "
+                 "(opening the file in the web viewer does this for you).",
+                 value="false" if shown else "true")
 
     def _check_price_currency(self, obj, path):
         """A price's explicit ``currency`` must be the default or a declared

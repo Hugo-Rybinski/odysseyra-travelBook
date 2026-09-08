@@ -72,7 +72,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     equation, pure/offline, `None` on polar day/night. Driven from
     `Itinerary.sun_for(day)` / `sun_reference(date)` / `day_timezone(day)` and
     used by both `pdf/days.py` (the header band) and `serialize.py`.
-  - `geo.py` — `Coordinate` (lat/long/`show_on_map`) + `_parse_coordinate`, the
+  - `geo.py` — `Coordinate` (lat/long/`hide_on_map`) + `_parse_coordinate`, the
     optional map location attached to activities, transport, accommodation and
     car rentals (segments carry `start_/end_` or `pickup_/dropoff_` coordinates).
   - `gpx.py` — a hike's embedded GPX: `decode_gpx` (base64, optionally gzipped,
@@ -251,7 +251,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   the whole `<ol className="timeline">`, whose padding would otherwise leave a
   gap between the band and the stay bar.
 - **Maps & coordinates.** Every locatable object may carry an optional
-  `coordinate` (`{lat, long, show_on_map}`, `show_on_map` defaulting true);
+  `coordinate` (`{lat, long, hide_on_map}`, `hide_on_map` defaulting **false** —
+  see the rename bullet below);
   segments use `start_/end_coordinate` (a **road leg**, a transport **leg**) or
   `pickup_/dropoff_coordinate` (car rental). `include_maps_in_render` draws a
   per-day OSM map with a pin per located activity + drives as routes; areas get a
@@ -285,6 +286,46 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   the day's **zoom (area) maps** — as a pin only, never part of their extent,
   which is fixed by the area's own points, so the zoom/centering is identical
   with or without it (a stay outside the rendered frame simply isn't visible).
+- **`hide_on_map`, and the one retired key that is still read.** A coordinate's
+  pin switch is `hide_on_map`, a bool defaulting **false**. It was
+  `show_on_map` (defaulting true) — the same question the other way round —
+  and the flip is the point: a default-false flag is only ever *written* when
+  it means something, where `show_on_map: true` invited being spelled out
+  redundantly on every located object in the file. `models/geo.py` is the whole
+  parse; every consumer reads `not …hide_on_map` where it read `…show_on_map`.
+  - **The model still reads `show_on_map`, negated** — the single exception to
+    "the old renamed aliases are gone", and it earns it by being the one that
+    was *reversed* rather than moved. Every other retired key, ignored, loses a
+    value the validator can then name (`ROAD_MOVED_KEYS`); this one, ignored,
+    would **plot the pin the file asked to hide** — a silent change to the
+    rendering, in the direction of showing something the user hid. So it is
+    read, and `hide_on_map` wins when a file somehow carries both.
+  - **The viewer rewrites it on load**, which is what makes the shim temporary
+    rather than permanent. `web/src/edit/migrate.ts`'s `migrateSource` runs
+    inside `jsonToDraft` — the one seam every load path funnels through (open,
+    Demo, Reopen, blank scaffold, and the post-save re-seed) — so the draft the
+    Edit tab shows is already on the new shape and **saving persists it**. It is
+    a deep rename by key name, needing no schema table: the name appears nowhere
+    else in the format, so every object that can carry a coordinate (nested
+    activities, road and transport legs, waypoints, accommodations, car rentals)
+    is reached for free. An explicit `show_on_map: true` collapses to *nothing*
+    rather than to `hide_on_map: false`, matching what `SAFE_DEFAULTS` prunes on
+    save. The bar for anything else landing in that file: a **mechanical**
+    rewrite whose meaning is certain from the old value alone — anything needing
+    a judgement call belongs in the validator, which reports and leaves the file
+    alone.
+  - **`validate` warns rather than errors** (`_retired_show_on_map`, walked from
+    `_walk_coordinates`, so it sees every coordinate in the document at any
+    depth). Nothing is lost and nothing renders differently, so an error would
+    overstate it; the warning says the file is written on the older shape and
+    names the value it was read as. `broken.json` carries one, so the snapshot
+    holds the wording.
+  - The CLI has no migration of its own — it never rewrites a user's file (only
+    `geocode` writes back) — so a CLI-only user gets the warning and renames by
+    hand. `SCHEMA_VERSION` **bumped to 28**: a resolved `Coordinate` is part of
+    a cached day, and a v27 entry carries the retired key that every reader now
+    ignores, which would bring a hidden pin back on the day map, the trip map
+    and in the day's `geo`.
 - **`show_map` — one map, one owner.** `include_maps_in_render` is
   all-or-nothing for the trip; `show_map` (default **true**) is its per-object
   twin, and the rule is that **every map is switched on the object that draws
@@ -318,9 +359,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     the one `show_map` that works with `include_maps_in_render` **off**, because
     the map it gates does.
 
-  It is emphatically **not `coordinate.show_on_map`**, which points the other
-  way: that hides an object's *pin* on a map something else draws, this drops the
-  map the object draws itself. Both can be set and they don't interact — a place
+  It is emphatically **not `coordinate.hide_on_map`**, which asks a different
+  question: that hides an object's *pin* on a map something else draws, this
+  drops the map the object draws itself. Both can be set and they don't interact — a place
   with `show_map: false` still wears its number on the day map. The two names are
   a keystroke apart, so the distinction is spelled out in `file_format.md`'s
   *Switching one map off* table, in the Edit tab's help text and in
@@ -366,7 +407,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - **Only an object with a real `coordinate` gets them.** `maps_url` also
     accepts an address or place name, and a text-only target has no point to
     print — its address is already on the row the label would trail.
-    `show_on_map: false` **does** print them: that flag hides the point's *pin*
+    `hide_on_map: true` **does** print them: that flag hides the point's *pin*
     on a map something else draws, this is the text beside its address, and the
     two don't interact.
   - **No viewer twin, and no `SCHEMA_VERSION` bump.** Ink-saver is a *print*
@@ -618,7 +659,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     the arrival's disc against its own name. A pinned arrival used to earn a row
     — the title bunched its discs at the front then, so the number sat against
     the wrong town — and the row was pure duplication once the discs moved
-    mid-line. `show_on_map: false` still suppresses a pin.
+    mid-line. `hide_on_map: true` still suppresses a pin.
     **None of these three pins reach the whole-trip map**, in either renderer.
     A pin there carries the **day**, not the stop, and the drive is drawn as a
     route — so its departure, its junctions and its arrival would only stack

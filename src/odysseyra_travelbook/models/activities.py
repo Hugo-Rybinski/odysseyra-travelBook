@@ -54,7 +54,7 @@ class Activity(Scheduled):
     zoomed area map, a ``hike``'s trail map. Those are the only two activities
     that have one, so it is inert on the rest (a drive is drawn as a route on the
     day map, not as a map of its own). It is emphatically **not**
-    ``coordinate.show_on_map``, which is the other way round: that hides the
+    ``coordinate.hide_on_map``, which is a different question: that hides the
     activity's *pin* on a map somebody else draws, while this one drops the map
     the activity itself would draw. Both may be set, and they don't interact.
     """
@@ -340,7 +340,7 @@ class Road(Activity):
         ``display_end_on_maps`` (off by default), the earlier ones under
         ``display_intermediate_point_on_maps`` (**on**), so a multi-leg drive
         pins its junctions unless told not to. A point whose coordinate is
-        ``show_on_map: false`` is never pinned — that flag hides a pin wherever
+        ``hide_on_map: true`` is never pinned — that flag hides a pin wherever
         it appears."""
         named = self.named_waypoints
         out = []
@@ -353,7 +353,7 @@ class Road(Activity):
                 continue
             shown = (self.display_end_on_maps if last
                      else self.display_intermediate_point_on_maps)
-            if shown and wp.coordinate is not None and wp.coordinate.show_on_map:
+            if shown and wp.coordinate is not None and not wp.coordinate.hide_on_map:
                 out.append(wp)
         return out
 

@@ -268,8 +268,8 @@ export const FR: Record<string, string> = {
     "Longitude, −180 à 180. Laissez lat et long vides pour omettre la coordonnée.",
   "Longitude, −180 to 180.": "Longitude, −180 à 180.",
   "Hide on map": "Masquer sur la carte",
-  "Plot this point on the map. Shown by default when a coordinate is set; switch this on to hide it while keeping the coordinate.":
-    "Affiche ce point sur la carte. Affiché par défaut lorsqu'une coordonnée est définie ; activez pour le masquer tout en gardant la coordonnée.",
+  "Keep the coordinate but leave this point's pin off the map. Points are plotted by default; the (Navigate) link and the printed coordinates are unaffected either way.":
+    "Garde la coordonnée mais n'affiche pas la punaise de ce point sur la carte. Les points sont affichés par défaut ; le lien (S'y rendre) et les coordonnées imprimées ne changent pas.",
   "Hide this point on the map.": "Masquer ce point sur la carte.",
   "Start coordinate": "Coordonnée de départ",
   "End coordinate": "Coordonnée d'arrivée",

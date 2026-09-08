@@ -17,9 +17,18 @@ from odysseyra_travelbook.models import Coordinate, ItineraryError, Itinerary, _
 # -- model coordinate parsing ------------------------------------------------
 def test_coordinate_parsing_valid_and_defaults():
     c = _parse_coordinate({"lat": 43.1, "long": -0.05})
-    assert c == Coordinate(43.1, -0.05, True)  # show_on_map defaults True
+    assert c == Coordinate(43.1, -0.05, False)  # hide_on_map defaults False
     assert _parse_coordinate(None) is None
-    assert _parse_coordinate({"lat": 0, "long": 0, "show_on_map": False}).show_on_map is False
+    assert _parse_coordinate({"lat": 0, "long": 0, "hide_on_map": True}).hide_on_map is True
+
+
+def test_the_retired_show_on_map_is_still_read():
+    """It was *reversed*, not moved: a file that keeps it must not have the pin
+    it asked to hide plotted back. `hide_on_map` wins when both are written."""
+    assert _parse_coordinate({"lat": 0, "long": 0, "show_on_map": False}).hide_on_map is True
+    assert _parse_coordinate({"lat": 0, "long": 0, "show_on_map": True}).hide_on_map is False
+    both = {"lat": 0, "long": 0, "show_on_map": True, "hide_on_map": True}
+    assert _parse_coordinate(both).hide_on_map is True
 
 
 def test_coordinate_parsing_rejects_bad_values():
@@ -77,7 +86,7 @@ DAY = {
         {"type": "point_of_interest", "name": "Sanctuary",
          "coordinate": {"lat": 43.097, "long": -0.058}},
         {"type": "point_of_interest", "name": "Hidden",
-         "coordinate": {"lat": 43.1, "long": -0.05, "show_on_map": False}},
+         "coordinate": {"lat": 43.1, "long": -0.05, "hide_on_map": True}},
         {"type": "place", "name": "Old town",
          "coordinate": {"lat": 43.095, "long": -0.046},
          "activities": [
@@ -98,7 +107,7 @@ def test_resolve_day_points_routes_and_areas(monkeypatch):
     labels = [p.label for p in points]
     assert "Sanctuary" in labels
     assert "Old town" in labels          # the area contributes one pin
-    assert "Hidden" not in labels        # show_on_map=False is skipped
+    assert "Hidden" not in labels        # hide_on_map=True is skipped
     assert "Castle" not in labels        # nested points are not on the main map
     assert len(routes) == 1              # the road becomes one route
     assert routes[0][0] == (43.29, -0.36) and routes[0][-1] == (43.09, -0.05)
@@ -539,10 +548,10 @@ def test_day_legs_overnight_leg_is_on_both_day_maps():
     assert day_legs(it.days[2], it) == []
 
 
-def test_day_legs_needs_both_endpoints_and_respects_show_on_map():
+def test_day_legs_needs_both_endpoints_and_respects_hide_on_map():
     from odysseyra_travelbook.maps.build import day_legs
     for leg in ({"end_coordinate": None},
-                {"start_coordinate": {"lat": 40.0, "long": -70.0, "show_on_map": False}}):
+                {"start_coordinate": {"lat": 40.0, "long": -70.0, "hide_on_map": True}}):
         it = _trip_with_leg(start_date="2026-06-01", **leg)
         assert day_legs(it.days[0], it) == []
 

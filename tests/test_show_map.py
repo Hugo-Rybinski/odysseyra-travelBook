@@ -9,7 +9,7 @@ The two traps these tests exist for:
 * the day's overview map is what the numbered pin discs are a *legend* for, so
   switching it off has to take the numbers with it — and must **not** take the
   area maps, which are a different map with a different owner;
-* ``show_map`` is not ``coordinate.show_on_map``. That one hides an object's pin
+* ``show_map`` is not ``coordinate.hide_on_map``. That one hides an object's pin
   on a map something else draws; this one drops the map the object draws itself.
   A place with ``show_map: false`` still wears its number on the day map.
 
@@ -189,7 +189,7 @@ def test_a_place_can_drop_its_own_zoom_map(drawn, tmp_path):
 
 
 def test_a_place_that_drops_its_map_keeps_its_pin_on_the_days(drawn, tmp_path):
-    """`show_map` is not `coordinate.show_on_map`: the place is still somewhere
+    """`show_map` is not `coordinate.hide_on_map`: the place is still somewhere
     you go, so it is still a numbered stop on the day's map."""
     it = paris_day(place_map=False)
     dm = mapbuild.render_day_maps(it.days[0], it, Cache.open(tmp_path))

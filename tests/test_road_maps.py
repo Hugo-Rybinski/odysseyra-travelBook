@@ -93,9 +93,9 @@ def test_each_switch_selects_its_own_points():
 
 
 def test_a_hidden_coordinate_is_never_pinned():
-    """`show_on_map: false` hides a pin wherever it appears — here too."""
+    """`hide_on_map: true` hides a pin wherever it appears — here too."""
     legs = [dict(LEG_AB), dict(LEG_BC, end_coordinate={"lat": 3, "long": 3,
-                                                       "show_on_map": False})]
+                                                       "hide_on_map": True})]
     road = road_of(doc(legs=legs, display_end_on_maps=True,
                        display_intermediate_point_on_maps=True))
     assert [w.location for w in road.pinned_waypoints()] == ["B"]

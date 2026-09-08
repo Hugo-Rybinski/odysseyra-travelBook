@@ -299,10 +299,10 @@ class _Resolver:
         return geocode(query, self.countries, self.cache)
 
     def point_coord(self, act, city: str):
-        """(lat, long) for a point activity, honoring show_on_map + inference."""
+        """(lat, long) for a point activity, honoring hide_on_map + inference."""
         c = act.coordinate
         if c is not None:
-            return (c.lat, c.long) if c.show_on_map else None
+            return None if c.hide_on_map else (c.lat, c.long)
         query = None
         if act.kind in ("point_of_interest", "place", "hike"):
             query = f"{act.name}, {city}" if city else act.name
@@ -318,8 +318,8 @@ class _Resolver:
 
 
 def _leg_coord(coord):
-    """``(lat, long)`` for a transport endpoint, honoring ``show_on_map``."""
-    if coord is None or not coord.show_on_map:
+    """``(lat, long)`` for a transport endpoint, honoring ``hide_on_map``."""
+    if coord is None or coord.hide_on_map:
         return None
     return (coord.lat, coord.long)
 
@@ -333,7 +333,7 @@ def day_legs(day, itinerary):
     it arrives, and any day in between. So an **overnight** leg appears on both
     of its day maps — leaving on the departure day's map, arriving on the next
     day's. Only legs whose JSON gives both endpoint coordinates (with
-    ``show_on_map``) are drawn; endpoints are never geocoded, so the same legs
+    ``hide_on_map``) are drawn; endpoints are never geocoded, so the same legs
     appear whatever ``infer_coordinates_from_address`` says.
     """
     d = getattr(day, "date", None)
@@ -394,7 +394,7 @@ def resolve_day(day, itinerary, cache, *, main: bool = True):
                     nested.append(_Pt(sub.title, sc[0], sc[1], sub))
             if main:
                 coord = r.point_coord(act, city)
-                hidden = act.coordinate is not None and not act.coordinate.show_on_map
+                hidden = act.coordinate is not None and act.coordinate.hide_on_map
                 if coord is None and nested and not hidden:
                     # fall back to the centroid of the area's located sub-points
                     coord = (sum(p.lat for p in nested) / len(nested),
@@ -427,7 +427,7 @@ def resolve_day(day, itinerary, cache, *, main: bool = True):
             # `start_shared_with` bows out of the sequence: the departure is the
             # previous activity's place, which is pinned already (`pin_aliases`).
             if (act.display_start_on_maps and a and act.start_shared_with is None
-                    and (act.coordinate is None or act.coordinate.show_on_map)):
+                    and (act.coordinate is None or not act.coordinate.hide_on_map)):
                 main_pts.append(_Pt(act.start or act.title, a[0], a[1], act,
                                     from_road=True))
             for wp in act.pinned_waypoints():
@@ -469,7 +469,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
     # the night's stay, pinned with ★
     stay = itinerary.stay_for(getattr(day, "date", None))
     if (show_main and stay is not None and stay.coordinate is not None
-            and stay.coordinate.show_on_map):
+            and not stay.coordinate.hide_on_map):
         main_points.append((stay.coordinate.lat, stay.coordinate.long))
         main_labels.append(STAY_PIN)
         result.numbers[id(stay)] = STAY_PIN
@@ -501,7 +501,7 @@ def render_day_maps(day, itinerary, cache, ink_saver: bool = False,
         result.main = RenderedMap(img, [g[0].label for g in main_groups])
 
     stay_coord = None
-    if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+    if stay is not None and stay.coordinate is not None and not stay.coordinate.hide_on_map:
         stay_coord = (stay.coordinate.lat, stay.coordinate.long)
 
     for title, groups in area_groups:
@@ -613,7 +613,8 @@ def resolve_trip(itinerary, cache):
         main, day_routes, _nodes, _areas = resolve_day(day, itinerary, cache)
         spots = [(p.lat, p.long) for p in main if not p.from_road]
         stay = itinerary.stay_for(getattr(day, "date", None))
-        if stay is not None and stay.coordinate is not None and stay.coordinate.show_on_map:
+        if (stay is not None and stay.coordinate is not None
+                and not stay.coordinate.hide_on_map):
             spots.append((stay.coordinate.lat, stay.coordinate.long))
         for lat, long in spots:
             key = (label, round(lat / _TRIP_PIN_GRID), round(long / _TRIP_PIN_GRID))

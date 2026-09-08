@@ -726,7 +726,10 @@ renders maps (`defaults.include_maps_in_render` on), an activity can carry a
 `coordinate` (applies to `point_of_interest`, `place`, `hike` and `meal`; a
 `road` carries its coordinates on its **legs** instead — see below). A coordinate
 is plotted by default;
-add `"show_on_map": false` to record one without drawing its pin. With
+add `"hide_on_map": true` to record one without drawing its pin (the old
+spelling `show_on_map` is retired — when a base file uses it, rewrite it as
+`hide_on_map` with the value flipped, and list that among the migrated keys in
+the recap). With
 `infer_coordinates_from_address` on, activities with no coordinate are geocoded
 from their `name`/`address`; otherwise only explicit coordinates appear.
 
@@ -744,8 +747,8 @@ accepts the field — a `road` is drawn as a route on the day map, and a
   `false` only when a source or the user says a map should not be drawn ("skip
   the map for the Paris day", "the GPS trace is a mess — don't draw it"). When
   *updating* an existing itinerary, keep whatever it already says.
-- **It is not `coordinate.show_on_map`.** They point opposite ways:
-  `show_on_map` hides an object's *pin* on somebody else's map, `show_map` drops
+- **It is not `coordinate.hide_on_map`.** They answer different questions:
+  `hide_on_map` hides an object's *pin* on somebody else's map, `show_map` drops
   the map the object itself draws. A place with `show_map: false` still gets a
   numbered pin on the day map.
 

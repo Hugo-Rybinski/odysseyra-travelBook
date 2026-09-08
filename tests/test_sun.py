@@ -298,9 +298,9 @@ def test_a_morning_outside_the_days_clock_falls_back_to_the_evening():
 
 
 def test_hidden_pins_still_locate_the_sun():
-    # show_on_map only hides a pin — it doesn't move where you are.
+    # hide_on_map only hides a pin — it doesn't move where you are.
     it = _trip()
-    it.accommodations[0].coordinate.show_on_map = False
+    it.accommodations[0].coordinate.hide_on_map = True
     assert it.sun_for(it.days[0]) is not None
 
 

@@ -498,3 +498,20 @@ they reuse of what's already here.
 - **More languages** — the i18n scaffold (English source strings → per-language
   tables in `lang/translations.py` and the viewer's `i18n/`) already supports
   this; adding Spanish, German, Italian, etc. is mostly translation tables.
+- **Drop the retired `show_on_map`** — a coordinate's pin switch is
+  [`hide_on_map`](file_format.md#maps--coordinates) now, and the old spelling is
+  the *one* retired key the model still reads (negated), because it was reversed
+  rather than moved: ignored, it would plot the pin a file asked to hide. That
+  read path is a temporary bridge, not part of the format — the pieces to delete
+  are the `elif "show_on_map"` branch in `models/geo.py`, the validator's
+  `_retired_show_on_map` (and its `translations.py` entry, the `broken.json`
+  line and the snapshot), `edit/migrate.ts`, and the compatibility notes in
+  `file_format.md` and the two `skills/`. What has to be true first is simply
+  that the files in circulation have been through the viewer once, since opening
+  and saving is what rewrites the key; there is no way to check that from here,
+  so this is a decision to take rather than a condition to test. Worth doing:
+  `migrate.ts` is currently a whole module carrying one rename, and until it is
+  removed the format has two spellings for one flag — the exact confusion the
+  `show_map` / `hide_on_map` note exists to prevent. If a second migration lands
+  there before then, that module stops being disposable and this entry turns
+  into "drop the entry, keep the file".

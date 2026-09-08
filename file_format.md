@@ -195,7 +195,7 @@ maps are off or nothing on the trip is located.
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `lat` | ✅ | Latitude | number | −90…90 | — |
 | `long` | ✅ | Longitude | number | −180…180 | — |
-| `show_on_map` |  | Whether to plot this point | boolean | `true`/`false` | `true` when a coordinate is set |
+| `hide_on_map` |  | Keep the point but leave its pin off the map | boolean | `true`/`false` | `false` (the point is plotted) |
 
 ```json
 "coordinate": { "lat": 43.0974, "long": -0.0583 }
@@ -204,8 +204,14 @@ maps are off or nothing on the trip is located.
 A coordinate is also what the object's **(Navigate)** link points at, and what
 an [ink-saver](README.md#build--render-the-pdf) PDF prints in that link's place
 (`43.09740, -0.05830` — 5 decimals, ≈1 m — since that book has no working
-links). `show_on_map: false` doesn't suppress it: the flag hides a *pin*, not
+links). `hide_on_map: true` doesn't suppress it: the flag hides a *pin*, not
 the coordinate as text.
+
+> **Renamed.** This was `show_on_map` (default `true`) — the same question asked
+> the other way round. The old spelling is still *read* (negated), so a file that
+> keeps it renders exactly as before rather than having the pin it hid plotted
+> back; `validate` warns, and opening the file in the web viewer rewrites the key
+> for you. Saving from there persists it.
 
 Segment objects that go from A→B carry endpoint coordinates: a `transport`
 **leg** accepts `start_coordinate` / `end_coordinate` (they belong to the leg,
@@ -250,11 +256,11 @@ has none either. A hike's is the one that works even with
 ([`include_hike_maps`](#defaults) is the trip-wide switch for the whole hike
 figure, profile included).
 
-**`show_map` is not `coordinate.show_on_map`.** They point opposite ways:
-`show_on_map` hides this object's *pin* on a map something else draws, while
-`show_map` drops the map *this* object would draw. Both can be set, and they
-don't interact — a place with `show_map: false` still gets a numbered pin, and
-one with `show_on_map: false` still draws its zoom map.
+**`show_map` is not `coordinate.hide_on_map`.** They answer different
+questions: `hide_on_map` hides this object's *pin* on a map something else
+draws, while `show_map` drops the map *this* object would draw. Both can be
+set, and they don't interact — a place with `show_map: false` still gets a
+numbered pin, and one with `hide_on_map: true` still draws its zoom map.
 
 ### Sunrise & sunset
 
@@ -273,7 +279,7 @@ woke. Each has its own chain, mirroring the other:
 | 2 | the day's own **first** located activity | the day's own **last** located activity |
 | 3 | the nearest dated located stay | the nearest dated located stay |
 
-`show_on_map` is ignored throughout: it hides a pin, it doesn't move where you
+`hide_on_map` is ignored throughout: it hides a pin, it doesn't move where you
 are. Step 2 covers a night with no stay listed — aboard an overnight leg, or a
 day you fly out — and reads a drive's first leg as its departure and its last
 leg's arrival as its arrival, so a day's opening and closing positions are both
@@ -306,7 +312,7 @@ default, or Apple Maps / OpenStreetMap / Waze / MAPS.ME — pick it with
 `--map-provider` (the web viewer has a matching **Navigate links open in** option
 that also drives its PDF export). The link points at the object's `coordinate` when
 it has one, otherwise it falls back to its `address` / place name, so it appears
-even when maps are off and independently of `show_on_map`. A multi-leg `road`
+even when maps are off and independently of `hide_on_map`. A multi-leg `road`
 gets one **(Navigate)** per leg in its *VIA* list, each pointing at that leg's
 `end_coordinate` (or its `end_location`).
 
@@ -585,7 +591,7 @@ drawn as a route, so pinning the places along it would just stack copies of that
 one number along the line.
 
 Turn on all three and **every named point of the drive is pinned**. As with any
-other pin, a point whose coordinate says `"show_on_map": false` is left out, and
+other pin, a point whose coordinate says `"hide_on_map": true` is left out, and
 each pin's number is shown as an accent disc **beside the place it points at**:
 the departure's on the drive's title, each arrival's on that leg's row — and on
 a **one-leg** drive, which prints no leg row, the arrival's disc sits mid-title

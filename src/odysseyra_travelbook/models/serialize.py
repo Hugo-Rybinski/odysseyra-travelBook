@@ -50,7 +50,7 @@ def _date(d: date | None) -> str | None:
 def _coord(c) -> dict | None:
     if c is None:
         return None
-    return {"lat": c.lat, "long": c.long, "show_on_map": c.show_on_map}
+    return {"lat": c.lat, "long": c.long, "hide_on_map": c.hide_on_map}
 
 
 def _tz_label(offset: int | None, default_tz: int | None) -> str:
@@ -232,7 +232,7 @@ def _activity(itin: Itinerary, act) -> dict:
         # hike's trail map. On the common dict like ``detour``, so the viewer
         # reads one field wherever it draws one of those; inert on the types
         # that have no map of their own. Not to be confused with
-        # ``coordinate.show_on_map``, which hides a *pin* on somebody else's map.
+        # ``coordinate.hide_on_map``, which hides a *pin* on somebody else's map.
         "show_map": act.show_map,
         **_sched(act, itin.default_timezone),
     }

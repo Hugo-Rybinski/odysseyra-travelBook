@@ -402,7 +402,7 @@ ACTIVITY_SPECS = {
         # their own — here the area's zoom map, on a hike its trail map — and
         # nowhere else, since on any other type it would switch off nothing.
         # It does not hide the place's pin on the day map: that's the
-        # coordinate's `show_on_map`.
+        # coordinate's `hide_on_map`.
         Spec("show_map", False,
              "whether this place draws its zoomed area map of the nested "
              "activities (it keeps its own pin on the day map either way)",

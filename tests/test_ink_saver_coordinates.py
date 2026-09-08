@@ -67,10 +67,10 @@ def test_ink_saver_prints_the_point_and_links_nothing():
     assert url == ""
 
 
-def test_show_on_map_false_still_prints_them():
+def test_hide_on_map_still_prints_them():
     # That flag hides the point's *pin* on a map something else draws; this is
     # the text beside its address, so the two don't interact.
-    hidden = Coordinate(43.09742, -0.05828, show_on_map=False)
+    hidden = Coordinate(43.09742, -0.05828, hide_on_map=True)
     assert _pdf(True)._nav_affordance(hidden, "Lourdes")[0] == \
         "43.09742, -0.05828"
 

@@ -5,13 +5,13 @@ import { useT } from "../../i18n";
 import { FieldFindings } from "./FieldFindings";
 import { Toggle } from "./Toggle";
 
-// A grouped editor for an optional coordinate ({lat, long, show_on_map}). Empty
+// A grouped editor for an optional coordinate ({lat, long, hide_on_map}). Empty
 // lat & long collapse the whole coordinate to undefined so it's pruned from the
-// draft. `show_on_map` defaults to true when a coordinate is set, so we only
-// store it when explicitly turned off.
+// draft. `hide_on_map` defaults to false, so we only store it when the point is
+// actually hidden.
 //
 // `path` is this coordinate's dot-path (e.g. "days.0.activities.1.coordinate");
-// each sub-field anchors findings at `${path}.lat` / `.long` / `.show_on_map`.
+// each sub-field anchors findings at `${path}.lat` / `.long` / `.hide_on_map`.
 //
 // Two helpers (P5): paste a "lat, long" pair to fill both at once, and — when a
 // `geocodeQuery` (the object's address/name) and the geocode context are present
@@ -49,7 +49,7 @@ export function CoordinateField({
   const [note, setNote] = useState<string | null>(null);
 
   const emit = (next: SrcCoordinate) => {
-    const cleared = next.lat === undefined && next.long === undefined && next.show_on_map === undefined;
+    const cleared = next.lat === undefined && next.long === undefined && next.hide_on_map === undefined;
     onChange(cleared ? undefined : next);
   };
 
@@ -87,7 +87,7 @@ export function CoordinateField({
 
   const lat = value?.lat;
   const long = value?.long;
-  const hidden = value?.show_on_map === false;
+  const hidden = value?.hide_on_map === true;
 
   return (
     <fieldset className="edit-coord">
@@ -165,18 +165,18 @@ export function CoordinateField({
         <label className="edit-field edit-field-bool">
           <span className="edit-field-label">
             {t("Hide on map")}
-            <span className="edit-help" data-tip={t("Plot this point on the map. Shown by default when a coordinate is set; switch this on to hide it while keeping the coordinate.")} tabIndex={0} role="img" aria-label={t("Hide this point on the map.")}>
+            <span className="edit-help" data-tip={t("Keep the coordinate but leave this point's pin off the map. Points are plotted by default; the (Navigate) link and the printed coordinates are unaffected either way.")} tabIndex={0} role="img" aria-label={t("Hide this point on the map.")}>
               ?
             </span>
           </span>
           <Toggle
             checked={hidden}
             label={t("Hide on map")}
-            onChange={(next) => emit({ ...value, show_on_map: next ? false : undefined })}
+            onChange={(next) => emit({ ...value, hide_on_map: next ? true : undefined })}
           />
         </label>
       </div>
-      <FieldFindings path={`${path}.show_on_map`} />
+      <FieldFindings path={`${path}.hide_on_map`} />
     </fieldset>
   );
 }

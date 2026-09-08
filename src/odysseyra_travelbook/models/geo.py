@@ -10,13 +10,13 @@ from .parsers import ItineraryError, _parse_bool, _parse_float
 
 @dataclass
 class Coordinate:
-    """A point on the map. ``show_on_map`` defaults to True whenever a
-    coordinate is given — set it False to keep the point for reference without
-    plotting it."""
+    """A point on the map. ``hide_on_map`` defaults to False — set it True to
+    keep the point for reference (the ``(Navigate)`` link, the printed
+    coordinates, where the sun sets) without plotting its pin."""
 
     lat: float
     long: float
-    show_on_map: bool = True
+    hide_on_map: bool = False
 
     @classmethod
     def from_dict(cls, d: dict, name: str = "coordinate") -> "Coordinate":
@@ -32,8 +32,19 @@ class Coordinate:
             raise ItineraryError(
                 f"{name}.long must be between -180 and 180 (got {long})"
             )
-        show = d.get("show_on_map", True)
-        return cls(lat=lat, long=long, show_on_map=_parse_bool(show))
+        # `show_on_map` is the retired spelling, and it is the one retired key
+        # that is *read* rather than merely reported: it was reversed, not moved,
+        # so ignoring it wouldn't lose a value — it would plot the pin the file
+        # asked to hide. Accepting it here keeps every consumer (the CLI, the
+        # viewer's preview, the `.ics`) correct on an unmigrated document, while
+        # `validate` names it and the viewer's `migrateSource` rewrites it.
+        if "hide_on_map" in d:
+            hide = _parse_bool(d["hide_on_map"])
+        elif "show_on_map" in d:
+            hide = not _parse_bool(d["show_on_map"])
+        else:
+            hide = False
+        return cls(lat=lat, long=long, hide_on_map=hide)
 
 
 def _parse_coordinate(value, name: str = "coordinate") -> Coordinate | None:
@@ -64,7 +75,7 @@ def format_coordinate(
     every pair then reads at the same width down a page, and the fixed number of
     decimals states the precision rather than implying the value is exact.
 
-    ``show_on_map`` is deliberately ignored — that flag hides the point's *pin*,
+    ``hide_on_map`` is deliberately ignored — that flag hides the point's *pin*,
     while this is the text beside its address."""
     if coordinate is None:
         return ""

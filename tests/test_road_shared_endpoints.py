@@ -217,7 +217,7 @@ def test_the_display_switches_add_no_second_pin_for_a_shared_end():
 def test_an_unpinned_neighbour_lends_no_number():
     """A place nobody pinned lends nothing — the drive's end simply has no
     number, rather than inventing one for a point the map doesn't show."""
-    hidden = {**POI_BEFORE, "coordinate": {**AMBOISE, "show_on_map": False}}
+    hidden = {**POI_BEFORE, "coordinate": {**AMBOISE, "hide_on_map": True}}
     assert pins(doc(hidden, ..., POI_AFTER,
                     same_start_as_previous_activity=True,
                     display_start_on_maps=True))[0] is None

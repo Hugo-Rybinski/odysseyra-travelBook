@@ -12,7 +12,7 @@
 export interface SrcCoordinate {
   lat?: number;
   long?: number;
-  show_on_map?: boolean;
+  hide_on_map?: boolean;
 }
 
 export interface SrcSecondaryCurrency {
@@ -74,9 +74,9 @@ export interface SrcScheduled {
   currency?: string; // 3-letter ISO
   // Whether this activity draws its **own** map: a `place`'s zoomed area map,
   // a `hike`'s trail map. Those are the only two that have one, so it does
-  // nothing on the other types. Defaults to true. Not `coordinate.show_on_map`,
-  // which is the reverse — that hides this activity's pin on a map drawn by
-  // something else.
+  // nothing on the other types. Defaults to true. Not `coordinate.hide_on_map`,
+  // which asks a different question — that hides this activity's pin on a map
+  // drawn by something else.
   show_map?: boolean;
   // A phone number, email, or how to get in. Free text, never parsed.
   contact?: string;

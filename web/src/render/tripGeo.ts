@@ -43,7 +43,7 @@ interface RawPoint {
 function modelPoints(day: Day): RawPoint[] {
   const out: RawPoint[] = [];
   const push = (c: Coordinate | null | undefined, title: string) => {
-    if (c && c.show_on_map) out.push({ lat: c.lat, long: c.long, title });
+    if (c && !c.hide_on_map) out.push({ lat: c.lat, long: c.long, title });
   };
   const walk = (acts: Activity[]) => {
     for (const a of acts) {
@@ -110,7 +110,7 @@ function kmFrom(c: Center, lat: number, long: number): number {
 function legOf(leg: TransportLeg): LatLng[] | null {
   const a = leg.start_coordinate;
   const b = leg.end_coordinate;
-  if (!a || !b || !a.show_on_map || !b.show_on_map) return null;
+  if (!a || !b || a.hide_on_map || b.hide_on_map) return null;
   return [
     [a.lat, a.long],
     [b.lat, b.long],

@@ -229,7 +229,7 @@ export function collectFieldPaths(draft: SrcItinerary): Set<string> {
     add(base); // the coordinate object itself (validator flags bad coords here)
     add(`${base}.lat`);
     add(`${base}.long`);
-    add(`${base}.show_on_map`);
+    add(`${base}.hide_on_map`);
   };
   const addFields = (base: string, keys: readonly { key: string }[]) => {
     for (const f of keys) add(base ? `${base}.${f.key}` : f.key);

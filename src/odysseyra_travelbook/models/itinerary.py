@@ -398,7 +398,7 @@ class Itinerary:
         """Where the day's **sunset** is computed, in order:
 
         1. that night's accommodation — where you'll watch the sun go down
-           (``show_on_map`` is ignored: it hides a pin, it doesn't move where
+           (``hide_on_map`` is ignored: it hides a pin, it doesn't move where
            you are);
         2. the day's own *last* located activity, when no stay covers the night
            (you're aboard an overnight leg, or it simply isn't listed) — where

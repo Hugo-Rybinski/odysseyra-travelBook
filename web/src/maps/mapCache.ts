@@ -100,7 +100,11 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // zoom map, a hike's trail map). A v26 entry carries neither flag *and* was
 // rendered without them, so a day that switches its map off would keep serving
 // the map, its pin numbers and its area maps from the cache.
-const SCHEMA_VERSION = 27;
+// v28: a coordinate's `show_on_map` (default true) became `hide_on_map`
+// (default false) — the same question the other way round. A v27 entry
+// carries the retired key, which every reader now ignores, so a hidden pin
+// would come back on the day map, the trip map and in the day's geo.
+const SCHEMA_VERSION = 28;
 
 interface Entry {
   day: Day;

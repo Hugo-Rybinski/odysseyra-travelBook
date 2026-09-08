@@ -1,4 +1,5 @@
 import type { SrcItinerary } from "../types/source";
+import { migrateSource } from "./migrate";
 
 // Draft (input JSON object) <-> text. Field-level editing already prunes empty
 // keys as they're cleared (FieldRow emits `undefined` → the key is deleted), so
@@ -11,7 +12,10 @@ export function jsonToDraft(text: string): SrcItinerary {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("Itinerary JSON must be an object at the top level.");
   }
-  return data as SrcItinerary;
+  // Every load path funnels through here, so this is where a document written
+  // on an older shape is brought onto the current one — see edit/migrate.ts.
+  // The draft the user sees is the migrated one, and saving persists it.
+  return migrateSource(data as SrcItinerary);
 }
 
 export function draftToJson(draft: SrcItinerary): string {
@@ -23,7 +27,7 @@ export function draftToJson(draft: SrcItinerary): string {
 // unambiguous ones (same default everywhere); enum defaults like `type` are
 // context-dependent and deliberately left in place.
 const SAFE_DEFAULTS: Record<string, unknown> = {
-  show_on_map: true,
+  hide_on_map: false,
   show_sun_times: true,
   show_moon_phase: true,
   include_hike_maps: true,
