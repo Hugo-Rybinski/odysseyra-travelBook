@@ -1,7 +1,8 @@
 # Skill: build the full itinerary JSON
 
-**Output:** a single `<title>.json` — the **complete** itinerary in one file,
-whether you wrote it from scratch or updated one you were given. The user will
+**Output:** a single `<name> (vNN).json` — the **complete** itinerary in one
+file, named and numbered as *Naming the file* below sets out, whether you wrote
+it from scratch or updated one you were given. The user will
 later turn it into a PDF with the `odysseyra-travelBook` tool; your job is only
 to produce correct JSON. You do **not** run any commands.
 
@@ -53,8 +54,9 @@ into it. That changes the job in five ways:
   in different languages, write the new prose in the base's and say so in the
   report.)
 - **Keep the file's identity.** The output keeps the base's `title`, so it keeps
-  the same `<title>.json` filename. Don't rename a trip you were asked to
-  extend.
+  the base's file name too — with the `(vNN)` marker advanced by one, and
+  nothing else about the name touched (see *Naming the file*, below). Don't
+  rename a trip you were asked to extend.
 - **Migrate a stale shape, and say you did.** The renamed aliases are gone, so a
   base written against an older format won't build: a `road` carrying its own
   `start` / `coordinate` / `waypoints` / `off_road` instead of `legs`, a
@@ -83,6 +85,66 @@ JSON settles all of this without asking**: its prose is the language.
 
 ---
 
+## Naming the file — `<name> (vNN).json`
+
+An itinerary is edited dozens of times before the trip, so **the file name
+carries the version**, and every file you hand back is numbered:
+
+```
+grand-tour-of-france (v01).json      ← written from nothing
+grand-tour-of-france (v02).json      ← the same trip, one round of edits later
+grand-tour-of-france (v03).json
+```
+
+**State the name you're giving it** in the output, above the JSON (and in the
+recap when you worked from a base) — it's the one part of the deliverable that
+isn't inside the file, so nothing else will say it.
+
+**The version is never a field.** There is no `version` key anywhere in the
+schema — not in `travel_description`, not at the top level — and inventing one
+would be wrong twice: the field tables below don't have it, and it would change
+the document's bytes on every save, which the viewer keys its rendered-map cache
+by. The count lives in the name and nowhere else.
+
+**Building from nothing** — the name has two halves:
+
+- **The base** is the trip's `title`, made filesystem-safe: accents decomposed
+  and dropped, lowercased, every run of anything but `a-z0-9` collapsed to a
+  single `-`, no leading or trailing `-`. So `"Grand Tour of France"` →
+  `grand-tour-of-france`, `"Pyrénées: haute route"` → `pyrenees-haute-route`.
+- **The version** starts at `(v01)`.
+
+**Updating a base file** — keep the base, advance the number:
+
+1. **Read the marker off the name you were given.** A trailing `(vNN)` is the
+   version, whatever separator or case led up to it: `trip (v03).json`,
+   `trip-V3.json` and `trip_(v3).json` all say 3. It has to be at the **end** of
+   the stem — a trip genuinely called `Alps (v2) redux` carries no marker, since
+   the `(v2)` isn't trailing.
+2. **Add one.** `(v03)` → `(v04)`. A name with **no** marker, or one reading
+   `(v0)`, starts the count: your output is `(v01)`.
+3. **Keep the base exactly as it was**, marker aside — don't re-slugify it from
+   the trip title, and don't rename a trip you were asked to extend (*Keep the
+   file's identity*, above). `my-trip-final (v02).json` begets
+   `my-trip-final (v03).json` even if the `title` inside would have slugified to
+   something else. The **one** exception is a `title` the user asked you to
+   change: the name follows the title then, so slugify the new one — and say so
+   in the recap, since the next version won't sort beside the old ones.
+4. **Strip the marker before you touch the base.** `trip (v03).json` becomes
+   `trip` + version 3, never `trip-v03` — otherwise the old marker gets folded
+   into the name and the next file is `trip-v03 (v01).json`.
+
+**Format details**, so a directory listing sorts in version order:
+
+| Part | Rule |
+|---|---|
+| Separator | one space before the `(` |
+| Marker | lowercase `v`, in parentheses |
+| Padding | at least two digits — `(v01)`, `(v09)`, `(v10)`; wider past 99 (`(v100)`) |
+| Extension | `.json` |
+
+---
+
 ## The workflow
 
 1. Read **all** the source material first. Note which document each fact comes
@@ -108,9 +170,11 @@ JSON settles all of this without asking**: its prose is the language.
 4. **Self-check** the JSON against the "Global rules" and the "Before you emit
    it" checklist at the end — you have no validator, so this manual pass is your
    only safety net.
-5. Output the finished JSON, then report the gaps, the inconsistencies, and —
-   when you worked from a base file — **the recap of every field you added or
-   changed** (see the end of this document).
+5. Output the finished JSON **under its `<name> (vNN).json` name** (see *Naming
+   the file*, above — a new trip starts at `(v01)`, a base file's marker goes up
+   by one), then report the gaps, the inconsistencies, and — when you worked from
+   a base file — **the recap of every field you added or changed** (see the end
+   of this document).
 
 **Mining a GPX for coordinates.** A GPX is not only a line to embed — it is a
 list of surveyed points, and its **two ends are places**. Its first trackpoint is
@@ -1774,6 +1838,10 @@ values, so a real run would cite all three under *Looked up online*.
   inconsistencies, listing **every field you added or modified**, nothing
   aggregated away. The user is going to review a diff against a file they wrote;
   this is what tells them where to look.
+  - **Open it with the file name** — `grand-tour-of-france (v02).json`, and the
+    name you read it from — since the version went up and the user is about to
+    save a second file beside the first (see *Naming the file*). If you renamed
+    the base for any reason, this is where you say so.
   - **One bullet per field**, each giving the **path**, what happened, and the
     values. Paths use the JSON's own names and indices, and a day is easier to
     find by its number than its position, so write
@@ -1923,6 +1991,10 @@ You cannot run the validator, so verify these by hand:
   each changed value with its `old → new`, each new object, and each migrated
   stale key has a bullet — and no bullet describes something you didn't actually
   change.
+- **The file is named and numbered:** the output states a `<name> (vNN).json`
+  file name — `(v01)` for a new trip, the base's own name with its marker
+  advanced by one for an update (marker stripped before the base was reused, so
+  no `trip-v03 (v01)`) — and no `version` key was invented inside the JSON.
 - **Names are consistent:** each place appears under one spelling throughout —
   search the file for each town/site name and confirm there is no second variant
   (missing accent, abbreviation, translated form) left behind. **Every `address`
