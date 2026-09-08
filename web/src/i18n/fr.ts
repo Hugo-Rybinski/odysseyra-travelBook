@@ -546,6 +546,10 @@ export const FR: Record<string, string> = {
   "driving distance": "distance routière",
   "Total driving distance in km for the whole drive (each leg carries its own too). Optional.":
     "Distance routière totale en km pour tout le trajet (chaque étape porte aussi la sienne). Facultatif.",
+  // `hide_on_map` on the road: its *line*, not its pins. ("Hide on map" itself
+  // is already keyed above, for a coordinate.)
+  "Leave the drive's route line off the map. Its own pins below still draw — they belong to the day's numbered sequence, not to the line. Not the same as a coordinate's \"Hide on map\", which hides a point. Defaults to off (the route is drawn).":
+    "Ne pas dessiner la ligne d'itinéraire du trajet sur la carte. Ses propres épingles ci-dessous restent affichées — elles appartiennent à la séquence numérotée du jour, pas à la ligne. À ne pas confondre avec le « Masquer sur la carte » d'une coordonnée, qui masque un point. Désactivé par défaut (l'itinéraire est dessiné).",
   "Pin the departure": "Épingler le départ",
   "Give the drive's departure a numbered pin on the day map. Defaults to off — a drive is drawn as a route, and its pins are opt-in.":
     "Donner au départ du trajet une épingle numérotée sur la carte du jour. Désactivé par défaut — un trajet est dessiné comme un itinéraire, ses épingles s'activent au cas par cas.",
@@ -713,6 +717,8 @@ export const FR: Record<string, string> = {
   "Short note about the whole booking": "Note courte sur la réservation entière",
   "A short note about the whole reservation — a baggage allowance, a fare condition, a check-in window. A note about one hop goes on that leg instead. Optional.":
     "Une note courte sur la réservation entière — une franchise bagages, une condition tarifaire, une fenêtre d'enregistrement. Une note sur un seul trajet se met sur ce trajet. Facultatif.",
+  "Leave this hop's dotted line off the map. Hiding either endpoint coordinate does it too — a line needs both its ends — so use this when the points are fine and the line is the problem. Defaults to off.":
+    "Ne pas dessiner la ligne pointillée de ce tronçon sur la carte. Masquer l'une des deux coordonnées d'extrémité le fait aussi — une ligne a besoin de ses deux bouts — donc utilisez ceci quand les points vont bien et que c'est la ligne qui pose problème. Désactivé par défaut.",
   "A short note about this leg — a seat, a terminal, a coach number. A note about the whole reservation goes on the booking instead. Optional.":
     "Une note courte sur ce trajet — un siège, un terminal, un numéro de voiture. Une note sur la réservation entière se met sur la réservation. Facultatif.",
   Price: "Prix",

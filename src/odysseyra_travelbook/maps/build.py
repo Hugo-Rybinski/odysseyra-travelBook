@@ -332,9 +332,12 @@ def day_legs(day, itinerary):
     A leg touches every day it is *in progress* on: the day it departs, the day
     it arrives, and any day in between. So an **overnight** leg appears on both
     of its day maps — leaving on the departure day's map, arriving on the next
-    day's. Only legs whose JSON gives both endpoint coordinates (with
-    ``hide_on_map``) are drawn; endpoints are never geocoded, so the same legs
-    appear whatever ``infer_coordinates_from_address`` says.
+    day's. Only legs whose JSON gives both endpoint coordinates are drawn;
+    endpoints are never geocoded, so the same legs appear whatever
+    ``infer_coordinates_from_address`` says.
+
+    A leg drops its line when it says ``hide_on_map`` — or when *either*
+    endpoint does, since a line needs both its ends.
     """
     d = getattr(day, "date", None)
     if d is None:
@@ -344,6 +347,8 @@ def day_legs(day, itinerary):
         if leg.start_date is None:
             continue
         if not (leg.start_date <= d <= (leg.end_date or leg.start_date)):
+            continue
+        if leg.hide_on_map:
             continue
         a, b = _leg_coord(leg.start_coordinate), _leg_coord(leg.end_coordinate)
         if a and b:
@@ -359,6 +364,7 @@ def resolve_day(day, itinerary, cache, *, main: bool = True):
       asked for one (``Road.display_*_on_maps``, all off by default).
     * ``routes`` — ``[[(lat, long), …]]`` drive geometries, each leg drawn from
       its ``gpx`` when it has one and routed otherwise (see :func:`_road_route`).
+      A drive that set ``hide_on_map`` contributes none, and is not routed.
     * ``route_nodes`` — ``[[(lat, long), …]]`` the named stops of each route
       (the departure plus each *named* waypoint), for the full-opacity node
       discs on the map. Unnamed route-shaping waypoints are excluded.
@@ -410,7 +416,13 @@ def resolve_day(day, itinerary, cache, *, main: bool = True):
             # the departure (start/coordinate) plus the waypoints, in order —
             # the last waypoint is the arrival.
             a = r.endpoint_coord(act.coordinate, act.start, city)
-            line = _road_route(act, a, cache)
+            # `hide_on_map` drops the drive's *line*, and with it the OSRM
+            # routing that line needed — the other half of "don't draw it",
+            # exactly as a day's `show_map` skips the geocoding for a map it
+            # won't draw. Its own pins survive: those belong to the day's
+            # numbered sequence, which is still drawn. So is `a`, which is what
+            # a pinned departure is plotted at.
+            line = [] if act.hide_on_map else _road_route(act, a, cache)
             if len(line) >= 2:
                 routes.append(line)
                 # only the departure and *named* waypoints get a node disc;

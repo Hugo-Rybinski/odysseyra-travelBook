@@ -335,6 +335,13 @@ ACTIVITY_SPECS = {
              "endpoints and that hop's duration / distance_km / off_road"),
         Spec("distance_km", False, "the driving distance in km for the whole "
              "drive", "a number", "none (not shown)", V_NUMBER),
+        # The line, not the pins. `hide_on_map` on a *coordinate* hides a
+        # point; a road is drawn as a route, so this is the same question asked
+        # of the one thing the drive itself draws.
+        Spec("hide_on_map", False,
+             "whether to leave the drive's route line off the map (its own "
+             "pins, below, are unaffected)",
+             "true or false", "false (the route is drawn)", V_BOOL),
         Spec("display_start_on_maps", False,
              "whether the drive's departure gets a numbered map pin",
              "true or false", "false (the drive is drawn as a route only)",
@@ -572,6 +579,10 @@ TRANSPORT_LEG_SPECS = [
          "any text", '""'),
     Spec("distance_km", False, "how far this leg covers, in km",
          "a number like 200 or 30.5", "none (no distance shown)", V_NUMBER),
+    Spec("hide_on_map", False,
+         "whether to leave this hop's dotted line off the map",
+         "true or false", "false (the line is drawn when both endpoints are "
+         "located)", V_BOOL),
     Spec("description", False, NOTE_DESC, "any text", '""'),
 ]
 

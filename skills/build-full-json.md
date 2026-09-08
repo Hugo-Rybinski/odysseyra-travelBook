@@ -751,6 +751,10 @@ accepts the field — a `road` is drawn as a route on the day map, and a
   `hide_on_map` hides an object's *pin* on somebody else's map, `show_map` drops
   the map the object itself draws. A place with `show_map: false` still gets a
   numbered pin on the day map.
+- **A `road` and a transport `leg` have a `hide_on_map` of their own**, for the
+  *line* each draws — a drive's route, a leg's dotted straight line. Same field,
+  same default, asked of the one thing that object puts on a map. Same rule as
+  above: it is a presentation choice, so never emit it on your own initiative.
 
 #### Type `road` — a drive or transfer
 
@@ -764,6 +768,7 @@ entry, never a road.
 |---|---|---|---|
 | `legs` | **yes** | non-empty array of **leg** objects | The hops, in travel order. A plain A → B drive has exactly one. |
 | `distance_km` | recommended | positive number | Driving distance for the **whole** drive. A road should carry a duration (its own/inferred times, or its legs') **and** a `distance_km`; `validate` warns naming either that's missing. |
+| `hide_on_map` | no | boolean | `true` to leave the drive's route **line** off the map (its own pins below still draw). Default `false`. Same presentation-choice rule as `show_map`: never emit it unless a source or the user asks. |
 | `display_start_on_maps` | no | boolean | `true` to give the drive's departure a numbered map pin. Default `false`. |
 | `display_end_on_maps` | no | boolean | `true` to give the drive's final arrival a numbered map pin. Default `false`. |
 | `display_intermediate_point_on_maps` | no | boolean | Give every junction between two legs a numbered map pin (on the **day** map — the whole-trip map never pins a drive's own points). Default **`true`** — set it `false` only to *stop* pinning them. |
@@ -1243,6 +1248,7 @@ journey is a one-leg booking; there is no flat form.
 | `distance_km` | no | number | none | How far this leg covers. Worth keeping for a road transfer (`"30 km / 35 min"` in the source); a flight's is rarely stated and rarely useful. |
 | `description` | no | text | none | A **short note** about this leg for what its fields don't cover — a seat, a terminal, a baggage allowance. One or two sentences. |
 | `start_coordinate` / `end_coordinate` | no | `{ "lat": .., "long": .. }` | none | For maps; a dotted straight line is drawn between them on each day map the leg is in progress on (both days of an overnight leg) and on the whole-trip map. |
+| `hide_on_map` | no | boolean | `true` to leave this hop's dotted **line** off the map. Default `false`. A presentation choice — don't emit it uninvited. |
 
 **Name it.** `name` is optional to the tool, but **write one for every booking**:
 it is the heading the card carries, and left out it falls back to the route

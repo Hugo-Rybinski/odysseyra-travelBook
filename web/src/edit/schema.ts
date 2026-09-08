@@ -249,6 +249,7 @@ const GUIDEBOOK_FIELD: FieldSpec = {
 export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
   road: [
     { key: "distance_km", label: "Distance (km)", kind: "number", placeholder: "driving distance", help: "Total driving distance in km for the whole drive (each leg carries its own too). Optional." },
+    { key: "hide_on_map", label: "Hide on map", kind: "bool", help: "Leave the drive's route line off the map. Its own pins below still draw — they belong to the day's numbered sequence, not to the line. Not the same as a coordinate's \"Hide on map\", which hides a point. Defaults to off (the route is drawn)." },
     { key: "display_start_on_maps", label: "Pin the departure", kind: "bool", help: "Give the drive's departure a numbered pin on the day map. Defaults to off — a drive is drawn as a route, and its pins are opt-in." },
     { key: "display_end_on_maps", label: "Pin the arrival", kind: "bool", help: "Give the drive's final arrival a numbered pin on the day map. Defaults to off." },
     { key: "display_intermediate_point_on_maps", label: "Pin the junctions", kind: "bool", defaultOn: true, help: "Give every junction between two legs a numbered pin on the day map — splitting the drive there is what says the junction matters. Defaults to on, unlike the two ends: switch it off to leave the junctions marked only by the route's own small disc." },
@@ -339,6 +340,7 @@ export const TRANSPORT_LEG_FIELDS: FieldSpec[] = [
   { key: "flight_number", label: "Flight number", kind: "text", help: "Flight number of this leg (planes only), shown under its route. Optional." },
   { key: "train_number", label: "Train number", kind: "text", help: "Train number of this leg (trains only), shown under its route. Optional." },
   { key: "distance_km", label: "Distance (km)", kind: "number", help: "How far this hop covers — an airport transfer is \"30 km / 35 min\". Shown beside its date and times. Optional." },
+  { key: "hide_on_map", label: "Hide on map", kind: "bool", help: "Leave this hop's dotted line off the map. Hiding either endpoint coordinate does it too — a line needs both its ends — so use this when the points are fine and the line is the problem. Defaults to off." },
   { key: "description", label: "Description", kind: "textarea", placeholder: "Short note", help: "A short note about this leg — a seat, a terminal, a coach number. A note about the whole reservation goes on the booking instead. Optional." },
 ];
 

@@ -41,7 +41,7 @@
       "date": "2026-06-10",
       "activities": [
         { "type": "road", "distance_km": 0, "start_time": "09:00", "end_time": "23:00",
-          "display_start_on_maps": "yes please", "display_intermediate_point_on_maps": true,
+          "hide_on_map": "sometimes", "display_start_on_maps": "yes please", "display_intermediate_point_on_maps": true,
           "legs": [
             "not-an-object",
             { "end_location": "No coordinate of its own" },
@@ -117,7 +117,7 @@
   "transport": [
     { "type": "night train", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00", "website": "not-a-link", "status": "confirmed", "price": 120, "currency": "CHF" },
     { "type": "bus", "status": "maybe", "paid": "later", "price": "lots", "legs": [
-      { "start": "Pau", "end": "Lourdes", "start_date": "2026-06-11", "end_date": "2026-06-10", "start_time": "09:00", "flight_number": "AF999", "booking_number": "MOVE-ME", "price": 12, "distance_km": "far" }
+      { "start": "Pau", "end": "Lourdes", "start_date": "2026-06-11", "end_date": "2026-06-10", "start_time": "09:00", "flight_number": "AF999", "booking_number": "MOVE-ME", "price": 12, "distance_km": "far", "hide_on_map": "nope" }
     ] },
     { "type": "train", "booking_number": "OK-1", "legs": [
       { "start": "Lourdes", "end": "Paris", "start_date": "2026-06-09", "start_time": "22:00", "end_time": "06:00" }

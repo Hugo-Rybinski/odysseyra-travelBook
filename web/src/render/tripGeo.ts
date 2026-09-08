@@ -106,8 +106,12 @@ function kmFrom(c: Center, lat: number, long: number): number {
   return Math.hypot((long - c.long) * c.kx, (lat - c.lat) * KM_PER_DEG);
 }
 
-// An endpoint pair for one transport leg, when both ends are mapped.
+// An endpoint pair for one transport leg, when both ends are mapped and the leg
+// draws a line at all. `hide_on_map` on the leg is the switch for the line; on
+// either endpoint it also drops it, since a line needs both its ends. Mirrors
+// `day_legs` in maps/build.py — keep the two in step.
 function legOf(leg: TransportLeg): LatLng[] | null {
+  if (leg.hide_on_map) return null;
   const a = leg.start_coordinate;
   const b = leg.end_coordinate;
   if (!a || !b || a.hide_on_map || b.hide_on_map) return null;

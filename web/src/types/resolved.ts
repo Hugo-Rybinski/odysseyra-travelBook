@@ -156,6 +156,11 @@ export interface Activity extends Scheduled {
   start?: string;
   destination?: string;
   off_road?: boolean;
+  // road: leave the drive's route line off the map. Its own pins below are
+  // unaffected — those belong to the day's numbered sequence, which is still
+  // drawn. Not `coordinate.hide_on_map`, which hides a *point*; a road draws a
+  // line, and this is the same question asked of it.
+  hide_on_map?: boolean;
   // Which of the drive's own points earn a numbered pin on the day map — the
   // departure (the road's own `map_pin`), the final arrival, and the junctions
   // in between (each on its waypoint). The two ends default off, the junctions
@@ -220,6 +225,10 @@ export interface TransportLeg extends Scheduled {
   coordinate: Coordinate | null;
   start_coordinate: Coordinate | null;
   end_coordinate: Coordinate | null;
+  // Leave this hop's dotted line off the map. Hiding either endpoint does it
+  // too (a line needs both ends); this is the switch for when the points are
+  // fine and the line is the problem.
+  hide_on_map?: boolean;
   // --- from the parent booking ---
   leg_index: number; // 1-based within the booking
   leg_count: number; // 1 for a single-hop booking

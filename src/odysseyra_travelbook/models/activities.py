@@ -311,6 +311,12 @@ class Road(Activity):
     guidebook_pages: str = ""
     distance_km: float | None = None
     off_road: bool = False
+    # Drop the drive's *line*. A road is drawn as a route rather than a pin, so
+    # this is what `coordinate.hide_on_map` is for a point: the same "hide me on
+    # the map", applied to the one thing this object contributes. Its own pins
+    # (`display_*_on_maps`) are unaffected — they belong to the day's numbered
+    # sequence, which is still drawn.
+    hide_on_map: bool = False
     display_start_on_maps: bool = False
     display_end_on_maps: bool = False
     display_intermediate_point_on_maps: bool = True  # opt-out, unlike the two ends
@@ -392,6 +398,7 @@ class Road(Activity):
             guidebook_pages=_pages(d),
             distance_km=_parse_float(d.get("distance_km"), "road distance_km"),
             off_road=off_road,
+            hide_on_map=_parse_bool(d.get("hide_on_map", False)),
             display_start_on_maps=_parse_bool(d.get("display_start_on_maps", False)),
             display_end_on_maps=_parse_bool(d.get("display_end_on_maps", False)),
             display_intermediate_point_on_maps=_parse_bool(

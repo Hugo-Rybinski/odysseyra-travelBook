@@ -106,6 +106,8 @@ export interface SrcRoadLeg {
 export interface SrcRoad extends SrcScheduled {
   type: "road";
   distance_km?: number; // the whole drive (each leg carries its own too)
+  // Leave the drive's route line off the map (its own pins, below, still draw).
+  hide_on_map?: boolean;
   // Which of the drive's own points get a numbered pin on the day map: its
   // departure, its final arrival, and every junction between two legs. The two
   // ends default false — they are usually the activity before/after, already
@@ -216,6 +218,7 @@ export interface SrcTransportLeg {
   coordinate?: SrcCoordinate;
   start_coordinate?: SrcCoordinate;
   end_coordinate?: SrcCoordinate;
+  hide_on_map?: boolean; // leave this hop's dotted line off the map
 }
 
 export interface SrcTransport {

@@ -262,6 +262,15 @@ draws, while `show_map` drops the map *this* object would draw. Both can be
 set, and they don't interact — a place with `show_map: false` still gets a
 numbered pin, and one with `hide_on_map: true` still draws its zoom map.
 
+**Hiding a line, not a point.** Two objects draw a *line* rather than a pin, and
+each carries its own `hide_on_map` for it: a [`road`](#road--a-drivetransfer)
+(its route) and a [transport leg](#transportlegs) (its dotted straight line).
+They are the same field, asked of the one thing that object contributes to a
+map. A road's own numbered pins (`display_*_on_maps`) are unaffected: those
+belong to the day's pin sequence, which is still drawn — only the line is the
+drive's own. Hiding the line also skips the routing it needed, so a drive you
+don't draw costs no OSRM call.
+
 ### Sunrise & sunset
 
 Every day carries `☀️ Sunrise: 06:12, Sunset: 21:34` (in French,
@@ -486,6 +495,7 @@ description. It works the same on a nested activity.
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `legs` | ✅ | The hops the drive is made of, in travel order | array | non-empty array of `leg` objects (see below) | — |
 | `distance_km` |  | Driving distance for the whole drive | number | positive number | none |
+| `hide_on_map` |  | Leave the drive's route line off the map (its own pins still draw) | boolean | `true` / `false` | `false` |
 | `display_start_on_maps` |  | Give the departure a numbered map pin | boolean | `true` / `false` | `false` |
 | `display_end_on_maps` |  | Give the final arrival a numbered map pin | boolean | `true` / `false` | `false` |
 | `display_intermediate_point_on_maps` |  | Give every junction between two legs a numbered map pin | boolean | `true` / `false` | `true` |
@@ -965,6 +975,14 @@ which leaves the note to the itinerary row above rather than printing it twice.
 | `description` |  | A short note about this leg (a seat, a terminal, a baggage allowance) | string | any text | `""` |
 | `start_coordinate` |  | Departure point, for the maps | object | `{lat, long}` | none (never geocoded) |
 | `end_coordinate` |  | Arrival point, for the maps | object | `{lat, long}` | none (never geocoded) |
+| `hide_on_map` |  | Leave this hop's dotted line off the map | boolean | `true` / `false` | `false` |
+
+**Hiding a line.** A leg with both endpoints located is drawn as a dotted
+straight line; `hide_on_map` on the leg drops it. Hiding either *endpoint*
+([`coordinate.hide_on_map`](#maps--coordinates)) drops it too — a line needs
+both its ends — so reach for the leg's flag when the points are right and it is
+the line you don't want. Same field, same default, on the object that draws the
+thing you're hiding.
 
 ## `accommodations[]`
 

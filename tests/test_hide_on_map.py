@@ -143,3 +143,80 @@ def test_the_validator_names_the_retired_spelling():
     current = json.dumps({**doc, "days": [{"title": "D", "activities": [
         _poi("P", 43.29, -0.36, hide_on_map=True)]}]}, indent=2)
     assert not [f for f in validate_text(current) if "show_on_map" in f.message]
+
+
+# -- the line, not the point ------------------------------------------------
+#
+# A coordinate's `hide_on_map` hides a *pin*. A road and a transport leg draw a
+# *line*, which is the only thing they contribute to a map, so each carries the
+# same-named flag for it. The two levels don't interact.
+
+ROAD = {"type": "road", "hide_on_map": True, "legs": [
+    {"start_location": "Pau", "start_coordinate": {"lat": 43.29, "long": -0.36},
+     "end_location": "Lourdes", "end_coordinate": {"lat": 43.09, "long": -0.05}}]}
+
+
+def test_a_hidden_drive_draws_no_route_and_is_not_even_routed(monkeypatch):
+    """Dropping the line drops the OSRM call it needed — the other half of
+    "don't draw it", as a day's `show_map` skips its geocoding."""
+    called = []
+
+    def spy(a, b, cache, **kw):
+        called.append((a, b))
+        return [a, b]
+
+    monkeypatch.setattr(mapbuild, "route", spy)
+    it = _itin([{"title": "D", "city": "Pau", "activities": [ROAD]}])
+    _pts, routes, nodes, _areas = resolve_day(it.days[0], it, cache=None)
+    assert routes == [] and nodes == []
+    assert called == []
+
+    shown = _itin([{"title": "D", "city": "Pau", "activities": [
+        {**ROAD, "hide_on_map": False}]}])
+    _pts, routes, nodes, _areas = resolve_day(shown.days[0], shown, cache=None)
+    assert len(routes) == 1 and called          # and the drive draws again
+
+
+def test_a_hidden_drive_keeps_its_own_pins(monkeypatch):
+    """The pins belong to the day's numbered sequence, which is still drawn —
+    only the line is the road's own."""
+    monkeypatch.setattr(mapbuild, "route", lambda a, b, cache, **kw: [a, b])
+    road = {**ROAD, "display_start_on_maps": True, "display_end_on_maps": True}
+    it = _itin([{"title": "D", "city": "Pau", "activities": [road]}])
+    points, routes, _nodes, _areas = resolve_day(it.days[0], it, cache=None)
+    assert routes == []
+    assert [p.label for p in points] == ["Pau", "Lourdes"]
+
+
+def _leg_trip(**leg):
+    return _itin(
+        [{"title": "D", "date": "2026-06-01", "activities": []}],
+        transport=[{"type": "plane", "legs": [{
+            "start": "A", "end": "B",
+            "start_date": "2026-06-01", "start_time": "10:00", "duration": "2h",
+            "start_coordinate": {"lat": 40.0, "long": -70.0},
+            "end_coordinate": {"lat": 48.0, "long": 2.0},
+            **leg}]}],
+    )
+
+
+def test_a_hidden_leg_draws_no_dotted_line():
+    assert day_legs(_leg_trip().days[0], _leg_trip()) == [[(40.0, -70.0), (48.0, 2.0)]]
+    it = _leg_trip(hide_on_map=True)
+    assert day_legs(it.days[0], it) == []
+
+
+def test_both_line_flags_reach_the_resolved_document():
+    """The viewer renders from the resolved doc, and `tripGeo.ts` reads both —
+    a road's flag via the day map's `geo.routes`, a leg's on the leg itself."""
+    from odysseyra_travelbook.models import to_dict
+    it = _itin(
+        [{"title": "D", "city": "Pau", "activities": [ROAD]}],
+        transport=[{"type": "plane", "legs": [{
+            "start": "A", "end": "B", "start_date": "2026-06-01",
+            "start_time": "10:00", "duration": "2h", "hide_on_map": True}]}],
+    )
+    data = to_dict(it)
+    road = next(a for a in data["days"][0]["activities"] if a["type"] == "road")
+    assert road["hide_on_map"] is True
+    assert data["transports"][0]["legs"][0]["hide_on_map"] is True

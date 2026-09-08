@@ -300,6 +300,42 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     would **plot the pin the file asked to hide** — a silent change to the
     rendering, in the direction of showing something the user hid. So it is
     read, and `hide_on_map` wins when a file somehow carries both.
+  - **A line has one too.** Two objects draw a *line* rather than a pin, and
+    each carries its own `hide_on_map` for it: a **`road`** (its route) and a
+    **transport leg** (its dotted straight line). Same field, same default,
+    asked of the one thing that object contributes to a map — which is the
+    `show_map` rule ("every map is switched on the object that draws it")
+    applied to geometry that isn't a map of its own. Four things are
+    load-bearing:
+    - **A road's pins survive.** `display_start_on_maps` /
+      `display_end_on_maps` / `display_intermediate_point_on_maps` belong to
+      the *day's* numbered sequence, which is still drawn; only the line is the
+      drive's own. So `resolve_day` keeps computing the departure coordinate
+      (`a`) and appending the pinned waypoints, and just contributes no route
+      and no `route_nodes`.
+    - **It skips the routing, not only the drawing** — `line = [] if
+      act.hide_on_map else _road_route(...)`, the same "other half of don't
+      draw it" as a day's `show_map` skipping its geocoding. A drive you don't
+      draw costs no OSRM call.
+    - **It reaches the whole-trip map too**, unlike a day's `show_map`. That
+      exception exists because a trip pin carries the *day*, so dropping it
+      would leave a hole in the trip's shape; a line is the road's own geometry
+      at every zoom, and a line you hid because it is wrong is wrong on both
+      pages. It needs no extra code: `resolve_trip` calls `resolve_day`, and
+      `tripGeo.ts` takes its routes from `day.map.geo.routes`.
+    - **A leg's endpoints already did half of this.** `_leg_coord` has always
+      dropped a leg whose endpoint says `hide_on_map`, and a transport endpoint
+      is never pinned or geocoded — so that check *was* the line switch, by
+      accident. It stays (a line needs both its ends), and the leg-level flag is
+      the one to reach for when the points are right and the line is the
+      problem. `day_legs` and `tripGeo.ts`'s `legOf` both check the leg first —
+      keep the two in step.
+    Because a resolved `road` and a resolved leg each gain a field, *and* a
+    cached day's images / `geo.routes` / `geo.legs` were rendered without them,
+    this needed a `SCHEMA_VERSION` bump (**v29**). No example sets either — the
+    example PDFs should draw every line they can — so `tests/test_hide_on_map.py`
+    holds the behaviour, with `broken.json` carrying an invalid value at both
+    levels.
   - **The viewer rewrites it on load**, which is what makes the shim temporary
     rather than permanent. `web/src/edit/migrate.ts`'s `migrateSource` runs
     inside `jsonToDraft` — the one seam every load path funnels through (open,

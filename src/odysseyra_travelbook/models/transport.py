@@ -34,6 +34,7 @@ from .geo import Coordinate, _parse_coordinate
 from .parsers import (
     ItineraryError,
     _min_to_time,
+    _parse_bool,
     _parse_currency,
     _parse_date,
     _parse_duration,
@@ -85,6 +86,12 @@ class TransportLeg(Scheduled):
     coordinate: Coordinate | None = None  # optional single label point
     start_coordinate: Coordinate | None = None  # departure point
     end_coordinate: Coordinate | None = None  # arrival point
+    # Drop this hop's dotted line. The line is the *leg's* — a booking may move
+    # you three times — and it is the only thing a leg draws on a map, so this
+    # is `coordinate.hide_on_map`'s twin for a segment. Hiding either endpoint
+    # also drops the line, since a line needs both its ends; this is the switch
+    # to reach for when the point is fine and the line is the problem.
+    hide_on_map: bool = False
     # Set by the owning booking; excluded from repr/compare so a leg still
     # prints (and compares) as its own data rather than dragging the booking —
     # and so the back-reference can't recurse.
@@ -198,6 +205,7 @@ class TransportLeg(Scheduled):
                                               "start_coordinate"),
             end_coordinate=_parse_coordinate(d.get("end_coordinate"),
                                              "end_coordinate"),
+            hide_on_map=_parse_bool(d.get("hide_on_map", False)),
         )
 
 

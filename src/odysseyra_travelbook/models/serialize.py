@@ -248,6 +248,8 @@ def _activity(itin: Itinerary, act) -> dict:
             "guidebook_pages": act.guidebook_pages,
             "distance_km": act.distance_km,
             "off_road": act.off_road,
+            # whether the drive's line is drawn at all (its pins are separate)
+            "hide_on_map": act.hide_on_map,
             # which of the drive's own points asked for a numbered pin
             "display_start_on_maps": act.display_start_on_maps,
             "display_end_on_maps": act.display_end_on_maps,
@@ -330,6 +332,7 @@ def _transport_leg(itin: Itinerary, leg) -> dict:
         "coordinate": _coord(leg.coordinate),
         "start_coordinate": _coord(leg.start_coordinate),
         "end_coordinate": _coord(leg.end_coordinate),
+        "hide_on_map": leg.hide_on_map,
         "leg_index": leg.leg_index,
         "leg_count": leg.leg_count,
         "booking_number": leg.booking_number,
