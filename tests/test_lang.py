@@ -61,20 +61,20 @@ def test_example_fr_has_no_errors():
     assert [f for f in findings if f.level == "error"] == []
 
 
-def test_off_road_is_piste_in_french():
-    """The unpaved-road flag reads **piste** in French — the actual word for a
-    track — everywhere it surfaces.
+def test_off_road_is_hors_piste_in_french():
+    """The unpaved-road flag reads **hors-piste** in French everywhere it
+    surfaces.
 
-    It used to say ``hors-route`` in the PDF's chips and ``hors-piste`` in the
-    viewer's (`render/format.ts`), which besides disagreeing is a skiing term.
-    The two renderers draw the *same* chip, so pin the wording here; the
-    viewer's twin is the ``offRoad`` key, which its CSS uppercases."""
-    assert tr("OFF-ROAD", "fr") == "PISTE"           # a VIA leg's inline pill
-    assert tr("OFF-ROAD SECTIONS", "fr") == "SECTIONS EN PISTE"  # the road's chip
-    assert tr("Off-road", "fr") == "Piste"           # the .ics detail label
-    # and nothing French still says it the old two ways
+    The PDF's chips used to say ``hors-route`` while the viewer's said
+    ``hors-piste`` — the same chip, two words — and the viewer's wording is the
+    one kept. The two renderers draw that chip from independent code, so pin the
+    PDF's three wordings here; the viewer's twin is the ``offRoad`` key in
+    `render/format.ts`, which its CSS uppercases."""
+    assert tr("OFF-ROAD", "fr") == "HORS-PISTE"      # a VIA leg's inline pill
+    assert tr("OFF-ROAD SECTIONS", "fr") == "SECTIONS HORS-PISTE"  # the road's chip
+    assert tr("Off-road", "fr") == "Hors-piste"      # the .ics detail label
+    # and nothing French still says it the old way
     from odysseyra_travelbook.lang.translations import TRANSLATIONS
     stale = [v for v in TRANSLATIONS["fr"].values()
-             if isinstance(v, str) and ("hors-route" in v.lower()
-                                        or "hors-piste" in v.lower())]
+             if isinstance(v, str) and "hors-route" in v.lower()]
     assert stale == []

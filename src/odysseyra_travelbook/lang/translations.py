@@ -41,13 +41,14 @@ _FR = {
     "HIKE": "RANDO",
     "MEAL": "REPAS",
     "TRANSPORT": "TRANSPORT",
-    # "piste" is the French for an unpaved road/track, which is what this flag
-    # means. It was "hors-route" here and "hors-piste" in the viewer
-    # (`render/format.ts`) — a skiing term — so the same chip read two
-    # different ways; both now say PISTE. Keep the pair in step.
-    "OFF-ROAD SECTIONS": "SECTIONS EN PISTE",
+    # "hors-piste" throughout. It used to say "hors-route" here and
+    # "hors-piste" in the viewer (`render/format.ts`), so the same chip read
+    # two different ways; the viewer's wording won. Keep the pair in step —
+    # `tests/test_lang.py` pins these three and checks nothing says
+    # "hors-route" any more.
+    "OFF-ROAD SECTIONS": "SECTIONS HORS-PISTE",
     # the same flag as a small pill on a single VIA leg's row
-    "OFF-ROAD": "PISTE",
+    "OFF-ROAD": "HORS-PISTE",
     "VIA": "VIA",
     # the grey pill under a detour's type badge — a stop kept for reference
     # rather than planned (the viewer mirrors it as the `detour` key in
@@ -350,8 +351,8 @@ _FR = {
         "qui dessinent l'itinéraire dans les « waypoints » de cette étape",
     "set it on each leg that runs off-road (the drive counts as off-road when "
     "every one of its legs does)":
-        "indiquez-le sur chaque étape en piste (le trajet n'est en piste que "
-        "si toutes ses étapes le sont)",
+        "indiquez-le sur chaque étape hors-piste (le trajet n'est hors-piste "
+        "que si toutes ses étapes le sont)",
     "the legs last {total} in total, longer than the road's own {parent} — the "
     "leg times don't fit the drive.":
         "les étapes durent {total} au total, plus que la durée de la route "
@@ -838,9 +839,10 @@ _FR = {
     "how long this hop takes to drive": "le temps de conduite de cette étape",
     "this hop's driving distance in km":
         "la distance de conduite de cette étape en km",
-    "whether this hop runs off-road": "si cette étape est en piste",
+    "whether this hop runs off-road": "si cette étape est hors-piste",
     "false (and the drive counts as off-road only when every leg is)":
-        "false (et le trajet n'est en piste que si toutes ses étapes le sont)",
+        "false (et le trajet n'est hors-piste que si toutes ses étapes le "
+        "sont)",
     "intermediate points the hop's route bends through, in order from its start "
     "to its end":
         "les points intermédiaires par lesquels passe l'itinéraire de l'étape, "
@@ -1207,7 +1209,7 @@ _FR = {
     "Type": "Type",
     "Drive": "Route",
     "Yes": "Oui",
-    "Off-road": "Piste",
+    "Off-road": "Hors-piste",
     "Via": "Via",
     "Category": "Catégorie",
     "Address": "Adresse",

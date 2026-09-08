@@ -654,9 +654,9 @@ export const FR: Record<string, string> = {
     "Temps de conduite de cette étape. Facultatif, mais la validation avertit s'il manque.",
   "Driving distance for this hop. Optional, but validation warns when it's missing.":
     "Distance routière de cette étape. Facultatif, mais la validation avertit si elle manque.",
-  "Off-road": "Piste",
+  "Off-road": "Hors-piste",
   "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off.":
-    "Marquer cette seule étape comme étant en piste (route non goudronnée). Le trajet entier n'est en piste que si toutes ses étapes le sont. Désactivé par défaut.",
+    "Marquer cette seule étape comme hors-piste (route non goudronnée). Le trajet entier n'est hors-piste que si toutes ses étapes le sont. Désactivé par défaut.",
   "GPX recording": "Enregistrement GPX",
   "A .gpx recording of this hop, stored in the itinerary itself. It becomes this leg's line on the day map instead of the routed guess — there's no separate trail map or elevation profile, unlike a hike's. Optional.":
     "Un enregistrement .gpx de cette étape, stocké dans l'itinéraire lui-même. Il devient le tracé de cette étape sur la carte du jour à la place de l'itinéraire calculé — sans carte ni profil altimétrique dédiés, contrairement à une randonnée. Facultatif.",
