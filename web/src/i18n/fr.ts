@@ -126,7 +126,33 @@ export const FR: Record<string, string> = {
   "Discard this file's cached map images and rebuild them":
     "Supprimer les images de carte en cache de ce fichier et les régénérer",
   "Redrawing…": "Régénération…",
-  "Redraw maps": "Régénérer les cartes",
+  "Redraw all maps": "Régénérer toutes les cartes",
+  // The per-day map cache listing (Options → Maps).
+  "Cached map images": "Images de carte en cache",
+  "Each day's maps are drawn once and kept on this device, keyed by the itinerary's contents — so editing a value redraws, but reopening the same file doesn't.":
+    "Les cartes de chaque jour sont dessinées une fois puis conservées sur cet appareil, indexées sur le contenu de l'itinéraire — modifier une valeur les régénère, rouvrir le même fichier non.",
+  "{cached} of {total} days cached · {size}": "{cached} jours sur {total} en cache · {size}",
+  "{free} still free on this device": "{free} encore libres sur cet appareil",
+  "The last map couldn't be stored — this device is out of room. Clear the cached maps below, then redraw.":
+    "La dernière carte n'a pas pu être stockée — cet appareil n'a plus de place. Videz les cartes en cache ci-dessous, puis régénérez.",
+  "The last map couldn't be stored ({error}), so it will be redrawn every time.":
+    "La dernière carte n'a pas pu être stockée ({error}) ; elle sera donc régénérée à chaque fois.",
+  // "Day {n}" is already translated further down (the Edit tab's day headings),
+  // and it is the same wording — one entry serves both.
+  "(untitled)": "(sans titre)",
+  "not cached": "pas en cache",
+  "Discard this day's cached maps and draw them again":
+    "Supprimer les cartes en cache de ce jour et les redessiner",
+  "Draw this day's maps now": "Dessiner les cartes de ce jour maintenant",
+  Redraw: "Régénérer",
+  Draw: "Dessiner",
+  "One other itinerary is holding {size}.": "Un autre itinéraire occupe {size}.",
+  "{files} other itineraries are holding {size}.":
+    "{files} autres itinéraires occupent {size}.",
+  "Clear those": "Les supprimer",
+  "A redraw is already running": "Une régénération est déjà en cours",
+  "Nothing is cached yet.": "Rien n'est encore en cache.",
+  "Redrawing day {day}…": "Régénération du jour {day}…",
   "Outlines instead of solid accent fills — less colored ink when printing":
     "Contours plutôt que des aplats de couleur — moins d'encre couleur à l'impression",
   "Ink-saver": "Économie d'encre",

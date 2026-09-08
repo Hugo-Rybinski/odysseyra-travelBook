@@ -1442,6 +1442,47 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   viewer doesn't, and a hard reload doesn't help (the data is in IndexedDB, not
   the HTTP cache). This is also why Python changes need `npm run wheel` — the
   browser runs the wheel, not `src/`.
+  - **An entry is 2–4 MB, a trip ~20 MB**, which is what shapes the rest of that
+    module — and what made it stop working in practice, since the key is the
+    document's *content*: every applied edit started a fresh 20 MB set and left
+    the previous one unreachable until the 30-day TTL, so a handful of
+    Apply-&-redraw cycles ran the origin's quota down, after which every write
+    failed **silently** (`putCachedDay` swallowed its error) and the app looked
+    like it had no cache at all. Five things answer that, and they are the parts
+    to keep in step:
+    - **Two object stores.** `days` holds the payload, `meta` a few dozen bytes
+      naming the file, the day and the byte count. Both are written in one
+      transaction, and `purgeExpired` drops either half that has lost its twin.
+      Anything that *lists* or *sweeps* the cache must go through `meta`: reading
+      it out of `days` clones the whole 20 MB store into the main thread to look
+      at a timestamp, which was happening on every launch.
+    - **`dropStaleVersions(file, keep)`** — before a file's days are refilled,
+      every entry carrying that same **filename** under a different hash is
+      dropped. That is what turns "one set per edit, for ever" into "one set per
+      file". Two files with the same basename in different folders evict each
+      other; the loser is redrawn, which is the price of having no comparable
+      file identity (an FS Access handle isn't one across sessions).
+    - **`enforceBudget()`** — a hard ceiling over everything, least-recently-used
+      first, for the case the per-file rule can't cover (many different files).
+      `touchDoc` refreshes last-use on hydration, which is also why
+      `getCachedDay` no longer applies the TTL itself: `purgeExpired` is the
+      single authority on it, and comparing against an entry's *draw* time there
+      would throw away a map the budget is deliberately keeping.
+    - **`requestPersistence()`** at startup. Without it IndexedDB is best-effort
+      storage and a browser short of room evicts the **whole origin** — the map
+      cache, the last-file handle and the autosaved draft in one go.
+    - **A failed write is reported.** The one operation in the module that
+      doesn't swallow its error, because `QuotaExceededError` is how it fails and
+      a silent one is indistinguishable from having no cache. Options → Maps
+      shows it.
+    Two races are load-bearing and easy to reintroduce: `purgeExpired` runs
+    concurrently with the map loop that fills the cache (both start at launch),
+    so it takes its decisions **inside** its transactions rather than from a
+    keep-set gathered beforehand — the earlier version deleted the very maps it
+    had just drawn on the first launch after an upgrade. And `docHash`
+    canonicalizes the JSON (recursively sorted object keys, no whitespace) before
+    hashing, so *formatting* stops deciding whether maps are reusable — arrays
+    keep their order, where it really is meaning.
 - **The viewer's Python engine runs in a Web Worker**
   (`web/src/pyodide/worker.ts`), not on the main thread. Every bridge call is
   synchronous Python and a map render fetches its tiles over a *blocking* XHR

@@ -280,6 +280,100 @@ body {
   border-color: transparent;
 }
 
+/* ---- the map cache listing (Options → Maps) ------------------------------ */
+.cache-block {
+  margin-top: 4px;
+  display: grid;
+  gap: 6px;
+}
+.cache-block h3 {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.cache-summary {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.cache-room,
+.cache-others {
+  color: var(--muted);
+}
+/* The same red as `.banner.error`, on the panel rather than as a banner: this
+   sits inside the group it is about, not across the top of the page. */
+.cache-warn {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #8a1c12;
+}
+.cache-others {
+  margin: 0;
+  font-size: 0.78rem;
+}
+.cache-list {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1px;
+}
+/* One row per day of the trip, hairline-ruled like the PDF's contact directory:
+   a fixed day column, the title taking the slack, then the size and the button
+   right-aligned so the numbers line up down the list. */
+.cache-row {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+.cache-row:first-child {
+  border-top: 0;
+}
+.cache-day {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cache-date {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.cache-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cache-size {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* A day with no cached maps is the row worth spotting in the list. */
+.cache-row.miss .cache-name,
+.cache-row.miss .cache-size {
+  color: var(--muted);
+  font-style: italic;
+}
+.options .btn.tiny {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+}
+@media (max-width: 520px) {
+  /* Stack the title under the day on a narrow screen rather than letting the
+     ellipsis eat it: the size and button keep their column. */
+  .cache-row {
+    grid-template-columns: 1fr auto auto;
+  }
+  .cache-day {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ---- 🤖 LLM prompts tab ------------------------------------------------- */
 .prompts-intro {
   margin: 0 0 16px;

@@ -157,10 +157,45 @@ been fetched simply doesn't appear offline — the build degrades gracefully.
 
 On top of that HTTP cache, the *finished* map images are persisted in IndexedDB
 (`src/maps/mapCache.ts`, database `odysseyra-maps`, 30-day TTL) keyed by a hash
-of the itinerary JSON + the day index. So a relaunched (or killed) app rehydrates
-the exact rendered PNGs without recompositing them; expired entries are purged at
-startup, and the **Redraw maps** button clears just the current file's entries
-and re-renders. Editing the JSON changes its hash, so stale images miss naturally.
+of the itinerary's contents + the day index. So a relaunched (or killed) app
+rehydrates the exact rendered PNGs without recompositing them; expired entries
+are purged at startup, and the **Redraw all maps** button clears just the current
+file's entries and re-renders. Editing a *value* changes the hash, so stale
+images miss naturally — but re-indenting the file, or round-tripping it through
+the Edit tab without changing anything, does not: `docHash` canonicalizes the
+JSON (recursively sorted object keys, no whitespace) before hashing, since the
+formatting means nothing to the Python that draws the maps.
+
+An entry is **big** — a day of the France demo is 2–4 MB of base64 PNG, the whole
+trip ~20 MB — which drives most of the design:
+
+- **Two stores.** `days` holds the payload; `meta` holds a few dozen bytes per
+  entry (the file, the day, the byte count, when it was last used). Listing the
+  cache and sweeping it walk `meta` alone — doing either through `days` cloned
+  the whole 20 MB store into the main thread to read a timestamp.
+- **One set per file, not per edit.** The key is the content, so every applied
+  edit starts a *fresh* 20 MB set and the old one becomes unreachable weight that
+  only the 30-day TTL would have collected — ten Apply & redraw cycles left
+  200 MB nobody could reach. `dropStaleVersions(file, keep)` runs before a file's
+  days are refilled and drops every other hash carrying that same filename.
+- **A byte budget** (`BUDGET_BYTES`, ~8 trips) evicted least-recently-used, as
+  the backstop for many *different* files. `touchDoc` refreshes last-use on
+  hydration, so both the TTL and the budget spare a trip you keep reopening.
+- **Persistent storage is requested at startup** (`requestPersistence`). Without
+  it IndexedDB is best-effort and a browser short of room evicts the **whole
+  origin** — the map cache, the last-file handle and the autosaved draft
+  together. Granted silently for an installed PWA, refused just as silently
+  otherwise.
+- **A failed write is reported, not swallowed.** `putCachedDay` returns its
+  error, because the way it fails in practice is `QuotaExceededError`, after
+  which every day misses for ever and the app looks like it has no cache at all
+  rather than a full disk. Options → Maps shows it.
+
+Options → Maps lists the open trip's days with each one's cached size and a
+per-day **Redraw**, so a day whose tiles came back thin can be fixed without
+paying for the other ten; days from other documents are summed into one line
+with a **Clear those**, since they can't be redrawn from here (their file isn't
+open) and what matters about them is the room they hold.
 
 The **interactive** map (`src/maps/carto.ts` + `src/render/DayMapGL.tsx`) uses
 Carto's vector Positron style with its tile source pinned to a single host, so
@@ -201,6 +236,19 @@ by the Python engine (`validate(text, lang)`).
 
 - **Open** a local itinerary JSON (File System Access API, or an `<input>`
   fallback; "Reopen last" remembers the file) — or load the bundled **Sample**.
+  A reload **reopens what you were reading**, so the app comes back to the book
+  rather than the empty state. Two routes, in order: the stored file handle when
+  its read permission is already granted (which re-reads from disk, so edits made
+  outside the app are picked up), otherwise the text stashed under `lastSession`
+  in `odysseyra`/`kv`. The handle can't do it alone — most browsers answer
+  `queryPermission` with "prompt" after a restart and `requestPermission` needs a
+  click, and there is no handle at all for the `<input>` fallback (iOS Safari),
+  the Sample or a blank scaffold; so the text rides along, and the auto-reopen
+  path only ever *queries* permission, never requests it (a page load carries no
+  user activation). One thing outranks it: a restorable **autosaved draft**
+  (`edit/autosave.ts`), whose Restore/Discard banner stays the way in — those
+  edits are newer than the file they came from, and reopening the file underneath
+  would bury the choice.
 - **Render** the whole travel book: cover + day-by-day overview, one card per day
   with the time-ordered timeline (PDF-style type badges, nested activities, car
   events, tonight's-stay bar), plus transport and accommodation sections. Prices
@@ -210,9 +258,10 @@ by the Python engine (`validate(text, lang)`).
   per-day loader shows while it builds — with numbered pin discs next to activity
   titles, a dotted straight line per transport leg (both days of an overnight
   one), plus zoomed area maps. Rendered maps are cached in IndexedDB for 30
-  days (keyed by a hash of the JSON), so a relaunched app hydrates them instantly
-  instead of redrawing; a **Redraw maps** button discards this file's cached
-  images and rebuilds them. An **Interactive** toggle swaps the static images
+  days (keyed by a hash of the JSON's contents), so a relaunched app hydrates
+  them instantly instead of redrawing; a **Redraw all maps** button discards this
+  file's cached images and rebuilds them, and the listing beside it does the same
+  for **one day** (see *Maps* above). An **Interactive** toggle swaps the static images
   (both the day overview and each zoomed area map) for pan/zoom MapLibre maps
   (Carto's keyless vector Positron style, drawn from the same points/routes) with
   zoom/compass, fullscreen, a distance scale and geolocate controls, and

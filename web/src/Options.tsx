@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import type { Lang } from "./render/format";
+import { fmtDate, type Lang } from "./render/format";
 import type { DayView } from "./render/Book";
 import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
 import { COMMIT_HASH, commitDateLabel, commitUrl } from "./version";
 import { useT, useTx } from "./i18n";
+import type { CachedDay } from "./maps/mapCache";
+import type { Day } from "./types/resolved";
 
 // The options panel: every control that used to live in the top bar, moved into
 // one place and grouped by theme (File / Language / Maps / PDF export / App).
@@ -42,6 +44,17 @@ export interface OptionsProps {
   setInteractiveMaps: (v: boolean) => void;
   onRedraw: () => void;
   redrawing: boolean;
+  // The map cache, listed day by day (see `CacheList`). `days` is the open
+  // trip's resolved days — the listing is a view of *them*, not of the store, so
+  // a day that has no cached map still gets a row and a button.
+  days: Day[];
+  docKey: string | null; // the open document's cache key ("which rows are mine")
+  cacheEntries: CachedDay[];
+  cacheError: string | null;
+  storage: { usage: number; quota: number } | null;
+  onRedrawDay: (index: number) => void;
+  redrawingDay: number | null;
+  onClearOthers: () => void;
   // Display
   clampDescriptions: boolean;
   setClampDescriptions: (v: boolean) => void;
@@ -111,6 +124,157 @@ function CollapseSelect({
         <option value="expand-all">{t("Expand all")}</option>
       </select>
     </label>
+  );
+}
+
+/** Bytes as a short human figure. One decimal below 10 units, whole above, so a
+ * column of them reads at one width without a thousands separator. */
+function fmtBytes(n: number): string {
+  const units = ["B", "KB", "MB", "GB"];
+  let v = n;
+  let u = 0;
+  while (v >= 1024 && u < units.length - 1) {
+    v /= 1024;
+    u++;
+  }
+  return `${v < 10 && u > 0 ? v.toFixed(1) : Math.round(v)} ${units[u]}`;
+}
+
+// The per-day map cache, listed beside "Redraw all maps".
+//
+// It is a view of the **trip's days**, not of the store: every day gets a row,
+// carrying its size when its maps are cached and "not cached" when they aren't,
+// with a button either way. That's the reading that answers the question the
+// list is for — *which* of my maps are being redrawn every time — where a list
+// of only what's present would show a short list and leave the gaps to be
+// inferred.
+//
+// Entries belonging to other documents are summed into a single line rather than
+// enumerated: they can't be redrawn from here (the file isn't open, so there's
+// nothing to render from), and what matters about them is only how much room
+// they are holding. Which is worth showing, because at ~20 MB a trip they are
+// the reason the store fills up.
+function CacheList({
+  days,
+  docKey,
+  entries,
+  error,
+  storage,
+  onRedrawDay,
+  redrawingDay,
+  onClearOthers,
+  disabledReason,
+  lang,
+}: {
+  days: Day[];
+  docKey: string | null;
+  entries: CachedDay[];
+  error: string | null;
+  storage: { usage: number; quota: number } | null;
+  onRedrawDay: (index: number) => void;
+  redrawingDay: number | null;
+  onClearOthers: () => void;
+  disabledReason: string;
+  lang: Lang;
+}) {
+  const t = useT();
+  const mine = new Map(entries.filter((e) => e.hash === docKey).map((e) => [e.index, e]));
+  const others = entries.filter((e) => e.hash !== docKey);
+  const otherFiles = new Set(others.map((e) => e.file || "?"));
+  const otherBytes = others.reduce((n, e) => n + (e.bytes || 0), 0);
+  const myBytes = [...mine.values()].reduce((n, e) => n + (e.bytes || 0), 0);
+
+  return (
+    <div className="cache-block">
+      <h3>{t("Cached map images")}</h3>
+      <p className="opt-desc">
+        {t(
+          "Each day's maps are drawn once and kept on this device, keyed by the itinerary's contents — so editing a value redraws, but reopening the same file doesn't.",
+        )}
+      </p>
+      <p className="cache-summary">
+        {t("{cached} of {total} days cached · {size}", {
+          cached: mine.size,
+          total: days.length,
+          size: fmtBytes(myBytes),
+        })}
+        {storage && storage.quota > 0 && (
+          // Headroom, not usage. The origin's *usage* is within a megabyte or
+          // two of the trip total right beside it, so the line read as the same
+          // figure printed twice; how much room is left is the different
+          // question, and the one that says whether the next trip will fit.
+          <span className="cache-room">
+            {" · "}
+            {t("{free} still free on this device", {
+              free: fmtBytes(Math.max(0, storage.quota - storage.usage)),
+            })}
+          </span>
+        )}
+      </p>
+      {error && (
+        <p className="cache-warn">
+          ⚠️{" "}
+          {error === "quota"
+            ? t(
+                "The last map couldn't be stored — this device is out of room. Clear the cached maps below, then redraw.",
+              )
+            : t("The last map couldn't be stored ({error}), so it will be redrawn every time.", {
+                error,
+              })}
+        </p>
+      )}
+      {days.length > 0 && (
+        <ul className="cache-list">
+          {days.map((d, i) => {
+            const hit = mine.get(i);
+            return (
+              <li key={i} className={`cache-row ${hit ? "" : "miss"}`}>
+                <span className="cache-day">
+                  {t("Day {n}", { n: d.day_number || i + 1 })}
+                  {d.date && <span className="cache-date">{fmtDate(d.date, lang)}</span>}
+                </span>
+                <span className="cache-name">{d.title || t("(untitled)")}</span>
+                <span className="cache-size">{hit ? fmtBytes(hit.bytes) : t("not cached")}</span>
+                <Tip
+                  text={
+                    disabledReason ||
+                    (hit
+                      ? t("Discard this day's cached maps and draw them again")
+                      : t("Draw this day's maps now"))
+                  }
+                >
+                  <button
+                    className="btn subtle tiny"
+                    onClick={() => onRedrawDay(i)}
+                    disabled={!!disabledReason || redrawingDay !== null}
+                  >
+                    {redrawingDay === i ? t("Redrawing…") : hit ? t("Redraw") : t("Draw")}
+                  </button>
+                </Tip>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {others.length > 0 && (
+        <p className="cache-others">
+          {/* Two templates rather than one, because this i18n layer has no
+              plural rules and "1 other itineraries" is the commonest case. */}
+          {otherFiles.size === 1
+            ? t("One other itinerary is holding {size}.", { size: fmtBytes(otherBytes) })
+            : t("{files} other itineraries are holding {size}.", {
+                files: otherFiles.size,
+                size: fmtBytes(otherBytes),
+              })}{" "}
+          <button className="btn subtle tiny" onClick={onClearOthers}>
+            {t("Clear those")}
+          </button>
+        </p>
+      )}
+      {!days.length && !others.length && (
+        <p className="opt-note">{t("Nothing is cached yet.")}</p>
+      )}
+    </div>
   );
 }
 
@@ -203,6 +367,14 @@ export function Options(props: OptionsProps) {
     setMapProvider,
     onRedraw,
     redrawing,
+    days,
+    docKey,
+    cacheEntries,
+    cacheError,
+    storage,
+    onRedrawDay,
+    redrawingDay,
+    onClearOthers,
     inkSaver,
     setInkSaver,
     mapsExport,
@@ -230,19 +402,23 @@ export function Options(props: OptionsProps) {
   const noFile = t("Open an itinerary first");
   const engineReason = engineReady ? "" : t("The engine is still starting…");
   const fileReason = hasItinerary ? "" : noFile;
-  // Two different questions. "Redraw maps" only rebuilds the per-day images, so
-  // it needs `include_maps_in_render`; the interactive toggle also governs a
-  // hike's own GPX trail map, which is drawn independently of that switch.
+  // One question, asked of both the interactive toggle and the redraw buttons:
+  // is there any per-day map to draw at all? Two independent reasons there can
+  // be — the trip opts into maps, or a hike carries a GPX, whose trail map is
+  // drawn independently of that switch (`App`'s `wantsDayRender`, mirroring
+  // bridge.py's `render_day`).
+  //
+  // The redraw buttons used to gate on `include_maps_in_render` alone, which
+  // left them dead for a maps-off trip with a hike track — a trip whose days
+  // really are rendered, and whose trail PNGs really are cached, so the one
+  // control for rebuilding them was unavailable exactly where the cache was in
+  // use.
   const mapsReason = !hasItinerary
-    ? noFile
-    : !mapsInRender
-      ? t("This itinerary doesn't enable maps (include_maps_in_render is off)")
-      : "";
-  const interactiveReason = !hasItinerary
     ? noFile
     : !mapsInRender && !hasHikeTracks
       ? t("This itinerary doesn't enable maps (include_maps_in_render is off)")
       : "";
+  const interactiveReason = mapsReason;
   const installReason = canInstall
     ? ""
     : t(
@@ -366,10 +542,24 @@ export function Options(props: OptionsProps) {
               onClick={onRedraw}
               disabled={!!mapsReason || redrawing || !engineReady}
             >
-              {redrawing ? t("Redrawing…") : t("Redraw maps")}
+              {redrawing ? t("Redrawing…") : t("Redraw all maps")}
             </button>
           </Tip>
         </div>
+        <CacheList
+          days={days}
+          docKey={docKey}
+          entries={cacheEntries}
+          error={cacheError}
+          storage={storage}
+          onRedrawDay={onRedrawDay}
+          redrawingDay={redrawingDay}
+          onClearOthers={onClearOthers}
+          disabledReason={
+            mapsReason || engineReason || (redrawing ? t("A redraw is already running") : "")
+          }
+          lang={lang}
+        />
       </section>
 
       <section className="opt-group">

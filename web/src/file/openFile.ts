@@ -150,6 +150,23 @@ export async function saveAsJson(suggestedName: string, text: string): Promise<O
   return { name: handle.name, text, handle };
 }
 
+/** Whether this handle can be read *without* asking — i.e. the permission is
+ * already granted, so re-reading it needs no user gesture.
+ *
+ * The whole point of the distinction: `requestPermission` may only be called
+ * from a user activation, so the "reopen the last file automatically on load"
+ * path can query but must never request. Chromium grants persistent permission
+ * to an installed PWA (and to a site the user has allowed on every visit), which
+ * is when this answers true after a reload; everywhere else the stashed text is
+ * the route back in (see `rememberSession`). */
+export async function canReadHandle(handle: FsFileHandle): Promise<boolean> {
+  try {
+    return ((await handle.queryPermission?.({ mode: "read" })) ?? "granted") === "granted";
+  } catch {
+    return false;
+  }
+}
+
 /** Re-read a previously kept handle, requesting read permission if needed. */
 export async function reopenHandle(handle: FsFileHandle): Promise<OpenedFile | null> {
   const opts = { mode: "read" as const };
@@ -169,6 +186,7 @@ export async function reopenHandle(handle: FsFileHandle): Promise<OpenedFile | n
 const DB_NAME = "odysseyra";
 const STORE = "kv";
 const LAST_KEY = "lastFileHandle";
+const SESSION_KEY = "lastSession";
 
 function withStore<T>(
   mode: IDBTransactionMode,
@@ -205,5 +223,53 @@ export async function loadLastHandle(): Promise<FsFileHandle | null> {
     )) ?? null;
   } catch {
     return null;
+  }
+}
+
+// --- the last session, so a reload comes back to the file you were reading ---
+
+export interface LastSession {
+  name: string;
+  text: string;
+  at: number; // epoch ms
+}
+
+/** Remember the file currently open — its name *and* its text.
+ *
+ * The handle alone can't reopen it on a reload: most browsers answer
+ * `queryPermission` with "prompt" after a restart and `requestPermission` needs
+ * a click, and there is no handle at all for a file picked through the `<input>`
+ * fallback (iOS Safari), the bundled demo or a blank scaffold. So the text rides
+ * along and the handle stays the preferred route — re-reading from disk when it
+ * is still permitted picks up edits made outside the app, which the stash can't.
+ *
+ * Distinct from `edit/autosave.ts`, which stashes an *unsaved draft* and is
+ * cleared the moment it's written to a file. This is "what was on screen",
+ * saved or not, and outlives that. */
+export async function rememberSession(name: string, text: string): Promise<void> {
+  try {
+    await withStore("readwrite", (s) =>
+      s.put({ name, text, at: Date.now() } as LastSession, SESSION_KEY),
+    );
+  } catch {
+    /* persistence is best-effort */
+  }
+}
+
+export async function loadSession(): Promise<LastSession | null> {
+  try {
+    return (
+      (await withStore<LastSession | undefined>("readonly", (s) => s.get(SESSION_KEY))) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function clearSession(): Promise<void> {
+  try {
+    await withStore("readwrite", (s) => s.delete(SESSION_KEY));
+  } catch {
+    /* best-effort */
   }
 }

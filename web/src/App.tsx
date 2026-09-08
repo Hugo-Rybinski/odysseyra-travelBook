@@ -11,11 +11,14 @@ import {
   type BootProgress,
 } from "./pyodide/runtime";
 import {
+  canReadHandle,
   canWriteHandle,
   hasSavePicker,
   loadLastHandle,
+  loadSession,
   openFile,
   rememberHandle,
+  rememberSession,
   reopenHandle,
   saveAsJson,
   writeHandle,
@@ -25,10 +28,17 @@ import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
 import {
   docHash,
+  dropStaleVersions,
   getCachedDay,
+  invalidateDay,
   invalidateDoc,
+  listCachedDays,
   purgeExpired,
   putCachedDay,
+  requestPersistence,
+  storageEstimate,
+  touchDoc,
+  type CachedDay,
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
@@ -192,6 +202,17 @@ export function App() {
   const [exporting, setExporting] = useState(false);
   const [exportingIcs, setExportingIcs] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
+  // Which single day is being redrawn from the Options cache listing (null when
+  // none). Kept apart from `redrawing`, which means "the whole file".
+  const [redrawingDay, setRedrawingDay] = useState<number | null>(null);
+  // The map cache's own state, for the Options → Maps listing: every cached day
+  // (all documents, so other files show as reclaimable weight), how much room
+  // the origin has, and the last write failure. That last one used to be
+  // swallowed — a full quota looked exactly like having no cache at all.
+  const [cacheEntries, setCacheEntries] = useState<CachedDay[]>([]);
+  const [docKey, setDocKey] = useState<string | null>(null);
+  const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
+  const [cacheError, setCacheError] = useState<string | null>(null);
   const [interactiveMaps, setInteractiveMaps] = useState(true);
   // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
   // viewer; off shows them in full. Default on.
@@ -281,16 +302,39 @@ export function App() {
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
 
+  // Read the map cache's state back for the Options listing. Cheap — it walks
+  // the small `meta` store, not the megabytes of images.
+  const refreshCacheInfo = useCallback(async () => {
+    const [entries, room] = await Promise.all([listCachedDays(), storageEstimate()]);
+    setCacheEntries(entries);
+    setStorage(room);
+  }, []);
+
   // Render the per-day maps progressively, after the book is already on screen.
   // Each day is hydrated instantly from the 30-day IndexedDB cache when present;
   // otherwise we yield (so the browser paints the book + pending loaders), fetch
   // that day's map (a blocking tile fetch), swap it in and cache it. `force`
-  // skips the cache read (used by "Redraw maps"). A newer file/redraw bumps the
-  // token, so a stale loop stops merging into the current view.
+  // skips the cache read (used by "Redraw all maps"). A newer file/redraw bumps
+  // the token, so a stale loop stops merging into the current view.
+  //
+  // `only` narrows the run to a few day indices (the per-day Redraw button);
+  // `file` names the source, which is what lets the previous *version* of this
+  // same file be reclaimed instead of accumulating (`dropStaleVersions`).
   const buildDayMaps = useCallback(
-    async (text: string, dayCount: number, force = false) => {
+    async (
+      text: string,
+      dayCount: number,
+      force = false,
+      file = "",
+      only: number[] | null = null,
+    ) => {
       const token = ++mapRunRef.current;
       const hash = await docHash(text);
+      if (mapRunRef.current !== token) return;
+      // Before filling this file's days, drop the sets left behind by its
+      // earlier revisions — an edit changes the content hash, so without this
+      // every Apply & redraw leaks a whole trip's worth of images.
+      await dropStaleVersions(file, hash);
       if (mapRunRef.current !== token) return;
 
       const swapIn = (i: number, day: Day) =>
@@ -301,16 +345,23 @@ export function App() {
           return { ...prev, days };
         });
 
+      const targets = only ?? Array.from({ length: dayCount }, (_, i) => i);
+      let hits = 0;
+      let drawn = 0;
       try {
-        for (let i = 0; i < dayCount; i++) {
+        for (const i of targets) {
           if (!force) {
             const cached = await getCachedDay(hash, i);
             if (mapRunRef.current !== token) return;
             if (cached) {
               swapIn(i, cached);
+              hits++;
               continue;
             }
           }
+          // The real day number out of the trip's, not a position within this
+          // run: for a full pass the two coincide, and for a single-day redraw
+          // "day 7 of 8" is what's happening where "day 1 of 1" is not.
           setMapProgress({ day: i + 1, total: dayCount });
           await new Promise((r) => setTimeout(r, 0));
           if (mapRunRef.current !== token) return;
@@ -318,18 +369,27 @@ export function App() {
             const day = await renderDayMap(text, i);
             if (mapRunRef.current !== token) return;
             swapIn(i, day);
-            await putCachedDay(hash, i, day);
+            const put = await putCachedDay(hash, i, day, file);
+            drawn++;
+            // A failed write means every later load redraws this day for ever,
+            // so say so rather than looking cacheless.
+            if (!put.ok) setCacheError(put.error ?? "unknown");
+            else setCacheError(null);
           } catch {
             // leave that day mapless and carry on with the rest
           }
         }
+        // Keep the store's idea of "last used" current, so the TTL and the byte
+        // budget both spare a trip you keep coming back to.
+        if (hits) await touchDoc(hash);
+        if (hits || drawn) void refreshCacheInfo();
       } finally {
         // Only the current run may clear the loader — a superseded loop bailing
         // out mustn't hide the one that replaced it.
         if (mapRunRef.current === token) setMapProgress(null);
       }
     },
-    [],
+    [refreshCacheInfo],
   );
 
   // Warm the engine on mount, and see whether a previous file can be reopened.
@@ -337,8 +397,15 @@ export function App() {
     boot(setProgress).catch((e) => setError(String(e)));
     loadLastHandle().then((h) => setCanReopen(!!h));
     loadAutosave().then(setRestorable); // offer to restore unsaved edits (P6)
-    void purgeExpired(); // drop map images older than 30 days
-  }, []);
+    // Ask the browser not to treat this origin as evictable. A trip's cached
+    // maps run to ~20 MB, and a browser reclaiming best-effort storage takes the
+    // *whole* origin — the maps, the last-file handle and the autosaved draft
+    // together — which is one way the cache appears to "stop working".
+    void requestPersistence();
+    // Drop expired/orphaned entries and apply the byte budget, then read the
+    // state back for the Options listing.
+    void purgeExpired().then(refreshCacheInfo);
+  }, [refreshCacheInfo]);
 
   // Reflect the chosen language on <html lang> for assistive tech.
   useEffect(() => {
@@ -361,6 +428,34 @@ export function App() {
   useEffect(() => {
     if (itinerary) setMapsExport(itinerary.maps.include_in_render);
   }, [itinerary]);
+
+  // The open document's cache key, so the Options listing can tell this file's
+  // cached days (redrawable) from other documents' (reclaimable weight). Async
+  // because hashing is, and recomputed whenever the preview's text changes.
+  useEffect(() => {
+    if (!source) {
+      setDocKey(null);
+      return;
+    }
+    let live = true;
+    void docHash(source.text).then((h) => {
+      if (live) setDocKey(h);
+    });
+    return () => {
+      live = false;
+    };
+  }, [source]);
+
+  // Stash whatever is open, so a reload comes straight back to it (see the
+  // auto-reopen effect below). Keyed on `source`, which covers every route in
+  // one place: opening a file, the demo, a blank scaffold, and an Apply that
+  // replaces the preview's text. The text is stashed alongside the handle
+  // because the handle is not enough on its own — there is none for the input
+  // fallback (iOS Safari), the demo or a scaffold, and where there is one its
+  // read permission usually needs a click after a restart.
+  useEffect(() => {
+    if (source) void rememberSession(source.name, source.text);
+  }, [source]);
 
   // Live-validate the draft (debounced): serialize with a line→path map, run the
   // validator over that exact text, then split findings into field-anchored
@@ -464,7 +559,7 @@ export function App() {
         // Findings (to see why) so the user isn't stuck on a blank viewer.
         setView(model ? "viewer" : seeded ? "edit" : "findings");
 
-        if (wantsDayRender(model)) void buildDayMaps(src.text, model!.days.length);
+        if (wantsDayRender(model)) void buildDayMaps(src.text, model!.days.length, false, src.name);
         else mapRunRef.current++; // cancel any in-flight loop from a prior file
         await rememberHandle(src.handle);
         setCanReopen(!!src.handle || canReopen);
@@ -516,6 +611,47 @@ export function App() {
     }
   }, [analyze]);
 
+  // Reopen the last file automatically, so a reload lands back on the book you
+  // were reading instead of the empty state. Runs once per page load — the ref
+  // (rather than an effect cleanup) is what keeps it to once, since StrictMode
+  // mounts twice in dev and a cancel-on-unmount would make the second mount skip
+  // it and nothing would open at all.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
+    void (async () => {
+      try {
+        // Unsaved edits win. That record is *newer* than the file it came from,
+        // and whether to keep it is the user's call — so the empty state's
+        // Restore/Discard banner stays the way back in, and auto-reopening the
+        // file underneath it (which would show none of those edits) would bury
+        // the choice.
+        if (await loadAutosave()) return;
+        const handle = await loadLastHandle();
+        // The handle is the better route where it works: it re-reads from disk,
+        // so edits made to the file outside the app are picked up, which the
+        // stashed text cannot do. But only when permission is *already* granted
+        // — a page load carries no user activation, so requesting it here would
+        // be refused, and asking is not something a reload should do unprompted.
+        if (handle && (await canReadHandle(handle))) {
+          const opened = await reopenHandle(handle);
+          if (opened) {
+            await analyze(opened);
+            return;
+          }
+        }
+        // Otherwise reopen from the stash, keeping the handle attached so a
+        // later Save can still write in place (its own click supplies the
+        // gesture the permission prompt needs).
+        const last = await loadSession();
+        if (last) await analyze({ name: last.name, text: last.text, handle });
+      } catch {
+        /* a failed auto-reopen just leaves the empty state as it was */
+      }
+    })();
+  }, [analyze]);
+
   // Export the PDF and download it, without losing the view. Maps are embedded
   // when the toggle is on (fetching tiles/routes in-browser; slower).
   const onExport = useCallback(async () => {
@@ -564,17 +700,60 @@ export function App() {
     try {
       const hash = await docHash(source.text);
       await invalidateDoc(hash);
+      void refreshCacheInfo(); // the listing empties as the redraw starts
       setMapsStale(false);
       setItinerary((prev) =>
         prev ? { ...prev, days: prev.days.map((d) => ({ ...d, map: undefined })) } : prev,
       );
-      await buildDayMaps(source.text, itinerary.days.length, true);
+      await buildDayMaps(source.text, itinerary.days.length, true, source.name);
     } catch (e) {
       setError(String(e));
     } finally {
       setRedrawing(false);
     }
-  }, [source, itinerary, buildDayMaps]);
+  }, [source, itinerary, buildDayMaps, refreshCacheInfo]);
+
+  // Redraw one day's maps, from the Options cache listing. Same three steps as
+  // "Redraw all maps" narrowed to a single index — which is the point: a day
+  // whose tiles came back thin (or whose route missed while the network was
+  // down) can be fixed without paying for the other ten.
+  const onRedrawDay = useCallback(
+    async (index: number) => {
+      if (!source || !itinerary || !wantsDayRender(itinerary)) return;
+      setRedrawingDay(index);
+      setError(null);
+      try {
+        const hash = await docHash(source.text);
+        await invalidateDay(hash, index);
+        // Show the row as "not cached" straight away rather than leaving the old
+        // size sitting there for the whole redraw — the entry really is gone.
+        void refreshCacheInfo();
+        setMapsStale(false);
+        setItinerary((prev) =>
+          prev
+            ? { ...prev, days: prev.days.map((d, i) => (i === index ? { ...d, map: undefined } : d)) }
+            : prev,
+        );
+        await buildDayMaps(source.text, itinerary.days.length, true, source.name, [index]);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setRedrawingDay(null);
+      }
+    },
+    [source, itinerary, buildDayMaps, refreshCacheInfo],
+  );
+
+  // Reclaim what every *other* document's maps are holding. Deliberately the
+  // only delete-without-redraw the listing offers: throwing away a map for the
+  // file you're reading just makes its next load slower, whereas another trip's
+  // 20 MB is exactly the weight worth being able to see and drop.
+  const onClearOthers = useCallback(async () => {
+    const others = cacheEntries.filter((e) => e.hash !== docKey);
+    for (const e of others) await invalidateDay(e.hash, e.index);
+    setCacheError(null);
+    await refreshCacheInfo();
+  }, [cacheEntries, docKey, refreshCacheInfo]);
 
   // The name a save that **creates** a file should propose: `<slug> (vNN).json`.
   //
@@ -725,7 +904,7 @@ export function App() {
         setAppliedText(text); // preview now reflects the draft (dirty = false)
         if (wantsDayRender(model) && redrawMaps) {
           setMapsStale(false);
-          await buildDayMaps(text, model!.days.length, true);
+          await buildDayMaps(text, model!.days.length, true, source?.name ?? "edited.json");
         } else {
           // Plain apply (or maps off / unrenderable): don't refetch. Carried maps
           // stay on screen; suppress loaders for any day without one.
@@ -738,7 +917,7 @@ export function App() {
         setApplying(false);
       }
     },
-    [draft, lang, itinerary, buildDayMaps],
+    [draft, lang, itinerary, source, buildDayMaps],
   );
 
   // Follow an Overview day-by-day row into the book: switch to the Travel view,
@@ -809,6 +988,8 @@ export function App() {
       });
     } else if (redrawing) {
       items.push({ id: "redraw", label: t("Redrawing the maps…") });
+    } else if (redrawingDay !== null) {
+      items.push({ id: "redraw-day", label: t("Redrawing day {day}…", { day: redrawingDay + 1 }) });
     }
     // The update lifecycle is in-flight work like any other, so it belongs in
     // the same card rather than a floating strip of its own. `updating` wins:
@@ -824,6 +1005,7 @@ export function App() {
     exportingIcs,
     mapProgress,
     redrawing,
+    redrawingDay,
     checking,
     updating,
     t,
@@ -992,6 +1174,14 @@ export function App() {
           setMapProvider={setMapProvider}
           onRedraw={onRedraw}
           redrawing={redrawing}
+          days={itinerary?.days ?? []}
+          docKey={docKey}
+          cacheEntries={cacheEntries}
+          cacheError={cacheError}
+          storage={storage}
+          onRedrawDay={onRedrawDay}
+          redrawingDay={redrawingDay}
+          onClearOthers={onClearOthers}
           inkSaver={inkSaver}
           setInkSaver={setInkSaver}
           mapsExport={mapsExport}
