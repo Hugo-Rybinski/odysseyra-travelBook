@@ -11,7 +11,7 @@
   /* height of a single-line Edit-tab control (input/select), matched by a bool
      field's switch so mixed grid rows stay aligned */
   --edit-input-h: 32px;
-  /* horizontal page gutter; full-bleed elements (top bar, toasts) cancel it with
+  /* horizontal page gutter; full-bleed elements (the top bar) cancel it with
      a negative margin, so they must all reference this one value */
   --gutter: 16px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -854,6 +854,17 @@ body {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+/* Stands in for the spinner on a finished notice — same box, so the card's text
+   doesn't shift when a check goes from running to answered. */
+.activity-glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  line-height: 1;
+}
 .activity-list {
   display: grid;
   gap: 2px;
@@ -946,47 +957,6 @@ body {
     grid-column: 2;
     font-size: 0.8rem;
   }
-}
-
-/* PWA toasts */
-.toasts {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: grid;
-  gap: 8px;
-  margin: 0 calc(-1 * var(--gutter));
-}
-.toasts:empty {
-  display: none;
-}
-.toast {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 16px;
-  font-size: 0.85rem;
-  color: #fff;
-  background: var(--accent);
-}
-.toast.offline {
-  background: #8a5a00;
-}
-.toast.update {
-  background: var(--accent);
-}
-.toast.ok {
-  background: #204d3a;
-}
-.link-btn {
-  margin-left: auto;
-  background: none;
-  border: 0;
-  color: #fff;
-  text-decoration: underline;
-  font: inherit;
-  cursor: pointer;
 }
 
 /* ---------------------------------------------------------------- the book */
@@ -2764,7 +2734,7 @@ textarea.edit-input {
     /* a shorter bar (and logo) so it doesn't dominate a small screen; the
        sticky edit-actions offset tracks this automatically */
     --topbar-h: 48px;
-    /* tighter page gutter — the full-bleed top bar/toasts track it via var */
+    /* tighter page gutter — the full-bleed top bar tracks it via var */
     --gutter: 12px;
   }
   .shell {

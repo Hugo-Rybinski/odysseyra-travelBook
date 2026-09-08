@@ -8,11 +8,24 @@ import {
 } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
+import { COMMIT_HASH, fetchDeployedVersion } from "../version";
+
 // Non-standard install-prompt event (not in the DOM lib).
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
+
+/** What a manual "Check for updates" turned up. `null` before one has run, and
+ * again once the notice has been on screen long enough to read.
+ *
+ * Three outcomes, not two: "couldn't ask" is not "up to date". The button is
+ * enabled offline, and reporting a failed check as good news is the one answer
+ * that would be actively wrong. */
+export type UpdateCheck =
+  | { kind: "none" }
+  | { kind: "found"; hash: string; date: string }
+  | { kind: "unreachable" };
 
 // Single owner of the service-worker registration. It auto-applies a new version
 // (activate the waiting SW + reload once) the moment one is detected — so a plain
@@ -27,6 +40,8 @@ interface PwaContextValue {
   dismissOfflineReady: () => void;
   checkForUpdate: () => void;
   checking: boolean; // a manual check is in flight
+  /** The last check's outcome, for the caller to word and show. */
+  updateCheck: UpdateCheck | null;
   updating: boolean; // a new version is being applied (page will reload)
   canInstall: boolean; // the browser offered an install prompt we can replay
   install: () => Promise<void>;
@@ -68,6 +83,7 @@ export function usePwa(): PwaContextValue {
 export function PwaProvider({ children }: { children: ReactNode }) {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | undefined>();
   const [checking, setChecking] = useState(false);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheck | null>(null);
   const [updating, setUpdating] = useState(false);
   const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
 
@@ -112,16 +128,43 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     setInstallEvt(null); // a prompt can only be used once
   }, [installEvt]);
 
+  // How long a finished check's notice stays up. Long enough to read a hash and
+  // a date; short enough that it doesn't linger as a permanent badge.
+  const NOTICE_MS = 6000;
+
   const checkForUpdate = useCallback(() => {
-    if (!registration) return;
     setChecking(true);
-    // A found update flips needRefresh → the effect above applies it (reload).
-    // If nothing's new, just clear the transient "checking" state.
-    void registration
-      .update()
-      .catch(() => {})
-      .finally(() => setTimeout(() => setChecking(false), 1200));
+    setUpdateCheck(null);
+    void (async () => {
+      // Ask the *server* what is deployed, and compare. Asking the service
+      // worker instead would only tell us whether it decided to install
+      // something — never which build, which is what the notice has to name.
+      // It also means the check still answers with no registration at all
+      // (dev, or a browser with the SW disabled), where it used to bail out
+      // silently and leave the button doing nothing.
+      const deployed = await fetchDeployedVersion();
+      if (!deployed) setUpdateCheck({ kind: "unreachable" });
+      else if (deployed.hash && deployed.hash !== COMMIT_HASH) {
+        setUpdateCheck({ kind: "found", hash: deployed.hash, date: deployed.date });
+      } else setUpdateCheck({ kind: "none" });
+
+      // Then let the service worker do the applying: a found update flips
+      // `needRefresh` → the effect above activates it and reloads. So the
+      // "Update found" notice is what the user reads on the way to the reload,
+      // and `updating` takes the line over when it starts.
+      if (registration) await registration.update().catch(() => {});
+      setChecking(false);
+    })();
   }, [registration]);
+
+  // Retire a finished notice on its own. Deliberately not cleared on the next
+  // click — `checkForUpdate` does that — so a second check can't briefly show
+  // the previous answer.
+  useEffect(() => {
+    if (!updateCheck) return;
+    const id = setTimeout(() => setUpdateCheck(null), NOTICE_MS);
+    return () => clearTimeout(id);
+  }, [updateCheck]);
 
   return (
     <PwaContext.Provider
@@ -130,6 +173,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
         dismissOfflineReady: () => setOfflineReady(false),
         checkForUpdate,
         checking,
+        updateCheck,
         updating,
         canInstall: !!installEvt,
         install,

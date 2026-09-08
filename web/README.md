@@ -310,15 +310,29 @@ by the Python engine (`validate(text, lang)`).
   level filter; **EN/FR** (in Options) toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
   maps toggles; the maps toggle defaults to the file's own `include_maps_in_render`).
-- PWA polish: an offline banner and offline-ready / updating toasts
-  (`src/pwa/PwaStatus.tsx`), and **automatic updates** — `src/pwa/PwaProvider.tsx`
-  owns the single service-worker registration and, when a new deploy is detected,
-  activates it and reloads once (no DevTools needed). `PwaProvider` also owns the
-  deferred install prompt (`beforeinstallprompt`), which the Options panel's **App**
-  group surfaces as **Install as an app** (shown only when the browser offers it);
-  its **Check for updates** button forces an immediate check. Note the SW only
-  registers in a production build, so use `npm run build && npm run preview` to
-  exercise these.
+- PWA polish: **automatic updates** — `src/pwa/PwaProvider.tsx` owns the single
+  service-worker registration and, when a new deploy is detected, activates it
+  and reloads once (no DevTools needed). Connectivity lives in the Options
+  header. `PwaProvider` also owns the deferred install prompt
+  (`beforeinstallprompt`), which the Options panel's **App** group surfaces as
+  **Install as an app** (shown only when the browser offers it).
+  - **Check for updates**, from the burger menu's *🔄 Update app* or the Options
+    button, reports its answer in the **loader's card** (`ActivityIndicator`) —
+    the same floating status the day maps and the PDF export use, rather than a
+    banner strip of its own. Three answers, since "couldn't ask" is not "up to
+    date": *No update found — this is the latest version.*, *Update found:
+    `<hash>` (`<date>`)* (dated the same way as Options' *Current version*
+    line — the two are read one click apart), or *Couldn't check for updates —
+    no connection.* A found update names the build **before** the reload takes
+    the page, so the card stacks *Updating…* over it rather than replacing it.
+  - It answers by fetching **`version.json`** — emitted at build time by
+    `versionManifest()` in `vite.config.ts` and deliberately kept out of the
+    precache (`globIgnores`) and fetched `no-store`. `__COMMIT_HASH__` is baked
+    into the bundle, so a running page can only say which build it *is*; this is
+    the only way to learn what is *deployed*. Precaching it would make every
+    check answer "up to date" forever.
+  - Note the SW only registers in a production build, so use
+    `npm run build && npm run preview` to exercise these.
 
 The **✏️ Edit** tab is a structured/form editor over the *input* JSON
 (`src/edit/`, driven by a field registry in `src/edit/schema.ts` that mirrors the

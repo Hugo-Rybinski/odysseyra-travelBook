@@ -171,11 +171,18 @@ export const FR: Record<string, string> = {
   "Nothing at the selected levels.": "Rien aux niveaux sélectionnés.",
   "Other findings": "Autres diagnostics",
 
-  // -------------------------------------------------------------- PWA toasts
+  // ------------------------------------------------------- app updates (PWA)
   "⚡ You’re offline — the app still works.":
     "⚡ Vous êtes hors ligne — l'application fonctionne toujours.",
   "Updating to the latest version…": "Mise à jour vers la dernière version…",
   "Checking for updates…": "Recherche de mises à jour…",
+  // The manual check's three answers, shown in the loader's card.
+  "No update found — this is the latest version.":
+    "Aucune mise à jour — vous avez la dernière version.",
+  "Update found: {hash} ({date})": "Mise à jour trouvée : {hash} ({date})",
+  "Update found: {hash}": "Mise à jour trouvée : {hash}",
+  "Couldn't check for updates — no connection.":
+    "Impossible de vérifier les mises à jour — pas de connexion.",
   "✓ Ready to work offline.": "✓ Prêt à fonctionner hors ligne.",
   Dismiss: "Fermer",
 

@@ -54,6 +54,35 @@ function repoUrl(): string {
 }
 const REPO = repoUrl();
 
+// `version.json` — the same commit identity as the `define`s above, but fetchable
+// at runtime. `__COMMIT_HASH__` is baked into the *bundle*, so a running page can
+// only ever tell you which build it already is; the manual "Check for updates"
+// has to learn what is *deployed*, which no amount of in-page state can answer.
+//
+// It is deliberately **kept out of the precache** (`globIgnores` below) and
+// fetched `no-store`: precached, it would answer with the build that is already
+// running and every check would report "up to date" — the one failure mode this
+// file exists to avoid. Served from memory in dev, where there is no `dist`.
+function versionManifest() {
+  const body = JSON.stringify({ hash: COMMIT.hash, date: COMMIT.date });
+  return {
+    name: "odysseyra-version-manifest",
+    configureServer(server: { middlewares: { use: (fn: unknown) => void } }) {
+      server.middlewares.use((req: any, res: any, next: () => void) => {
+        if ((req.url || "").split("?")[0].replace(/^.*\//, "") !== "version.json") {
+          return next();
+        }
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-store");
+        res.end(body);
+      });
+    },
+    generateBundle(this: { emitFile: (f: unknown) => void }) {
+      this.emitFile({ type: "asset", fileName: "version.json", source: body });
+    },
+  };
+}
+
 // The travel-book viewer runs the Python `odysseyra_travelbook` package in the browser via
 // Pyodide (loaded from a version-pinned CDN, then cached by the service worker
 // so the app works offline after first load). The local wheel and the bundled
@@ -91,6 +120,8 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // The deployed build's identity, fetchable at runtime (see versionManifest).
+    versionManifest(),
     // Copy the example itineraries in as bundled samples to open, and the
     // LLM-facing skill prompts (skills/*.md) so the "🤖 LLM prompts" tab can
     // fetch + copy them (offline too — they're precached by workbox below).
@@ -159,6 +190,9 @@ export default defineConfig({
         // fetched at runtime, which risked the navigation fallback returning
         // index.html for it (a "non-JavaScript MIME type" module error).
         globPatterns: ["**/*.{js,css,html,svg,json,whl,md}"],
+        // `version.json` answers "what is deployed?" — precaching it would
+        // make it answer "what is already running", i.e. always "up to date".
+        globIgnores: ["**/version.json"],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         // Never serve the SPA fallback (index.html) for asset URLs — a missing
         // hashed chunk should 404 cleanly (and trigger a reload, see main.tsx),

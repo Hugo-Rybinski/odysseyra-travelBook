@@ -53,9 +53,13 @@ import {
   saveAutosave,
   type AutosaveRecord,
 } from "./edit/autosave";
-import { PwaStatus } from "./pwa/PwaStatus";
 import { usePwa } from "./pwa/PwaProvider";
-import { ActivityIndicator, type ActivityItem } from "./ActivityIndicator";
+import { commitDateLabel } from "./version";
+import {
+  ActivityIndicator,
+  type ActivityItem,
+  type ActivityNotice,
+} from "./ActivityIndicator";
 import { I18nProvider, translate } from "./i18n";
 import type {
   Activity as ResolvedActivity,
@@ -263,8 +267,17 @@ export function App() {
     [lang],
   );
 
-  const { checkForUpdate, checking, updating, canInstall, install, isIOS, isStandalone, offlineReady } =
-    usePwa();
+  const {
+    checkForUpdate,
+    checking,
+    updateCheck,
+    updating,
+    canInstall,
+    install,
+    isIOS,
+    isStandalone,
+    offlineReady,
+  } = usePwa();
   // Bumped on every new analysis so a superseded per-day map loop bails out.
   const mapRunRef = useRef(0);
 
@@ -797,15 +810,55 @@ export function App() {
     } else if (redrawing) {
       items.push({ id: "redraw", label: t("Redrawing the maps…") });
     }
+    // The update lifecycle is in-flight work like any other, so it belongs in
+    // the same card rather than a floating strip of its own. `updating` wins:
+    // the page is about to reload, which is the more important of the two.
+    if (updating) items.push({ id: "update", label: t("Updating to the latest version…") });
+    else if (checking) items.push({ id: "check", label: t("Checking for updates…") });
     return items;
-  }, [progress.stage, busy, applying, exporting, exportingIcs, mapProgress, redrawing, t]);
+  }, [
+    progress.stage,
+    busy,
+    applying,
+    exporting,
+    exportingIcs,
+    mapProgress,
+    redrawing,
+    checking,
+    updating,
+    t,
+  ]);
+
+  // The update check's *answer*, shown in the loader's card as a transient
+  // notice (no spinner — nothing is running any more). A found update names the
+  // build it found, hash and date, the way the Options "Current version" line
+  // names the one you're on: the two are read together, one click apart.
+  // Deliberately *not* hidden once `updating` starts: a found update reloads the
+  // page within moments, so suppressing it there would mean the version it found
+  // — the whole point of the notice — flashed past unread. Instead the card
+  // stacks both, "Updating to the latest version…" over the build it found.
+  const updateNotice = useMemo<ActivityNotice | null>(() => {
+    if (!updateCheck) return null;
+    if (updateCheck.kind === "unreachable") {
+      return { glyph: "⚠️", label: t("Couldn't check for updates — no connection.") };
+    }
+    if (updateCheck.kind === "none") {
+      return { glyph: "✓", label: t("No update found — this is the latest version.") };
+    }
+    const date = commitDateLabel(updateCheck.date);
+    return {
+      glyph: "🔄",
+      label: date
+        ? t("Update found: {hash} ({date})", { hash: updateCheck.hash, date })
+        : t("Update found: {hash}", { hash: updateCheck.hash }),
+    };
+  }, [updateCheck, t]);
 
   return (
     <I18nProvider lang={lang}>
     <RouteGpxContext.Provider value={routeGpx}>
     <main className="shell">
-      <PwaStatus />
-      <ActivityIndicator items={activities} />
+      <ActivityIndicator items={activities} notice={updateNotice} />
       <header className="topbar">
         <button
           className="logo-btn"

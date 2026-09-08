@@ -5,8 +5,9 @@ import { PwaProvider } from "./pwa/PwaProvider";
 import "./index.css";
 import "./tipPosition";
 
-// The service worker is registered by useRegisterSW() inside <PwaStatus/>, which
-// also surfaces the update-available / offline-ready toasts.
+// The service worker is registered by useRegisterSW() inside <PwaProvider>, the
+// single owner of the update lifecycle. Its progress and the manual check's
+// answer surface in <ActivityIndicator>, the same card the engine's work uses.
 
 // If a lazily-imported chunk fails to load because the deploy moved on (a new
 // build changed hashes while an old page/SW was live), reload once to pick up
