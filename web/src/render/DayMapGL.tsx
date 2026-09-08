@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FullscreenControl,
   GeolocateControl,
@@ -28,6 +28,15 @@ setWorkerUrl(workerUrl);
 // `LOOP_MERGE_KM` in maps/render.py: keep the two in step, or the same hike shows
 // a finish on paper and not on screen.
 const LOOP_MERGE_KM = 0.03;
+
+// How near the viewport a map figure has to be to hold a GL context, and how
+// far away before it gives it back. The gap between the two is deliberate — see
+// the observer pair in DayMapGL. A day map is ~350 px tall, so 400/1600 mounts
+// it roughly one screen early and releases it about two screens late: never
+// visible as a rebuild, and only a handful live at once whatever the trip's
+// length.
+const MOUNT_MARGIN = "400px";
+const KEEP_MARGIN = "1600px";
 
 // Candidate direction arrowheads along the line. They are laid down generously
 // and thinned by MapLibre's own collision engine (`icon-allow-overlap: false`),
@@ -165,13 +174,62 @@ export function DayMapGL({
   onFail?: () => void;
 }) {
   const holder = useRef<HTMLDivElement | null>(null);
+  const figure = useRef<HTMLElement | null>(null);
+  // Whether this map currently holds a GL context. See MOUNT_MARGIN.
+  const [live, setLive] = useState(false);
+  // Where the user left the camera, so scrolling away and back doesn't reset the
+  // view they had panned to. Only meaningful once they've moved it — a map that
+  // was never touched refits its bounds, which is also what a changed `geo`
+  // should do.
+  const camera = useRef<{ center: [number, number]; zoom: number; bearing: number; pitch: number } | null>(
+    null,
+  );
+
+  // Hold a WebGL context only while the figure is near the viewport.
+  //
+  // A browser keeps a hard, small number of live WebGL contexts per page —
+  // Chrome's is 16 — and **silently kills the oldest** past it, leaving a dead
+  // canvas with no error to catch. MapLibre needs one context each, and a book
+  // mounts one map per day plus one per area and one per hike trail: a 15-day
+  // trip asked for 18 at once, so it lost two straight away and more as it
+  // scrolled, which reads as "the dynamic maps don't render". An 8-day trip sits
+  // just under the cap, which is why this only showed up on a long one.
+  //
+  // Two observers rather than one, for hysteresis: mount a little before the
+  // figure scrolls into view, and don't release it until it is well clear.
+  // Sharing one margin would rebuild the map every time a slow scroll wobbled
+  // across the boundary.
+  useEffect(() => {
+    const el = figure.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setLive(true); // no observer to lean on: behave as it always did
+      return;
+    }
+    const mount = new IntersectionObserver(
+      (entries) => entries.some((e) => e.isIntersecting) && setLive(true),
+      { rootMargin: MOUNT_MARGIN },
+    );
+    const keep = new IntersectionObserver(
+      (entries) => entries.every((e) => !e.isIntersecting) && setLive(false),
+      { rootMargin: KEEP_MARGIN },
+    );
+    mount.observe(el);
+    keep.observe(el);
+    return () => {
+      mount.disconnect();
+      keep.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const el = holder.current;
-    if (!el) return;
+    if (!el || !live) return;
 
     let map: MapLibreMap | null = null;
     let cancelled = false;
+    // Set just before an intentional teardown, so the context-lost listener can
+    // tell "we released it" from "the browser took it".
+    let disposing = false;
     let loaded = false;
     let timer = 0;
 
@@ -227,18 +285,49 @@ export function DayMapGL({
         if (!loaded) onFail?.();
       });
 
+      // A context killed anyway (another tab eating the budget, a GPU reset)
+      // must say so rather than leave a dead canvas sitting there — which is
+      // precisely how the over-the-cap maps used to fail: silently.
+      //
+      // Guarded on `disposing`, because tearing a map down on purpose can lose
+      // its context too: without that check every map that scrolled out of view
+      // would report itself broken and come back as "couldn't be loaded".
+      m.getCanvas().addEventListener("webglcontextlost", () => {
+        if (!disposing) onFail?.();
+      });
+
       m.on("load", () => {
       loaded = true;
       window.clearTimeout(timer);
 
-      const [[minLat, minLng], [maxLat, maxLng]] = geo.bounds;
-      m.fitBounds(
-        [
-          [minLng, minLat],
-          [maxLng, maxLat],
-        ],
-        { padding: 40, duration: 0, maxZoom: 15 },
-      );
+      // Give back the view the user had panned to, if they had; otherwise frame
+      // the day.
+      const held = camera.current;
+      if (held) {
+        m.jumpTo(held);
+      } else {
+        const [[minLat, minLng], [maxLat, maxLng]] = geo.bounds;
+        m.fitBounds(
+          [
+            [minLng, minLat],
+            [maxLng, maxLat],
+          ],
+          { padding: 40, duration: 0, maxZoom: 15 },
+        );
+      }
+      // Only a deliberate move is worth restoring, and `originalEvent` is what
+      // says one: `moveend` also fires for the `fitBounds`/`jumpTo` above, so
+      // recording every camera change would pin the map to its own first
+      // framing and defeat the refit a changed `geo` is owed.
+      m.on("moveend", (e) => {
+        if (!(e as { originalEvent?: unknown }).originalEvent) return;
+        camera.current = {
+          center: m.getCenter().toArray() as [number, number],
+          zoom: m.getZoom(),
+          bearing: m.getBearing(),
+          pitch: m.getPitch(),
+        };
+      });
 
       // Transport legs first, so a drive's solid geometry draws over them.
       // Dotted and thin: the real path isn't known (a flight has none on the
@@ -493,13 +582,14 @@ export function DayMapGL({
 
     return () => {
       cancelled = true;
+      disposing = true;
       window.clearTimeout(timer);
       map?.remove();
     };
-  }, [geo, onFail]);
+  }, [geo, onFail, live]);
 
   return (
-    <figure className="day-map day-map-gl">
+    <figure className="day-map day-map-gl" ref={figure}>
       <figcaption>{caption}</figcaption>
       <div ref={holder} className="gl-canvas" />
     </figure>

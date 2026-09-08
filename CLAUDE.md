@@ -1457,11 +1457,19 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       it out of `days` clones the whole 20 MB store into the main thread to look
       at a timestamp, which was happening on every launch.
     - **`dropStaleVersions(file, keep)`** — before a file's days are refilled,
-      every entry carrying that same **filename** under a different hash is
-      dropped. That is what turns "one set per edit, for ever" into "one set per
-      file". Two files with the same basename in different folders evict each
-      other; the loser is redrawn, which is the price of having no comparable
-      file identity (an FS Access handle isn't one across sessions).
+      every entry for the same **document** under a different hash is dropped.
+      That is what turns "one set per edit, for ever" into one set per document.
+      "Same document" is the **`(vNN)`-less base name**
+      (`file/version.ts`'s `parseVersionedName`), *not* the filename: keying on
+      the filename made this fire almost never in real use, because every save
+      route that creates a file numbers it, so the working loop is
+      `trip (v04).json` → `trip (v05).json` and each save looked like a new
+      document with its own full set — a 15-day trip leaked 16 MB per save until
+      the budget started evicting days still in use. The marker *is* that
+      document's version history, which is the whole reason it lives in the
+      name. Two unrelated trips sharing a base name in different folders evict
+      each other; the loser is redrawn, which is the price of having no
+      comparable file identity (an FS Access handle isn't one across sessions).
     - **`enforceBudget()`** — a hard ceiling over everything, least-recently-used
       first, for the case the per-file rule can't cover (many different files).
       `touchDoc` refreshes last-use on hydration, which is also why
@@ -1557,6 +1565,32 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   silently returns the rendering the user switched away from — one with no pan or
   zoom — so it reads as the map having lost its controls. A slot with nothing
   locatable stays empty either way rather than claiming a failure.
+  - **A map figure holds its GL context only while it is near the viewport.**
+    A browser keeps a hard, small number of live WebGL contexts per page —
+    Chrome's is **16** — and **silently kills the oldest** past it, leaving a
+    dead canvas that throws nothing and reports nothing. MapLibre needs one
+    each, and a book mounts one map per **day** plus one per **area** and one
+    per **hike trail**: `france.json`'s 8 days want 18 and sit at the cap, while
+    a 15-day trip wants **34** and simply stopped drawing its maps. So
+    `DayMapGL` gates its whole setup effect on a `live` flag driven by an
+    `IntersectionObserver` **pair** — `MOUNT_MARGIN` (400px) to take a context,
+    `KEEP_MARGIN` (1600px) to give it back — two observers rather than one
+    because sharing a margin rebuilds the map every time a slow scroll wobbles
+    across the boundary. Three things are load-bearing:
+    - **The camera is kept and restored.** A `camera` ref holds the view the
+      user panned to, so scrolling away and back doesn't reset it. Recorded on
+      `moveend` **only when the event carries an `originalEvent`**: `moveend`
+      also fires for the `fitBounds`/`jumpTo` that frames the map, so recording
+      every move would pin it to its own first framing and defeat the refit a
+      changed `geo` is owed.
+    - **A context lost anyway calls `onFail`**, so it says so rather than
+      leaving a dead canvas — which is exactly how the over-the-cap maps used to
+      fail. **Guarded on a `disposing` flag**, because tearing a map down on
+      purpose can lose its context too, and without the guard every map that
+      scrolled out of view would report itself broken and come back as
+      "couldn't be loaded".
+    - **No observer, no gate.** Where `IntersectionObserver` is missing the flag
+      is set true immediately, so the behaviour is what it always was.
   `HikeTrack.tsx` follows the same rule now that a hike's trail has a PNG twin
   (`track.map`, above): MapLibre on, PNG off, and a GL failure shows the profile
   alone rather than the map the user turned off. `TripMap.tsx` is the one that

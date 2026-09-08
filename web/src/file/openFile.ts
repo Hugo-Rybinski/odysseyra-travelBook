@@ -198,11 +198,22 @@ function withStore<T>(
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
       const db = open.result;
-      const tx = db.transaction(STORE, mode);
-      const req = fn(tx.objectStore(STORE));
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => resolve(req.result as T);
-      tx.oncomplete = () => db.close();
+      // `fn` can throw *synchronously* — `put` does, for a value that can't be
+      // structured-cloned. Inside this event handler an escaping throw would
+      // leave the promise pending for ever, and `analyze` awaits
+      // `rememberHandle`, so the app would sit on "Reading the itinerary…" with
+      // its File buttons disabled and no error anywhere.
+      try {
+        const tx = db.transaction(STORE, mode);
+        const req = fn(tx.objectStore(STORE));
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result as T);
+        tx.onabort = () => reject(tx.error);
+        tx.oncomplete = () => db.close();
+      } catch (e) {
+        db.close();
+        reject(e);
+      }
     };
   });
 }

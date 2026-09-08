@@ -173,11 +173,19 @@ trip ~20 MB — which drives most of the design:
   entry (the file, the day, the byte count, when it was last used). Listing the
   cache and sweeping it walk `meta` alone — doing either through `days` cloned
   the whole 20 MB store into the main thread to read a timestamp.
-- **One set per file, not per edit.** The key is the content, so every applied
-  edit starts a *fresh* 20 MB set and the old one becomes unreachable weight that
-  only the 30-day TTL would have collected — ten Apply & redraw cycles left
-  200 MB nobody could reach. `dropStaleVersions(file, keep)` runs before a file's
-  days are refilled and drops every other hash carrying that same filename.
+- **One set per document, not per edit or per saved version.** The key is the
+  content, so every applied edit starts a *fresh* 20 MB set and the old one
+  becomes unreachable weight that only the 30-day TTL would have collected — ten
+  Apply & redraw cycles left 200 MB nobody could reach.
+  `dropStaleVersions(file, keep)` runs before a file's days are refilled and
+  drops every other hash for the same document. "Same document" is the
+  **`(vNN)`-less base name** (`file/version.ts`'s `parseVersionedName`), not the
+  filename: every save route that creates a file numbers it, so the real working
+  loop is `trip (v04).json` → `trip (v05).json`, and matching whole filenames
+  made each save look like a brand-new document holding its own full set. A
+  15-day trip leaked 16 MB per save that way. The marker *is* that document's
+  version history — the whole reason it lives in the name — so two names sharing
+  a base are two revisions of one trip.
 - **A byte budget** (`BUDGET_BYTES`, ~8 trips) evicted least-recently-used, as
   the backstop for many *different* files. `touchDoc` refreshes last-use on
   hydration, so both the TTL and the budget spare a trip you keep reopening.
@@ -196,6 +204,20 @@ per-day **Redraw**, so a day whose tiles came back thin can be fixed without
 paying for the other ten; days from other documents are summed into one line
 with a **Clear those**, since they can't be redrawn from here (their file isn't
 open) and what matters about them is the room they hold.
+
+A map figure holds its **GL context only while it is near the viewport**
+(`DayMapGL`'s observer pair, `MOUNT_MARGIN` / `KEEP_MARGIN`). A browser keeps a
+hard, small number of live WebGL contexts per page — Chrome's is 16 — and
+**silently kills the oldest** past it, leaving a dead canvas with no error to
+catch. MapLibre needs one each, and a book mounts one map per day plus one per
+area and one per hike trail: a 15-day trip asks for **34**, so it lost contexts
+as soon as it was scrolled and the maps simply stopped drawing. An 8-day trip
+sits just under the cap, which is why it only showed on a long one. Mounting on
+approach and releasing well clear keeps two or three live whatever the trip's
+length; the camera the user panned to is kept in a ref and restored, and a
+context lost *anyway* now calls `onFail` instead of leaving a dead canvas —
+guarded on a `disposing` flag, since an intentional teardown loses the context
+too and would otherwise report every scrolled-past map as broken.
 
 The **interactive** map (`src/maps/carto.ts` + `src/render/DayMapGL.tsx`) uses
 Carto's vector Positron style with its tile source pinned to a single host, so

@@ -36,6 +36,7 @@
 //   - `requestPersistence()` — asks the browser to stop treating the origin as
 //     evictable at all. Granted silently for an installed PWA, refused silently
 //     otherwise; either way it costs one call at startup.
+import { parseVersionedName } from "../file/version";
 import type { Day } from "../types/resolved";
 
 const DB_NAME = "odysseyra-maps";
@@ -367,22 +368,37 @@ export async function invalidateDay(hash: string, index: number): Promise<void> 
   await mutate((days, meta) => deleteKey(days, meta, keyFor(hash, index)));
 }
 
-/** Drop every entry rendered from `file` under a hash other than `keep`.
+/** Drop every entry rendered from the same document as `file` under a hash other
+ * than `keep`.
  *
  * This is the one that stops the store growing without bound. The key is the
  * document's *content*, so every applied edit starts a fresh 20 MB set and the
  * previous one becomes unreachable weight that only the 30-day TTL would ever
  * have collected — ten edit-and-redraw cycles left 200 MB of maps nobody could
  * reach. Called just *before* a file's days are refilled, when "another hash for
- * this same filename" is exactly the definition of stale.
+ * this same document" is exactly the definition of stale.
  *
- * Two files of the same basename in different folders evict each other, which is
- * the cost of having no stable file identity to key on (a File System Access
- * handle isn't one — it isn't comparable across sessions). Self-healing: the
- * loser is redrawn. */
+ * **"Same document" is the `(vNN)`-less base name, not the filename.** Matching
+ * the whole filename made this fire almost never in real use: every save route
+ * that creates a file numbers it (`file/version.ts`), so the working loop is
+ * `trip (v04).json` → `trip (v05).json` → …, and each save looked like a
+ * brand-new document holding its own full set. A 15-day trip leaked 16 MB per
+ * save that way, until the byte budget started evicting days that were still in
+ * use. The `(vNN)` marker *is* this document's version history — that is the
+ * whole reason it lives in the name — so two names sharing a base are two
+ * revisions of one trip, and only the current one's maps are worth keeping.
+ *
+ * Two unrelated trips of the same base name in different folders evict each
+ * other, which is the cost of having no stable file identity to key on (a File
+ * System Access handle isn't one — it isn't comparable across sessions).
+ * Self-healing: the loser is redrawn. */
 export async function dropStaleVersions(file: string, keep: string): Promise<void> {
-  if (!file) return; // an unnamed source can't be told apart from any other
-  const stale = (await listCachedDays()).filter((e) => e.file === file && e.hash !== keep);
+  // An unnamed source can't be told apart from any other, so it drops nothing.
+  const base = parseVersionedName(file).base;
+  if (!base) return;
+  const stale = (await listCachedDays()).filter(
+    (e) => e.hash !== keep && !!e.file && parseVersionedName(e.file).base === base,
+  );
   if (!stale.length) return;
   await mutate((days, meta) => {
     for (const e of stale) deleteKey(days, meta, keyFor(e.hash, e.index));
