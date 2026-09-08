@@ -24,7 +24,14 @@ from .geo import (
     maps_url,
     _parse_coordinate,
 )
-from .gpx import GpxTrack, decode_gpx, gpx_track, parse_gpx
+from .gpx import (
+    GpxKmMark,
+    GpxTrack,
+    GpxWaypoint,
+    decode_gpx,
+    gpx_track,
+    parse_gpx,
+)
 from .gpx_export import route_gpx
 from .opening import (
     WEEKDAYS,
@@ -106,7 +113,9 @@ __all__ = [
     "format_km",
     "round_elevation",
     "round_km",
+    "GpxKmMark",
     "GpxTrack",
+    "GpxWaypoint",
     "decode_gpx",
     "gpx_track",
     "parse_gpx",

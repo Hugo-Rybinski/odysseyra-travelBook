@@ -16,7 +16,12 @@ from odysseyra_travelbook.models import (
     parse_gpx,
     to_dict,
 )
-from odysseyra_travelbook.models.gpx import MAP_MAX_POINTS, PROFILE_POINTS
+from odysseyra_travelbook.models.gpx import (
+    MAP_MAX_POINTS,
+    MAX_KM_MARKS,
+    MAX_NAMED_POINTS,
+    PROFILE_POINTS,
+)
 from odysseyra_travelbook.validate import validate_text
 
 
@@ -135,6 +140,155 @@ def test_points_without_usable_coordinates_are_skipped():
            '<trkpt lon="-0.1"/><trkpt lat="42.8" lon="-0.1"/>'
            '</trkseg></trk></gpx>')
     assert parse_gpx(xml).points == [(42.7, -0.1), (42.8, -0.1)]
+
+
+# -- the named points --------------------------------------------------------
+
+def with_wpts(points, wpts, tag="trkpt"):
+    """``gpx_xml`` plus a leading block of ``<wpt>``s — ``(lat, lon, name)``,
+    a ``None`` name standing for one with no ``<name>`` at all."""
+    block = "".join(
+        f'<wpt lat="{a}" lon="{b}">' + (f"<name>{n}</name>" if n else "") + "</wpt>"
+        for a, b, n in wpts)
+    xml = gpx_xml(points, tag=tag)
+    head, _, body = xml.partition("<gpx")           # insert inside <gpx …>, ahead
+    open_tag, _, rest = body.partition(">")         # of the <trk>/<rte> that follows
+    return f"{head}<gpx{open_tag}>{block}{rest}"
+
+
+def test_a_named_waypoint_becomes_a_point_on_the_trail():
+    track = parse_gpx(with_wpts(ridge(50), [(42.71, -0.1395, "Col de Riou")]))
+    assert [(w.name, w.lat, w.long) for w in track.waypoints] == [
+        ("Col de Riou", 42.71, -0.1395)]
+    # and it doesn't touch the line, which is the recording
+    assert len(track.points) == 50
+
+
+def test_an_unnamed_waypoint_carries_nothing():
+    """There is no label to print beside it, and the line already says where the
+    trail goes."""
+    track = parse_gpx(with_wpts(ridge(50), [(42.71, -0.14, None)]))
+    assert track.waypoints == []
+
+
+def test_a_waypoint_at_either_trailhead_is_dropped():
+    """The start and end markers already mark those two points, so "Parking"
+    printed over the start marker only says what the marker says."""
+    ridge_pts = ridge(50)
+    ends = [(ridge_pts[0][0], ridge_pts[0][1], "Parking"),
+            (ridge_pts[-1][0], ridge_pts[-1][1], "Summit cairn"),
+            (42.71, -0.14, "Col")]
+    assert [w.name for w in parse_gpx(with_wpts(ridge_pts, ends)).waypoints] == ["Col"]
+
+
+def test_a_file_whose_line_is_its_waypoints_names_none_of_them():
+    """Those points *are* the trail, so pinning each would label every bend."""
+    pts = [(42.7 + 0.001 * i, -0.14) for i in range(6)]
+    xml = ('<?xml version="1.0"?><gpx>' + "".join(
+        f'<wpt lat="{a}" lon="{b}"><name>P{i}</name></wpt>'
+        for i, (a, b) in enumerate(pts)) + "</gpx>")
+    track = parse_gpx(xml)
+    assert len(track.points) == 6 and track.waypoints == []
+
+
+def test_a_turn_by_turn_export_contributes_no_named_points_at_all():
+    """Above the cap **none** are kept rather than an arbitrary prefix: a routing
+    export names every instruction, and its first fifteen left turns are not the
+    landmarks this field is for."""
+    turns = [(42.71 + 0.0005 * i, -0.14, f"Turn {i}")
+             for i in range(MAX_NAMED_POINTS + 1)]
+    assert parse_gpx(with_wpts(ridge(50), turns)).waypoints == []
+    # one fewer and they are a plausible set of landmarks, so they are kept
+    assert len(parse_gpx(with_wpts(ridge(50), turns[:-1])).waypoints) == MAX_NAMED_POINTS
+
+
+# -- the distance marks ------------------------------------------------------
+
+def test_a_whole_kilometre_is_marked_on_the_ground():
+    """The marks tie the two figures together, so they are placed once, here:
+    the map ticks the coordinate and the profile ticks the number."""
+    track = parse_gpx(gpx_xml(ridge(400)))          # ~2.2 km due north
+    assert [m.km for m in track.km_marks] == [1, 2]
+    # each one sits on the track, in order, between its neighbours' latitudes
+    lats = [m.lat for m in track.km_marks]
+    assert lats == sorted(lats)
+    assert track.points[0][0] < lats[0] < track.points[-1][0]
+
+
+def test_marks_stop_short_of_the_finish():
+    """One landing on the end would print a number over the marker that already
+    says the trail stops there — and the axis states the full length anyway."""
+    track = parse_gpx(gpx_xml(ridge(400)))
+    assert track.distance_km == pytest.approx(2.2, abs=0.1)
+    assert all(m.km < track.distance_km for m in track.km_marks)
+
+
+def test_a_walk_under_a_kilometre_is_not_marked_at_all():
+    short = [(42.7 + 0.0001 * i, -0.14, 1000.0) for i in range(20)]   # ~200 m
+    track = parse_gpx(gpx_xml(short))
+    assert track.distance_km < 1 and track.km_marks == []
+
+
+def test_the_step_coarsens_so_neither_figure_drowns_in_numbers():
+    """Every kilometre up to 15 — which covers essentially every day hike — and
+    past that the step grows rather than the count."""
+    def step_of(km_long):
+        n = 400
+        pts = [(42.0 + (km_long / 111.0) * i / (n - 1), -0.14, 1000.0)
+               for i in range(n)]
+        kms = [m.km for m in parse_gpx(gpx_xml(pts)).km_marks]
+        assert kms[0] == kms[1] - kms[0], kms          # the first mark is one step
+        steps = {b - a for a, b in zip(kms, kms[1:])}
+        assert len(steps) == 1, kms                    # evenly spaced throughout
+        assert len(kms) <= MAX_KM_MARKS, kms
+        return steps.pop()
+
+    assert step_of(9) == 1
+    assert step_of(14) == 1        # a long day hike, still every kilometre
+    assert step_of(24) == 2
+    assert step_of(60) == 5
+    assert step_of(400) == 50
+
+
+def test_a_mark_carries_the_direction_you_were_walking_in():
+    """Degrees clockwise from north, measured off the recording — the map draws
+    an arrowhead by it."""
+    north = parse_gpx(gpx_xml(ridge(400)))
+    assert all(m.bearing == pytest.approx(0, abs=1) for m in north.km_marks)
+    east = [(42.7, -0.14 + 0.0004 * i, 1000.0) for i in range(400)]
+    assert all(m.bearing == pytest.approx(90, abs=1)
+               for m in parse_gpx(gpx_xml(east)).km_marks)
+
+
+def test_a_doubled_back_track_measures_opposite_bearings():
+    """The whole reason the bearing is measured here rather than inferred from
+    the drawn line: an out-and-back's two legs are metres apart, so the *nearest*
+    point of the line at a mark can be on the other leg — the direction you
+    didn't walk. Distance along the recording has no such ambiguity."""
+    up = ridge(300)
+    track = parse_gpx(gpx_xml(up + up[::-1]))
+    half = track.distance_km / 2
+    there = [m.bearing for m in track.km_marks if m.km < half - 0.2]
+    back = [m.bearing for m in track.km_marks if m.km > half + 0.2]
+    assert there and back
+    assert all(b == pytest.approx(0, abs=2) for b in there)      # due north
+    assert all(b == pytest.approx(180, abs=2) for b in back)     # due south
+
+
+def test_an_out_and_back_numbers_the_same_ground_twice():
+    """`km` is distance *walked*, which is the profile's own x axis — so at 2 km
+    you were on the way up and at 6 km on the way down, and both figures say so.
+    """
+    up = ridge(200)
+    track = parse_gpx(gpx_xml(up + up[::-1]))
+    kms = [m.km for m in track.km_marks]
+    assert kms == sorted(kms) and len(kms) >= 3
+    # a mark from the second half sits back down among the first half's latitudes
+    half = track.distance_km / 2
+    there = [m for m in track.km_marks if m.km < half]
+    back = [m for m in track.km_marks if m.km > half]
+    assert there and back
+    assert min(m.lat for m in back) < max(m.lat for m in there)
 
 
 # -- measurement -------------------------------------------------------------
@@ -269,6 +423,21 @@ def test_the_resolved_hike_carries_the_derived_track_and_the_file():
     assert track["ascent_m"] == pytest.approx(400, abs=15)
     assert track["point_count"] == 300
     assert track["bounds"][0][1] == -0.14
+    assert track["waypoints"] == []      # this file names nothing
+
+
+def test_the_resolved_track_carries_the_named_points_for_both_renderers():
+    doc = hike_doc(b64(with_wpts(ridge(50), [(42.71, -0.1395, "Col de Riou")])))
+    assert _hike_out(doc)["track"]["waypoints"] == [
+        {"name": "Col de Riou", "lat": 42.71, "long": -0.1395}]
+
+
+def test_the_resolved_track_carries_the_distance_marks():
+    """Both figures draw them, and the profile needs only the number while the
+    map needs the point — so the resolved mark carries both."""
+    marks = _hike_out(hike_doc())["track"]["km_marks"]
+    assert [m["km"] for m in marks] == [1, 2]
+    assert all(set(m) == {"km", "lat", "long", "bearing"} for m in marks)
 
 
 def test_switching_hike_maps_off_leaves_the_track_out_of_the_payload():
@@ -322,6 +491,19 @@ def test_a_long_blob_is_elided_rather_than_quoted_in_full():
 def test_the_validator_notes_a_gpx_with_no_elevations():
     doc = hike_doc(b64(gpx_xml([(42.7 + i * 0.001, -0.14) for i in range(20)])))
     assert any("carries no elevations" in m for m in _messages(doc))
+
+
+def test_the_validator_says_when_a_files_named_points_were_all_dropped():
+    """Every other filter loses something the file didn't really say; the cap
+    loses points it *did*, so this is the one that has to be reported."""
+    turns = [(42.71 + 0.0005 * i, -0.14, f"Turn {i}")
+             for i in range(MAX_NAMED_POINTS + 1)]
+    msgs = _messages(hike_doc(b64(with_wpts(ridge(50), turns))))
+    assert any(f"names {MAX_NAMED_POINTS + 1} waypoints" in m
+               and "none of them are marked" in m for m in msgs)
+    # a file inside the cap says nothing
+    inside = _messages(hike_doc(b64(with_wpts(ridge(50), turns[:2]))))
+    assert not any("waypoints" in m for m in inside)
 
 
 def test_the_validator_notes_a_gpx_that_is_switched_off():

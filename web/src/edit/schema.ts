@@ -283,7 +283,7 @@ export const ACTIVITY_FIELDS: Record<SrcActivityType, FieldSpec[]> = {
     { key: "start", label: "Start (trailhead)", kind: "text", help: "Trailhead address. Optional." },
     { key: "end", label: "End", kind: "text", help: "End address. For a loop/back-and-forth it should equal (or omit) start; for one-way it should differ. Optional." },
     { key: "route", label: "Route", kind: "enum", enum: HIKE_ROUTES, placeholder: "back_and_forth", help: "Route shape. Defaults to back_and_forth." },
-    { key: "gpx", label: "GPX track", kind: "gpx", help: "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional." },
+    { key: "gpx", label: "GPX track", kind: "gpx", help: "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. The map marks which way round you walk it, where it starts and finishes, and any point the file names with a <wpt> — the col, the lake, the refuge — so upload the file whole rather than trimming it to the track. Optional." },
     { key: "show_map", label: "Show the trail map", kind: "bool", defaultOn: true, help: "Draw the map of the GPX trail. The elevation profile is kept either way, and the GPX is still offered for download — this only drops the map. To hide the whole figure for every hike, use Defaults → Include hike maps. Defaults to on." },
   ],
   meal: [

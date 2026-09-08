@@ -1141,7 +1141,16 @@ Rules:
   a list of waypoints, leave `gpx` out — a fabricated track is a wrong map, which
   is worse than no map. Only a real file you were handed goes in.
 - **Copy it byte-for-byte.** Don't trim, resample or reformat the XML; the tool
-  simplifies the line and resamples the profile itself.
+  simplifies the line and resamples the profile itself. In particular **keep the
+  file's `<wpt>` elements**, even though they aren't the trail: a hike's trail
+  map marks each `<wpt>` that carries a `<name>` — the col, the lake, the refuge
+  you turn at — so stripping them down to the `<trk>` throws away the only thing
+  in the file that names a place. Don't resample the `<trkpt>`s either: the whole
+  kilometres marked on the trail map and on the elevation profile are measured
+  off the full-resolution track, so a thinned one shifts them. (Never *add* one either: the same
+  never-invent-a-GPX rule. And a file naming more than 15 gets none of them
+  marked, which the tool reports; that is the tool's call, not yours to
+  pre-empt by deleting some.)
 - With a `gpx` present you may **omit** `distance_km` and `elevation_m` — the
   tool measures both off the track. Write them whenever a source states them: a
   written figure always wins over the measured one, and the track's authority

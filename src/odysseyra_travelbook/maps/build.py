@@ -20,7 +20,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 from .geocode import geocode
-from .render import render_map
+from .render import Trail, render_map
 from .routing import route
 
 # The pin label for the night's accommodation (★, U+2605) — distinct from the
@@ -723,13 +723,25 @@ def render_hike_map(track, accent_hex: str, cache, ink_saver: bool = False,
     no routing happen — only the basemap tiles are fetched. That is also why this
     takes a ``GpxTrack`` rather than an itinerary object.
 
-    The trail is drawn as a route line, with a small accent disc at each end
-    (a ``route_node``, the same marker a drive's named stops get). There are no
-    numbered pins: on a map of one trail a pin would label the only thing on it.
+    The trail is drawn as a route line plus its own decoration (:class:`Trail`):
+    arrowheads saying which way round you walk it, a solid marker at the start
+    and a hollow one at the finish, a small named marker at each point the file
+    names, and a numbered tick at every whole kilometre — the same numbers the
+    elevation profile ticks, so one figure can be read onto the other. There are
+    no numbered *pins*: on a map of one trail a pin would label the only thing on
+    it.
+
+    The extent is the **line**, not the line plus its named points: a ``<wpt>``
+    is a place on the trail, so framing the trail frames them — and anything the
+    file names miles away is a stray waypoint that shouldn't zoom the trail out.
     """
     if track is None or len(track.points) < 2:
         return None
     line = [(lat, long) for lat, long in track.points]
+    trail = Trail(line=line,
+                  waypoints=[(w.lat, w.long, w.name) for w in track.waypoints],
+                  km_marks=[(m.lat, m.long, m.km, m.bearing)
+                            for m in track.km_marks])
     return render_map(line, [line], [], _hex_to_rgb(accent_hex), cache.tiles,
                       map_w=map_w, map_h=map_h, ink_saver=ink_saver,
-                      route_nodes=[line[0], line[-1]], lang=lang)
+                      trail=trail, lang=lang)

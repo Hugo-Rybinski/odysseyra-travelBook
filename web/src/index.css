@@ -1522,6 +1522,60 @@ body {
   cursor: pointer;
 }
 
+/* A trail's own markers on the interactive map, mirroring what maps/render.py's
+   `_draw_trail` rasterizes for the print: the shapes carry the meaning, not the
+   colour, because the printed twin is read at a few centimetres wide and
+   sometimes in ink-saver. Start = solid disc (the heaviest mark: where you set
+   off), end = the same disc hollow (you finish where the line stops). A trail
+   walked back to where it started shows the start alone — DayMapGL decides that,
+   so there is no third class here. */
+.trail-mark {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  border: 2.5px solid;
+  box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.trail-end {
+  background: #fff;
+}
+/* A point the GPX names — the col, the lake, the refuge — as a smaller dot with
+   its name beside it. The name is not `nowrap`-ed: on a phone-width map a long
+   one wrapping beats it running off the canvas. */
+.trail-wpt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 40vw;
+  pointer-events: none;
+}
+.trail-wpt-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px #fff, 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.trail-wpt-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  /* the halo the print draws with `stroke_fill=LABEL_HALO`, so the name reads
+     over the basemap without a box around it */
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
+}
+/* A distance tick's kilometre. Smaller and regular where a named point is
+   bolder and larger: this is a *measurement*, and reading as one keeps it from
+   competing with the places (the print sets the same hierarchy with
+   KM_LABEL_PT and a non-bold face). */
+.trail-km {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
+}
+
 /* a hike's embedded GPX (HikeTrack.tsx): the interactive trail map — a shorter
    .gl-canvas than a day map, since it frames one trail — then the elevation
    profile under it, both capped to the same width so they stack as one figure
@@ -1570,13 +1624,23 @@ body {
   font-size: 0.68rem;
   line-height: 1;
 }
-/* the low mark and the length, sharing the axis row under the baseline */
+/* The low mark and the length, sharing the axis row under the baseline — plus
+   the distance numbers, laid over it at the fraction of the width each
+   kilometre sits at (the print does the same with `set_xy`). `position:
+   relative` is what those hang off; the two end labels stay flex items, so they
+   still push to the edges. */
 .hike-profile-axis {
+  position: relative;
   display: flex;
   justify-content: space-between;
   margin: 2px 3px 0;
   color: var(--muted);
   font-size: 0.68rem;
+}
+.hike-profile-km {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
 }
 
 /* placeholder while a day's map images are still being fetched/built */

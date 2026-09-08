@@ -50,8 +50,15 @@ export function HikeTrackFigure({
     return {
       points: [], // one trail on the map — a pin would label the only thing on it
       routes: [track.points],
-      // the two ends, as the small accent discs a drive's named stops get
-      route_nodes: [track.points[0], track.points[track.points.length - 1]],
+      // The two ends and the named points are `trail`'s, not `route_nodes`':
+      // those are all one marker, and a trail needs three that differ (start,
+      // finish, landmark) plus the arrowheads saying which way round it goes.
+      route_nodes: [],
+      trail: {
+        line: track.points,
+        waypoints: track.waypoints ?? [],
+        km_marks: track.km_marks ?? [],
+      },
       areas: [],
       accent,
       bounds: track.bounds,
@@ -103,6 +110,13 @@ export function HikeTrackFigure({
 const VB_W = 600;
 const VB_H = 110;
 
+// A distance number this close to either end of the axis (as a fraction of the
+// width) is dropped: the row already carries the low elevation on the left and
+// the total length on the right. Same rule and same fraction as
+// `_KM_LABEL_EDGE` in pdf/hike_map.py — keep the two in step, since the point of
+// the marks is that the two figures agree.
+const KM_LABEL_EDGE = 0.07;
+
 // Distance against elevation, as a filled area under a stroked curve — the same
 // figure pdf/hike_map.py draws with vector primitives, from the same samples.
 // The y range is padded by a tenth of the climb (and at least 5 m) so a flat
@@ -129,10 +143,17 @@ function ElevationProfile({
     const px = (k: number) => (km > 0 ? (VB_W * k) / km : 0);
     const py = (m: number) => VB_H - (VB_H * (m - floor)) / (ceiling - floor);
     const points = profile.map(([k, m]) => `${px(k).toFixed(1)},${py(m).toFixed(1)}`);
+    // The whole-kilometre marks the trail map ticks too, so the steep stretch
+    // here can be found over there. Only their `km` matters on this figure —
+    // its x axis *is* distance walked.
+    const marks = (track.km_marks ?? [])
+      .filter((m) => m.km > 0 && m.km < km)
+      .map((m) => ({ km: m.km, x: px(m.km), at: m.km / km }));
     return {
       km,
       low: Math.round(low),
       high: Math.round(high),
+      marks,
       line: `M${points.join("L")}`,
       area: `M0,${VB_H}L${points.join("L")}L${VB_W},${VB_H}Z`,
     };
@@ -168,6 +189,21 @@ function ElevationProfile({
           })}
         >
           <path d={geometry.area} fill={accent} fillOpacity={0.18} />
+          {/* the distance marks, over the fill and under the curve, so the
+              profile still reads as one shape (as in the print) */}
+          {geometry.marks.map((m) => (
+            <line
+              key={m.km}
+              x1={m.x}
+              y1={0}
+              x2={m.x}
+              y2={VB_H}
+              stroke={accent}
+              strokeOpacity={0.35}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           {/* vectorEffect keeps the stroke one pixel wide however the box is
               scaled — the non-uniform viewBox stretch would otherwise fatten
               it unevenly. */}
@@ -183,6 +219,13 @@ function ElevationProfile({
       </div>
       <p className="hike-profile-axis">
         <span>{geometry.low} m</span>
+        {geometry.marks
+          .filter((m) => m.at > KM_LABEL_EDGE && m.at < 1 - KM_LABEL_EDGE)
+          .map((m) => (
+            <span key={m.km} className="hike-profile-km" style={{ left: `${m.at * 100}%` }}>
+              {m.km}
+            </span>
+          ))}
         <span>{fmtKm(geometry.km)}</span>
       </p>
     </figure>

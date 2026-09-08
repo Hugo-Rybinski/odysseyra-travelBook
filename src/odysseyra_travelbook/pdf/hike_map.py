@@ -35,6 +35,13 @@ _AXIS_H = 4.0
 # to fit around it, so the map is a figure in the flow, not the page.
 _MAP_MAX_H = 68.0
 
+# A distance number this close to either end of the axis (as a fraction of the
+# width) is dropped: the row already carries the low elevation on the left and
+# the total length on the right, and a km number under either is two figures in
+# one place. A *fraction* rather than a measured collision so the viewer's twin
+# can apply the identical rule in CSS-land (`HikeTrack.tsx`).
+_KM_LABEL_EDGE = 0.07
+
 
 class HikeMapMixin:
     def _hike_maps_enabled(self) -> bool:
@@ -69,6 +76,12 @@ class HikeMapMixin:
     def _hike_map(self, hike, track, x: float, w: float) -> tuple[float, float] | None:
         """The GPX line over basemap tiles, captioned with the hike's name.
         Returns the ``(x, width)`` it drew at, or ``None`` when it drew nothing.
+
+        The trail's decoration — direction arrowheads, the start/finish markers,
+        the points the file names — arrives *inside* the image
+        (``maps.build.render_hike_map`` → ``maps.render.Trail``), which is why
+        nothing here draws it and why the viewer's interactive twin has to build
+        it itself (``DayMapGL.tsx``).
 
         Never raises: like every other map here, a fetch failure must not take
         the build down with it."""
@@ -171,6 +184,19 @@ class HikeMapMixin:
         if not self.ink_saver:
             self.set_fill_color(*_tint(self.accent, 0.82))
             self.polygon([(x, bottom), *curve, (x + w, bottom)], style="F")
+
+        # The distance marks, as hairlines up through the band — drawn over the
+        # fill and under the curve, so the profile still reads as one shape. Same
+        # kilometres, same numbers, as the trail map's ticks: that pairing is the
+        # whole point, and it holds because `models/gpx.py` decides the step once
+        # for both figures.
+        marks = [m.km for m in getattr(track, "km_marks", []) if 0 < m.km < km]
+        if marks:
+            self.set_draw_color(*_tint(self.accent, 0.62))
+            self.set_line_width(0.15)
+            for k in marks:
+                self.line(px(k), top, px(k), bottom)
+
         self.set_draw_color(*self.accent)
         self.set_line_width(0.35)
         self.polyline(curve, style="D")
@@ -185,6 +211,13 @@ class HikeMapMixin:
         self.cell(w, 3, f"{round(hi - pad)} m")
         self.set_xy(x + 0.6, bottom + 0.2)
         self.cell(w / 2, _AXIS_H, f"{round(lo + pad)} m")
+        # each mark's kilometre, centred under its hairline — the numbers the
+        # trail map wears too, so the reader can carry one figure onto the other
+        for k in marks:
+            if not _KM_LABEL_EDGE < k / km < 1 - _KM_LABEL_EDGE:
+                continue
+            self.set_xy(px(k) - 4, bottom + 0.2)
+            self.cell(8, _AXIS_H, str(k), align="C")
         self.set_xy(x + w / 2, bottom + 0.2)
         self.cell(w / 2 - 0.6, _AXIS_H, format_km(km), align="R",
                   new_x="LMARGIN", new_y="NEXT")

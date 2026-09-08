@@ -228,6 +228,12 @@ by the Python engine (`validate(text, lang)`).
   map that isn't coming. MapLibre is code-split into its own
   chunk (loaded on demand, only parsed when interactive is used) but precached, so
   it's served with the right MIME and works offline.
+  The **attribution starts collapsed** to its ⓘ. MapLibre is already
+  `compact: true` by default but opens expanded and only folds away on the first
+  drag, which on a map embedded as a figure in a long page is a "MapLibre |
+  Carto" strip lying across the corner of every map you scroll past.
+  `DayMapGL.tsx` puts it straight into the state a drag would leave it in;
+  credit is one tap away, and the static PNG prints it in full.
 - **A hike's GPX** (`render/HikeTrack.tsx`) — a `hike` that embeds a `gpx` gets
   its **trail map** and **elevation profile** under it, drawn from the `track` the
   Python model derived (a simplified line + a distance-resampled profile; the
@@ -240,6 +246,27 @@ by the Python engine (`validate(text, lang)`).
   failure shows the profile alone rather than swapping in the map the user
   switched away from. The hike's own `show_map: false` drops **both** renderings
   of the trail and keeps the profile and the download — the field says *map*.
+  The trail carries its own decoration, matching the print's
+  (`maps/render.py`'s `Trail`): direction arrowheads along the line, a solid
+  marker where it starts and a hollow one where it finishes (one marker only
+  when it ends where it began), each point the GPX names with a `<wpt>`, and a
+  numbered tick at every whole kilometre — the **same numbers** the elevation
+  profile hairlines on its axis, so the steep stretch on the chart can be found
+  on the map. Each tick also wears an arrowhead for the direction of travel
+  there, and its number sits on the left of that direction, which is what tells
+  an out-and-back's two nearly-coincident legs apart. Both come off
+  `km_marks[].bearing`, measured by the Python model — never re-derived from the
+  drawn line, whose nearest point at a mark can be on the *other* leg. The
+  kilometres come from the resolved `track.km_marks` too, chosen once, so the
+  two figures can't number themselves differently.
+  `DayMapGL.tsx` draws the heads and the ticks as symbol layers over
+  canvas-drawn `addImage` bitmaps — an accent-tinted triangle and bar, so no
+  sprite and no glyph font is needed — and lets `icon-allow-overlap: false` thin
+  the heads per zoom, which is what keeps an out-and-back from growing a row of
+  opposed heads along the stretch it walks twice. Ticks are added first with
+  `icon-allow-overlap: true` (every kilometre must draw — a scale with a gap is
+  a lie) but still claim a collision box, so the heads keep off them. The
+  markers and the numbers are DOM `Marker`s, like the numbered pins.
   The profile is inline SVG (it scales with the
   column and reflows on a phone) where the PDF draws vector primitives; the two
   read the same because they read the same samples, so keep `HikeTrack.tsx` in

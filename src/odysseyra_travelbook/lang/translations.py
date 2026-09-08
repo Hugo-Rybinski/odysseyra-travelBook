@@ -589,6 +589,12 @@ _FR = {
     "map nor the profile is drawn.":
         "« include_hike_maps » est désactivé : ce GPX est bien lu, mais ni le "
         "tracé ni le profil ne sont dessinés.",
+    "this GPX names {count} waypoints — more than the {cap} a trail map can "
+    "label, so none of them are marked. Keep the few that are landmarks (a col, "
+    "a lake, a refuge) and drop the rest.":
+        "ce GPX nomme {count} points — plus que les {cap} qu'un tracé peut "
+        "étiqueter, donc aucun n'est marqué. Ne gardez que ceux qui sont des "
+        "repères (un col, un lac, un refuge) et supprimez les autres.",
     "'gpx' must be a base64 string holding a GPX file":
         "« gpx » doit être une chaîne base64 contenant un fichier GPX",
     "'gpx' is empty — expected a base64-encoded GPX file":

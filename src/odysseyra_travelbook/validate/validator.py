@@ -20,6 +20,7 @@ from ..models import (
     _parse_tz,
     gpx_track,
 )
+from ..models.gpx import MAX_NAMED_POINTS
 from .findings import Finding
 from .jsonpos import JSONPositionError, load_with_lines
 from .specs import (
@@ -1487,6 +1488,16 @@ class _Validator:
             self.add("info", path + ("gpx",), "'include_hike_maps' is off, so this "
                      "GPX is parsed but neither the trail map nor the profile is "
                      "drawn.")
+        # The one thing a valid GPX can have *dropped* rather than merely left
+        # out: past the cap none of its named points are marked (a routing export
+        # names every turn instruction, and its first fifteen left turns are not
+        # landmarks), so nothing else would say that they went.
+        if track.named_point_count > MAX_NAMED_POINTS:
+            self.add("info", path + ("gpx",), "this GPX names {count} waypoints — "
+                     "more than the {cap} a trail map can label, so none of them "
+                     "are marked. Keep the few that are landmarks (a col, a lake, "
+                     "a refuge) and drop the rest.",
+                     count=track.named_point_count, cap=MAX_NAMED_POINTS)
 
     def _hike_route_endpoints(self, act, path):
         try:

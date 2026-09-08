@@ -108,7 +108,14 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // (default false) — the same question the other way round. A v27 entry
 // carries the retired key, which every reader now ignores, so a hidden pin
 // would come back on the day map, the trip map and in the day's geo.
-const SCHEMA_VERSION = 29;
+// v30: a hike's `track` gained `waypoints` (the named points its GPX carries)
+// and `km_marks` (the whole-kilometre scale the trail map and the elevation
+// profile now share), and every trail map is drawn differently: direction
+// arrowheads, numbered distance ticks, and a solid start marker with a hollow
+// finish where there used to be two identical discs. A v29 entry has neither
+// field *and* a `track.map` PNG rendered without any of it, so a trail would
+// keep coming back as a shape with no story.
+const SCHEMA_VERSION = 30;
 
 interface Entry {
   day: Day;

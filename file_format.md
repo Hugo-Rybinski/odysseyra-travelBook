@@ -822,6 +822,50 @@ accumulated with hysteresis, so an altimeter's metre-scale wobble doesn't add up
 to phantom climb. A file without elevations still draws its map; it just has no
 profile.
 
+**What the trail map draws.** The line alone is a shape with no story — an
+out-and-back and a loop look alike, and neither says which end you set off from
+— so both renderers add three things on top of it:
+
+- **direction arrowheads** spaced along the line, pointing the way it is walked
+  (file order). Where a trail doubles back over itself only the outbound heads
+  are drawn: the return is the same line back, and two heads pointing opposite
+  ways on one stretch of path is just a smudge;
+- a **solid marker at the start** and a **hollow one at the finish**. A trail
+  that ends where it began — a `loop`, a `back_and_forth` — shows the start
+  alone;
+- a small **named marker** at each point the file names with a `<wpt>` — the
+  col, the lake, the refuge you turn at;
+- a **numbered tick at every whole kilometre**, with an arrowhead just past it
+  pointing the way you were walking, and the *same* numbers on the elevation
+  profile's axis — so the steep stretch at 7 km on the chart can be found on the
+  map. Distance is measured *walked*, which is the profile's own x axis, so an
+  out-and-back passes the same ground twice under two numbers (at 2 km on the
+  way up, at 6 km on the way down) and both figures say so. Its two legs are
+  drawn a few metres apart, so each mark's arrow says which line is which, and
+  each number sits on the **left of the way you were walking** — which puts the
+  outbound numbers along one side of the path and the return's along the other.
+  Marks stop short of the finish, which the end marker and the stated length
+  already describe. A trail over 15 km steps in 2s, then 5s, 10s… rather than
+  growing the count — neither figure can hold thirty numbers.
+
+That last one is read from the file's own `<wpt name="…">` elements, which is
+what that element means: a `<trkpt>` is where you *were*, an `<rtept>` where you
+planned to go, a `<wpt>` a place worth naming. Four rules decide which ones
+count, and each exists for a case rather than for tidiness:
+
+| The waypoint | Marked? |
+| ------------ | ------- |
+| named, along the trail | **yes** |
+| with no `<name>` | no — there is no label to print, and the line already says where the trail goes |
+| within ~50 m of either trailhead | no — the start/end marker is already there, so `Parking` over the start marker only says what the marker says |
+| in a file whose *line* came from its `<wpt>`s (no `<trk>`, no `<rte>`) | no — those points **are** the trail, so marking each would label every bend |
+
+And if a file names **more than 15**, *none* are marked: a routing export names
+every turn instruction, and its first fifteen left turns are not landmarks.
+Keeping an arbitrary prefix would be worse than keeping none, so `validate` says
+what happened (an ℹ️ note giving the count) and you keep the handful that are
+really places.
+
 `defaults.include_hike_maps` (default **on**) switches the pair off. It is
 deliberately independent of `include_maps_in_render`: that one governs the maps
 inferred for the whole trip, while a GPX is a file you attached to one hike —

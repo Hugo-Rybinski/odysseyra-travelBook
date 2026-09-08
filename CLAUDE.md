@@ -78,9 +78,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   - `gpx.py` — a hike's embedded GPX: `decode_gpx` (base64, optionally gzipped,
     `data:` prefix tolerated) → `parse_gpx` → `GpxTrack`, holding the simplified
     map line (RDP, capped at `MAP_MAX_POINTS`), the distance-resampled
-    `profile` (`PROFILE_POINTS` samples), and the measured
-    distance/ascent/descent/min/max. Pure stdlib, no network. Ascent is smoothed
-    + accumulated with hysteresis so altimeter jitter isn't counted as climb.
+    `profile` (`PROFILE_POINTS` samples), the measured
+    distance/ascent/descent/min/max, and the file's named points
+    (`GpxWaypoint`, see the trail-decoration bullet). Pure stdlib, no network.
+    Ascent is smoothed + accumulated with hysteresis so altimeter jitter isn't
+    counted as climb.
   - `opening.py` — a point of interest's `opening_days` / `opening_hours` parsed
     into one `Opening` (`WEEKDAYS`, `parse_opening`, `day_runs`/`hours_display`,
     `closed_on`/`covers`). Pure data: the localized naming lives in `lang/dates.py`.
@@ -144,9 +146,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   cache), `mvt.py` + `basemap.py` (Carto Positron's **vector** tiles decoded and
   drawn — see the basemap bullet under "Key design decisions"),
   `render.py` (basemap → contrast boost → dotted
-  transport legs → translucent theme-colored route → rotated numbered teardrop
+  transport legs → translucent theme-colored route → a `Trail`'s decoration →
+  rotated numbered teardrop
   pins → collision-checked place labels; pure Pillow, with `dashes()` splitting a
-  polyline into dash pieces),
+  polyline into dash pieces and `arrows_along()` spacing a trail's direction
+  heads),
   `build.py` (`resolve_day` → points/routes/area-details,
   `day_legs` → a day's transport legs as straight endpoint pairs,
   `render_day_maps` → PIL images, plus `resolve_trip`/`_trip_extent`/
@@ -534,6 +538,101 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Per-hike, the hike's own `show_map` drops the **map** and keeps the profile and
   the download (see the `show_map` bullet); this switch is the one that withholds
   the geometry, because it's the one that means *no hike figures at all*.
+  - **A trail is decorated, a drive isn't.** The line on its own is a shape with
+    no story: an out-and-back and a loop look alike, neither says which end you
+    set off from, and the col you turn at is just a bend. A *drive* needs none of
+    that — its direction and its junctions are written out in the itinerary
+    beside it, and its named stops are the day's numbered pins — so this is
+    carried by a `Trail` (`maps/render.py`) that only `render_hike_map` passes,
+    and every other map renders exactly as before. Three parts:
+    **direction arrowheads** along the line (`arrows_along`, spread evenly over
+    the usable length rather than at a fixed pitch, `ARROW_CLEAR` left free at
+    each end so none sits under a trailhead marker); a **solid start marker and
+    a hollow finish** — different *shapes*, not colours, because the figure is
+    printed at a few centimetres and sometimes in ink-saver — collapsing to the
+    start alone when the ends are within `LOOP_MERGE_KM`; and a small **named
+    marker** per `GpxWaypoint`, labelled by `_draw_trail_labels`, which runs
+    *before* `_draw_labels` so a col's name beats a hamlet's.
+    - **The two figures share one scale.** A `GpxKmMark` is a whole kilometre of
+      *walking* — the profile's own x axis — placed on the ground; the map ticks
+      it across the line with its number and the profile hairlines the same
+      number on its axis, which is what lets one figure be read onto the other
+      ("the steep bit at 7 km is that hairpin"). The step is chosen **in
+      `models/gpx.py`**, once, for both: two figures numbered differently would
+      be worse than two numbered not at all. Every kilometre up to
+      `MAX_KM_MARKS` (15) and then 2s/5s/10s… — a day hike is always every
+      kilometre. Marks stop short of the total (one on the finish would print a
+      number over the marker that already says the trail ends there), and an
+      out-and-back numbers the same ground twice, which is the honest reading.
+      A number within `_KM_LABEL_EDGE` (7 %) of either end of the *axis* is
+      dropped rather than set under the low-elevation or total-length label —
+      a **fraction**, not a measured collision, so `HikeTrack.tsx` can apply
+      the identical rule.
+    - **Each tick carries the walking direction.** A doubled-back trail draws
+      its two legs metres apart, so a bare "3" doesn't say which of the two
+      lines it belongs to. Two things fix that, and both hang off
+      `GpxKmMark.bearing` — degrees clockwise from north, measured **in the
+      model** off the full-resolution track over a ±`_BEARING_WINDOW_KM` (30 m)
+      window, since one recorded segment's heading is mostly GPS noise:
+      an **arrowhead just past the tick** pointing the way you went, and the
+      **number placed on the left of travel**, which puts the outbound numbers
+      along one side of the path and the return's along the other (the return
+      walks the opposite bearing, so its left is the other side of the ground).
+      The bearing is deliberately *not* inferred from the drawn line by either
+      renderer: the nearest point of a doubled-back line can be on the other
+      leg, i.e. the direction you didn't walk — which is the one thing this is
+      for. `_label_dirs` makes the side a strong *hint*, falling back to the
+      plain four directions, because a dropped kilometre makes the scale a lie.
+      Screen angles come off the bearing as `bearing - 90°` (north is `-y`), and
+      the viewer's DOM label offsets by `(-cos β, -sin β)`.
+    - **Ticks and arrowheads can't share the line.** A tick drawn across it and
+      a head drawn along it land on each other all the way down at the same
+      pitch, and neither reads. So a trail with marks spaces its heads
+      `ARROW_SPARSE` (1.4×) further apart and drops any that sit on a tick (the
+      `blocked` list) — modest on purpose, since an out-and-back has already
+      lost half its heads. The viewer gets the same effect from MapLibre: the
+      tick layer is added **first** with `icon-allow-overlap: true` (every
+      kilometre is drawn — a scale with a gap is a lie) but the default
+      `icon-ignore-placement: false`, so it claims a collision box the
+      arrow layer then avoids.
+    - **A doubled-back head is dropped.** An out-and-back is one line walked
+      twice, so its outbound and return heads land on the same stretch pointing
+      opposite ways — drawing both turned every doubled-back section into a row
+      of little butterflies. `arrows_along` keeps the first, which is the
+      outbound one (the line is in walking order). The viewer gets this for free
+      and better: `icon-allow-overlap: false` makes MapLibre thin the candidates
+      itself, per zoom, in source order.
+    - **The named points are the file's own `<wpt name=…>`**, not the hike's
+      nested activities — that element already *means* "a place worth naming"
+      (against `<trkpt>` = where you were, `<rtept>` = where you planned to go),
+      it comes positioned, and it needs no coordinate the user hasn't written.
+      `_points_of` read `<wpt>` before this only as a last-resort source of the
+      *line*, dropping the name that makes one worth marking. Four filters, in
+      `_named_waypoints` + `parse_gpx`, each for a case: unnamed ones carry
+      nothing; one within `_TERMINAL_MERGE_KM` of a trailhead is what the
+      start/end marker already says; a file whose line *is* its waypoints
+      contributes none (they'd label every bend); and above `MAX_NAMED_POINTS`
+      (15) **none** are kept rather than an arbitrary prefix — a routing export
+      names every turn instruction. That last one is the only filter that drops
+      something the file really said, so `GpxTrack.named_point_count` keeps the
+      pre-cap count and `validator.py`'s `_hike_gpx` reports it as an info.
+    - **`pdf/hike_map.py` needed no change**: the PDF's trail map is a raster
+      from `render_hike_map`, so the decoration arrives inside the image. The
+      viewer's *interactive* map is the one that had to learn it —
+      `HikeTrack.tsx` fills `MapGeo.trail` (and empties `route_nodes`, whose two
+      identical discs this replaces) and `DayMapGL.tsx` draws it: the arrowheads
+      as a symbol layer over a canvas-drawn `addImage` bitmap (an accent-tinted
+      triangle, so no sprite and no glyph font is involved) and the three markers
+      as DOM `Marker`s, like the numbered pins. Its `LOOP_MERGE_KM` and
+      `ARROW_CLEAR_FRACTION` mirror the print's — keep them in step.
+      Because the resolved `track` gains two fields (`waypoints`, `km_marks`)
+      *and* every `track.map` PNG is drawn differently, this needed a
+      `SCHEMA_VERSION` bump (**v30**).
+      `examples/france.json` / `france_fr.json` name the Lac de Gaube hike's
+      turnaround (the one point on that trail there's no doubt about), so the
+      review PDFs show the whole thing; `tests/test_hike_trail.py` holds the
+      geometry and the decisions, and `tests/test_gpx.py` the four filters.
+
   Both renderers draw map-then-profile from the same `track`, with one deliberate
   difference: the PDF's profile is drawn vector, the viewer's is inline SVG. The
   **map** obeys the Options interactive-maps toggle like every other viewer map

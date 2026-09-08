@@ -63,6 +63,33 @@ export interface Waypoint {
 // the figures measured off the *full*-resolution recording. Present only when
 // the hike carries a `gpx` and `defaults.include_hike_maps` is on (it defaults
 // on) — the base64 blob itself never reaches the browser.
+// A point the trail's own GPX names — the col, the lake, the refuge you turn at
+// (its `<wpt name=…>`). Both renderers mark it and print the name beside it; see
+// `_named_waypoints` in models/gpx.py for what does and doesn't qualify.
+export interface HikeWaypoint {
+  name: string;
+  lat: number;
+  long: number;
+}
+
+// A whole kilometre of walking, placed on the ground. The trail map ticks it and
+// the elevation profile ticks it, under the same number — which is what lets one
+// figure be read onto the other. `km` is distance *walked*, so an out-and-back
+// passes the same ground twice under two numbers. The step (1 km, 2, 5 …) is the
+// Python model's, decided once, so the two figures can't disagree.
+export interface HikeKmMark {
+  km: number;
+  lat: number;
+  long: number;
+  // Degrees clockwise from north: the direction you were **walking** here,
+  // measured off the recording by the Python model. It is what makes an
+  // out-and-back readable — its two legs are drawn metres apart, so "3" alone
+  // doesn't say which line it belongs to — and it is deliberately not inferred
+  // from the drawn line, whose nearest point can be on the other leg. Optional:
+  // a day cached before the field existed has none (0 = due north).
+  bearing?: number;
+}
+
 export interface HikeTrack {
   // The original file, base64 (and possibly gzipped), exactly as the itinerary
   // carries it — this is what the "(Get GPX track)" link hands back, so the
@@ -71,6 +98,12 @@ export interface HikeTrack {
   // the geometry but not the file.
   gpx?: string;
   points: [number, number][]; // [lat, long] along the trail, in walking order
+  // The trail's named points. Optional: a day cached before the field existed
+  // has none, and most tracks name nothing.
+  waypoints?: HikeWaypoint[];
+  // The whole-kilometre distance marks both figures share. Optional: a day
+  // cached before the field existed has none.
+  km_marks?: HikeKmMark[];
   profile: [number, number][]; // [km walked, elevation m]; empty without elevations
   distance_km: number;
   ascent_m: number | null; // null when the file carries no elevations
@@ -326,6 +359,16 @@ export interface MapGeo {
     points: MapPoint[];
     bounds: [[number, number], [number, number]]; // area's own extent
   }[];
+  // A walked line's own decoration, set only by a hike's trail map (the twin of
+  // maps/render.py's `Trail`): direction arrowheads along `line`, a solid marker
+  // where it starts and a hollow one where it ends, and each named point. A
+  // drive needs none of it — its direction and its stops are written out in the
+  // itinerary beside it — so every other map leaves this undefined.
+  trail?: {
+    line: [number, number][];
+    waypoints: HikeWaypoint[];
+    km_marks: HikeKmMark[];
+  } | null;
   accent: string; // "#rrggbb"
   bounds: [[number, number], [number, number]]; // [[minLat,minLong],[maxLat,maxLong]]
 }

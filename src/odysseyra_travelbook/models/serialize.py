@@ -118,6 +118,15 @@ def _track(itin: Itinerary, act) -> dict | None:
     return {
         "gpx": act.gpx,
         "points": [[lat, long] for lat, long in track.points],
+        # the file's own named `<wpt>`s — the col, the lake, the refuge — which
+        # both renderers mark and label on the trail map
+        "waypoints": [{"name": w.name, "lat": w.lat, "long": w.long}
+                      for w in track.waypoints],
+        # the whole-kilometre marks, which the trail map and the elevation
+        # profile both draw — under the same numbers, so one figure reads onto
+        # the other. The step is the model's, so the two can't disagree.
+        "km_marks": [{"km": m.km, "lat": m.lat, "long": m.long,
+                      "bearing": m.bearing} for m in track.km_marks],
         "profile": [[km, m] for km, m in track.profile],
         "distance_km": round(track.distance_km, 3),
         "ascent_m": None if track.ascent_m is None else round(track.ascent_m),

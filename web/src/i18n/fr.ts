@@ -611,8 +611,8 @@ export const FR: Record<string, string> = {
   "Route shape. Defaults to back_and_forth.":
     "Forme du parcours. Par défaut back_and_forth.",
   "GPX track": "Trace GPX",
-  "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. Optional.":
-    "Un fichier .gpx du sentier, enregistré dans l'itinéraire lui-même. Dessiné sous forme de tracé et de profil altimétrique, et il complète la distance et le dénivelé si vous les laissez vides. Facultatif.",
+  "A .gpx file of the trail, stored in the itinerary itself. Drawn as a trail map plus an elevation profile, and it fills in the distance and elevation gain when you leave those blank. The map marks which way round you walk it, where it starts and finishes, and any point the file names with a <wpt> — the col, the lake, the refuge — so upload the file whole rather than trimming it to the track. Optional.":
+    "Un fichier .gpx du sentier, enregistré dans l'itinéraire lui-même. Dessiné sous forme de tracé et de profil altimétrique, et il complète la distance et le dénivelé si vous les laissez vides. La carte indique le sens de marche, le départ et l'arrivée, ainsi que chaque point que le fichier nomme par un <wpt> — le col, le lac, le refuge — donc importez le fichier entier plutôt que réduit à la trace. Facultatif.",
   "Show the trail map": "Afficher la carte du tracé",
   "Draw the map of the GPX trail. The elevation profile is kept either way, and the GPX is still offered for download — this only drops the map. To hide the whole figure for every hike, use Defaults → Include hike maps. Defaults to on.":
     "Dessine la carte du tracé GPX. Le profil altimétrique est conservé dans les deux cas, et le GPX reste téléchargeable — seule la carte disparaît. Pour masquer l'ensemble pour toutes les randonnées, utilisez Valeurs par défaut → Inclure les cartes de randonnée. Activé par défaut.",
