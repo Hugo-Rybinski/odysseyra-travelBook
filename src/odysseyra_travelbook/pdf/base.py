@@ -8,6 +8,7 @@ from pathlib import Path
 from fpdf import FPDF
 
 from ..lang import DEFAULT_LANGUAGE, fmt_date, tr
+from ..prose_links import markdown_prose
 from ..models import (
     DEFAULT_MAP_PROVIDER,
     Itinerary,
@@ -371,11 +372,37 @@ class _PDFBase(FPDF):
         self.set_text_color(*MUTED)
         self.multi_cell(w, 5, "  ·  ".join(parts))
 
+    def _prose_markup(self, text: str) -> tuple[str, bool]:
+        """``(what to draw, whether markdown must be on)`` for a paragraph.
+
+        The single seam where a URL, an email address or a phone number written
+        *inside* prose becomes clickable (:mod:`prose_links`) — so every
+        description in the book gets it from one place, the way the viewer gets
+        it from ``Clamp``. Three things it settles:
+
+        * **Ink-saver draws no links at all**, like every other hyperlink in the
+          mode (see :meth:`_nav_affordance`). A link is accent emphasis plus an
+          underline, which is what the mode exists to stop spending.
+        * The link is drawn by fpdf2's own markdown, so the **justification and
+          line breaking are unchanged** — the markup is stripped before layout,
+          and an underline costs no width. Every height the book measures
+          elsewhere therefore still holds.
+        * It is **underlined in the prose's own colour**, not set in accent
+          (``MARKDOWN_LINK_COLOR`` stays None): the link says *tappable*, not
+          *more important than the sentence around it* — the same call the
+          viewer's ``.prose-link`` makes.
+        """
+        if self.ink_saver:
+            return text, False
+        marked = markdown_prose(text)
+        return (marked, True) if marked is not None else (text, False)
+
     def _para(self, x: float, w: float, text: str) -> None:
         self.set_x(x)
         self.set_font(FONT, "", 10)
         self.set_text_color(*MUTED)
-        self.multi_cell(w, 5, text)
+        body, md = self._prose_markup(text)
+        self.multi_cell(w, 5, body, markdown=md)
 
     def _guidebook_pill(self, x: float, y: float, pages: str,
                         size: float = 7.5) -> float:
@@ -431,12 +458,14 @@ class _PDFBase(FPDF):
             return
 
         self.set_font(FONT, "", size)
-        lines = self.multi_cell(w, h, text, dry_run=True, output="LINES") or [text]
-        last_w = self.get_string_width(lines[-1])
+        body, md = self._prose_markup(text)
+        lines = (self.multi_cell(w, h, body, dry_run=True, output="LINES",
+                                 markdown=md) or [text])
+        last_w = self.get_string_width(lines[-1], markdown=md)
         gap = self.get_string_width("  ")
         self.set_x(x)
         self.set_text_color(*MUTED)
-        self.multi_cell(w, h, text)
+        self.multi_cell(w, h, body, markdown=md)
         if not pages:
             return
         # where the paragraph left the cursor — restored below, since drawing the

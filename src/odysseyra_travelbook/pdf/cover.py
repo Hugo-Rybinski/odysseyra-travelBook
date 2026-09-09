@@ -65,7 +65,8 @@ class CoverMixin:
             self.set_x(self.l_margin)
             self.set_font(FONT, "", 11)
             self.set_text_color(*MUTED)
-            self.multi_cell(self.content_width, 6, it.summary)
+            body, md = self._prose_markup(it.summary)
+            self.multi_cell(self.content_width, 6, body, markdown=md)
 
         self._cover_section_links()
         self._overview()

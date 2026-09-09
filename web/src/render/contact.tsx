@@ -9,17 +9,19 @@
 //     because the alternative is a value that is obviously a number and not a
 //     link — a bare `112` or `15` is exactly the number you most want to tap.
 //
-//   * `linkifyProse` — is there a number **inside this sentence**? Used for
-//     every description the book prints, via `Clamp`. Unanchored, and much
-//     *stricter*: a loose rule let into prose would happily claim `09:30-18:00`,
-//     `12 km`, a guidebook range `25-30` or a year span `1789-1799`, and a
-//     number that dials the wrong thing is worse than one that doesn't dial.
+//   * `linkifyProse` — is there a URL, an email address or a number **inside
+//     this sentence**? Used for every description the book prints, via `Clamp`.
+//     Unanchored, and much *stricter*: a loose rule let into prose would happily
+//     claim `09:30-18:00`, `12 km`, a guidebook range `25-30` or a year span
+//     `1789-1799`, and a link that goes to the wrong place is worse than one
+//     that isn't there.
 //
-// There is no PDF twin, which is the same divergence `(Get GPX track)` has: fpdf
-// can emit a link and most readers honour `tel:`, but on paper the number is
-// already legible, a link would print as accent emphasis on a page that spends
-// its accent elsewhere, and `--ink-saver` drops every hyperlink anyway — so the
-// affordance would exist only in the one mode the book isn't printed in.
+// **The PDF implements the same in-prose rule**, in `prose_links.py`, drawn
+// through fpdf2's markdown (`pdf/base.py`'s `_prose_markup`) and switched off
+// under `--ink-saver` like every other hyperlink there. Keep the two in step;
+// `tests/test_prose_links.py` is the contract both sides answer to. Only
+// `contactHref` is viewer-only, and only because the *whole-field* case has a
+// PDF row that already prints the value in full.
 
 import type { ReactNode } from "react";
 
@@ -41,14 +43,39 @@ export function contactHref(contact: string): string | null {
 
 // --- the in-prose rule (a number sitting inside a sentence) -----------------
 
-// Candidates only: an email-shaped run, or a `+`-led / bare run of digits and
-// the separators a written number uses. `:` and `,` are deliberately *not*
+// Candidates only: a URL, an email-shaped run, or a `+`-led / bare run of digits
+// and the separators a written number uses. `:` and `,` are deliberately *not*
 // separators — they are what a time and a page list are made of — so
 // `09:30-18:00` never reaches the classifier as one token, it arrives as four
 // two-digit ones and every branch below rejects those on length.
-const CANDIDATE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]|\+?\d[\d .()-]*\d/g;
+//
+// The URL alternative comes **first** so it is tried at each position before the
+// others: `https://x.com/1234567890` has to be consumed whole rather than
+// leaving its digits behind to be read as a number.
+const CANDIDATE =
+  /(?:https?:\/\/|www\.)[^\s<>"'[\]]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]|\+?\d[\d .()-]*\d/g;
 
 const PROSE_MAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+
+/** Sentence punctuation a URL may collect but never own. */
+const URL_TRAIL = /[.,;:!?'"“”’«»]+$/;
+
+/** Drop the sentence punctuation a URL swept up, and a closing bracket that was
+ *  opened outside it — while keeping the one in `…/wiki/Foo_(bar)`, which is
+ *  part of the address. */
+function trimUrl(token: string): string {
+  let t = token.replace(URL_TRAIL, "");
+  while (t.endsWith(")") && (t.split(")").length - 1) > (t.split("(").length - 1)) {
+    t = t.slice(0, -1).replace(URL_TRAIL, "");
+  }
+  return t;
+}
+
+/** A URL must **name itself** — `https://…` or a `www.` host. A bare
+ *  `example.com` is deliberately not enough: `trip.json`, `p.m.` and a sentence
+ *  that runs "…the abbey.Or the château" all look the same to that pattern, and
+ *  the cost of guessing wrong is a link to nowhere. */
+const URL_LED = /^(?:https?:\/\/|www\.)/i;
 
 /** A character that, sitting against a candidate, says it is part of something
  *  larger: a word, an address, a time, a date, a decimal, a fraction — or a URL,
@@ -90,21 +117,27 @@ export function linkifyProse(text: string): ReactNode {
 
   for (const m of text.matchAll(CANDIDATE)) {
     const start = m.index ?? 0;
-    // Trim the trailing separators the class swept up — a sentence's full stop,
-    // a closing bracket that opened outside the match.
-    const token = m[0].replace(/[ .()-]+$/, "");
-    if (!token) continue;
+    // Each branch trims its own trailing punctuation: a URL keeps a `(bar)` that
+    // is part of the address, where a number's brackets never are.
+    let token: string;
+    let href: string | null;
+    if (URL_LED.test(m[0])) {
+      token = trimUrl(m[0]);
+      // "www.a.bc" is the shortest thing worth pointing at.
+      href = token.length >= 8 ? (/^http/i.test(token) ? token : `https://${token}`) : null;
+    } else if (PROSE_MAIL.test(m[0])) {
+      token = m[0];
+      href = `mailto:${token}`;
+    } else {
+      token = m[0].replace(/[ .()-]+$/, "");
+      href = dialable(token) ? `tel:${token.replace(/[^\d+]/g, "")}` : null;
+    }
+    if (!token || !href) continue;
+
     const before = start > 0 ? text[start - 1] : "";
     const after = text[start + token.length] ?? "";
     if (GLUED.test(before) || before === "." || before === "+" || before === "-") continue;
     if (GLUED.test(after)) continue;
-
-    const href = PROSE_MAIL.test(token)
-      ? `mailto:${token}`
-      : dialable(token)
-        ? `tel:${token.replace(/[^\d+]/g, "")}`
-        : null;
-    if (!href) continue;
 
     if (start > last) out.push(text.slice(last, start));
     out.push(

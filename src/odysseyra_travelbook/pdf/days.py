@@ -89,7 +89,8 @@ class DayMixin:
         if day.description:
             self.set_font(FONT, "", 11)
             self.set_text_color(*MUTED)
-            self.multi_cell(self.content_width, 6, day.description)
+            body, md = self._prose_markup(day.description)
+            self.multi_cell(self.content_width, 6, body, markdown=md)
             self.ln(3)
 
         day_maps = self.day_maps(day)

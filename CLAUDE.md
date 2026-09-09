@@ -188,6 +188,10 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
 - **`lang/`** — localization. `dates.py` (month/weekday tables + `fmt_date`,
   plus `weekday_name` and `fmt_weekday_runs` for a POI's opening days),
   `translations.py` (English→French map), `__init__` (`tr`, `LANGUAGES`).
+- **`prose_links.py`** — `find_links(text)` → the URL / email / phone spans
+  worth making clickable **inside** a paragraph, and `markdown_prose(text)`
+  which rewrites it as fpdf2 markdown for `pdf/base.py`'s `_prose_markup`.
+  Mirrored by the viewer's `render/contact.tsx`; pure stdlib `re`.
 - **`ics.py`** — `build_ics(itinerary, output=None, lang, now=None)` exports a
   resolved itinerary to an iCalendar (`.ics`) string (CLI `ics`, and the viewer's
   **Options → Calendar export**). One `VEVENT` per day activity (buffers excluded),
@@ -1173,44 +1177,68 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   online (after `bank_holiday`) — and the first that must be **cited**: every
   value taken from the web is listed in the inconsistency report with its source
   URL.
-- **A phone number or an email written *inside* prose is a link — in the viewer
-  only.** `web/src/render/contact.tsx` holds both rules, and they are
-  deliberately two rules because they answer two questions.
-  `contactHref` asks whether a **whole field** is a contact (an activity's
-  `contact`, `misc.emergency_contacts[].contact`) and is generous, so a bare
-  `112` links. `linkifyProse` asks whether there is one **inside a sentence** and
-  is far stricter, because a loose rule let into prose claims `09:30-18:00`,
-  `12 km`, a guidebook range `25-30` or a year span `1789-1799` — and a number
-  that dials the wrong thing is worse than one that doesn't dial. Four things
-  are load-bearing:
-  - **`Clamp` is the one seam.** Every description the book prints goes through
-    it, so `linkifyProse` runs there and covers all eleven call sites at once —
-    the cover summary, a day's intro, an activity's description, a booking's
-    note, the stay bar's. It composes with the clamp for nothing: the truncation
-    is CSS (`-webkit-line-clamp`), so the full text is always in the DOM and a
-    link in the clipped tail comes back with *Show more*.
-  - **The strictness is a digit floor plus a separator rule.** A leading `+` is
-    its own evidence, so it needs 7 digits; without one the floor is **9**, which
-    clears every date (8 digits), price, distance, altitude and page range a
-    description carries. `:` and `,` are not separators — they are what a time
-    and a page list are made of — and a candidate with exactly **one** separator
-    reads as a decimal (`1234.56789`), since a real number is either grouped
-    (`01 42 60 30 30`) or solid (`0142603030`).
+- **A URL, an email address or a phone number written *inside* prose is a
+  link.** Three kinds and nothing else, in **both** renderers — so the rule lives
+  twice, in `prose_links.py`'s `find_links` and `web/src/render/contact.tsx`'s
+  `linkifyProse`, and the two must be **kept in step**; there is no JS test
+  runner, so `tests/test_prose_links.py` is the contract both sides answer to.
+  It is a different question from the **whole-field** rule `contactHref` answers
+  for an activity's `contact` and `misc.emergency_contacts[].contact`, which is
+  generous on purpose — a bare `112` links there. In prose the rule is far
+  stricter, because a loose one claims `09:30-18:00`, `12 km`, a guidebook range
+  `25-30` or a year span `1789-1799`, and a link that goes to the wrong place is
+  worse than one that isn't there. Six things are load-bearing:
+  - **Each renderer has exactly one seam.** In the viewer it is `Clamp`, which
+    every description goes through — the cover summary, a day's intro, an
+    activity's description, a booking's note, the stay bar's. In the PDF it is
+    `pdf/base.py`'s `_prose_markup`, used by `_para`, `_para_with_pill` and the
+    two paragraphs that draw their own `multi_cell` (the cover summary and
+    `days.py`'s day intro). A new prose site has to go through one of them.
+  - **The PDF draws it through fpdf2's own markdown** (`[label](url)` with
+    `multi_cell(markdown=True)`), the only route that keeps the justification and
+    line breaking we already have — placing the rectangles ourselves would mean
+    re-deriving how a justified line stretches its spaces for a paragraph fpdf2
+    has already laid out. The markup is stripped before layout and an underline
+    costs no width, so **wrapping is unchanged** (a test asserts the lines *and*
+    the last line's width match the plain draw) and every height measured
+    elsewhere still holds — including `_para_with_pill`'s guidebook pill, which
+    is placed off exactly that width.
+  - **So the rest of the paragraph becomes markup too**, and all four emphasis
+    markers (`**`, `__`, `~~`, `--`) plus the escape character are escaped in one
+    pass — otherwise a description with a double hyphen would underline its own
+    tail. The one thing that can't be escaped is prose already containing `](`
+    (fpdf2 has no bracket escape): `markdown_prose` returns None and the
+    paragraph is drawn plain, losing the link and keeping the sentence. A url
+    holding a paren is dropped the same way, since `(url)` stops at the first
+    one.
+  - **`--ink-saver` draws no prose link at all**, like every other hyperlink in
+    that mode (see `_nav_affordance`) — a link is an underline plus emphasis,
+    which is what the mode exists to stop spending. `_prose_markup` hands back
+    the bare text, so an ink-saver book takes exactly the path it always did.
+  - **The strictness is a digit floor plus a separator rule, and a URL must name
+    itself.** A leading `+` is its own evidence, so 7 digits; without one the
+    floor is **9**, which clears every date (8 digits), price, distance, altitude
+    and page range a description carries. `:` and `,` are not separators — they
+    are what a time and a page list are made of — and a candidate with exactly
+    **one** separator reads as a decimal (`1234.56789`), since a real number is
+    either grouped (`01 42 60 30 30`) or solid (`0142603030`). A URL needs
+    `https://` or a `www.` host: a bare `example.com` can't be told from
+    `trip.json`, `p.m.` or a missing space after a full stop. The URL
+    alternative is tried **first** at each position, or `https://x/1234567890`
+    would leave its digits behind to be read as a number.
   - **A candidate glued to something larger is dropped**, which is what lets a
-    booking URL in a note survive: `?id=1234567890` is not a phone number.
-  - **No PDF twin, and that is a decision rather than a limitation** — fpdf can
-    emit a link and most readers honour `tel:`. But the printed number is already
-    legible, a link would print as accent emphasis on a page that spends its
-    accent elsewhere, and `--ink-saver` drops every hyperlink, so the affordance
-    would exist only in the mode the book isn't printed in. Same class of
-    divergence as the hike's `(Get GPX track)`. `.prose-link` follows: underlined
-    in accent, text the colour of the prose around it, because the link is about
-    being tappable and not about mattering more.
+    booking URL in a note survive intact: `?id=1234567890` is not a phone
+    number.
 
-  `examples/france.json` / `france_fr.json` put a number in Lascaux IV's
-  description (day 6) so the Demo shows it beside that POI's structured
-  `contact`, which exercises both rules on one card. No format change, no
-  `SCHEMA_VERSION` bump, no wheel rebuild — this is all viewer-side rendering.
+  The two renderers differ in *look*, deliberately: the viewer's `.prose-link`
+  is underlined in accent over the prose's own text colour, the PDF's is
+  underlined in the prose's colour outright (`MARKDOWN_LINK_COLOR` stays None).
+  Neither sets the token in accent — both say *tappable*, not *more important
+  than the sentence around it*. `examples/france.json` / `france_fr.json` put a
+  `www.` URL and a phone number in Lascaux IV's description (day 6), beside that
+  POI's structured `contact`, so one card exercises every path. No format change
+  and no `SCHEMA_VERSION` bump — but Python moved, so the **wheel needs
+  rebuilding**.
 - **An export carries the file's `(vNN)`.** `App.tsx`'s `exportFilename` names
   the PDF and the `.ics` `<slug> (v05).pdf` when the JSON they were built from
   carried a marker, and it is a **second derivation** beside `nextFilename`
