@@ -443,20 +443,6 @@ they reuse of what's already here.
   rail source. Needs an answer for `other` too, and note that a routed leg would
   start widening a printed map's extent, which legs
   [deliberately never do](file_format.md#maps--coordinates).
-- **Mark a trail's named points on the elevation profile too** — the trail map
-  now marks the col, the lake and the refuge a GPX names
-  ([`<wpt>`](file_format.md#a-hikes-gpx-track)), but the profile beside it is
-  still an anonymous curve. A tick at each named point, at the distance it sits
-  along the track, would say *where in the climb* it comes — which is the
-  question the profile exists to answer. The geometry is nearly free:
-  `parse_gpx` already walks the cumulative distances the profile is resampled
-  from, so each waypoint's `km` is one projection onto the line away. What has
-  to be answered is the labelling, which is where it gets hard: the profile is
-  22 mm tall in print and a couple of centimetres wide, so two names inside it
-  collide immediately — they may have to be numbers keyed to the map's markers,
-  which then makes the markers numbered too, and that is a design decision about
-  both figures rather than an addition to one. Bumps `SCHEMA_VERSION` if the
-  distance is carried on the resolved waypoint rather than recomputed.
 - **Reuse a pin number automatically in more cases** — `fold_pins` merges two of
   a day's located points into one number when their **names** key alike *and*
   they sit within `PIN_MERGE_KM`, and `pin_aliases` shares a number between a
