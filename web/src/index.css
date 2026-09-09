@@ -1978,6 +1978,21 @@ body {
 .clamp-text {
   margin: 0;
 }
+/* A phone number or an email found *inside* a description (render/contact.tsx).
+   Underlined rather than accent-coloured: it sits in a sentence, where a colour
+   change reads as emphasis on a word the prose didn't emphasise — the link is
+   about being tappable, not about mattering more. Never broken across lines, for
+   the same reason .emergency-contact isn't: half a number is unreadable. */
+.prose-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+.prose-link:hover {
+  color: var(--accent);
+}
 .clamp-text.clamped {
   display: -webkit-box;
   -webkit-box-orient: vertical;

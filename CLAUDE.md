@@ -1173,6 +1173,57 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   online (after `bank_holiday`) — and the first that must be **cited**: every
   value taken from the web is listed in the inconsistency report with its source
   URL.
+- **A phone number or an email written *inside* prose is a link — in the viewer
+  only.** `web/src/render/contact.tsx` holds both rules, and they are
+  deliberately two rules because they answer two questions.
+  `contactHref` asks whether a **whole field** is a contact (an activity's
+  `contact`, `misc.emergency_contacts[].contact`) and is generous, so a bare
+  `112` links. `linkifyProse` asks whether there is one **inside a sentence** and
+  is far stricter, because a loose rule let into prose claims `09:30-18:00`,
+  `12 km`, a guidebook range `25-30` or a year span `1789-1799` — and a number
+  that dials the wrong thing is worse than one that doesn't dial. Four things
+  are load-bearing:
+  - **`Clamp` is the one seam.** Every description the book prints goes through
+    it, so `linkifyProse` runs there and covers all eleven call sites at once —
+    the cover summary, a day's intro, an activity's description, a booking's
+    note, the stay bar's. It composes with the clamp for nothing: the truncation
+    is CSS (`-webkit-line-clamp`), so the full text is always in the DOM and a
+    link in the clipped tail comes back with *Show more*.
+  - **The strictness is a digit floor plus a separator rule.** A leading `+` is
+    its own evidence, so it needs 7 digits; without one the floor is **9**, which
+    clears every date (8 digits), price, distance, altitude and page range a
+    description carries. `:` and `,` are not separators — they are what a time
+    and a page list are made of — and a candidate with exactly **one** separator
+    reads as a decimal (`1234.56789`), since a real number is either grouped
+    (`01 42 60 30 30`) or solid (`0142603030`).
+  - **A candidate glued to something larger is dropped**, which is what lets a
+    booking URL in a note survive: `?id=1234567890` is not a phone number.
+  - **No PDF twin, and that is a decision rather than a limitation** — fpdf can
+    emit a link and most readers honour `tel:`. But the printed number is already
+    legible, a link would print as accent emphasis on a page that spends its
+    accent elsewhere, and `--ink-saver` drops every hyperlink, so the affordance
+    would exist only in the mode the book isn't printed in. Same class of
+    divergence as the hike's `(Get GPX track)`. `.prose-link` follows: underlined
+    in accent, text the colour of the prose around it, because the link is about
+    being tappable and not about mattering more.
+
+  `examples/france.json` / `france_fr.json` put a number in Lascaux IV's
+  description (day 6) so the Demo shows it beside that POI's structured
+  `contact`, which exercises both rules on one card. No format change, no
+  `SCHEMA_VERSION` bump, no wheel rebuild — this is all viewer-side rendering.
+- **An export carries the file's `(vNN)`.** `App.tsx`'s `exportFilename` names
+  the PDF and the `.ics` `<slug> (v05).pdf` when the JSON they were built from
+  carried a marker, and it is a **second derivation** beside `nextFilename`
+  rather than a shared one: a save *creates* a revision so it takes
+  `nextVersion(…)`, an export *renders* the applied text so it takes the version
+  as it stands. So exporting twice overwrites its own previous book — right, it
+  is the same revision — while a folder can say which JSON produced which PDF.
+  An **unversioned** file keeps its plain name rather than being handed a `(v01)`
+  it never had, which is every file the CLI, the Demo and a blank scaffold
+  produce. The **CLI needed no counterpart**: `-o` defaults to
+  `Path(input).with_suffix(".pdf")`, which only swaps the extension, so it has
+  carried the marker all along. What is still missing is on the editor side and
+  wants a *directory* handle — see the README's backlog.
 - **A point of interest's opening days & hours.** Two optional strings on
   `point_of_interest` alone — `opening_days` (`tue-sun` / `mon-fri, sun`; single
   days and/or ranges, English names or 3-letter prefixes, a range may wrap the
@@ -1256,8 +1307,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     its own labelled row under the details — `_contact_line` / `_label_row`,
     which `_opening_line` now shares, and `.act-contact` — with the usual
     paper-can't-do-it divergence: the viewer wraps a dialable/mailable value in
-    a `tel:`/`mailto:` link, reusing `EmergencyContacts.tsx`'s `DIALABLE` /
-    `MAILABLE` rules (keep the two in step).
+    a `tel:`/`mailto:` link, via `render/contact.tsx`'s `contactHref` — one rule
+    now, shared with `EmergencyContacts.tsx` rather than copy-pasted into it.
   - The price sits **inline at the end of the meta line** rather than in a bold
     row of its own: `2h30 · Rue de Rivoli · €22 ($23.76, £18.70)`. A booking's
     price is a headline; a stop's is one figure among the duration and the

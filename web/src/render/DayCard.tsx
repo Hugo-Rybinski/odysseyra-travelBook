@@ -20,6 +20,7 @@ import {
   type LabelKey,
 } from "./format";
 import { Clamp } from "./Clamp";
+import { contactHref } from "./contact";
 import { ForecastChip } from "./forecast";
 import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
 import { AddressLink, LinkGroup, Links, NavLink } from "./Links";
@@ -532,19 +533,6 @@ function Opening({ act, lang }: { act: Activity; lang: Lang }) {
       {parts.join("  ·  ")}
     </p>
   );
-}
-
-// `tel:` strips everything a dialler doesn't want but keeps a leading + and the
-// digits — including a short code like "112". Same rule as the emergency
-// directory's (EmergencyContacts.tsx), which is the other place a raw contact
-// string is offered as a link.
-const DIALABLE = /^\+?[\d\s.()/-]{2,}$/;
-const MAILABLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function contactHref(contact: string): string | null {
-  if (MAILABLE.test(contact)) return `mailto:${contact}`;
-  if (DIALABLE.test(contact)) return `tel:${contact.replace(/[^\d+]/g, "")}`;
-  return null; // an address, a sentence — nothing to hand an app
 }
 
 // An activity's `contact` as its own labelled row, mirroring the PDF's

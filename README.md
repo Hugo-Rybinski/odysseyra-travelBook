@@ -396,41 +396,19 @@ they reuse of what's already here.
   model already carries into trip, per-day and per-category (transport vs.
   lodging vs. activities) totals, plus a paid-vs-to-pay balance, surfaced as a
   PDF summary page and in the viewer.
-- **Carry the file's `(vNN)` into the exports, and into the CLI** — the Edit
-  tab now numbers the JSON it writes (`<slug> (v02).json`, see
-  [`web/README.md`](web/README.md)'s P4), but the **PDF** and **`.ics`** exports
-  still name themselves from the bare slug, so exporting twice overwrites the
-  first book and a folder can't say which JSON produced which. They should carry
-  the version of the file they were built from — the *current* one, not the next,
-  since an export renders the applied text rather than creating a new revision —
-  which is a different derivation from `nextFilename`'s and lives in the Options
-  tab rather than the editor. The CLI's `-o` default (`<input>.pdf`) should
-  follow the same convention or the two halves disagree about what a trip's files
-  are called. Two more pieces are missing on the editor side: **Save in place**
-  can't advance the marker (its handle points at one file, and the FS Access API
-  needs a directory handle to create that file's sibling), so a directory-handle
-  route would be needed to make every save a new version; and nothing ever reads
-  the folder, so the count continues from the file you opened rather than from
-  the highest version actually on disk — reopen an old `(v02)` with `(v05)`
-  beside it and the next save proposes `(v03)`.
-- **Linkify a phone number or an email found *inside* freeform text** — the
-  viewer already turns a `contact` into a `tel:` / `mailto:` link, but only by
-  testing the **whole** value (`DIALABLE` / `MAILABLE` are anchored `^…$`), and
-  the same two rules are copy-pasted in `EmergencyContacts.tsx` and
-  `DayCard.tsx` — so consolidating them is step one whatever else happens. What
-  is missing is the same treatment for a number sitting in the middle of prose:
-  a `description` saying "book ahead on +996 312 44 55 66", a car rental's fuel
-  policy, a day's intro. Needs unanchored patterns plus span-splitting so only
-  the match becomes a link, and it has to survive the viewer's `Clamp` — prose
-  there is truncated and can carry a trailing pill, so linkifying after clamping
-  is the only order that works. The real risk is false positives: a loose
-  `DIALABLE` inside a sentence will happily claim `09:30-18:00`, `12 km` or a
-  guidebook page range, so the pattern has to be *stricter* than the whole-value
-  one, not looser. Whether the **PDF** gets a
-  twin is an open call rather than the usual "paper can't do it" — fpdf can emit
-  a link, and most PDF viewers honour `tel:` / `mailto:` — but it would print as
-  emphasis on a page where the number is already legible, and ink-saver would
-  suppress it anyway.
+- **Make every save a new version, and count from the folder** — the exports
+  now carry the file's `(vNN)` (see [`web/README.md`](web/README.md)'s P4) but
+  two pieces of the numbering are still missing, and both want the same thing:
+  a **directory** handle. **Save in place** can't advance the marker, because its
+  handle points at one file and the FS Access API gives no way to create that
+  file's sibling; so the route that saves most often is the one route that keeps
+  overwriting the version you opened. And nothing ever reads the folder, so the
+  count continues from the file you *opened* rather than from the highest version
+  actually on disk — reopen an old `(v02)` with `(v05)` beside it and the next
+  save proposes `(v03)`, shadowing three drafts. `showDirectoryPicker()` answers
+  both, but it is a new user-facing permission (a folder is a much bigger grant
+  than a file) and a second way in beside **Open**, so the question is as much
+  about the flow as the code.
 - **Draw a ground transport leg as a road, not a dotted line** — a
   [leg](file_format.md#transportlegs) with both endpoints mapped is drawn as a
   straight dotted line whatever its `type` (`day_legs` in `maps/build.py`, the

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useT } from "../i18n";
+import { linkifyProse } from "./contact";
 
 // Whether long descriptions are truncated (with a "Show more" toggle) or shown
 // in full. Provided by <Book> from the app-level display option; defaults to
@@ -24,6 +25,15 @@ export const ClampProvider = ClampContext.Provider;
 // word — the guidebook pill. It therefore sits at the end of the final visible
 // line, and is clipped along with the text when the paragraph is clamped (the
 // "Show more" toggle brings it back).
+//
+// This is also the one seam every piece of prose the book prints goes through —
+// the cover summary, a day's intro, an activity's description, a booking's note,
+// the stay bar's — so it is where a phone number or an email address written
+// *inside* the text becomes tappable (`contact.tsx`'s `linkifyProse`). Doing it
+// here rather than at each of the eleven call sites is what keeps the rule
+// single, and it composes with the clamp for free: the truncation is CSS
+// (`-webkit-line-clamp`), so the full text is always in the DOM and a link in
+// the clipped tail simply comes back with "Show more".
 export function Clamp({
   text,
   className,
@@ -56,7 +66,7 @@ export function Clamp({
   return (
     <div className={className}>
       <div ref={ref} className={`clamp-text${clamped ? " clamped" : ""}`}>
-        {text}
+        {linkifyProse(text)}
         {trailing}
       </div>
       {clamp && (overflowing || expanded) && (

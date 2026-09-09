@@ -652,6 +652,38 @@ export function App() {
     })();
   }, [analyze]);
 
+  // The name an **export** should take: `<slug> (vNN).pdf` / `.ics`, carrying the
+  // version of the file it was built from.
+  //
+  // Deliberately a different derivation from `nextFilename`'s, and the difference
+  // is the whole point: a save *creates* a revision, so it takes
+  // `nextVersion(…)`; an export *renders* the applied text, so it takes the
+  // version as it stands. Exporting twice therefore overwrites its own previous
+  // book — which is right, it's the same revision — while a folder can finally
+  // say which JSON produced which PDF. (The CLI needs no counterpart: its `-o`
+  // default is `Path(input).with_suffix(".pdf")`, which only swaps the extension
+  // and so has carried the marker all along.)
+  //
+  // An **unversioned** file keeps its plain name: the marker is a document's
+  // version history, and an export is not the place to invent one. That is also
+  // every file the CLI, the Demo and a blank scaffold produce, so this changes
+  // nothing for them.
+  //
+  // `lastWritten` first, like `nextFilename` — after a Download JSON the applied
+  // text is the bytes that landed in that file, not the one still backing
+  // `source`. Parsed before slugifying, or `trip (v05).json` would export as
+  // `trip-v05.pdf`.
+  const exportFilename = useCallback(
+    (ext: string) => {
+      const known = parseVersionedName(lastWritten ?? source?.name ?? "");
+      const base = slugify(itinerary?.title || known.base || "odysseyra");
+      return known.version === null
+        ? `${base}${ext}`
+        : formatVersionedName(base, known.version, ext);
+    },
+    [itinerary, source, lastWritten],
+  );
+
   // Export the PDF and download it, without losing the view. Maps are embedded
   // when the toggle is on (fetching tiles/routes in-browser; slower).
   const onExport = useCallback(async () => {
@@ -665,14 +697,13 @@ export function App() {
         maps: mapsExport,
         mapProvider,
       });
-      const base = itinerary?.title || source.name || "odysseyra";
-      downloadBytes(bytes, `${slugify(base)}.pdf`);
+      downloadBytes(bytes, exportFilename(".pdf"));
     } catch (e) {
       setError(String(e));
     } finally {
       setExporting(false);
     }
-  }, [source, lang, inkSaver, mapsExport, mapProvider, itinerary]);
+  }, [source, lang, inkSaver, mapsExport, mapProvider, exportFilename]);
 
   // Export an iCalendar (.ics) of the trip and download it. Pure transform (no
   // maps / no network), so it never touches the export map options.
@@ -682,14 +713,13 @@ export function App() {
     setError(null);
     try {
       const text = await buildIcs(source.text, lang);
-      const base = itinerary?.title || source.name || "odysseyra";
-      downloadText(text, `${slugify(base)}.ics`, "text/calendar");
+      downloadText(text, exportFilename(".ics"), "text/calendar");
     } catch (e) {
       setError(String(e));
     } finally {
       setExportingIcs(false);
     }
-  }, [source, lang, itinerary]);
+  }, [source, lang, exportFilename]);
 
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.

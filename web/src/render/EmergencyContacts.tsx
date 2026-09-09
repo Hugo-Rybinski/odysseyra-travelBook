@@ -1,4 +1,5 @@
 import type { Itinerary } from "../types/resolved";
+import { contactHref } from "./contact";
 import { tr, type Lang } from "./format";
 
 // The trip's emergency contacts (`misc.emergency_contacts`), listed at the foot
@@ -7,8 +8,9 @@ import { tr, type Lang } from "./format";
 //
 // One deliberate difference: here a contact that looks dialable (or mailable) is
 // a real link, so an emergency number is one tap away on a phone. Paper has no
-// twin for that, which is why the sniffing below lives only on this side — the
-// same split as the hike's `(Get GPX track)` button.
+// twin for that, which is why that sniffing lives only on this side — the same
+// split as the hike's `(Get GPX track)` button. The rule itself is
+// `contact.tsx`'s `contactHref`, shared with an activity's `contact` row.
 //
 // Both halves of a contact are optional; whichever is present is drawn. A name
 // with nothing to call is still worth listing (the traveller knows to look the
@@ -38,20 +40,8 @@ export function EmergencyContacts({
   );
 }
 
-// `tel:` strips everything a dialler doesn't want (spaces, dots, brackets,
-// dashes) but keeps a leading + and the digits — including a short code like
-// "112" or "15", which is exactly the number you most want to tap.
-const DIALABLE = /^\+?[\d\s.()/-]{2,}$/;
-const MAILABLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function href(contact: string): string | null {
-  if (MAILABLE.test(contact)) return `mailto:${contact}`;
-  if (DIALABLE.test(contact)) return `tel:${contact.replace(/[^\d+]/g, "")}`;
-  return null; // an address, a sentence — nothing to hand an app
-}
-
 function ContactValue({ contact }: { contact: string }) {
-  const target = href(contact);
+  const target = contactHref(contact);
   if (!target) return <span className="emergency-contact">{contact}</span>;
   return (
     <a className="emergency-contact" href={target}>

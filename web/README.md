@@ -350,6 +350,41 @@ by the Python engine (`validate(text, lang)`).
   was attached, not a re-export of the simplified line. It's a `<button>` rather
   than an `<a href>` because the decode is async — there is no URL to point at
   until the click.
+- **A number written inside prose is tappable** — `render/contact.tsx` holds the
+  two rules that answer for a phone number or an email address, and they are
+  deliberately different rules for different questions. `contactHref` asks
+  whether a **whole field** is a contact (`misc.emergency_contacts[].contact`,
+  an activity's `contact`) and is generous, so a bare `112` or `15` links — that
+  is exactly the number you want to tap. `linkifyProse` asks whether there is one
+  **inside a sentence** and is much stricter, because a loose rule let into prose
+  claims `09:30-18:00`, `12 km`, a guidebook range `25-30` or a year span
+  `1789-1799`, and a number that dials the wrong thing is worse than one that
+  doesn't dial. Four things make that work:
+  - **One seam, `Clamp`.** Every piece of prose the book prints goes through it —
+    the cover summary, a day's intro, an activity's description, a booking's
+    note, the stay bar's — so linkifying there covers all eleven call sites with
+    one rule. It composes with the clamp for free: the truncation is CSS
+    (`-webkit-line-clamp`), so the full text is always in the DOM and a link in
+    the clipped tail comes back with *Show more*. Nothing had to be reordered.
+  - **The strictness is a digit floor plus a separator rule.** A leading `+` is
+    its own evidence (nothing else in a trip file opens that way), so it needs
+    only 7 digits; without one the floor is a full national number at **9**,
+    which clears every date (8 digits), price, distance, altitude and page range
+    a description carries. `:` and `,` are deliberately *not* separators — they
+    are what a time and a page list are made of. And a candidate with exactly
+    **one** separator is read as a decimal, since a real number is either grouped
+    (`01 42 60 30 30`) or solid (`0142603030`) — that is what keeps
+    `1234.56789` from dialling.
+  - **A candidate glued to something larger is dropped**, which is how a URL in a
+    note survives: `?id=1234567890` is not a phone number.
+  - **No PDF twin**, and this one is a decision rather than a limitation — fpdf
+    can emit a link and most readers honour `tel:`. But on paper the number is
+    already legible, a link would print as accent emphasis on a page that spends
+    its accent elsewhere, and `--ink-saver` drops every hyperlink — so the
+    affordance would exist only in the mode the book isn't printed in. The
+    `.prose-link` styling follows from the same reasoning: underlined in accent,
+    text left the colour of the prose around it, because the link is about being
+    tappable and not about mattering more.
 - **Past days are folded away, not just collapsed** — on Options → *Days* =
   **Collapse past** (the default), `Book.tsx` renders no `DayCard` at all for a
   day dated before today, putting one `.past-days` line at the top of the list
@@ -475,6 +510,17 @@ README schema tables). It is being built in phases — see
   continues from the name Save-as hands **back**, not the one it proposed, since
   the picker lets the user rename freely. The next name is shown in both
   buttons' tooltips.
+  The **exports carry the marker too** — `<slug> (v05).pdf`, `.ics` — through
+  `App.tsx`'s `exportFilename`, and the difference from `nextFilename` is the
+  whole point of it being a second derivation: a save *creates* a revision and so
+  takes `nextVersion(…)`, while an export *renders* the applied text and so takes
+  the version as it stands. So exporting twice overwrites its own previous book
+  (right — it is the same revision), and a folder can finally say which JSON
+  produced which PDF. An **unversioned** file keeps its plain name rather than
+  being given a `(v01)` it never had, which is every file the CLI, the Demo and a
+  blank scaffold produce. The CLI needed no counterpart: its `-o` default is
+  `Path(input).with_suffix(".pdf")`, which only swaps the extension, so it has
+  carried the marker all along — the two halves already agree.
 - **P5:** coordinate helpers. Every add/remove/reorder, insert scaffold and enum
   picker already exists from P1; P5 adds **paste "lat, long"** (fills both fields
   at once) and **Geocode from address** on each coordinate — a Nominatim lookup
