@@ -240,7 +240,8 @@ burger menu switches between views — **⚙️ Options**, **📖 Travel viewer*
 editor over the input JSON) — showing one at a time. Every control lives in the
 **Options** view (`src/Options.tsx`), grouped by theme — *File* (open / reopen /
 sample), *Language*, *Maps* (interactive toggle + redraw), *PDF export* (ink-saver
-/ include-maps / export) and *App* (install as an app / check for updates).
+/ include-maps / export), *Calendar export*, *GPX export* and *App* (install as
+an app / check for updates).
 Options is shown on first run so a file can be opened, then switches to the viewer
 once the book is on screen. Controls (and the Findings tab) are never hidden when
 unavailable — they're greyed with a hover tooltip explaining why (no file open,
@@ -446,6 +447,25 @@ by the Python engine (`validate(text, lang)`).
   level filter; **EN/FR** (in Options) toggles messages, dates and labels.
 - **Export PDF** runs `build_pdf` in-browser and downloads it (with ink-saver and
   maps toggles; the maps toggle defaults to the file's own `include_maps_in_render`).
+- **Export GPX** downloads the trip's GPX files as one `.zip` — the whole trip in
+  one document plus one file per day (a `<wpt>` per located stop, a `<rte>` per
+  leg of each drive, a `<trk>` per recording). One bridge call, `gpxZip`, which
+  is `gpx_bundle.gpx_zip` — the archive is built by Python's `zipfile`, so the
+  browser needs no zip library and the entries are named exactly as the CLI's
+  `gpx` command names the files it writes. Three things worth knowing:
+  - **It is not a pure transform, unlike the `.ics`.** A drive's line comes from
+    the router, so it needs the network for anything the day maps haven't
+    already routed — and is normally instant right after they have, off the same
+    cache.
+  - **It answers to no map option.** Not the *Include maps* export toggle, not
+    the file's `include_maps_in_render`, not a day's or a place's `show_map`:
+    those decide what a **book** carries, and asking for this export is itself
+    the opt-in for the geometry. A `coordinate` marked `hide_on_map` does stay
+    out — that one says "don't plot this".
+  - **Nothing located means an error, not an empty archive.** The bridge hands
+    back `None` and `engine.ts` throws a message naming the fix (add
+    coordinates, or turn on address inference in Edit → Defaults); a zip that
+    opens to nothing reads as a broken download.
 - PWA polish: **automatic updates** — `src/pwa/PwaProvider.tsx` owns the single
   service-worker registration and, when a new deploy is detected, activates it
   and reloads once (no DevTools needed). Connectivity lives in the Options
@@ -513,7 +533,7 @@ README schema tables). It is being built in phases — see
   continues from the name Save-as hands **back**, not the one it proposed, since
   the picker lets the user rename freely. The next name is shown in both
   buttons' tooltips.
-  The **exports carry the marker too** — `<slug> (v05).pdf`, `.ics` — through
+  The **exports carry the marker too** — `<slug> (v05).pdf`, `.ics`, `.zip` — through
   `App.tsx`'s `exportFilename`, and the difference from `nextFilename` is the
   whole point of it being a second derivation: a save *creates* a revision and so
   takes `nextVersion(…)`, while an export *renders* the applied text and so takes

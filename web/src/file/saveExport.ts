@@ -1,9 +1,18 @@
 // Save exported bytes to a file the user downloads — entirely client-side.
 
-/** A filesystem-friendly slug from a trip title (fallback "odysseyra"). */
+/** A filesystem-friendly slug from a trip title (fallback "odysseyra").
+ *
+ * Mirrored by `slug_for` in `gpx_bundle.py`, which names the files *inside* the
+ * GPX archive this module names the outside of — keep the two in step.
+ *
+ * The combining marks are removed rather than left to the non-alphanumeric
+ * pass: decomposing "Pyrénées" and then replacing every run of non-`a-z0-9`
+ * with a hyphen spells it `pyre-ne-es`, since each stripped accent leaves a
+ * separator behind where it stood. */
 export function slugify(name: string): string {
   const slug = name
-    .normalize("NFKD") // decompose accents so the next pass drops the marks
+    .normalize("NFKD") // decompose accents…
+    .replace(/\p{M}+/gu, "") // …then drop the marks themselves
     .replace(/\.json$/i, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

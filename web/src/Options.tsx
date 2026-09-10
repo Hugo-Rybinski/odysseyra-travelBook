@@ -78,6 +78,9 @@ export interface OptionsProps {
   // Calendar (ICS) export
   onExportIcs: () => void;
   exportingIcs: boolean;
+  // GPX export (a .zip of the whole trip + one file per day)
+  onExportGpx: () => void;
+  exportingGpx: boolean;
   // App
   checkForUpdate: () => void;
   checking: boolean;
@@ -383,6 +386,8 @@ export function Options(props: OptionsProps) {
     exporting,
     onExportIcs,
     exportingIcs,
+    onExportGpx,
+    exportingGpx,
     checkForUpdate,
     checking,
     updating,
@@ -682,6 +687,32 @@ export function Options(props: OptionsProps) {
               disabled={!!fileReason || exportingIcs || !engineReady}
             >
               {exportingIcs ? t("Exporting…") : t("Export ICS (calendar)")}
+            </button>
+          </Tip>
+        </div>
+      </section>
+
+      {/* The GPX export answers to no map option: whether the *book* prints maps
+          is a print choice, while asking for this is itself the opt-in for the
+          trip's geometry. It does need the network for any drive the day maps
+          haven't already routed, which the tip says. */}
+      <section className="opt-group">
+        <h2>{t("GPX export")}</h2>
+        <p className="opt-desc">{t("Export the trip's geometry as GPX files in one .zip — the whole trip in one file plus one per day — for Garmin, Komoot, OsmAnd and other offline-GPS apps.")}</p>
+        <div className="opt-row">
+          <Tip
+            text={
+              fileReason ||
+              engineReason ||
+              t("Download a .zip of GPX files: a waypoint per stop, a route per leg of each drive and a track per recorded hike. Needs the network for any drive not already routed.")
+            }
+          >
+            <button
+              className="btn"
+              onClick={onExportGpx}
+              disabled={!!fileReason || exportingGpx || !engineReady}
+            >
+              {exportingGpx ? t("Exporting…") : t("Export GPX (.zip)")}
             </button>
           </Tip>
         </div>

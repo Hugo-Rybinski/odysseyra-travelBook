@@ -195,6 +195,17 @@ export function buildIcs(text: string, lang = "en"): Promise<string> {
   return call("ics", [text, lang]);
 }
 
+/** Export the trip's GPX files as one `.zip`: the whole trip in one document
+ * plus one file per day. Unlike the `.ics` this is not a pure transform — a
+ * drive's line comes from the router and an unlocated stop may be geocoded — so
+ * it needs the network for anything the day maps haven't already cached.
+ *
+ * Throws when the trip has nothing located (an empty archive would read as a
+ * broken download). Returns the archive's bytes for download. */
+export function buildGpxZip(text: string, lang = "en"): Promise<Uint8Array> {
+  return call("gpxZip", [text, lang]);
+}
+
 /** Build a GPX route file for one road leg — the `legIndex`-th hop of the
  * `roadIndex`-th drive of day `dayIndex` (all 0-based) — from the geometry the
  * map draws for it. For a leg with no recording of its own; a leg that has one

@@ -12,6 +12,8 @@ real logic stays in the Python package.
                          -> PDF bytes (maps embedded when on). Address inference
                             has no override here: it is read from the file's
                             `defaults`, like everything else about the trip.
+- gpx_zip(text, lang)    -> the trip's GPX files as one .zip (whole trip + one
+                            per day), or None when nothing is located
 
 Each returns {"error": "..."} (validate/resolve) or raises (build) on failure;
 the JS wrappers surface it.
@@ -418,6 +420,35 @@ def ics(text, lang="en"):
         return json.dumps({"ics": build_ics(itinerary, lang=lang)})
     except Exception as exc:  # noqa: BLE001 — report, don't crash the worker
         return json.dumps({"error": str(exc)})
+
+
+def gpx_zip(text, lang="en"):
+    """Export the trip's GPX files as one ``.zip`` — the whole trip plus one file
+    per day (see :mod:`odysseyra_travelbook.gpx_bundle`).
+
+    Returns the archive's bytes, or **None** when the trip has no geometry at all
+    — the JS side turns that into a message, since an empty archive reads as a
+    broken download. Needs the network for anything not already in the routing /
+    geocoding cache the day maps filled.
+
+    Deliberately independent of the *Include maps* export toggle and of the
+    file's ``include_maps_in_render``: those decide whether a **book** carries
+    maps, and asking for this export is itself the opt-in for geometry."""
+    from odysseyra_travelbook.gpx_bundle import gpx_zip as _zip
+    from odysseyra_travelbook.maps import Cache
+
+    itinerary = _parsed(text)
+    cache = Cache.open()
+    try:
+        data = _zip(itinerary, cache, lang)
+    except ValueError:
+        return None
+    finally:
+        try:
+            cache.save()
+        except Exception:
+            pass
+    return data
 
 
 def build(text, lang="en", ink_saver=False, maps=None, map_provider="google"):

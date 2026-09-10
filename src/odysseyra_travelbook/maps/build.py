@@ -317,6 +317,43 @@ class _Resolver:
         return self._geo(f"{name}, {city}" if city else name)
 
 
+def located_points(day, itinerary, cache) -> list[tuple[str, float, float]]:
+    """Every located **stop** of ``day`` as ``(name, lat, long)``, in timeline
+    order — a place's nested activities included, right after the place itself.
+
+    The *export's* view of a day, where :func:`resolve_day` gives the **map's**.
+    It resolves each point exactly as the map does (``_Resolver.point_coord``, so
+    an explicit ``coordinate`` first, geocoding only under
+    ``infer_coordinates_from_address``, and ``hide_on_map`` still hides), and
+    then deliberately answers to none of the map-display switches: ``show_map``
+    drops the map an object *draws*, and a GPX file is not a map, so a place with
+    its zoom map off still contributes its nested stops here (``resolve_day``
+    resolves those only to place them on that map, hence only when it exists and
+    only for an area holding two of them).
+
+    A **drive's** own points are left out on purpose: which of them a map pins is
+    a display choice (``Road.display_*_on_maps``), and in a GPX the drive is one
+    named route per leg — so its departure, junctions and arrival are each named
+    as an end of a route, which is where a route's names belong.
+    """
+    r = _Resolver(itinerary, cache)
+    city = _anchor_city(day.city)
+    out: list[tuple[str, float, float]] = []
+    for act in getattr(day, "activities", []) or []:
+        if act.kind in ("buffer", "road"):
+            continue
+        coord = r.point_coord(act, city)
+        if coord:
+            out.append((act.title, coord[0], coord[1]))
+        for sub in getattr(act, "activities", []) or []:
+            if sub.kind in ("buffer", "road"):
+                continue
+            sc = r.point_coord(sub, city)
+            if sc:
+                out.append((sub.title, sc[0], sc[1]))
+    return out
+
+
 def _leg_coord(coord):
     """``(lat, long)`` for a transport endpoint, honoring ``hide_on_map``."""
     if coord is None or coord.hide_on_map:

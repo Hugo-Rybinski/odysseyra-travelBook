@@ -34,6 +34,10 @@ One itinerary file gets you:
 - **Hikes with a GPX** — embed a trail's `.gpx` in the hike and both renderers
   draw the **trail map** and its **elevation profile**, with the distance and
   climb measured off the recording.
+- **Calendar & GPX exports** — the trip as an `.ics` (one event per activity,
+  transport leg, car pick-up/drop-off and night) and as **GPX files** (one per
+  day plus one for the whole trip: a waypoint per stop, a route per leg of each
+  drive, a track per recording) for Garmin, Komoot, OsmAnd and the like.
 - **Smart inference** — trip dates, each day's date, activity schedules and
   durations are inferred, so you only write what's interesting.
 - **English & French** output, an **ink-saver** print mode, and a **stitch** mode
@@ -95,8 +99,8 @@ remove build artifacts / the venv + `node_modules`.
 
 ## Command-line tool
 
-`odysseyra-travelBook <command> [options]`, with six commands: `build`, `validate`,
-`ics`, `geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
+`odysseyra-travelBook <command> [options]`, with seven commands: `build`, `validate`,
+`ics`, `gpx`, `geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
 (`en` default, or `fr`) picks the language of *generated* text and diagnostics
 (never your JSON content), and `-v` / `--verbose` sets validation verbosity.
 Running `odysseyra-travelBook <file.json>` with no command implies `build`. Without the
@@ -198,6 +202,44 @@ local time of the place. Like `build`, it prints validation errors first but
 exports anyway. The browser viewer offers the same export under **Options →
 Calendar export**.
 
+### `gpx` — export the trip's geometry
+
+```bash
+odysseyra-travelBook gpx examples/france.json out/          # → out/*.gpx
+odysseyra-travelBook gpx examples/france_fr.json out/ --lang fr
+```
+
+Writes the trip's geometry as GPX files into the target directory (created if
+missing) — **one per day** plus **one holding the whole trip**, named
+`<slug>.gpx` / `<slug>-day-NN.gpx`. Load the day files the night before, or the
+trip file for the shape of the whole thing; the trip file is exactly the day
+files' geometry in one document, so the two can't disagree.
+
+Each day contributes:
+
+- a **`<wpt>` per located stop** — points of interest, places (their nested
+  activities included), hikes, meals, that night's accommodation, and the
+  endpoints of any transport leg in progress;
+- a **`<rte>` per leg of a drive**, named for the two places it runs between —
+  per leg, so a junction is named as the end of one route and the start of the
+  next;
+- a **`<trk>` per recording** — a hike's `gpx` and a road leg's, with the
+  hike's own named waypoints alongside. Routes are computed, tracks were
+  actually travelled, and the file says which is which.
+
+A transport leg gives its two endpoints and **no line**: its real path isn't
+known (a flight has none on the ground), and a crow-flight line is fine to draw
+on a map and wrong to hand a GPS. A day with nothing located contributes no
+file, and the numbering follows the day's position in the trip — so a missing
+`day-03` says that day had nothing.
+
+Drive geometry comes from the router, so the first export needs the network
+(`--cache-dir` picks the cache; later exports and PDF builds share it). The
+map switches don't apply — `include_maps_in_render` and `show_map` decide what a
+*book* prints, while asking for this export is itself the opt-in for the
+geometry — but a `coordinate` marked `hide_on_map` stays out. The browser viewer
+offers the same set as one `.zip` under **Options → GPX export**.
+
 ### `geocode` — bake in coordinates
 
 ```bash
@@ -266,8 +308,9 @@ The header's burger menu switches between views:
 - **⚙️ Options** — open a local JSON file (or reopen the last, or load the bundled
   sample); toggle the language (**EN / FR**, which localizes the whole UI, dates
   and diagnostics); toggle interactive maps and redraw them; and **export the
-  PDF** (with ink-saver / include-maps toggles). Also install the app and check
-  for updates.
+  PDF** (with ink-saver / include-maps toggles), the **`.ics` calendar** and the
+  trip's **GPX files** (as one `.zip` — the whole trip plus one file per day).
+  Also install the app and check for updates.
 - **📖 Travel viewer** — the rendered book (cover, day-by-day, transport,
   accommodation), prices with faded secondary-currency conversions. With maps on,
   each day's Python-rendered overview map fills in — numbered pin discs next to
@@ -377,15 +420,12 @@ Ideas that fit the existing architecture but aren't built yet. None are
 committed to — this is a backlog of directions, roughly ordered by how much
 they reuse of what's already here.
 
-- **GPX / KML export** — a new CLI sub-command (sibling to `ics`) emitting the
-  **whole trip** as GPX tracks/waypoints or KML, for Garmin, Komoot, OsmAnd and
-  other offline-GPS apps. The geocoding and OSRM routing pipeline (`maps/`)
-  already produces the points and route geometry it would serialize, and
-  `models/gpx_export.py` already writes a route out — the whole-trip version is
-  the same serializer over more geometry. (Two pieces of this exist in the
-  viewer: a hike's own attached GPX comes back out as the file you attached, and
-  a drive's leg can have one **built** from the route the map draws. Neither is
-  the trip being exported in one file.)
+- **KML export** — the same geometry the [`gpx`](#gpx--export-the-trips-geometry)
+  command now writes, as KML instead, for Google Earth and the apps that prefer
+  it. `gpx_bundle.py` already gathers the trip's waypoints, routes and tracks,
+  so this is a second serializer beside `models/gpx_export.py` rather than any
+  new geometry — plus the question of what KML should do with the styling GPX
+  has no room for (a colour per day, say).
 - **PDF cover photo / per-day hero images** — let `travel_description` carry a
   cover image and each day an optional hero image, rendered behind the cover
   banner and day header. Today the layout is typography + maps only.

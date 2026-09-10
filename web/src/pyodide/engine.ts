@@ -128,6 +128,19 @@ function envelope<T>(raw: string, key: string): T {
   return parsed[key] as T;
 }
 
+/** Copy Python `bytes` out of the wasm heap. It usually arrives as a PyProxy
+ * (needing `.toJs()`); the Uint8Array branch guards against a future Pyodide
+ * auto-converting it. */
+function pyBytes(
+  result: unknown,
+): Uint8Array {
+  if (result instanceof Uint8Array) return new Uint8Array(result);
+  const proxy = result as { toJs: () => Uint8Array; destroy?: () => void };
+  const bytes = new Uint8Array(proxy.toJs() as Uint8Array);
+  proxy.destroy?.();
+  return bytes;
+}
+
 // Every call runs the bridge synchronously: Python is single-threaded, and the
 // maps code fetches tiles over a *blocking* XHR (see netbridge.ts). In the
 // worker that only blocks the worker, which is the whole point of hosting it
@@ -172,16 +185,21 @@ function dispatch<O extends Op>(bridge: Bridge, op: O, args: OpArgs<O>): OpResul
       const [text, lang] = args as OpArgs<"ics">;
       return envelope<string>(bridge.ics(text, lang) as string, "ics") as OpResult<O>;
     }
+    case "gpxZip": {
+      const [text, lang] = args as OpArgs<"gpxZip">;
+      const result = bridge.gpx_zip(text, lang);
+      // None: nothing on the trip is located, so there is no file to hand back.
+      // An empty archive would download and open to nothing, which reads as a
+      // broken export rather than an answer.
+      if (result == null) {
+        throw new Error(
+          "Nothing to export: no coordinates on this trip. Add them in the Edit tab, or turn on “infer coordinates from address” in its Defaults section.",
+        );
+      }
+      return pyBytes(result) as OpResult<O>;
+    }
     case "build": {
-      const result = bridge.build(...(args as OpArgs<"build">)) as
-        | Uint8Array
-        | { toJs: () => Uint8Array; destroy?: () => void };
-      // Python `bytes` usually comes back as a PyProxy (needs .toJs()); guard in
-      // case a future Pyodide auto-converts it to a Uint8Array.
-      if (result instanceof Uint8Array) return new Uint8Array(result) as OpResult<O>;
-      const bytes = new Uint8Array(result.toJs() as Uint8Array); // copy out of wasm heap
-      result.destroy?.();
-      return bytes as OpResult<O>;
+      return pyBytes(bridge.build(...(args as OpArgs<"build">))) as OpResult<O>;
     }
   }
   throw new Error(`Unknown engine op: ${String(op)}`);

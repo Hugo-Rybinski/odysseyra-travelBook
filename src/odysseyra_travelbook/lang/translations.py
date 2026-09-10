@@ -638,6 +638,13 @@ _FR = {
     "this fragment must be a JSON object.":
         "ce fragment doit être un objet JSON.",
     "Wrote {path}  ({days} days)": "Écrit {path}  ({days} jours)",
+    # -- GPX export (the `gpx` sub-command) --
+    "Wrote {n} GPX file(s) to {path}": "Écrit {n} fichier(s) GPX dans {path}",
+    "Nothing to export: no coordinates on this trip. Add them by hand, run "
+    "`geocode`, or turn on defaults.infer_coordinates_from_address.":
+        "Rien à exporter : aucune coordonnée dans ce voyage. Ajoutez-les à la "
+        "main, lancez `geocode`, ou activez "
+        "defaults.infer_coordinates_from_address.",
     # -- validation: field descriptions --
     "the trip title shown on the cover": "le titre du voyage sur la couverture",
     "the subtitle under the cover title": "le sous-titre sous le titre",
@@ -1211,6 +1218,8 @@ _FR = {
     # -- ICS (calendar) export --
     "Validation errors (exporting anyway):":
         "Erreurs de validation (export quand même) :",
+    # "Day {n}" is shared with the GPX export, where it names a file and labels
+    # every waypoint's <desc>.
     "Day {n}": "Jour {n}",
     "Type": "Type",
     "Drive": "Route",

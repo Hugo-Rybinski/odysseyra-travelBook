@@ -21,6 +21,7 @@ from .models import (
     schedule_activities,
     to_dict,
 )
+from .gpx_bundle import gpx_files, gpx_zip, write_gpx_files
 from .ics import build_ics
 from .pdf import build_pdf
 from .validate import Finding, format_findings, validate_text
@@ -50,6 +51,9 @@ __all__ = [
     "to_dict",
     "build_pdf",
     "build_ics",
+    "gpx_files",
+    "gpx_zip",
+    "write_gpx_files",
     "validate_text",
     "format_findings",
 ]

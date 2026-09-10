@@ -85,6 +85,11 @@ pdf: $(VENV_STAMP) ## Build a PDF: make pdf FILE=examples/x.json [OUT=out.pdf]
 	$(BIN)/odysseyra-travelBook build "$(FILE)" -o "$(or $(OUT),out.pdf)"
 	@echo "✓ wrote $(or $(OUT),out.pdf)"
 
+.PHONY: gpx
+gpx: $(VENV_STAMP) ## Export GPX: make gpx FILE=examples/x.json [OUT=gpx/]
+	@test -n "$(FILE)" || { echo "usage: make gpx FILE=path/to.json [OUT=gpx/]"; exit 2; }
+	$(BIN)/odysseyra-travelBook gpx "$(FILE)" "$(or $(OUT),gpx)"
+
 .PHONY: test
 test: $(VENV_STAMP) ## Run the Python test suite
 	$(BIN)/pytest

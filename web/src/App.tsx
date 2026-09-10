@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   boot,
+  buildGpxZip,
   buildIcs,
   buildLegGpx,
   buildPdf,
@@ -201,6 +202,7 @@ export function App() {
   const [mapsExport, setMapsExport] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingIcs, setExportingIcs] = useState(false);
+  const [exportingGpx, setExportingGpx] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
   // Which single day is being redrawn from the Options cache listing (null when
   // none). Kept apart from `redrawing`, which means "the whole file".
@@ -721,6 +723,25 @@ export function App() {
     }
   }, [source, lang, exportFilename]);
 
+  // Export the trip's GPX files — one per day plus one for the whole trip — as
+  // a single .zip. Unlike the .ics this is not a pure transform: a drive's line
+  // comes from the router, so it needs the network for anything the day maps
+  // haven't already cached. It answers to no map option either — whether the
+  // *book* carries maps is a different question from asking for the geometry.
+  const onExportGpx = useCallback(async () => {
+    if (!source) return;
+    setExportingGpx(true);
+    setError(null);
+    try {
+      const bytes = await buildGpxZip(source.text, lang);
+      downloadBytes(bytes, exportFilename(".zip"), "application/zip");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setExportingGpx(false);
+    }
+  }, [source, lang, exportFilename]);
+
   // Redraw this file's maps: drop its cached images, clear them on screen (so
   // the per-day loaders reappear) and re-render every day, bypassing the cache.
   const onRedraw = useCallback(async () => {
@@ -1008,6 +1029,7 @@ export function App() {
     if (applying) items.push({ id: "apply", label: t("Applying changes…") });
     if (exporting) items.push({ id: "pdf", label: t("Building the PDF…") });
     if (exportingIcs) items.push({ id: "ics", label: t("Building the calendar…") });
+    if (exportingGpx) items.push({ id: "gpx", label: t("Building the GPX files…") });
     if (mapProgress) {
       items.push({
         id: "maps",
@@ -1033,6 +1055,7 @@ export function App() {
     applying,
     exporting,
     exportingIcs,
+    exportingGpx,
     mapProgress,
     redrawing,
     redrawingDay,
@@ -1220,6 +1243,8 @@ export function App() {
           exporting={exporting}
           onExportIcs={onExportIcs}
           exportingIcs={exportingIcs}
+          onExportGpx={onExportGpx}
+          exportingGpx={exportingGpx}
           checkForUpdate={checkForUpdate}
           checking={checking}
           updating={updating}

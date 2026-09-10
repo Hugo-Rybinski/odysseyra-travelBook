@@ -169,6 +169,13 @@ export const FR: Record<string, string> = {
   "Download an .ics file with one event per activity, transport leg, car pick-up/drop-off and accommodation booking":
     "Télécharger un fichier .ics avec un événement par activité, trajet, prise/restitution de voiture et réservation d'hébergement",
   "Export ICS (calendar)": "Exporter en ICS (calendrier)",
+  "GPX export": "Export GPX",
+  "Export the trip's geometry as GPX files in one .zip — the whole trip in one file plus one per day — for Garmin, Komoot, OsmAnd and other offline-GPS apps.":
+    "Exportez la géométrie du voyage en fichiers GPX dans un .zip — le voyage entier dans un fichier, plus un par jour — pour Garmin, Komoot, OsmAnd et autres applis GPS hors ligne.",
+  "Download a .zip of GPX files: a waypoint per stop, a route per leg of each drive and a track per recorded hike. Needs the network for any drive not already routed.":
+    "Télécharger un .zip de fichiers GPX : un point par étape, un itinéraire par tronçon de route et une trace par randonnée enregistrée. Nécessite le réseau pour toute route pas encore calculée.",
+  "Export GPX (.zip)": "Exporter en GPX (.zip)",
+  "Building the GPX files…": "Génération des fichiers GPX…",
   "Install Odysseyra TravelBook as an app on this device":
     "Installer Odysseyra TravelBook comme application sur cet appareil",
   "Install as an app": "Installer comme application",

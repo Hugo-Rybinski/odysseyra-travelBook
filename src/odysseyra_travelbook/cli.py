@@ -3,6 +3,7 @@
     odysseyra-travelBook build trip.json -o trip.pdf   # build a PDF (default)
     odysseyra-travelBook validate trip.json            # check the JSON, report problems
     odysseyra-travelBook stitch trip/                   # assemble one JSON from a directory
+    odysseyra-travelBook gpx trip.json out/             # write the trip's GPX files
 
 For convenience the ``build`` sub-command may be omitted:
 ``odysseyra-travelBook trip.json -o trip.pdf`` still works.
@@ -102,6 +103,52 @@ def _run_ics(input_path: Path, output: Path | None, lang: str) -> int:
         return 1
     print(tr("Wrote {path}  ({days} days)", lang).format(
         path=output, days=len(itinerary.days)))
+    return 0
+
+
+def _run_gpx(input_path: Path, directory: Path, lang: str,
+             cache_dir: Path | None = None) -> int:
+    """Export the trip as GPX files — one per day plus one for the whole trip —
+    into ``directory``.
+
+    Needs the network the first time (drive routes come from OSRM, and an
+    unlocated stop is geocoded when ``infer_coordinates_from_address`` is on);
+    afterwards it is served from the same cache the map renders fill.
+    """
+    from .gpx_bundle import write_gpx_files
+    from .maps import Cache
+
+    try:
+        findings = validate_text(Path(input_path).read_text(encoding="utf-8"), lang)
+    except OSError:
+        findings = []
+    if any(f.level == "error" for f in findings):
+        print(tr("Validation errors (exporting anyway):", lang), file=sys.stderr)
+        print(format_findings(findings, verbose=1, lang=lang), file=sys.stderr)
+
+    try:
+        itinerary = Itinerary.from_json_file(input_path)
+        cache = Cache.open(cache_dir)
+        written = write_gpx_files(itinerary, directory, cache, lang)
+        try:
+            cache.save()
+        except OSError:
+            pass
+    except ItineraryError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if not written:
+        # Every file would have been empty, so none was written. Say which
+        # switch is the usual cause rather than reporting a bare zero.
+        print(tr("Nothing to export: no coordinates on this trip. Add them by "
+                 "hand, run `geocode`, or turn on "
+                 "defaults.infer_coordinates_from_address.", lang),
+              file=sys.stderr)
+        return 1
+    for path in written:
+        print(f"  {path}")
+    print(tr("Wrote {n} GPX file(s) to {path}", lang).format(
+        n=len(written), path=Path(directory)))
     return 0
 
 
@@ -230,6 +277,16 @@ def main(argv: list[str] | None = None) -> int:
                    help="output .ics path (default: <input>.ics)")
     _add_lang(i)
 
+    x = sub.add_parser("gpx", help="export the trip as GPX files (one per day "
+                       "plus one for the whole trip) for an offline-GPS app")
+    x.add_argument("input", type=Path, help="path to the itinerary JSON")
+    x.add_argument("directory", type=Path,
+                   help="directory to write the .gpx files into (created if "
+                        "missing)")
+    x.add_argument("--cache-dir", type=Path, default=None,
+                   help="where to cache the geocode / route results")
+    _add_lang(x)
+
     v = sub.add_parser("validate", help="validate a travel JSON and report problems")
     v.add_argument("input", type=Path, help="path to the itinerary JSON")
     v.add_argument("-v", "--verbose", type=int, choices=(1, 2, 3), default=2,
@@ -264,7 +321,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="parent directory in which to create the skeleton")
     c.add_argument("name", help="name of the skeleton directory to create")
 
-    _commands = ("build", "validate", "stitch", "create-skeleton", "geocode", "ics")
+    _commands = ("build", "validate", "stitch", "create-skeleton", "geocode",
+                 "ics", "gpx")
     # Backward-compat: `odysseyra-travelBook trip.json ...` implies `build`.
     if argv and argv[0] not in _commands + ("-h", "--help"):
         argv = ["build"] + argv
@@ -280,6 +338,9 @@ def main(argv: list[str] | None = None) -> int:
         return _run_geocode(args.input, args.output, args.country, args.lang)
     if args.command == "ics":
         return _run_ics(args.input, args.output, args.lang)
+    if args.command == "gpx":
+        return _run_gpx(args.input, args.directory, args.lang,
+                        cache_dir=args.cache_dir)
     if args.command == "build":
         return _run_build(args.input, args.output, args.lang, args.ink_saver,
                           maps=args.maps, cache_dir=args.cache_dir,

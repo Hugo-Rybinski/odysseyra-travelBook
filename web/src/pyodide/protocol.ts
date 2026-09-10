@@ -37,6 +37,10 @@ export interface OpMap {
     result: { gpx: string; name: string };
   };
   ics: { args: [text: string, lang: string]; result: string };
+  // The trip's GPX files as one .zip — the whole trip plus one per day. Needs
+  // the network for any route/geocode not already cached, so unlike `ics` it is
+  // not a pure transform.
+  gpxZip: { args: [text: string, lang: string]; result: Uint8Array };
   build: {
     args: [
       text: string,

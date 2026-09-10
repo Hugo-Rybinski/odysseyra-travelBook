@@ -19,6 +19,7 @@ odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # out
 odysseyra-travelBook build examples/pyrenees.json --maps -o out.pdf   # per-day maps
 odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
 odysseyra-travelBook ics examples/pyrenees.json -o trip.ics        # export a calendar (.ics) for Google Calendar
+odysseyra-travelBook gpx examples/pyrenees.json out/               # write the trip's GPX files (whole trip + one per day)
 
 # validate (-v 1 errors, 2 +warnings [default], 3 +info; -l/--lang en|fr)
 odysseyra-travelBook validate examples/pyrenees.json
@@ -38,7 +39,8 @@ Everything runs through the venv (`.venv/bin/...`); there is no `uv`. Python 3.1
 
 A root `Makefile` wraps all of this and installs deps on demand (venv for the
 CLI, npm for the web viewer): `make cli` (install/verify the CLI), `make test`,
-`make pdf FILE=… OUT=…`, `make wheel` (rebuild the in-browser wheel), `make dev`
+`make pdf FILE=… OUT=…`, `make gpx FILE=… OUT=…`,
+`make wheel` (rebuild the in-browser wheel), `make dev`
 / `make preview` (run the PWA locally), `make clean`/`distclean`. It's a
 convenience layer over the raw commands above — both still work.
 
@@ -83,6 +85,12 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     (`GpxWaypoint`, see the trail-decoration bullet). Pure stdlib, no network.
     Ascent is smoothed + accumulated with hysteresis so altimeter jitter isn't
     counted as climb.
+  - `gpx_export.py` — the mirror image: geometry *out*. `gpx_document(name,
+    waypoints=, routes=, tracks=)` (schema order enforced, no timestamp so an
+    export is byte-stable) plus `route_gpx`, its single-route case behind the
+    viewer's *(Build GPX file)*. `GpxPoint`/`GpxLine` are the two shapes; which
+    of `<rte>`/`<trk>` a line becomes is the **caller's** call — computed vs.
+    recorded. Every serializer lives here rather than growing a second writer.
   - `opening.py` — a point of interest's `opening_days` / `opening_hours` parsed
     into one `Opening` (`WEEKDAYS`, `parse_opening`, `day_runs`/`hours_display`,
     `closed_on`/`covers`). Pure data: the localized naming lives in `lang/dates.py`.
@@ -152,6 +160,9 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   polyline into dash pieces and `arrows_along()` spacing a trail's direction
   heads),
   `build.py` (`resolve_day` → points/routes/area-details,
+  `located_points` → a day's stops for the *export* where `resolve_day` gives
+  the *map*'s — same `_Resolver`, so `hide_on_map` and the geocoding switch
+  still hold, but answering to none of the map-display switches,
   `day_legs` → a day's transport legs as straight endpoint pairs,
   `render_day_maps` → PIL images, plus `resolve_trip`/`_trip_extent`/
   `render_trip_map` for the whole-trip map and `render_hike_map(track, …)` for a
@@ -203,6 +214,15 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   at `defaults.accommodation_start_time` to `accommodation_end_time` (midnight by default).
   Descriptions are packed with each object's detail, localized via `lang.tr`.
   Pure stdlib (RFC 5545 line-folding + text escaping), no dependencies.
+- **`gpx_bundle.py`** — `gpx_files(itinerary, cache, lang)` →
+  `[(filename, GPX text)]`: the **whole trip** in one document plus **one file
+  per day**, with `write_gpx_files` (CLI `gpx <input> <directory>`) and
+  `gpx_zip` (the viewer's **Options → GPX export**, zipped by Python's
+  `zipfile` so the browser needs no zip library) around it. It gathers the
+  geometry; `models/gpx_export.py` serializes it. See the *GPX export* bullet
+  under "Key design decisions" for what each kind of geometry becomes and which
+  switches reach it. Imports `maps/` lazily, like `cli.py` does, so the package
+  import stays Pillow-free.
 - **`stitch.py`** — `aggregate(directory, ask=input)` assembles one itinerary
   dict from a fragment directory (`travel_description.json`, `defaults.json`,
   `misc.json`, and
@@ -211,10 +231,14 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
   scaffolds the reverse — an empty fragment dir (`SKELETON_DIRS` sub-folders +
   a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
-- `cli.py` — argparse CLI (`build` / `validate` / `ics` / `stitch` / `geocode` /
-  `create-skeleton`, `--lang`, `--verbose`). `build` also takes `--maps/--no-maps`,
+- `cli.py` — argparse CLI (`build` / `validate` / `ics` / `gpx` / `stitch` /
+  `geocode` / `create-skeleton`, `--lang`, `--verbose`). `build` also takes
+  `--maps/--no-maps`,
   `--map-provider`, `--cache-dir`; `geocode` fills coordinates and writes them back
-  (its `--country` defaults to `defaults.inference_countries`).
+  (its `--country` defaults to `defaults.inference_countries`); `gpx` takes the
+  **target directory** as its second positional (created if missing) plus
+  `--cache-dir`, and exits 1 with the likely cause when nothing on the trip is
+  located.
 
 ## Key design decisions
 
@@ -1239,8 +1263,63 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   POI's structured `contact`, so one card exercises every path. No format change
   and no `SCHEMA_VERSION` bump — but Python moved, so the **wheel needs
   rebuilding**.
+- **The GPX export is one geometry at two granularities.** `gpx_bundle.py`
+  writes the trip as **one file per day plus one for the whole trip** (CLI
+  `gpx <input> <directory>`, the viewer's Options → GPX export as a single
+  `.zip`). The trip file is exactly the day files' geometry in one document —
+  duplicate waypoints collapsed — so the two can never disagree, and each day
+  file is what you load the night before. Filenames are
+  `<slug>.gpx` / `<slug>-day-NN.gpx`, identical in the archive and on disk, and
+  `NN` is the day's **position in the trip**: a day with nothing located
+  contributes no file at all, so a missing `day-03` says that day had nothing
+  rather than shifting the rest. Five things are load-bearing:
+  - **Route vs. track is the whole design.** A `<rte>` is a way to go, a `<trk>`
+    is where something went, so a **computed** drive leg is a route and a
+    **recording** (a hike's `gpx`, a road leg's) is a track — the distinction
+    `models/gpx_export.py` was written for, now asked of every line. A drive is
+    **one route per leg**, named for the two places it runs between, which is
+    also why a drive's own map pins are *not* exported: a junction is named as
+    the end of one route and the start of the next, and
+    `display_intermediate_point_on_maps` is a decision about a map's pins.
+  - **A transport leg gives its two endpoints and no line.** Its real path isn't
+    known (a flight has none on the ground), which is exactly why the maps draw
+    it *dotted* — and the rule already in force for a crow-flight route
+    (`route(…, fallback=False)` behind the viewer's *(Build GPX file)*) holds
+    here: fine to draw, wrong to hand a GPS. Each end stands on its own, unlike
+    the line, which needs both.
+  - **No map switch reaches it, and one coordinate flag does.**
+    `include_maps_in_render` and `include_hike_maps` decide what a **book**
+    carries; `show_map` drops the map an object *draws*. A GPX file is not a
+    map, and asking for this export **is** the opt-in for geometry — so a day
+    that hides its overview map, a place that hides its zoom map and a trip that
+    prints no maps at all all export in full. `coordinate.hide_on_map` is the
+    exception, and earns it by meaning "don't plot this point", which is the
+    nearest thing the format has to "leave it out"; honouring it is also what
+    keeps the export from drifting from the maps. That divide is why
+    `maps/build.py` gained **`located_points`** beside `resolve_day`: the map's
+    resolver drops a place's nested stops unless it is drawing that place's zoom
+    map, which for a file of waypoints is a map decision distorting data.
+  - **Nothing to export is an error, not an empty file.** `gpx_files` returns
+    `[]`, and both callers say so: the CLI exits 1 naming the likely cause
+    (write coordinates, run `geocode`, or turn on
+    `infer_coordinates_from_address`), and `bridge.gpx_zip` hands back `None`
+    for `engine.ts` to throw on — a zip that opens to nothing reads as a broken
+    download.
+  - **It is byte-stable, and it is not a pure transform.** No timestamp goes
+    into the GPX or the zip entries (`_ZIP_EPOCH`), so two exports of one trip
+    are identical and diffable. But unlike the `.ics` it needs the router — so
+    it takes a `maps.Cache` and is normally instant right after the day maps
+    have drawn, off the same cache. `slug_for` mirrors the viewer's
+    `file/saveExport.ts`'s `slugify` (which had to start stripping combining
+    marks: NFKD-then-replace-non-alphanumerics spells *Pyrénées* `pyre-ne-es`,
+    since each dropped accent leaves a separator where it stood) — the browser
+    names the archive, Python names what's inside it. No format change and no
+    resolved-`Day` change, so **no `SCHEMA_VERSION` bump** — but Python moved,
+    so the wheel needs rebuilding. `tests/test_gpx_bundle.py` holds the
+    decisions above; no example changed (`france.json` already carries a drive,
+    a recording and a flight).
 - **An export carries the file's `(vNN)`.** `App.tsx`'s `exportFilename` names
-  the PDF and the `.ics` `<slug> (v05).pdf` when the JSON they were built from
+  the PDF, the `.ics` and the GPX `.zip` `<slug> (v05).pdf` when the JSON they were built from
   carried a marker, and it is a **second derivation** beside `nextFilename`
   rather than a shared one: a save *creates* a revision so it takes
   `nextVersion(…)`, an export *renders* the applied text so it takes the version
