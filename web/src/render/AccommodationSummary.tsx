@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Accommodation, Itinerary } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
-import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
-import { CardHead, Price, Status } from "./Parts";
+import {
+  allItemsPast,
+  collapsedForItems,
+  foldedForItems,
+  type CollapseView,
+  type DateSpan,
+} from "./collapse";
+import { CardHead, PastFold, Price, Status, usePastFold } from "./Parts";
 import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, useMapProvider } from "./nav";
@@ -33,6 +39,13 @@ export function AccommodationSummary({
   );
   const [open, setOpen] = useState(() => collapsedForItems(view, spans));
   useEffect(() => setOpen(collapsedForItems(view, spans)), [view, spans]);
+
+  // Nights already slept are folded away entirely rather than left as a stack
+  // of collapsed cards — the day list's treatment of days already travelled,
+  // applied to the stays (see `foldedForItems`).
+  const fold = useMemo(() => foldedForItems(view, spans), [view, spans]);
+  const allPast = useMemo(() => allItemsPast(spans), [spans]);
+  const past = usePastFold(fold, allPast);
   const toggle = (i: number) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -46,9 +59,19 @@ export function AccommodationSummary({
     <section className="section accommodation" aria-label={tr(lang, "accommodation")}>
       <h2>{tr(lang, "accommodation")}</h2>
       <div className="cards">
-        {stays.map((a, i) => (
-          <StayCard key={i} a={a} lang={lang} collapsed={open.has(i)} onToggle={() => toggle(i)} />
-        ))}
+        <PastFold
+          n={fold.size}
+          shown={past.shown}
+          onToggle={past.toggle}
+          lang={lang}
+          showKey="showPastStays"
+          hideKey="hidePastStays"
+        />
+        {stays.map((a, i) =>
+          past.hidden(i) ? null : (
+            <StayCard key={i} a={a} lang={lang} collapsed={open.has(i)} onToggle={() => toggle(i)} />
+          ),
+        )}
       </div>
     </section>
   );

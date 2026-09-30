@@ -1236,9 +1236,10 @@ body {
   border-radius: 14px;
   overflow: hidden;
 }
-/* The single line the days already travelled are folded behind, on the
-   "collapse past" view. Deliberately quiet — dashed, muted, no card of its own
-   — so it reads as a seam in the list rather than as another day. */
+/* The single line the days already travelled are folded behind, on every view
+   that collapses them (all but "expand all"). Deliberately quiet — dashed,
+   muted, no card of its own — so it reads as a seam in the list rather than as
+   another day. */
 .past-days {
   display: flex;
   align-items: center;
@@ -1265,6 +1266,12 @@ body {
 .past-days-caret {
   color: var(--accent);
   line-height: 1;
+}
+/* The same line inside a card list (transport, car rentals, stays) takes the
+   cards' corner radius rather than a day band's, so the seam matches the boxes
+   it stands in for. */
+.cards > .past-days {
+  border-radius: 10px;
 }
 .day-band {
   display: flex;

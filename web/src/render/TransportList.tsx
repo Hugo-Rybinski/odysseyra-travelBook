@@ -7,8 +7,14 @@ import type {
   TransportLeg,
 } from "../types/resolved";
 import { fill, fmtDate, fmtKm, tr, type Lang } from "./format";
-import { collapsedForItems, type CollapseView, type DateSpan } from "./collapse";
-import { CardHead, Price, Status } from "./Parts";
+import {
+  allItemsPast,
+  collapsedForItems,
+  foldedForItems,
+  type CollapseView,
+  type DateSpan,
+} from "./collapse";
+import { CardHead, PastFold, Price, Status, usePastFold } from "./Parts";
 import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, transportTimes, useMapProvider } from "./nav";
@@ -53,6 +59,19 @@ export function TransportList({
   useEffect(() => setTOpen(collapsedForItems(view, tSpans)), [view, tSpans]);
   useEffect(() => setCOpen(collapsedForItems(view, cSpans)), [view, cSpans]);
 
+  // Bookings already travelled on are folded away entirely, behind one line —
+  // the same treatment the day list gives days already travelled, and for the
+  // same reason: a flight you have taken is a row between you and the one you
+  // haven't. The two lists here fold **separately** (each with its own line at
+  // its own heading), since their past runs have nothing to do with each other
+  // and one line covering both would hide cards under the wrong heading.
+  const tFold = useMemo(() => foldedForItems(view, tSpans), [view, tSpans]);
+  const cFold = useMemo(() => foldedForItems(view, cSpans), [view, cSpans]);
+  const tAllPast = useMemo(() => allItemsPast(tSpans), [tSpans]);
+  const cAllPast = useMemo(() => allItemsPast(cSpans), [cSpans]);
+  const tPast = usePastFold(tFold, tAllPast);
+  const cPast = usePastFold(cFold, cAllPast);
+
   const toggle = (set: (fn: (p: Set<number>) => Set<number>) => void) => (i: number) =>
     set((prev) => {
       const next = new Set(prev);
@@ -69,30 +88,50 @@ export function TransportList({
       <h2>{tr(lang, "transport")}</h2>
 
       <div className="cards">
-        {transports.map((t, i) => (
-          <TransportCard
-            key={i}
-            t={t}
-            lang={lang}
-            collapsed={tOpen.has(i)}
-            onToggle={() => toggleT(i)}
-          />
-        ))}
+        <PastFold
+          n={tFold.size}
+          shown={tPast.shown}
+          onToggle={tPast.toggle}
+          lang={lang}
+          showKey="showPastBookings"
+          hideKey="hidePastBookings"
+        />
+        {transports.map((t, i) =>
+          tPast.hidden(i) ? null : (
+            <TransportCard
+              key={i}
+              t={t}
+              lang={lang}
+              collapsed={tOpen.has(i)}
+              onToggle={() => toggleT(i)}
+            />
+          ),
+        )}
       </div>
 
       {car_rentals.length > 0 && (
         <>
           <h3 className="sub">{tr(lang, "carRentals")}</h3>
           <div className="cards">
-            {car_rentals.map((c, i) => (
-              <CarRentalCard
-                key={i}
-                c={c}
-                lang={lang}
-                collapsed={cOpen.has(i)}
-                onToggle={() => toggleC(i)}
-              />
-            ))}
+            <PastFold
+              n={cFold.size}
+              shown={cPast.shown}
+              onToggle={cPast.toggle}
+              lang={lang}
+              showKey="showPastRentals"
+              hideKey="hidePastRentals"
+            />
+            {car_rentals.map((c, i) =>
+              cPast.hidden(i) ? null : (
+                <CarRentalCard
+                  key={i}
+                  c={c}
+                  lang={lang}
+                  collapsed={cOpen.has(i)}
+                  onToggle={() => toggleC(i)}
+                />
+              ),
+            )}
           </div>
         </>
       )}

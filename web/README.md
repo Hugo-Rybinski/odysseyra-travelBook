@@ -389,17 +389,47 @@ by the Python engine (`validate(text, lang)`).
     PDF underlines in the prose's colour outright. Neither sets the token in
     accent, because the link is about being tappable and not about mattering
     more.
-- **Past days are folded away, not just collapsed** — on Options → *Days* =
-  **Collapse past** (the default), `Book.tsx` renders no `DayCard` at all for a
-  day dated before today, putting one `.past-days` line at the top of the list
-  in their place; the other three views are untouched, since "collapse all" is
-  *asking* for the bands. Three things it has to get right: the past set is the
-  same rule `collapsedFor`'s `collapse-past` branch uses (keep the two in step —
-  one hides what the other collapses); switching the view or loading another
-  itinerary re-folds them, like the collapsed preset it sits beside; and `jump`
-  reveals the run before scrolling, because the cover's day-by-day table and the
-  Overview tab both jump by *day number* and neither knows what is on screen —
-  without that, jumping to a past day scrolls to an element that isn't there.
+- **What's behind you is folded away, not just collapsed** — the day list
+  renders no `DayCard` at all for a day dated before today, putting one
+  `.past-days` line at the top of the list in their place, and the **three card
+  lists do the same**: transport bookings (`TransportList.tsx`), car rentals
+  (its second list, folding separately — their past runs have nothing to do with
+  each other, and one line covering both would hide cards under the wrong
+  heading) and stays (`AccommodationSummary.tsx`). One rule for all four, in
+  `collapse.ts` (`foldedForItems` / `allItemsPast`) with the state and the line
+  in `Parts.tsx` (`usePastFold` / `PastFold`) — which is also why `Book.tsx` now
+  maps its days onto `DateSpan`s and goes through `collapsedForItems` like the
+  lists, instead of keeping a second copy of the three collapse rules.
+  It applies to **every** Options view that collapses the entry —
+  **Collapse past** (the default), **Collapse all** and **Collapse all but
+  current** — since a row you have to scroll past to reach today costs the same
+  wherever the preset that drew it came from; **Expand all** keeps them, having
+  been asked for everything. Each list names what it holds in its own label pair
+  (`showPast*` / `hidePast*` in `format.ts`), because two of them sit on the same
+  page and "Show past entries" twice would say nothing. Four things it has to get
+  right:
+  - **The fold set is `past ∩ collapsed`**, not the past entries outright, so
+    *an entry the view leaves expanded is never folded away*. That is what makes
+    `current-only` safe: it falls back to the first entry when nothing covers
+    today, and that entry can itself be past — hiding it would fold away the one
+    card the view exists to show. Deriving it from `collapsedForItems` is also
+    what keeps the two in step by construction (under `collapse-past` the
+    intersection *is* the past entries).
+  - **A list whose every entry is past opens revealed.** `allItemsPast` is
+    measured on the whole list rather than on the fold set — so `current-only`'s
+    kept entry doesn't stop it counting — and seeds `usePastFold`'s state.
+    Otherwise a finished trip rendered as a cover and one line, which reads as a
+    broken render; the line then reads *Hide past …* and is how you put the run
+    away. An undated entry is never past, so a trip with no dates never lands
+    here.
+  - **Switching the view or loading another itinerary re-folds them**, like the
+    collapsed preset it sits beside (back to `allItemsPast`, not to `false`).
+    The signal is the fold set's *identity*, which each caller memoizes on its
+    view + list.
+  - **`jump` reveals the run before scrolling** (`usePastFold`'s `reveal`),
+    because the cover's day-by-day table and the Overview tab both jump by *day
+    number* and neither knows what is on screen — without that, jumping to a
+    past day scrolls to an element that isn't there.
 - **A booking's short note** — the optional `description` on a transport leg,
   an accommodation or a car rental appears in **three** places, all as muted
   prose through `Clamp` (so the "show full descriptions" option applies): the

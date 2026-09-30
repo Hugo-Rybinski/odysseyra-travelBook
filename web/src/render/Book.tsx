@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Itinerary } from "../types/resolved";
-import { fill, tr, type Lang } from "./format";
-import { todayISO, type CollapseView } from "./collapse";
+import { tr, type Lang } from "./format";
+import {
+  allItemsPast,
+  collapsedForItems,
+  foldedForItems,
+  type CollapseView,
+  type DateSpan,
+} from "./collapse";
 import { AccentContext, paletteVars } from "./palette";
 import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
@@ -9,6 +15,7 @@ import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
 import { EmergencyContacts } from "./EmergencyContacts";
 import { ForecastProvider, useActivityForecasts } from "./forecast";
+import { PastFold, usePastFold } from "./Parts";
 import { TransportList } from "./TransportList";
 import { TripMap } from "./TripMap";
 import { AccommodationSummary } from "./AccommodationSummary";
@@ -17,36 +24,32 @@ import { AccommodationSummary } from "./AccommodationSummary";
 // only the current one open, or all expanded. Shared with transport/accommodation.
 export type DayView = CollapseView;
 
-// The "current" day: the one dated today; failing that (the trip isn't running
-// now) the first day, so "current only" always leaves something open.
-function currentDayNumber(itinerary: Itinerary): number | null {
-  const days = itinerary.days;
-  if (!days.length) return null;
-  const today = todayISO();
-  return (days.find((d) => d.date === today) ?? days[0]).day_number;
+// A day as a date span, so the day list answers to the same three rules as the
+// transport / accommodation card lists (`collapse.ts`). A day is one date, so
+// its span opens and closes on it — which makes `current-only`'s
+// "span covers today" the day-dated-today it always was.
+function daySpans(itinerary: Itinerary): DateSpan[] {
+  return itinerary.days.map((d) => ({ start: d.date, end: d.date }));
+}
+
+// Indices → day numbers: everything outside this module addresses a day by its
+// `day_number` (the cover's rows jump by it, `#day-N` is its element), while the
+// shared collapse rules work on list positions.
+function dayNumbers(itinerary: Itinerary, idx: Set<number>): Set<number> {
+  return new Set([...idx].map((i) => itinerary.days[i].day_number));
 }
 
 function collapsedFor(view: DayView, itinerary: Itinerary): Set<number> {
-  if (view === "expand-all") return new Set();
-  const all = itinerary.days.map((d) => d.day_number);
-  if (view === "collapse-all") return new Set(all);
-  if (view === "collapse-past") {
-    // collapse days dated strictly before today; keep today + future (and any
-    // undated day) open
-    const today = todayISO();
-    return new Set(itinerary.days.filter((d) => d.date && d.date < today).map((d) => d.day_number));
-  }
-  const current = currentDayNumber(itinerary);
-  return new Set(all.filter((n) => n !== current));
+  return dayNumbers(itinerary, collapsedForItems(view, daySpans(itinerary)));
 }
 
-// The days `collapse-past` considers past: dated strictly before today, so
-// today, the future and any undated day are left alone. Same rule as
-// `collapsedFor`'s branch — keep the two in step, since one hides what the
-// other collapses.
-function pastDayNumbers(itinerary: Itinerary): number[] {
-  const today = todayISO();
-  return itinerary.days.filter((d) => d.date && d.date < today).map((d) => d.day_number);
+// The past days this view folds away entirely (see `usePastFold` below), rather
+// than opening on a stack of collapsed bands for days already travelled. The
+// rule — and the reason it is `past ∩ collapsed` rather than the past days
+// outright — lives in `collapse.ts`'s `foldedForItems`, shared with the three
+// card lists.
+function foldedDayNumbers(view: DayView, itinerary: Itinerary): Set<number> {
+  return dayNumbers(itinerary, foldedForItems(view, daySpans(itinerary)));
 }
 
 // The whole travel book, web-native: cover, one card per day, then the
@@ -109,22 +112,28 @@ export function Book({
   // stable; disabled for the transport/accommodation views so they do no work.
   const forecasts = useActivityForecasts(itinerary.days, showForecast && show === "travel");
 
-  // Which days are behind us, and whether they're on screen at all. On
-  // `collapse-past` a past day used to stay as a header band you could expand —
-  // so a trip halfway through opened on a stack of rows for days already
-  // travelled, and the day you actually want was below them. They are now
-  // folded away entirely, behind one line that shows or hides the lot; the
-  // other views are untouched, since "collapse all" is *asking* for the bands.
-  const past = useMemo(() => new Set(pastDayNumbers(itinerary)), [itinerary]);
-  const [showPast, setShowPast] = useState(false);
-  const foldPast = daysView === "collapse-past" && past.size > 0;
+  // Which days are folded away, and whether they're on screen at all. A past
+  // day used to stay as a header band you could expand — so a trip halfway
+  // through opened on a stack of rows for days already travelled, and the day
+  // you actually want was below them. They are now folded away entirely, behind
+  // one line that shows or hides the lot. This applies to **every view that
+  // collapses that day** (`collapse-past`, `collapse-all`, `current-only`), not
+  // only `collapse-past`: a row you have to scroll past to reach today costs
+  // the same wherever the preset that drew it came from. `expand-all` is the
+  // one that keeps them, having been asked for everything.
+  //
+  // The state — including the trip whose *every* day is past, which opens with
+  // the run revealed — is `usePastFold`, shared with the three card lists.
+  const past = useMemo(() => foldedDayNumbers(daysView, itinerary), [daysView, itinerary]);
+  const allPast = useMemo(() => allItemsPast(daySpans(itinerary)), [itinerary]);
+  const fold = usePastFold(past, allPast);
 
   // Re-apply the day-view preset when it changes or a different itinerary loads.
-  // Manual per-day toggles (below) live in `collapsed` and persist until then,
-  // as does a manual reveal of the past days.
+  // Manual per-day toggles (below) live in `collapsed` and persist until then
+  // (as does a manual reveal of the past days — `usePastFold` re-folds on the
+  // same two signals).
   useEffect(() => {
     setCollapsed(collapsedFor(daysView, itinerary));
-    setShowPast(false);
   }, [daysView, itinerary]);
 
   const toggle = useCallback((n: number) => {
@@ -139,7 +148,7 @@ export function Book({
     // A folded-away past day has no element to scroll to, so reveal the run
     // first — the cover's overview and the Overview tab both jump by day
     // number and neither knows what's on screen.
-    if (past.has(n)) setShowPast(true);
+    if (past.has(n)) fold.reveal();
     setCollapsed((prev) => {
       if (!prev.has(n)) return prev;
       const next = new Set(prev);
@@ -233,21 +242,16 @@ export function Book({
       <div className="days">
         {/* The past days' one line, in place of their bands. It sits at the top
             of the list, where those days are — they're the start of the trip. */}
-        {foldPast && (
-          <button
-            type="button"
-            className="past-days"
-            aria-expanded={showPast}
-            onClick={() => setShowPast((s) => !s)}
-          >
-            <span className="past-days-caret" aria-hidden>
-              {showPast ? "▾" : "▸"}
-            </span>
-            {fill(tr(lang, showPast ? "hidePastDays" : "showPastDays"), { n: past.size })}
-          </button>
-        )}
+        <PastFold
+          n={past.size}
+          shown={fold.shown}
+          onToggle={fold.toggle}
+          lang={lang}
+          showKey="showPastDays"
+          hideKey="hidePastDays"
+        />
         {itinerary.days.map((day) =>
-          foldPast && !showPast && past.has(day.day_number) ? null : (
+          fold.hidden(day.day_number) ? null : (
             <DayCard
               key={day.day_number}
               day={day}

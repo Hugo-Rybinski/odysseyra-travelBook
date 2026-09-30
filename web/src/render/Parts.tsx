@@ -1,10 +1,11 @@
 // Small shared render bits: a price (default currency + faded conversions and a
 // paid/to-pay chip), a booked/confirmed status chip, a collapsible card head,
-// and the captioned figure a pre-rendered map PNG is drawn in.
-import type { ReactNode } from "react";
+// the one line a folded-away run of past entries leaves behind, and the
+// captioned figure a pre-rendered map PNG is drawn in.
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Money, RenderedMap } from "../types/resolved";
 import { primaryMoney, secondaryMoney } from "./money";
-import { tr, type Lang } from "./format";
+import { fill, tr, type Lang, type LabelKey } from "./format";
 
 /** One pre-rendered map image with its caption — a day's map, an area's zoom, or
  * a hike's trail. Shown only with the Options interactive-maps toggle **off**
@@ -16,6 +17,73 @@ export function MapFigure({ rendered, caption }: { rendered: RenderedMap; captio
       <figcaption>{caption}</figcaption>
       <img src={rendered.image} alt={caption} loading="lazy" />
     </figure>
+  );
+}
+
+/** The state behind a `PastFold`: whether the folded-away run is on screen.
+ *
+ * It starts **revealed when every entry is past** — a list already lived
+ * through. Folding then leaves one line where the whole list should be, which
+ * reads as a broken render rather than a tidy one: there is nothing below the
+ * run to get to, because it *is* the list. The line then reads "Hide …" and is
+ * how you put it away.
+ *
+ * `folded` is the fold set (`foldedForItems`, or its day-number mapping) and
+ * doubles as the re-fold signal: a caller memoizes it per view + list, so a new
+ * identity means one of those changed and the run folds back — to `allPast`,
+ * not to false.
+ *
+ * `reveal` is for a jump from outside the list: a folded-away entry has no
+ * element to scroll to. */
+export function usePastFold<T>(folded: Set<T>, allPast: boolean) {
+  const [shown, setShown] = useState(allPast);
+  useEffect(() => setShown(allPast), [folded, allPast]);
+  const toggle = useCallback(() => setShown((s) => !s), []);
+  const reveal = useCallback(() => setShown(true), []);
+  return {
+    shown,
+    toggle,
+    reveal,
+    /** Is this entry folded away right now (so: render no card for it)? */
+    hidden: (key: T) => !shown && folded.has(key),
+  };
+}
+
+/** The single line a folded-away run of past entries leaves behind, in place of
+ * their cards (see `foldedForItems`). One component for the four lists that
+ * fold — days, transport bookings, car rentals, stays — so the seam looks and
+ * behaves the same in each; only the wording differs, which is why the two
+ * label keys are the caller's to name ("days" / "bookings" / "rentals" /
+ * "stays"). It sits at the head of its list, where those entries are: a list in
+ * file order is normally in trip order, so what is behind you is at the top. */
+export function PastFold({
+  n,
+  shown,
+  onToggle,
+  lang,
+  showKey,
+  hideKey,
+}: {
+  n: number;
+  shown: boolean;
+  onToggle: () => void;
+  lang: Lang;
+  showKey: LabelKey;
+  hideKey: LabelKey;
+}) {
+  if (n <= 0) return null;
+  return (
+    <button
+      type="button"
+      className="past-days"
+      aria-expanded={shown}
+      onClick={onToggle}
+    >
+      <span className="past-days-caret" aria-hidden>
+        {shown ? "▾" : "▸"}
+      </span>
+      {fill(tr(lang, shown ? hideKey : showKey), { n })}
+    </button>
   );
 }
 

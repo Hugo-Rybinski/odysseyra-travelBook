@@ -41,10 +41,19 @@ const LABELS = {
     days: "days",
     nights: "nights",
     night: "night",
-    // The one line a folded-away run of past days leaves behind (Book.tsx).
-    // The count is in parentheses so neither wording has to agree in number.
+    // The one line a folded-away run of past entries leaves behind (`PastFold`
+    // in Parts.tsx, used by the day list and the three card lists). The count is
+    // in parentheses so no wording has to agree in number. Each list names the
+    // thing it holds rather than sharing one generic label: two of them sit on
+    // the same page, so "Show past entries" twice would say nothing.
     showPastDays: "Show past days ({n})",
     hidePastDays: "Hide past days ({n})",
+    showPastBookings: "Show past bookings ({n})",
+    hidePastBookings: "Hide past bookings ({n})",
+    showPastRentals: "Show past rentals ({n})",
+    hidePastRentals: "Hide past rentals ({n})",
+    showPastStays: "Show past stays ({n})",
+    hidePastStays: "Hide past stays ({n})",
     tonight: "Tonight",
     aboard: "aboard",
     freeTime: "Buffer",
@@ -226,6 +235,12 @@ const LABELS = {
     night: "nuit",
     showPastDays: "Afficher les jours passés ({n})",
     hidePastDays: "Masquer les jours passés ({n})",
+    showPastBookings: "Afficher les réservations passées ({n})",
+    hidePastBookings: "Masquer les réservations passées ({n})",
+    showPastRentals: "Afficher les locations passées ({n})",
+    hidePastRentals: "Masquer les locations passées ({n})",
+    showPastStays: "Afficher les séjours passés ({n})",
+    hidePastStays: "Masquer les séjours passés ({n})",
     tonight: "Cette nuit",
     aboard: "à bord",
     freeTime: "Pause",

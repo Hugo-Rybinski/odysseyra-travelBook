@@ -317,11 +317,17 @@ The header's burger menu switches between views:
   activity titles, dotted transport legs, plus zoomed area maps — and an
   **Interactive** toggle swaps them for pan/zoom MapLibre maps that keep working
   offline after one online view. Options → *Days* decides how the list starts:
-  on the default **Collapse past** the days already travelled are folded away
+  on every view but **Expand all**, the days already travelled are folded away
   altogether — not even their header bands — behind one *Show past days (n)*
   line that puts them back, so a trip halfway through opens on today rather than
-  on a stack of rows for days that are over. (Jumping to a past day from the
-  cover's day-by-day table reveals them on its own.)
+  on a stack of rows for days that are over. A trip whose **every** day is past
+  opens with that run already revealed (the line then reads *Hide past days*),
+  since folding it would leave the cover and one line where the book should be.
+  (Jumping to a past day from the cover's day-by-day table reveals them on its
+  own, as does a view that leaves one of them expanded.) The **transport,
+  car-rental and stay lists fold the same way** — a flight already taken and a
+  hotel already slept in are rows between you and the ones still to come — each
+  behind its own line, with its own count.
 - **🗺️ Overview** — the trip at a glance: its title / date range / summary, the
   day-by-day table (clicking a row jumps into that day in the Travel view), and
   a single **whole-trip map** — every day's located points pinned with their day
