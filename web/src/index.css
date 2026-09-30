@@ -830,6 +830,68 @@ body {
   margin-top: 16px;
 }
 
+/* The startup splash, shown while the auto-reopen looks for a previous file.
+   Same vertical placement as the empty state it stands in for, so whichever of
+   the two follows it doesn't jump. */
+.splash {
+  display: flex;
+  justify-content: center;
+  padding: 72px 16px;
+  /* The check is two IndexedDB reads, so on a first visit (nothing to reopen)
+     it can settle in a few dozen milliseconds. Fading in over rather longer
+     than that keeps the logo from flashing on that launch, while a real restore
+     — which has to boot the engine and resolve the itinerary — shows it fully. */
+  animation: splash-in 240ms ease-out both;
+}
+
+.splash-mark {
+  /* The logo artwork is white + gold on transparency, drawn for the navy bar,
+     so here it needs the bar's own background under it. */
+  background: var(--accent);
+  border-radius: 24px;
+  padding: clamp(12px, 3vw, 20px);
+  line-height: 0;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
+  animation: splash-pulse 1.8s ease-in-out infinite;
+}
+
+.splash-mark img {
+  display: block;
+  width: clamp(120px, 34vw, 176px);
+  height: auto;
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A slow breath, not a spinner: this is a wait of unknown but usually short
+   length, and the logo is the whole content of the screen. It scales rather
+   than fading — the mark is navy on a near-white page, so dropping its opacity
+   far enough to read as a pulse also washes the navy out to the grey of a
+   disabled control. */
+@keyframes splash-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.955);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash,
+  .splash-mark {
+    animation: none;
+  }
+}
+
 .filename {
   font-size: 0.75rem;
   color: var(--muted);

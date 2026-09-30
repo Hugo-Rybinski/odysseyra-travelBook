@@ -272,6 +272,54 @@ by the Python engine (`validate(text, lang)`).
   (`edit/autosave.ts`), whose Restore/Discard banner stays the way in — those
   edits are newer than the file they came from, and reopening the file underneath
   would bury the choice.
+  - **The launch screen is the logo, not the empty state.** Until that whole
+    attempt settles — the IndexedDB reads *and* the `analyze` of whatever they
+    turn up — `App.tsx` shows a `.splash` (the topbar's own artwork, large, on
+    the accent) in the slot the empty state would take, and the sequence is
+    logo → book or logo → empty state, never one of those in front of the other.
+    "Open an itinerary" is a claim about a file we haven't looked for yet, and
+    on a launch that does reopen something it was only ever a flash of the wrong
+    answer. It fades in over 240 ms, which is longer than a first visit's two
+    reads take, so the launch with nothing to restore barely shows it; what a
+    real restore is *doing* is already narrated by `ActivityIndicator`, so the
+    splash carries no text of its own. `restorable` moved onto the same effect
+    for this: read in two places, the empty state could paint before its
+    Restore banner.
+  - **And the book itself comes out of a cache, not out of the engine.**
+    `file/renderCache.ts` keeps one record of the last rendering — the map-free
+    document `resolve()` returned (~90 KB for the flagship), its findings, the
+    content hash and the build that produced it — and the launch paints that
+    before Pyodide exists: ~80 ms against ~2 s on a warm HTTP cache, and against
+    the whole runtime download on a cold one. The day images come back from
+    their own cache in the same breath (`hydrateCachedDays`, reads only), so a
+    trip you have already looked at returns complete — text, maps and all —
+    without a single engine call. Then the engine boots and says whether that
+    was the truth:
+    - **The build is checked *before* painting**, not after. `RENDER_BUILD` is
+      the bundle's commit paired with `SCHEMA_VERSION`; a mismatch means the
+      record came from a different engine, and rendering another build's
+      document with today's components is exactly what `SCHEMA_VERSION` exists
+      to prevent — the map cache refuses it by keying on the version rather than
+      checking afterwards, and this follows suit. That launch simply takes the
+      old path, splash and all, which is what every launch cost before this.
+    - **The content is checked after**, because that is when we could act on it:
+      `docHash` of the text as re-read from disk (the handle route re-reads, so
+      the file may have been edited in another program between sessions), plus
+      the language the findings were produced in — the document is
+      language-neutral, its findings are not. Same → nothing happens at all, and
+      only the day maps the cache couldn't serve are drawn. Different →
+      `analyze` runs and swaps every piece of state, silently, once it has an
+      answer.
+    - **`applyResolved` is why the two paths can't drift.** Putting a document on
+      screen — source, model, findings, a re-seeded Edit draft, the view to land
+      on — is one function, called by the engine path and the cached path alike.
+      Nothing about it touches Python, which is what makes the cached path
+      possible.
+    - **The record is written from `resolve()`'s return value**, in `analyze`
+      *and* in Apply (`rememberRender`), never from the `itinerary` state — the
+      map loop merges cached days into that, so a record taken from it would
+      carry a second copy of the map cache's megabytes. It is deliberately one
+      row with no TTL, budget or LRU; that machinery belongs to the images.
 - **The Demo is a trip in progress** — `file/demoDates.ts` shifts every date in
   `examples/france.json` so its **second day is today** before anything sees the
   text. The file on disk has to keep its fixed September-2026 dates (it is the

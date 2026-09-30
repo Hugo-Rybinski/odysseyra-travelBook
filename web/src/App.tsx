@@ -26,6 +26,7 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { shiftDemoDates } from "./file/demoDates";
+import { loadRender, RENDER_BUILD, saveRender } from "./file/renderCache";
 import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
 import {
@@ -245,6 +246,11 @@ export function App() {
   // A restorable autosaved draft found at startup (P6), offered on the empty
   // state until the user restores or discards it.
   const [restorable, setRestorable] = useState<AutosaveRecord | null>(null);
+  // True until the startup restore has settled — see the auto-reopen effect.
+  // Starts true so the very first paint is the splash rather than the empty
+  // state: on a launch that *does* reopen something, the empty state would only
+  // ever have been a flash of "no itinerary" in front of the book.
+  const [restoring, setRestoring] = useState(true);
   // Which day's map is being drawn right now, for the loader. Only set for days
   // we actually render — a cache hit is instant and shouldn't flash a line.
   const [mapProgress, setMapProgress] = useState<{ day: number; total: number } | null>(null);
@@ -313,6 +319,48 @@ export function App() {
     setStorage(room);
   }, []);
 
+  // Replace one day of the book in place, as its map arrives. Shared by the
+  // render loop and the read-only cache hydration below, so both merge the same
+  // way.
+  const swapInDay = useCallback(
+    (i: number, day: Day) =>
+      setItinerary((prev) => {
+        if (!prev) return prev;
+        const days = prev.days.slice();
+        days[i] = day;
+        return { ...prev, days };
+      }),
+    [],
+  );
+
+  // Fill a cached rendering's days from the map cache — reads only, so it needs
+  // no engine and can run while Pyodide is still installing. Returns the day
+  // indices it could *not* serve, which is exactly the work left for
+  // `buildDayMaps` once the engine is up (the whole trip usually comes back
+  // here, and then there is none). `null` means a newer run superseded this one
+  // — distinct from "nothing missing", or the caller would read an abort as a
+  // fully hydrated trip.
+  //
+  // Keyed on the record's own hash rather than a fresh one of the text: this
+  // hydrates what is on screen, and must neither hash nor reclaim anything —
+  // `dropStaleVersions` runs on the authoritative pass, after the launch checks
+  // have said which document is the real one.
+  const hydrateCachedDays = useCallback(
+    async (hash: string, count: number): Promise<number[] | null> => {
+      const token = ++mapRunRef.current;
+      const missing: number[] = [];
+      for (let i = 0; i < count; i++) {
+        const cached = await getCachedDay(hash, i);
+        if (mapRunRef.current !== token) return null;
+        if (cached) swapInDay(i, cached);
+        else missing.push(i);
+      }
+      if (count > missing.length) await touchDoc(hash);
+      return missing;
+    },
+    [swapInDay],
+  );
+
   // Render the per-day maps progressively, after the book is already on screen.
   // Each day is hydrated instantly from the 30-day IndexedDB cache when present;
   // otherwise we yield (so the browser paints the book + pending loaders), fetch
@@ -340,14 +388,6 @@ export function App() {
       await dropStaleVersions(file, hash);
       if (mapRunRef.current !== token) return;
 
-      const swapIn = (i: number, day: Day) =>
-        setItinerary((prev) => {
-          if (!prev) return prev;
-          const days = prev.days.slice();
-          days[i] = day;
-          return { ...prev, days };
-        });
-
       const targets = only ?? Array.from({ length: dayCount }, (_, i) => i);
       let hits = 0;
       let drawn = 0;
@@ -357,7 +397,7 @@ export function App() {
             const cached = await getCachedDay(hash, i);
             if (mapRunRef.current !== token) return;
             if (cached) {
-              swapIn(i, cached);
+              swapInDay(i, cached);
               hits++;
               continue;
             }
@@ -369,9 +409,15 @@ export function App() {
           await new Promise((r) => setTimeout(r, 0));
           if (mapRunRef.current !== token) return;
           try {
+            // Only a *miss* needs the engine. Everything above is IndexedDB, so
+            // the launch path can hydrate a cached book while Pyodide is still
+            // installing; `boot` is idempotent and already in flight from mount,
+            // so on every other route this resolves immediately.
+            await boot(setProgress);
+            if (mapRunRef.current !== token) return;
             const day = await renderDayMap(text, i);
             if (mapRunRef.current !== token) return;
-            swapIn(i, day);
+            swapInDay(i, day);
             const put = await putCachedDay(hash, i, day, file);
             drawn++;
             // A failed write means every later load redraws this day for ever,
@@ -392,14 +438,17 @@ export function App() {
         if (mapRunRef.current === token) setMapProgress(null);
       }
     },
-    [refreshCacheInfo],
+    [refreshCacheInfo, swapInDay],
   );
 
   // Warm the engine on mount, and see whether a previous file can be reopened.
   useEffect(() => {
     boot(setProgress).catch((e) => setError(String(e)));
     loadLastHandle().then((h) => setCanReopen(!!h));
-    loadAutosave().then(setRestorable); // offer to restore unsaved edits (P6)
+    // `restorable` (the offer to restore unsaved edits, P6) is read by the
+    // auto-reopen effect below, which has to consult it anyway — so it sets it,
+    // and it does so *before* dropping the splash. Reading it here as well would
+    // race that: the empty state could paint without its Restore banner.
     // Ask the browser not to treat this origin as evictable. A trip's cached
     // maps run to ~20 MB, and a browser reclaiming best-effort storage takes the
     // *whole* origin — the maps, the last-file handle and the autosaved draft
@@ -508,6 +557,73 @@ export function App() {
     return () => clearTimeout(timer);
   }, [draft, draftSer, unsaved, source]);
 
+  // Put a resolved document on screen: the source it came from, the model, its
+  // findings, a freshly seeded Edit draft, and the view to land on. Extracted
+  // because there are now two ways to arrive here — the engine (`analyze`) and
+  // the launch's cached rendering — and the two must agree on every piece of
+  // state, or the cached path would leave the app subtly not-quite-open.
+  //
+  // It does **no** engine work, so it is safe to call before Pyodide exists:
+  // `jsonToDraft`/`serializeWithPaths` are pure TS and `rememberHandle` is
+  // IndexedDB.
+  const applyResolved = useCallback(
+    async (src: Source, model: Itinerary | null, found: Finding[], renderErr: string | null) => {
+      setSource(src);
+      setItinerary(model);
+      setRenderError(renderErr);
+      setFindings(found);
+      // The file just opened is the version count's new reference — a name
+      // written for the *previous* itinerary must not carry over into this
+      // one's numbering.
+      setLastWritten(null);
+
+      let seeded = false;
+      try {
+        const seed = jsonToDraft(src.text); // seed the Edit tab with the raw input JSON
+        resetDraft(seed);
+        const seedText = serializeWithPaths(seed).text;
+        setAppliedText(seedText);
+        setSavedText(seedText);
+        seeded = true;
+      } catch {
+        resetDraft(null); // not even valid JSON — nothing to edit
+        setAppliedText(null);
+        setSavedText(null);
+      }
+      setMapsStale(false);
+
+      // Land on the book when it renders; otherwise on Edit (to fix it) or
+      // Findings (to see why) so the user isn't stuck on a blank viewer.
+      setView(model ? "viewer" : seeded ? "edit" : "findings");
+      await rememberHandle(src.handle);
+      setCanReopen((prev) => !!src.handle || prev);
+    },
+    [resetDraft],
+  );
+
+  // Stash what we just rendered, so the next launch can paint it before the
+  // engine is up (see `file/renderCache.ts`). `model` must be the map-free
+  // document `resolve()` returned, never the one the map loop has been merging
+  // days into — the record would otherwise carry the megabytes of images the map
+  // cache already holds.
+  const rememberRender = useCallback(
+    (name: string, text: string, model: Itinerary | null, found: Finding[]) => {
+      if (!model) return; // a file that can't build has no rendering to cache
+      void (async () => {
+        await saveRender({
+          name,
+          hash: await docHash(text),
+          build: RENDER_BUILD,
+          lang,
+          itinerary: model,
+          findings: found,
+          at: Date.now(),
+        });
+      })();
+    },
+    [lang],
+  );
+
   // Resolve + validate a freshly opened source. Resilient to a model that won't
   // build (e.g. missing title): we still load the draft + findings so the file
   // can be edited/investigated, and the Travel viewer explains why it can't render.
@@ -534,45 +650,18 @@ export function App() {
           renderErr = String(e);
         }
 
-        setSource(src);
-        setItinerary(model);
-        setRenderError(renderErr);
-        setFindings(found);
-        // The file just opened is the version count's new reference — a name
-        // written for the *previous* itinerary must not carry over into this
-        // one's numbering.
-        setLastWritten(null);
-
-        let seeded = false;
-        try {
-          const seed = jsonToDraft(src.text); // seed the Edit tab with the raw input JSON
-          resetDraft(seed);
-          const seedText = serializeWithPaths(seed).text;
-          setAppliedText(seedText);
-          setSavedText(seedText);
-          seeded = true;
-        } catch {
-          resetDraft(null); // not even valid JSON — nothing to edit
-          setAppliedText(null);
-          setSavedText(null);
-        }
-        setMapsStale(false);
-
-        // Land on the book when it renders; otherwise on Edit (to fix it) or
-        // Findings (to see why) so the user isn't stuck on a blank viewer.
-        setView(model ? "viewer" : seeded ? "edit" : "findings");
+        await applyResolved(src, model, found, renderErr);
+        rememberRender(src.name, src.text, model, found);
 
         if (wantsDayRender(model)) void buildDayMaps(src.text, model!.days.length, false, src.name);
         else mapRunRef.current++; // cancel any in-flight loop from a prior file
-        await rememberHandle(src.handle);
-        setCanReopen(!!src.handle || canReopen);
       } catch (e) {
         setError(String(e));
       } finally {
         setBusy(false);
       }
     },
-    [lang, canReopen, buildDayMaps, resetDraft],
+    [lang, applyResolved, rememberRender, buildDayMaps],
   );
 
   const onOpen = useCallback(async () => {
@@ -623,6 +712,18 @@ export function App() {
   // (rather than an effect cleanup) is what keeps it to once, since StrictMode
   // mounts twice in dev and a cancel-on-unmount would make the second mount skip
   // it and nothing would open at all.
+  //
+  // It also owns the splash: `restoring` stays true until something real is on
+  // screen — a cached rendering if there is one, otherwise the finished
+  // `analyze` — so the screen goes logo → book, or logo → empty state, and
+  // never shows one before the other.
+  //
+  // And it is where the **cached rendering** is used. `analyze` cannot start
+  // until Pyodide is installed and the wheel imported, which on a cold HTTP
+  // cache is seconds of splash for work whose answer we already had when the
+  // tab closed. So: paint the stored rendering first (no engine at all), then
+  // ask the engine whether it was right, and recompute only if it wasn't. See
+  // `file/renderCache.ts` for the two checks and why they are the right two.
   const autoOpenedRef = useRef(false);
   useEffect(() => {
     if (autoOpenedRef.current) return;
@@ -634,30 +735,90 @@ export function App() {
         // Restore/Discard banner stays the way back in, and auto-reopening the
         // file underneath it (which would show none of those edits) would bury
         // the choice.
-        if (await loadAutosave()) return;
+        const draftFound = await loadAutosave();
+        if (draftFound) {
+          setRestorable(draftFound);
+          return;
+        }
         const handle = await loadLastHandle();
         // The handle is the better route where it works: it re-reads from disk,
         // so edits made to the file outside the app are picked up, which the
         // stashed text cannot do. But only when permission is *already* granted
         // — a page load carries no user activation, so requesting it here would
         // be refused, and asking is not something a reload should do unprompted.
-        if (handle && (await canReadHandle(handle))) {
-          const opened = await reopenHandle(handle);
-          if (opened) {
-            await analyze(opened);
+        let src: Source | null = null;
+        if (handle && (await canReadHandle(handle))) src = await reopenHandle(handle);
+        if (!src) {
+          // Otherwise reopen from the stash, keeping the handle attached so a
+          // later Save can still write in place (its own click supplies the
+          // gesture the permission prompt needs).
+          const last = await loadSession();
+          if (last) src = { name: last.name, text: last.text, handle };
+        }
+        if (!src) return; // nothing to reopen — the empty state is the answer
+
+        // --- optimistic paint, engine-free ---------------------------------
+        // Two of the three conditions are settled *before* painting, because
+        // neither needs the engine and one of them must not be deferred:
+        //
+        //  - the **filename**, since a record for another document is not this
+        //    document's rendering at all;
+        //  - the **build**, because painting a document produced by a different
+        //    engine and rendering it with today's components is precisely what
+        //    `SCHEMA_VERSION` exists to prevent (the map cache refuses it too,
+        //    by keying on the version rather than checking it afterwards). A
+        //    missing field degrades, but the renderers are only written against
+        //    the shape they ship with, and a blank screen is worse than a
+        //    splash. The cost is one slow launch per app update, which is what
+        //    every launch cost before this.
+        //
+        // The **content** check is left to the engine, both because that is
+        // when we could act on it and because hashing 100 KB of JSON before the
+        // first paint would spend a slice of exactly what this is saving.
+        const cached = await loadRender();
+        const painted =
+          cached && cached.name === src.name && cached.build === RENDER_BUILD ? cached : null;
+        let pending: Promise<number[] | null> | null = null;
+        if (painted) {
+          await applyResolved(src, painted.itinerary, painted.findings, null);
+          // The day images live in their own cache and hydrate without the
+          // engine either, so a fully cached trip comes back complete.
+          pending = hydrateCachedDays(painted.hash, painted.itinerary.days.length);
+          setRestoring(false); // the book is up; the splash has done its job
+        }
+
+        // --- then the engine, which says whether that was the truth ---------
+        if (painted) {
+          await boot(setProgress);
+          // The file may have been edited in another program since we last saw
+          // it — the handle route above re-reads from disk, so what is on
+          // screen can already be out of date. A language change counts too:
+          // the document is language-neutral but its findings are not.
+          const fresh = await docHash(src.text);
+          if (fresh === painted.hash && painted.lang === lang) {
+            // Recomputing would produce what is already on screen. Draw only
+            // the day maps the cache couldn't serve, and nothing else.
+            const missing = await pending;
+            if (missing?.length && wantsDayRender(painted.itinerary)) {
+              void buildDayMaps(src.text, painted.itinerary.days.length, false, src.name, missing);
+            }
             return;
           }
         }
-        // Otherwise reopen from the stash, keeping the handle attached so a
-        // later Save can still write in place (its own click supplies the
-        // gesture the permission prompt needs).
-        const last = await loadSession();
-        if (last) await analyze({ name: last.name, text: last.text, handle });
+        // No usable cached rendering, or a stale one: do the real work and swap
+        // the answer in. `analyze` replaces every piece of state the optimistic
+        // paint set, day maps included.
+        await analyze(src);
       } catch {
         /* a failed auto-reopen just leaves the empty state as it was */
+      } finally {
+        setRestoring(false);
       }
     })();
-  }, [analyze]);
+    // The ref guard means the body runs exactly once however often the effect
+    // re-fires, so `lang` here is always its initial value — which is precisely
+    // the language the record's own is compared against.
+  }, [analyze, applyResolved, buildDayMaps, hydrateCachedDays, lang]);
 
   // The name an **export** should take: `<slug> (vNN).pdf` / `.ics`, carrying the
   // version of the file it was built from.
@@ -958,6 +1119,11 @@ export function App() {
         setFindings(found);
         setSource((prev) => (prev ? { ...prev, text } : { name: "edited.json", text, handle: null }));
         setAppliedText(text); // preview now reflects the draft (dirty = false)
+        // Keep the launch cache in step with what's on screen — `model`, not
+        // `carried`: the record is map-free by contract. Without this an Apply
+        // would leave the next launch painting the pre-edit book for as long as
+        // the engine takes to say otherwise.
+        rememberRender(source?.name ?? "edited.json", text, model, found);
         if (wantsDayRender(model) && redrawMaps) {
           setMapsStale(false);
           await buildDayMaps(text, model!.days.length, true, source?.name ?? "edited.json");
@@ -973,7 +1139,7 @@ export function App() {
         setApplying(false);
       }
     },
-    [draft, lang, itinerary, source, buildDayMaps],
+    [draft, lang, itinerary, source, buildDayMaps, rememberRender],
   );
 
   // Follow an Overview day-by-day row into the book: switch to the Travel view,
@@ -1357,6 +1523,22 @@ export function App() {
             })}
           </p>
         </section>
+      ) : restoring ? (
+        // The startup restore is still running. Neither the book nor the empty
+        // state is the truth yet, so show the logo and wait — the empty state's
+        // "Open an itinerary" would be a claim about a file we haven't looked
+        // for. An error is the one thing that outranks it: the banner above
+        // already says what happened, and the splash would read as still busy.
+        !error && (
+          <section className="splash" aria-busy="true">
+            <div className="splash-mark">
+              <img
+                src={`${import.meta.env.BASE_URL}img/odysseyra-white-no-bg.svg`}
+                alt={t("Odysseyra TravelBook")}
+              />
+            </div>
+          </section>
+        )
       ) : (
         !error && (
           <section className="empty-state">

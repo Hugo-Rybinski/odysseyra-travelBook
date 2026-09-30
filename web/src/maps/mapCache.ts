@@ -151,7 +151,11 @@ const BUDGET_BYTES = 160 * 1024 * 1024;
 // finish where there used to be two identical discs. A v29 entry has neither
 // field *and* a `track.map` PNG rendered without any of it, so a trail would
 // keep coming back as a shape with no story.
-const SCHEMA_VERSION = 31;
+// Exported because it is the resolved document's version, not just this cache's
+// key: `file/renderCache.ts` pairs it with the build's commit hash to decide
+// whether a cached *rendering* could have come from today's engine. One bump,
+// both caches — which is the same rule this list already states.
+export const SCHEMA_VERSION = 31;
 
 interface Entry {
   day: Day;

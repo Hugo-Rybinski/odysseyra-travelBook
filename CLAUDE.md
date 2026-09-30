@@ -1685,6 +1685,24 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   viewer doesn't, and a hard reload doesn't help (the data is in IndexedDB, not
   the HTTP cache). This is also why Python changes need `npm run wheel` — the
   browser runs the wheel, not `src/`.
+  - **There are now two caches keyed on it**, which is why `SCHEMA_VERSION` is
+    exported rather than private: the per-day map cache above, and the
+    **launch render cache** (`web/src/file/renderCache.ts`), one small record
+    holding the map-free document `resolve()` last returned so a reload can
+    paint the book *before* Pyodide is installed — ~80 ms against ~2 s, and with
+    a cold HTTP cache the difference is the whole download. It is invalidated by
+    `RENDER_BUILD` (`COMMIT_HASH` + `SCHEMA_VERSION`) **before** it is painted,
+    on the same reasoning as the key above: rendering another build's document
+    with today's components is the thing the version exists to prevent, and one
+    slow launch per app update is what every launch cost anyway. What *is*
+    checked after the engine comes up is the **content** — `docHash` of the file
+    as re-read from disk, plus the language the findings were produced in —
+    since that can change while the tab is closed and a swap is the only honest
+    answer. Two things follow: a resolved-`Day` change needs the bump for this
+    cache too (same symptom, now on the launch path), and the record must always
+    be written from `resolve()`'s own return value, never from the `itinerary`
+    state the map loop has been merging days into, or it would carry a copy of
+    the megabytes the map cache already holds.
   - **An entry is 2–4 MB, a trip ~20 MB**, which is what shapes the rest of that
     module — and what made it stop working in practice, since the key is the
     document's *content*: every applied edit started a fresh 20 MB set and left
