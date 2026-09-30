@@ -408,7 +408,7 @@ The browser viewer is a separate Vite/React app under `web/` (see its README).
 
 ### Example files
 
-- `examples/france.json` — the flagship: a full, valid France tour (Paris → the Loire → the Dordogne → the Pyrenees) exercising most features, maps on. Also the in-browser **Demo**.
+- `examples/france.json` — the flagship: a full, valid France tour (Paris → the Loire → the Dordogne → the Pyrenees) exercising most features, maps on. Also the in-browser **Demo**, where its September-2026 dates are shifted onto today's calendar so its **second day is today** — the file itself stays pinned, since the example PDFs and the tests are built from it.
 - `examples/france_fr.json` — the same France tour authored in French (build with `--lang fr`).
 - `examples/pyrenees.json` — another full, valid itinerary, and the designated **opt-out** example: it switches off the defaults that are on (`auto_sized_buffer`, a drive's junction pins), so those code paths stay rendered somewhere.
 - `examples/pyrenees_pieces/` — that trip split into per-file fragments for `stitch` (a test asserts it reassembles `pyrenees.json` exactly).

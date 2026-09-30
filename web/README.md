@@ -272,6 +272,34 @@ by the Python engine (`validate(text, lang)`).
   (`edit/autosave.ts`), whose Restore/Discard banner stays the way in — those
   edits are newer than the file they came from, and reopening the file underneath
   would bury the choice.
+- **The Demo is a trip in progress** — `file/demoDates.ts` shifts every date in
+  `examples/france.json` so its **second day is today** before anything sees the
+  text. The file on disk has to keep its fixed September-2026 dates (it is the
+  flagship the example PDFs and the Python tests are built from), but opened as
+  a book those dates put the whole trip in the past, which shows none of what
+  the viewer does with *where you are*: today's day band, the day behind you
+  folded away behind its line, the near-term weather forecast. Four things are
+  worth knowing:
+  - **It rewrites the text, not a parsed document**, so what the Edit tab seeds
+    from, the autosave keeps and an export renders is the demo file as written —
+    formatting, key order and keys this module has never heard of included. A
+    parse-then-stringify would reformat the lot. The one `JSON.parse` is for
+    *reading* the anchor (the second day's date, falling back to the earliest
+    date anywhere plus one, since an undated day is inferred as trip-start + its
+    index).
+  - **It shifts any string value that is exactly an ISO date, whatever its
+    key** — nine of them today (`date`, `start_date`/`end_date`,
+    `arrival`/`departure`, `booking_start_date`/`booking_end_date`,
+    `pickup_date`/`dropoff_date`) and a tenth costs nothing. Prose is never an
+    exact match, so a description mentioning a date is left alone.
+  - **The weekdays move**, because "today is day 2" pins the offset and leaves
+    no room to also keep them. That is visible: the Louvre is open `wed-mon`, so
+    a Demo opened on a Tuesday puts that visit on the one day the museum is shut
+    and the validator says so — the check working, on real data.
+  - **The document's hash changes each calendar day**, and that hash is the map
+    cache's key, so the Demo redraws its maps once a day. `dropStaleVersions`
+    drops the previous day's set rather than leaking it — both are
+    `france.json`, the same document (see *Offline internals* above).
 - **Render** the whole travel book: cover + day-by-day overview, one card per day
   with the time-ordered timeline (PDF-style type badges, nested activities, car
   events, tonight's-stay bar), plus transport and accommodation sections. Prices

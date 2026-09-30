@@ -25,6 +25,7 @@ import {
   writeHandle,
   type OpenedFile,
 } from "./file/openFile";
+import { shiftDemoDates } from "./file/demoDates";
 import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
 import {
@@ -585,7 +586,11 @@ export function App() {
 
   const onOpenSample = useCallback(async () => {
     try {
-      const text = await (await fetch(SAMPLE)).text();
+      // Moved onto today's calendar before anything sees it, so the Demo is a
+      // trip in progress rather than one that happened in September 2026 — see
+      // `shiftDemoDates`. The shifted text is the document from here on: the
+      // Edit tab, the autosave and every export carry it.
+      const text = shiftDemoDates(await (await fetch(SAMPLE)).text());
       await analyze({ name: "france.json", text, handle: null });
     } catch (e) {
       setError(String(e));
