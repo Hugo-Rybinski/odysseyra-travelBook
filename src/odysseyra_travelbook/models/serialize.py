@@ -118,6 +118,10 @@ def _track(itin: Itinerary, act) -> dict | None:
     return {
         "gpx": act.gpx,
         "points": [[lat, long] for lat, long in track.points],
+        # each of those points' distance along the full-resolution track, to the
+        # metre — the axis a position matched to the line is read off (the
+        # viewer's "you are here" dot on the profile)
+        "cum_km": [round(v, 3) for v in track.cum_km],
         # the file's own named `<wpt>`s — the col, the lake, the refuge — which
         # both renderers mark and label on the trail map
         "waypoints": [{"name": w.name, "lat": w.lat, "long": w.long}

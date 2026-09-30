@@ -1688,11 +1688,17 @@ body {
   height: 260px;
 }
 .hike-profile {
+  /* the band's height, shared by the plot and the scale gutter beside it — the
+     gutter positions its numbers as a percentage of it, so the two must agree.
+     Taller than it was, because the band is now ruled at round altitudes and
+     eight numbers need the room (pdf/hike_map.py's `_PLOT_H` grew with it). */
+  --hp-h: 100px;
   max-width: 620px;
   margin: 6px auto 4px;
 }
 .hike-profile figcaption {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 10px;
   margin-bottom: 3px;
@@ -1706,15 +1712,74 @@ body {
   color: var(--muted);
   font-size: 0.78rem;
 }
-/* The plot: the SVG stretches to the column (preserveAspectRatio="none"), with
-   the high mark laid over its top-left corner where the curve can't reach. */
+/* "You are here: 3.2 km, 1680 m" — the live GPS fix matched to the trail,
+   read in the caption rather than labelled on the curve. Accent, because
+   unlike everything else on this row it is about right now. */
+.hike-profile-here {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+/* and the dot itself, laid over the plot at the point it matched. A DOM disc,
+   not an SVG circle: the viewBox is stretched to the column, which would draw
+   a circle as an ellipse. */
+.hike-profile-you {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 15%);
+}
+/* The figure's two columns: the altitude scale, then the plot and its distance
+   axis inside a horizontal scroller. The gutter sits outside that scroller so
+   it stays put while a long walk is dragged sideways. */
+.hike-profile-body {
+  display: flex;
+  align-items: flex-start;
+}
+/* The scale gutter: round altitudes, right-aligned against the band, each
+   placed at the fraction of the band's height its line is drawn at. Bare
+   numbers — the two carrying `m` are the walk's own low and high marks. */
+.hike-profile-scale {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: var(--hp-h);
+}
+.hike-profile-scale span {
+  position: absolute;
+  right: 5px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* The plot scrolls when the column can't give each kilometre number its room
+   (`MARK_MIN_PX` in HikeTrack.tsx sets the inner width). `min-width: 0` is what
+   lets a flex item shrink below its content and actually scroll. */
+.hike-profile-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.hike-profile-inner {
+  width: 100%;
+}
+/* The plot: the SVG stretches to whatever width that leaves
+   (preserveAspectRatio="none"), with the high mark laid over its top-left
+   corner where the curve can't reach. */
 .hike-profile-plot {
   position: relative;
 }
 .hike-profile-plot svg {
   display: block;
   width: 100%;
-  height: 74px;
+  height: var(--hp-h);
   border-bottom: 1px solid var(--accent-soft);
 }
 .hike-profile-high {

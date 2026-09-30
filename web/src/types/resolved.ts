@@ -98,6 +98,12 @@ export interface HikeTrack {
   // the geometry but not the file.
   gpx?: string;
   points: [number, number][]; // [lat, long] along the trail, in walking order
+  // One per `points` entry: the distance walked to it, measured on the
+  // full-resolution track (simplification drops points, not distance). This is
+  // what lets a GPS fix matched to the line be read off the profile's x axis —
+  // see `nearestOnTrail`. Optional: a day cached before the field existed has
+  // the line but not the distances, and the dot simply doesn't draw.
+  cum_km?: number[];
   // The trail's named points. Optional: a day cached before the field existed
   // has none, and most tracks name nothing.
   waypoints?: HikeWaypoint[];

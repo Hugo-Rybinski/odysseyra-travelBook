@@ -168,12 +168,23 @@ export function DayMapGL({
   geo,
   caption,
   onFail,
+  onPosition,
 }: {
   geo: MapGeo;
   caption: string;
   onFail?: () => void;
+  // Called with each fix the "you are here" control reports, and with null when
+  // the user stops tracking or it errors. This map owns the GPS: it is the only
+  // thing on the page that asks for a position, and a caller that wants one
+  // (the hike profile's dot) takes it from here rather than starting a second
+  // watcher of its own.
+  onPosition?: (fix: { lat: number; long: number; accuracyM: number } | null) => void;
 }) {
   const holder = useRef<HTMLDivElement | null>(null);
+  // Held in a ref so a caller passing a fresh closure each render can't tear the
+  // map down — the setup effect below rebuilds on every dependency change.
+  const position = useRef(onPosition);
+  position.current = onPosition;
   const figure = useRef<HTMLElement | null>(null);
   // Whether this map currently holds a GL context. See MOUNT_MARGIN.
   const [live, setLive] = useState(false);
@@ -260,7 +271,17 @@ export function DayMapGL({
       // a small embedded map), a distance scale, and "you are here".
       m.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
       m.addControl(new FullscreenControl(), "top-right");
-      m.addControl(new GeolocateControl({ trackUserLocation: true }), "top-right");
+      const geolocate = new GeolocateControl({ trackUserLocation: true });
+      m.addControl(geolocate, "top-right");
+      // Nothing starts tracking on its own: the control emits only once the user
+      // has tapped it, so no fix is asked for — and no dot appears anywhere —
+      // until they ask for one.
+      geolocate.on("geolocate", (e) => {
+        const c = (e as unknown as GeolocationPosition).coords;
+        position.current?.({ lat: c.latitude, long: c.longitude, accuracyM: c.accuracy });
+      });
+      geolocate.on("trackuserlocationend", () => position.current?.(null));
+      geolocate.on("error", () => position.current?.(null));
       m.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
 
       // MapLibre's attribution is already `compact: true` by default, but it

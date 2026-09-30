@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import date, datetime, time, timedelta
 
@@ -139,6 +140,48 @@ def format_elevation(value) -> str:
     """``"780 m"`` — a rounded climb with its unit, ``""`` when unset. The ``+``
     / ``↑`` a caller may put in front of it is the caller's."""
     return "" if value is None else f"{round_elevation(value)} m"
+
+
+# -- the elevation profile's horizontal scale ---------------------------------
+# A curve between a low and a high mark says how much you climb; it doesn't say
+# how high you are anywhere in between, which on a mountain day is the question
+# (is that saddle above the snow line?). So the band is ruled at round altitudes,
+# and the step is chosen off the ladder below — the coarsest that still fits
+# inside the walk. Both renderers compute this from the same ``profile`` samples
+# (the viewer in ``render/format.ts``'s ``elevationGrid``) — keep the two in
+# step; ``tests/test_elevation_grid.py`` is the contract they answer to.
+_GRID_STEPS = (5, 10, 20, 50, 100, 200, 500, 1000, 2000)
+
+# Lines are drawn *between* the walk's own low and high marks, so at most this
+# many fit before the numbers start crowding each other in a band a centimetre
+# tall. Eight over an 800 m climb is a line every 100 m, which is how a map's
+# contours read.
+MAX_GRID_LINES = 8
+
+
+def elevation_grid(low: float, high: float) -> list[int]:
+    """The round altitudes to rule an elevation band at, strictly between
+    ``low`` and ``high``.
+
+    ``elevation_grid(2432, 3245)`` → ``[2500, 2600, … 3200]``. Empty when the
+    walk is too flat to hold a round line (a 4 m range between two multiples of
+    five has nothing to say) — the low and high marks are then the whole scale.
+    """
+    if high <= low:
+        return []
+    for step in _GRID_STEPS:
+        first = math.floor(low / step) * step + step
+        lines = [int(v) for v in _count(first, high, step)]
+        if len(lines) <= MAX_GRID_LINES:
+            return lines
+    return []  # unreachable on Earth: 2 km lines over any walk's climb
+
+
+def _count(first: float, high: float, step: int):
+    v = first
+    while v < high:
+        yield v
+        v += step
 
 
 def _parse_bool(value) -> bool:

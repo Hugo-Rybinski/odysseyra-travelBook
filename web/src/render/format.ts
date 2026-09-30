@@ -120,6 +120,9 @@ const LABELS = {
     hikeAscent: "↑ {m} m",
     hikeDescent: "↓ {m} m",
     hikeProfileAlt: "Elevation profile over {km} km, from {low} m to {high} m",
+    // Screen-only, like the GPX link below: the dot it labels comes from a live
+    // GPS fix, which paper has no twin for.
+    hikeHere: "You are here: {km} km, {m} m",
     // Screen-only: hands back the .gpx the hike carries. Paper can't download a
     // file, so this has no PDF twin.
     getGpx: "(Get GPX track)",
@@ -291,6 +294,7 @@ const LABELS = {
     hikeAscent: "↑ {m} m",
     hikeDescent: "↓ {m} m",
     hikeProfileAlt: "Profil altimétrique sur {km} km, de {low} m à {high} m",
+    hikeHere: "Vous êtes ici : {km} km, {m} m",
     getGpx: "(Obtenir la trace GPX)",
     buildGpx: "(Générer le fichier GPX)",
     gpxFailed: "Le fichier GPX n'a pas pu être lu.",
@@ -461,6 +465,28 @@ export function fmtKm(value: number | null | undefined): string {
 /** `"780 m"` — a rounded climb with its unit, `""` when unset. */
 export function fmtElevation(value: number | null | undefined): string {
   return value == null ? "" : `${roundElevation(value)} m`;
+}
+
+// The elevation profile's horizontal scale. A curve between a low and a high
+// mark says how much you climb, not how high you are anywhere in between — so
+// the band is ruled at round altitudes, off the ladder below. Mirrors
+// `models/parsers.py`'s `elevation_grid` (and `MAX_GRID_LINES`); there is no JS
+// test runner here, so `tests/test_elevation_grid.py` is the contract both sides
+// implement — keep the two in step.
+const GRID_STEPS = [5, 10, 20, 50, 100, 200, 500, 1000, 2000];
+const MAX_GRID_LINES = 8;
+
+/** The round altitudes to rule an elevation band at, strictly between `low` and
+ *  `high`: `elevationGrid(2432, 3245)` → `[2500, 2600, … 3200]`. Empty when the
+ *  walk is too flat to hold a round line. */
+export function elevationGrid(low: number, high: number): number[] {
+  if (high <= low) return [];
+  for (const step of GRID_STEPS) {
+    const lines: number[] = [];
+    for (let v = Math.floor(low / step) * step + step; v < high; v += step) lines.push(v);
+    if (lines.length <= MAX_GRID_LINES) return lines;
+  }
+  return []; // unreachable on Earth: 2 km lines over any walk's climb
 }
 
 /** Fill {placeholders} in a label template. */

@@ -122,6 +122,12 @@ class GpxTrack:
     """A hike's recorded track, reduced to what gets drawn.
 
     * ``points`` — the simplified ``(lat, long)`` line, in walking order.
+    * ``cum_km`` — one per ``points`` entry: the distance walked to it, measured
+      on the **full-resolution** track. Simplification drops points, not
+      distance, so this is what lets a position matched to the drawn line be
+      read off the profile's x axis (the viewer's "you are here" dot). Summing
+      the simplified line instead would come up short, most on the twisty
+      ground where a walker most wants to know where they are.
     * ``waypoints`` — the file's named ``<wpt>``s (see :class:`GpxWaypoint`).
     * ``km_marks`` — the whole-kilometre distance marks both figures share
       (see :class:`GpxKmMark`).
@@ -139,6 +145,7 @@ class GpxTrack:
     """
 
     points: list[tuple[float, float]] = field(default_factory=list)
+    cum_km: list[float] = field(default_factory=list)
     waypoints: list[GpxWaypoint] = field(default_factory=list)
     km_marks: list[GpxKmMark] = field(default_factory=list)
     profile: list[tuple[float, float]] = field(default_factory=list)
@@ -329,27 +336,33 @@ def _climb(eles: list[float]) -> tuple[float, float]:
     return gain, loss
 
 
-def _simplify(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+def _simplify(points: list[tuple[float, float]]) -> list[int]:
     """Ramer–Douglas–Peucker down to ``MAP_MAX_POINTS``, doubling the tolerance
     until it fits. Starting from ~1 m keeps a faithful line for the short tracks
     that are already small enough, and a recorded track's collinear runs collapse
-    long before the shape does."""
+    long before the shape does.
+
+    Returns the **indices** it keeps, not the points: the distance walked to each
+    one is measured on the full-resolution track, and carrying it through the
+    reduction needs to know which recordings survived (see ``GpxTrack.cum_km``).
+    """
     if len(points) <= MAP_MAX_POINTS:
-        return list(points)
+        return list(range(len(points)))
     tol = 1e-5  # degrees, ~1.1 m of latitude
-    reduced = list(points)
+    kept = list(range(len(points)))
     for _ in range(24):
-        reduced = _rdp(points, tol)
-        if len(reduced) <= MAP_MAX_POINTS:
+        kept = _rdp(points, tol)
+        if len(kept) <= MAP_MAX_POINTS:
             break
         tol *= 2
-    return reduced
+    return kept
 
 
-def _rdp(points: list[tuple[float, float]], tol: float) -> list[tuple[float, float]]:
+def _rdp(points: list[tuple[float, float]], tol: float) -> list[int]:
     """Ramer–Douglas–Peucker, iteratively (a recorded track is deep enough to
-    blow the recursion limit). Distances are in degrees — fine for a within-a-day
-    trail, where the aspect distortion is a fraction of the tolerance."""
+    blow the recursion limit), as the indices kept. Distances are in degrees —
+    fine for a within-a-day trail, where the aspect distortion is a fraction of
+    the tolerance."""
     keep = [False] * len(points)
     keep[0] = keep[-1] = True
     stack = [(0, len(points) - 1)]
@@ -374,7 +387,7 @@ def _rdp(points: list[tuple[float, float]], tol: float) -> list[tuple[float, flo
             keep[index] = True
             stack.append((first, index))
             stack.append((index, last))
-    return [p for p, k in zip(points, keep) if k]
+    return [i for i, k in enumerate(keep) if k]
 
 
 def _profile(cumulative: list[float], eles: list[float]) -> list[tuple[float, float]]:
@@ -468,8 +481,12 @@ def parse_gpx(text: str) -> GpxTrack:
         cumulative.append(cumulative[-1] + _haversine_km(a, b))
 
     named = _named_waypoints(root, kind, coords)
+    kept = _simplify(coords)
     track = GpxTrack(
-        points=_simplify(coords),
+        points=[coords[i] for i in kept],
+        # each drawn point's distance along the *full-resolution* track, so a
+        # position found on the line reads off the same axis the profile does
+        cum_km=[cumulative[i] for i in kept],
         # Above the cap **none** are kept, rather than an arbitrary prefix — see
         # MAX_NAMED_POINTS. The count survives either way, so `validate` can say
         # that a file naming forty turns had all forty left off the map.

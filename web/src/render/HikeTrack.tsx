@@ -1,11 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { Activity, HikeTrack, MapGeo } from "../types/resolved";
 import { downloadBytes, slugify } from "../file/saveExport";
-import { fill, fmtKm, roundElevation, roundKm, tr, type Lang } from "./format";
+import { elevationGrid, fill, fmtKm, roundElevation, roundKm, tr, type Lang } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { MapFigure } from "./Parts";
 import { useAccent } from "./palette";
 import { useRouteGpx } from "./routeExport";
+import { elevationAt, nearestOnTrail, type Fix, type TrailFix } from "./trailPosition";
 
 // Same lazy chunk as the day and trip maps (MapLibre is heavy, precached once).
 const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMapGL })));
@@ -16,7 +17,10 @@ const DayMapGL = lazy(() => import("./DayMapGL").then((m) => ({ default: m.DayMa
 //
 // One deliberate difference from the print, because a screen isn't paper: the
 // profile is inline SVG rather than a drawn chart — same data, same shape, but
-// it scales with the column and reflows on a phone.
+// it scales with the column, and a walk with more kilometre marks than the
+// column can number scrolls sideways instead of setting them on top of each
+// other (`MARK_MIN_PX` below). The print never has to: it has a fixed column and
+// at most fifteen marks on it.
 //
 // The map follows the Options "interactive maps" toggle, by the same
 // alternatives-not-a-fallback-chain rule as the day maps (see `MapView` in
@@ -42,6 +46,14 @@ export function HikeTrackFigure({
   const [failed, setFailed] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const onFail = useCallback(() => setFailed(true), []);
+  // "You are here", on the profile. The fix comes from the trail map's own
+  // geolocate control, so it exists only while that map does — with the
+  // interactive-maps toggle off there is no control and deliberately no dot.
+  const [fix, setFix] = useState<Fix | null>(null);
+  const here = useMemo(
+    () => (track && fix ? nearestOnTrail(track.points, track.cum_km, fix, act.route) : null),
+    [track, fix, act.route],
+  );
 
   // Must be a STABLE reference: DayMapGL remounts when `geo`'s identity changes,
   // so a fresh literal each render would tear the map down before it draws.
@@ -93,14 +105,14 @@ export function HikeTrackFigure({
                 </div>
               }
             >
-              <DayMapGL geo={geo} caption={caption} onFail={onFail} />
+              <DayMapGL geo={geo} caption={caption} onFail={onFail} onPosition={setFix} />
             </Suspense>
           </MapErrorBoundary>
         )
       ) : track.map ? (
         <MapFigure rendered={track.map} caption={caption} />
       ) : null}
-      <ElevationProfile track={track} lang={lang} accent={accent} />
+      <ElevationProfile track={track} lang={lang} accent={accent} here={here} />
     </div>
   );
 }
@@ -117,6 +129,15 @@ const VB_H = 110;
 // the marks is that the two figures agree.
 const KM_LABEL_EDGE = 0.07;
 
+// The room one kilometre number needs along the axis. The print has a fixed
+// column and at most `MAX_KM_MARKS` (15) numbers on it, so it can't crowd; a
+// screen can be 320 px wide, where fifteen numbers would be 21 px apart and set
+// on top of each other. So the plot claims this much per mark and **scrolls**
+// horizontally inside the card when the column can't give it that — a long walk
+// on a phone is read by dragging the profile, which is the one thing paper
+// can't do, rather than by reading numbers laid over each other.
+const MARK_MIN_PX = 44;
+
 // Distance against elevation, as a filled area under a stroked curve — the same
 // figure pdf/hike_map.py draws with vector primitives, from the same samples.
 // The y range is padded by a tenth of the climb (and at least 5 m) so a flat
@@ -126,10 +147,12 @@ function ElevationProfile({
   track,
   lang,
   accent,
+  here,
 }: {
   track: HikeTrack;
   lang: Lang;
   accent: string;
+  here: TrailFix | null;
 }) {
   const geometry = useMemo(() => {
     const profile = track.profile;
@@ -149,15 +172,44 @@ function ElevationProfile({
     const marks = (track.km_marks ?? [])
       .filter((m) => m.km > 0 && m.km < km)
       .map((m) => ({ km: m.km, x: px(m.km), at: m.km / km }));
+    // The altitude scale: round heights between the walk's own low and high
+    // marks, ruled across the band and numbered in the gutter beside it. `at` is
+    // the fraction of the band's height each sits at, which is what lets the
+    // gutter — a DOM column outside the scroller, so it stays put while the plot
+    // is dragged — line its numbers up with lines drawn in SVG units.
+    const grid = elevationGrid(low, high).map((m) => ({ m, y: py(m), at: py(m) / VB_H }));
     return {
       km,
       low: Math.round(low),
       high: Math.round(high),
       marks,
+      grid,
+      px,
+      py,
       line: `M${points.join("L")}`,
       area: `M0,${VB_H}L${points.join("L")}L${VB_W},${VB_H}Z`,
     };
   }, [track]);
+
+  // "You are here", placed on the curve. The dot itself is a DOM disc rather
+  // than an SVG circle: the viewBox is stretched non-uniformly to whatever width
+  // the column gives it, which would draw a circle as an ellipse. Its band and
+  // drop line are SVG, where a rect and a line stretch without complaint.
+  const you = useMemo(() => {
+    if (!here || !geometry) return null;
+    const m = elevationAt(track.profile, here.km);
+    return {
+      at: geometry.px(here.km) / VB_W, // fraction of the plot's width
+      atY: geometry.py(m) / VB_H,
+      x: geometry.px(here.km),
+      y: geometry.py(m),
+      // the fix's own accuracy, as a width on the distance axis: a 40 m fix on
+      // a switchback really is several hundred metres of walking
+      halfW: Math.max(geometry.px(here.accuracyM / 1000), 0),
+      km: roundKm(here.km),
+      m: Math.round(m),
+    };
+  }, [here, geometry, track.profile]);
 
   // No elevations in the file — the trail map stands alone (as in the PDF).
   if (!geometry) return null;
@@ -171,63 +223,150 @@ function ElevationProfile({
           {"  ·  "}
           {fill(tr(lang, "hikeDescent"), { m: roundElevation(track.descent_m ?? 0) })}
         </span>
+        {/* The dot's reading, in the caption rather than beside the dot: a label
+            on the curve is one more thing to collide with the kilometre numbers,
+            and this is the line a walker reads on a phone without hovering. */}
+        {you && (
+          <span className="hike-profile-here">
+            {fill(tr(lang, "hikeHere"), { km: you.km, m: you.m })}
+          </span>
+        )}
       </figcaption>
-      {/* The high mark rides inside the band's top-left corner (the padding
+      {/* Two columns: the altitude scale, then the plot and its distance axis
+          in a scroller. The gutter is deliberately *outside* that scroller — it
+          is the one thing you still need after dragging a long walk sideways,
+          and its numbers can't be laid over the band anyway (the curve reaches
+          the left edge at the trailhead, which is the line they would label).
+          The high mark rides inside the band's top-left corner (the padding
           above it is what keeps the curve clear of it); the low mark and the
           length share the axis row underneath — exactly as in the print, where
           a low mark inside the band would collide with the curve at every
-          trailhead. */}
-      <div className="hike-profile-plot">
-        <svg
-          viewBox={`0 0 ${VB_W} ${VB_H}`}
-          preserveAspectRatio="none"
-          role="img"
-          aria-label={fill(tr(lang, "hikeProfileAlt"), {
-            km: roundKm(geometry.km),
-            low: geometry.low,
-            high: geometry.high,
-          })}
-        >
-          <path d={geometry.area} fill={accent} fillOpacity={0.18} />
-          {/* the distance marks, over the fill and under the curve, so the
-              profile still reads as one shape (as in the print) */}
-          {geometry.marks.map((m) => (
-            <line
-              key={m.km}
-              x1={m.x}
-              y1={0}
-              x2={m.x}
-              y2={VB_H}
-              stroke={accent}
-              strokeOpacity={0.35}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {/* vectorEffect keeps the stroke one pixel wide however the box is
-              scaled — the non-uniform viewBox stretch would otherwise fatten
-              it unevenly. */}
-          <path
-            d={geometry.line}
-            fill="none"
-            stroke={accent}
-            strokeWidth={1.6}
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        <span className="hike-profile-high">{geometry.high} m</span>
-      </div>
-      <p className="hike-profile-axis">
-        <span>{geometry.low} m</span>
-        {geometry.marks
-          .filter((m) => m.at > KM_LABEL_EDGE && m.at < 1 - KM_LABEL_EDGE)
-          .map((m) => (
-            <span key={m.km} className="hike-profile-km" style={{ left: `${m.at * 100}%` }}>
-              {m.km}
+          trailhead. Those two keep their `m`: they are the walk's own
+          altitudes, where the gutter's bare numbers are the scale. */}
+      <div className="hike-profile-body">
+        <div className="hike-profile-scale" aria-hidden>
+          {geometry.grid.map((g) => (
+            <span key={g.m} style={{ top: `${g.at * 100}%` }}>
+              {g.m}
             </span>
           ))}
-        <span>{fmtKm(geometry.km)}</span>
-      </p>
+        </div>
+        <div className="hike-profile-scroll">
+          <div
+            className="hike-profile-inner"
+            style={{ minWidth: `${(geometry.marks.length + 1) * MARK_MIN_PX}px` }}
+          >
+            <div className="hike-profile-plot">
+              <svg
+                viewBox={`0 0 ${VB_W} ${VB_H}`}
+                preserveAspectRatio="none"
+                role="img"
+                aria-label={fill(tr(lang, "hikeProfileAlt"), {
+                  km: roundKm(geometry.km),
+                  low: geometry.low,
+                  high: geometry.high,
+                })}
+              >
+                <path d={geometry.area} fill={accent} fillOpacity={0.18} />
+                {/* the altitude scale, lighter than the distance marks: those
+                    pair the figure with the trail map, so they read first */}
+                {geometry.grid.map((g) => (
+                  <line
+                    key={g.m}
+                    x1={0}
+                    y1={g.y}
+                    x2={VB_W}
+                    y2={g.y}
+                    stroke={accent}
+                    strokeOpacity={0.22}
+                    strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+                {/* the distance marks, over the fill and under the curve, so the
+                    profile still reads as one shape (as in the print) */}
+                {geometry.marks.map((m) => (
+                  <line
+                    key={m.km}
+                    x1={m.x}
+                    y1={0}
+                    x2={m.x}
+                    y2={VB_H}
+                    stroke={accent}
+                    strokeOpacity={0.35}
+                    strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+                {/* vectorEffect keeps the stroke one pixel wide however the box
+                    is scaled — the non-uniform viewBox stretch would otherwise
+                    fatten it unevenly. */}
+                <path
+                  d={geometry.line}
+                  fill="none"
+                  stroke={accent}
+                  strokeWidth={1.6}
+                  vectorEffect="non-scaling-stroke"
+                />
+                {/* where you are: the fix's accuracy as a band, and a drop line
+                    down to the distance axis so the kilometre can be read off
+                    the numbers already there */}
+                {you && (
+                  <>
+                    {you.halfW > 1 && (
+                      <rect
+                        x={you.x - you.halfW}
+                        y={0}
+                        width={you.halfW * 2}
+                        height={VB_H}
+                        fill={accent}
+                        fillOpacity={0.1}
+                      />
+                    )}
+                    <line
+                      x1={you.x}
+                      y1={you.y}
+                      x2={you.x}
+                      y2={VB_H}
+                      stroke={accent}
+                      strokeWidth={1}
+                      strokeOpacity={0.6}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </>
+                )}
+              </svg>
+              <span className="hike-profile-high">{geometry.high} m</span>
+              {you && (
+                <span
+                  className="hike-profile-you"
+                  style={{
+                    left: `${you.at * 100}%`,
+                    top: `${you.atY * 100}%`,
+                    background: accent,
+                  }}
+                  title={fill(tr(lang, "hikeHere"), { km: you.km, m: you.m })}
+                />
+              )}
+            </div>
+            <p className="hike-profile-axis">
+              <span>{geometry.low} m</span>
+              {geometry.marks
+                .filter((m) => m.at > KM_LABEL_EDGE && m.at < 1 - KM_LABEL_EDGE)
+                .map((m) => (
+                  <span
+                    key={m.km}
+                    className="hike-profile-km"
+                    style={{ left: `${m.at * 100}%` }}
+                  >
+                    {m.km}
+                  </span>
+                ))}
+              <span>{fmtKm(geometry.km)}</span>
+            </p>
+          </div>
+        </div>
+      </div>
     </figure>
   );
 }

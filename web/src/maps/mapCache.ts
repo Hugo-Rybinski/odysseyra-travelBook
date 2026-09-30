@@ -151,7 +151,7 @@ const BUDGET_BYTES = 160 * 1024 * 1024;
 // finish where there used to be two identical discs. A v29 entry has neither
 // field *and* a `track.map` PNG rendered without any of it, so a trail would
 // keep coming back as a shape with no story.
-const SCHEMA_VERSION = 30;
+const SCHEMA_VERSION = 31;
 
 interface Entry {
   day: Day;

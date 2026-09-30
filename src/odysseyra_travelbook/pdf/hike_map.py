@@ -20,16 +20,27 @@ from __future__ import annotations
 import io
 import logging
 
-from ..models import format_km, round_elevation
+from ..models import elevation_grid, format_km, round_elevation
 from .base import FAINT, FONT, MUTED, _tint
 
 logger = logging.getLogger("odysseyra_travelbook.pdf")
 
 # Height of the profile chart's plot area, and the room its labels need above
-# (the header line) and below (the distance axis).
-_PLOT_H = 22.0
+# (the header line) and below (the distance axis). The band is taller than a
+# chart of two figures needs because it is now ruled at round altitudes as well:
+# eight lines across 22 mm put their numbers 2.75 mm apart, which is barely more
+# than the 6.5 pt type they are set in.
+_PLOT_H = 30.0
 _HEAD_H = 5.0
 _AXIS_H = 4.0
+
+# The scale gutter to the left of the band, holding those round altitudes
+# right-aligned. Outside the plot, not inside it: the curve reaches the left edge
+# at the trailhead, so a number laid over the band there would sit on the line it
+# is labelling. Four digits at 6.5 pt measure 5.83 mm, and a `cell` spends 1 mm
+# of inner padding at each end, so 9 mm holds a Himalayan altitude with 1.8 mm
+# left over between it and the band.
+_SCALE_W = 9.0
 
 # The trail map's drawn height is capped here (mm). A day page has an itinerary
 # to fit around it, so the map is a figure in the flow, not the page.
@@ -127,12 +138,17 @@ class HikeMapMixin:
     def _hike_profile(self, track, x: float, w: float) -> None:
         """Distance (x) against elevation (y), as a filled accent area under an
         accent curve: a header line naming it with the total climb and descent,
-        the high mark inside the band, and the low mark and the length sharing
-        the axis row beneath it.
+        a gutter of round altitudes ruling the band, the high mark inside it, and
+        the low mark and the length sharing the axis row beneath.
 
         The y range is padded by a tenth of the climb so a flat walk reads as a
         flat line across the middle rather than a curve pinned to the floor and
         ceiling of its own noise.
+
+        The gutter is taken out of the left of ``(x, w)`` — which is the map's
+        box, so the band is inset from the image above it by that much and the
+        two still read as one stacked figure (the gutter is whitespace and a
+        column of small numbers).
         """
         profile = track.profile
         if len(profile) < 2:
@@ -141,11 +157,17 @@ class HikeMapMixin:
         if self.get_y() + total_h + 4 > self.page_break_trigger:
             self.add_page()
 
-        lo = min(p[1] for p in profile)
-        hi = max(p[1] for p in profile)
-        pad = max((hi - lo) * 0.1, 5.0)
-        lo, hi = lo - pad, hi + pad
+        low = min(p[1] for p in profile)
+        high = max(p[1] for p in profile)
+        pad = max((high - low) * 0.1, 5.0)
+        lo, hi = low - pad, high + pad
         km = profile[-1][0]
+        # The band's own scale: round altitudes between the walk's low and high
+        # marks. The padding above and below them is left clear — a line there
+        # would be ruling air the walk never reached.
+        grid = elevation_grid(low, high)
+        # the plot box, with the gutter taken off the left
+        x, w = x + _SCALE_W, w - _SCALE_W
 
         # header: "Elevation profile   ↑ 780 m · ↓ 760 m"
         self.set_x(x)
@@ -185,6 +207,21 @@ class HikeMapMixin:
             self.set_fill_color(*_tint(self.accent, 0.82))
             self.polygon([(x, bottom), *curve, (x + w, bottom)], style="F")
 
+        # The altitude scale, ruled across the band and numbered in the gutter.
+        # Lighter than the kilometre hairlines below: those pair the figure with
+        # the trail map, so they stay the marks that read first.
+        if grid:
+            self.set_draw_color(*_tint(self.accent, 0.74))
+            self.set_line_width(0.12)
+            for m in grid:
+                self.line(x, py(m), x + w, py(m))
+            self.set_font(FONT, "", 6.5)
+            self.set_text_color(*FAINT)
+            for m in grid:
+                # centred on its line: a 6.5 pt line of type is ~2.3 mm tall
+                self.set_xy(x - _SCALE_W, py(m) - 1.5)
+                self.cell(_SCALE_W - 0.8, 3, str(m), align="R")
+
         # The distance marks, as hairlines up through the band — drawn over the
         # fill and under the curve, so the profile still reads as one shape. Same
         # kilometres, same numbers, as the trail map's ticks: that pairing is the
@@ -205,12 +242,15 @@ class HikeMapMixin:
         # can't reach it (the padding above ``hi`` is what keeps that clear). The
         # low mark would collide with the curve at every trailhead, so it goes
         # *under* the baseline, sharing the axis row with the total distance.
+        # These two are the walk's own altitudes and keep their ``m``; the
+        # gutter's are the scale it is drawn against, and stay bare numbers — so
+        # a figure standing in the gutter's column is never a measured one.
         self.set_font(FONT, "", 6.5)
         self.set_text_color(*FAINT)
         self.set_xy(x + 0.6, top + 0.2)
-        self.cell(w, 3, f"{round(hi - pad)} m")
+        self.cell(w, 3, f"{round(high)} m")
         self.set_xy(x + 0.6, bottom + 0.2)
-        self.cell(w / 2, _AXIS_H, f"{round(lo + pad)} m")
+        self.cell(w / 2, _AXIS_H, f"{round(low)} m")
         # each mark's kilometre, centred under its hairline — the numbers the
         # trail map wears too, so the reader can carry one figure onto the other
         for k in marks:

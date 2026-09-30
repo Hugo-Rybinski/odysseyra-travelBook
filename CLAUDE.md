@@ -660,6 +660,91 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       turnaround (the one point on that trail there's no doubt about), so the
       review PDFs show the whole thing; `tests/test_hike_trail.py` holds the
       geometry and the decisions, and `tests/test_gpx.py` the four filters.
+    - **The profile's band is ruled at round altitudes.** A curve between a low
+      and a high mark says how much you climb; it says nothing about how high
+      you are at the saddle halfway along, which on a mountain day is the
+      question. So the band carries horizontal scale lines, chosen by
+      `models/parsers.py`'s **`elevation_grid(low, high)`** — the coarsest step
+      off a 5 m…2 km ladder that fits at most `MAX_GRID_LINES` (8) lines
+      **strictly between** the walk's own low and high marks (2432 → 3245 m is
+      ruled every 100 m). Strictly between, because the band's ±10 % padding is
+      air the walk never reached. Mirrored in the viewer as `format.ts`'s
+      `elevationGrid`, with `tests/test_elevation_grid.py` as the contract both
+      sides answer to — the same arrangement as `round_km`/`roundKm`, and for
+      the same reason: two figures ruled differently would be worse than two
+      ruled not at all. Four things are load-bearing:
+      - **The numbers sit in a gutter beside the band, not over it.** The curve
+        reaches the left edge at the trailhead, so a number laid there would sit
+        on the line it labels. `_SCALE_W` (9 mm, enough for four digits at
+        6.5 pt) is taken off the left of the `(x, w)` box `hike_track` passes,
+        which is the *map's* box — so the band is inset from the image above it
+        by that much and the two still read as one stacked figure.
+      - **The gutter's numbers are bare; the walk's own two keep their `m`.**
+        The high mark stays inside the band's top-left corner and the low mark on
+        the axis row, exactly where they were, so a figure standing in the
+        gutter's column is never a measured one.
+      - **The band grew to hold them** — `_PLOT_H` 22 → 30 mm, the viewer's
+        `--hp-h` 74 → 100 px. Eight numbers across 22 mm are 2.75 mm apart,
+        barely more than the type they're set in.
+      - **The viewer's plot scrolls horizontally**; the print's can't and doesn't
+        need to. Paper has a fixed column and at most `MAX_KM_MARKS` (15) numbers
+        on it; a phone is 360 px wide, where fifteen would be 21 px apart and set
+        on top of each other. So `HikeTrack.tsx` claims `MARK_MIN_PX` (44 px) per
+        mark as the plot's `min-width` inside an `overflow-x: auto` scroller, and
+        a long walk is read by dragging it. The **gutter is outside** that
+        scroller (it's the one thing you still need once you've dragged), which
+        is why its numbers are positioned as a percentage of `--hp-h` — the
+        shared height is what makes a DOM column line up with lines drawn in SVG
+        user units. No resolved-`Day` change and no new label, so **no
+        `SCHEMA_VERSION` bump** and nothing to translate; Python moved, so the
+        wheel needs rebuilding and the example PDFs re-rendering.
+    - **"You are here" — a live position on the profile.** The trail map has
+      always shown a GPS fix as a dot on the ground (MapLibre's
+      `GeolocateControl`); the profile turns that same fix into the one number it
+      is drawn against — kilometres walked — and marks the point on the curve, so
+      what's left to climb can be read off it. `render/trailPosition.ts`'s
+      `nearestOnTrail(points, cum_km, fix, route)` is the whole rule, and five
+      things are load-bearing:
+      - **One owner of the GPS, so no dot without the interactive map.** The fix
+        comes from the map's own control (`DayMapGL` gained an `onPosition`
+        prop, held in a ref so a caller's fresh closure can't tear the map
+        down) and from nowhere else. With Options → interactive maps **off**
+        there is no control, no position and deliberately no dot: a second
+        watcher would mean a second permission user and a second drain on the
+        battery for a figure that is the map's companion anyway. Nothing starts
+        tracking on its own either — the control emits only once the user has
+        tapped it.
+      - **`cum_km`, a new resolved `track` field**: each *drawn* point's
+        distance along the **full-resolution** recording, carried through the
+        simplification (`models/gpx.py`'s `_simplify`/`_rdp` now return the
+        **indices** they keep, which is the whole reason for that refactor).
+        Re-summing the simplified line in JS instead would come up short, and
+        most on the twisty ground where a walker most wants to know where they
+        are — `tests/test_gpx.py` pins that with a zig-zag whose drawn line is
+        under 90 % of its measured length. Hence the `SCHEMA_VERSION` bump
+        (**v31**); the TS field is optional, and a day cached without it simply
+        draws no dot.
+      - **An out-and-back is matched against its first half only.** `route:
+        back_and_forth` *and* ends within `ENDS_MERGE_KM` (30 m, mirroring
+        `LOOP_MERGE_KM` in `DayMapGL.tsx` and `maps/render.py` — keep the three
+        in step) means the recording holds both legs, which are drawn metres
+        apart on the ground with nothing in a single fix to tell them apart. So
+        the search stops at the halfway distance and standing on the path reads
+        as the *outward* kilometre rather than as one of two answers; the second
+        half of the curve is the first mirrored anyway. A loop or a one-way walk
+        passes each point once and is matched over its whole length.
+      - **Over `OFF_TRAIL_KM` (1 km) from the line there is no dot.** Otherwise
+        a hike read at home, or on another day of the trip, is marked at
+        whichever trailhead happens to be nearest — a lie a walker can act on.
+      - **The dot is a DOM disc, its band and drop line are SVG.** The viewBox
+        is stretched non-uniformly to the column, which would draw an SVG circle
+        as an ellipse; a `rect` and a `line` stretch without complaint. The
+        reading itself (`hikeHere`, both languages) goes in the **figcaption**,
+        not beside the dot: a label on the curve is one more thing to collide
+        with the kilometre numbers, and the caption is what a walker reads on a
+        phone without hovering. No PDF twin at all — paper has no live position,
+        the same divergence as `(Get GPX track)` — so `translations.py` is
+        untouched.
 
   Both renderers draw map-then-profile from the same `track`, with one deliberate
   difference: the PDF's profile is drawn vector, the viewer's is inline SVG. The

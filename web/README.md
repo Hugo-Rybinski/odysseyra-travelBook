@@ -368,9 +368,39 @@ by the Python engine (`validate(text, lang)`).
   a lie) but still claim a collision box, so the heads keep off them. The
   markers and the numbers are DOM `Marker`s, like the numbered pins.
   The profile is inline SVG (it scales with the
-  column and reflows on a phone) where the PDF draws vector primitives; the two
+  column) where the PDF draws vector primitives; the two
   read the same because they read the same samples, so keep `HikeTrack.tsx` in
-  step with `pdf/hike_map.py`. `defaults.include_hike_maps` (default **on**)
+  step with `pdf/hike_map.py`. Its band is **ruled at round altitudes** —
+  `format.ts`'s `elevationGrid`, mirroring `models/parsers.py`'s
+  `elevation_grid`: the coarsest step off a 5 m…2 km ladder that fits at most
+  eight lines strictly between the walk's own low and high marks, so 2432–3245 m
+  is ruled every 100 m. A curve between two marks says how much you climb, not
+  how high you are at the saddle halfway along. The numbers live in a **gutter
+  beside the band**, not over it (the curve reaches the left edge at the
+  trailhead, which is the line they would label), and they stay bare: the two
+  carrying `m` — the high mark inside the band, the low one on the axis row —
+  are the walk's own altitudes, the gutter's are the scale. That gutter is also
+  the one column **outside** the horizontal scroller: the plot claims
+  `MARK_MIN_PX` (44 px) per kilometre mark and scrolls inside the card when the
+  column can't give it that, so a 15-mark trek on a 360 px screen is read by
+  dragging instead of by numbers set on top of each other. The print needs none
+  of that — a fixed column, at most fifteen marks — but it did need the taller
+  band the scale asked for, hence `_PLOT_H` at 30 mm and `--hp-h` at 100 px.
+  The band also marks **where you are**: the trail map's own geolocate control
+  reports a fix (`DayMapGL`'s `onPosition`), `render/trailPosition.ts`'s
+  `nearestOnTrail` matches it to the nearest point of the line and reads off
+  `track.cum_km` — each drawn point's distance along the *full-resolution*
+  recording, which is why the model ships it rather than the viewer re-summing
+  the simplified line. A dot goes on the curve, a drop line down to the distance
+  axis, the fix's accuracy behind it as a faint band, and the reading itself in
+  the caption (*You are here: 3.2 km, 1700 m*) where it can't collide with the
+  kilometre numbers. That map **owns the GPS**: nothing asks for a position
+  until the control is tapped, and with interactive maps off there is no control
+  and no dot. An **out-and-back** whose recording holds both legs is matched
+  against its first half only — the two legs are metres apart and one fix can't
+  tell them apart, so it reads as the outward kilometre — and a fix more than a
+  kilometre off the trail draws nothing, so a hike read at home isn't pinned to
+  its trailhead. `defaults.include_hike_maps` (default **on**)
   switches the pair off, and does it by leaving `track` out of the payload
   entirely — so the geometry never enters the IndexedDB day cache either.
   Beside the hike's other inline links sits **`(Get GPX track)`**, which

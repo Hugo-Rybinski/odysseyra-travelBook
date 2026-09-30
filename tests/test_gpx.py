@@ -21,6 +21,7 @@ from odysseyra_travelbook.models.gpx import (
     MAX_KM_MARKS,
     MAX_NAMED_POINTS,
     PROFILE_POINTS,
+    _haversine_km,
 )
 from odysseyra_travelbook.validate import validate_text
 
@@ -355,6 +356,34 @@ def test_a_long_recording_is_simplified_for_the_map_but_not_for_the_figures():
 def test_a_short_track_is_left_alone():
     track = parse_gpx(gpx_xml(ridge(120)))
     assert len(track.points) == 120
+
+
+@pytest.mark.parametrize("n", [120, 4000])
+def test_every_drawn_point_carries_its_distance_along_the_walk(n):
+    """``cum_km`` is what lets a position matched to the drawn line be read off
+    the profile's x axis, so it has to be one value per drawn point, rising, and
+    measured on the **full-resolution** track — a walk simplified to a sixth of
+    its points has not become shorter."""
+    track = parse_gpx(gpx_xml(ridge(n)))
+    assert len(track.cum_km) == len(track.points)
+    assert track.cum_km[0] == 0
+    assert all(b >= a for a, b in zip(track.cum_km, track.cum_km[1:]))
+    assert track.cum_km[-1] == pytest.approx(track.distance_km, abs=1e-9)
+    # and it agrees with the profile, the axis it is read against
+    assert track.profile[-1][0] == pytest.approx(track.cum_km[-1], abs=0.001)
+
+
+def test_the_distances_survive_a_twisty_simplification():
+    """The reduction drops the points a straight-line sum would need: on a
+    zig-zag, summing the simplified line comes up short, which is the error
+    shipping the measured distances avoids."""
+    zig = [(42.7 + 0.00004 * i, -0.14 + (0.0002 if i % 2 else -0.0002), 1000.0)
+           for i in range(4000)]
+    track = parse_gpx(gpx_xml(zig))
+    assert len(track.points) <= MAP_MAX_POINTS  # really was simplified
+    drawn = sum(_haversine_km(a, b) for a, b in zip(track.points, track.points[1:]))
+    assert drawn < track.cum_km[-1] * 0.9  # the drawn line is much the shorter
+    assert track.cum_km[-1] == pytest.approx(track.distance_km, abs=1e-9)
 
 
 def test_bounds_cover_the_track():
