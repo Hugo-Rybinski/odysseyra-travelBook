@@ -26,6 +26,7 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { shiftDemoDates } from "./file/demoDates";
+import { loadPrefs, savePrefs, type Prefs } from "./file/prefs";
 import { loadRender, RENDER_BUILD, saveRender } from "./file/renderCache";
 import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
@@ -162,7 +163,10 @@ function wantsDayRender(itinerary: Itinerary | null): boolean {
 
 export function App() {
   const [progress, setProgress] = useState<BootProgress>({ stage: "idle" });
-  const [lang, setLang] = useState<Lang>("en");
+  // The Options choices persisted from the last launch (see `file/prefs.ts`),
+  // read once, synchronously, so the first paint is already in the right language.
+  const [storedPrefs] = useState<Prefs>(() => loadPrefs());
+  const [lang, setLang] = useState<Lang>(storedPrefs.lang);
   const [source, setSource] = useState<Source | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   // Why the itinerary couldn't be rendered (e.g. missing title) while the file
@@ -205,7 +209,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canReopen, setCanReopen] = useState(false);
-  const [inkSaver, setInkSaver] = useState(false);
+  const [inkSaver, setInkSaver] = useState(storedPrefs.inkSaver);
   const [mapsExport, setMapsExport] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingIcs, setExportingIcs] = useState(false);
@@ -222,22 +226,22 @@ export function App() {
   const [docKey, setDocKey] = useState<string | null>(null);
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
   const [cacheError, setCacheError] = useState<string | null>(null);
-  const [interactiveMaps, setInteractiveMaps] = useState(true);
+  const [interactiveMaps, setInteractiveMaps] = useState(storedPrefs.interactiveMaps);
   // Truncate long descriptions to a few lines (with a "Show more" toggle) in the
   // viewer; off shows them in full. Default on.
-  const [clampDescriptions, setClampDescriptions] = useState(true);
+  const [clampDescriptions, setClampDescriptions] = useState(storedPrefs.clampDescriptions);
   // Fetch and show a per-activity weather forecast for near-term days (opt-out).
-  const [showForecast, setShowForecast] = useState(true);
+  const [showForecast, setShowForecast] = useState(storedPrefs.showForecast);
   // Owned here rather than by <Book>, so its hourly refresh keeps running — and
   // Options can show its timestamp and a refresh button — whichever tab is open.
   const forecast = useActivityForecasts(itinerary?.days ?? NO_DAYS, showForecast && !!itinerary);
   // Which days / transport cards / accommodation cards start open (see DayView).
   // Default: past ones collapsed.
-  const [daysView, setDaysView] = useState<DayView>("collapse-past");
-  const [transportView, setTransportView] = useState<DayView>("collapse-past");
-  const [accommodationView, setAccommodationView] = useState<DayView>("collapse-past");
+  const [daysView, setDaysView] = useState<DayView>(storedPrefs.daysView);
+  const [transportView, setTransportView] = useState<DayView>(storedPrefs.transportView);
+  const [accommodationView, setAccommodationView] = useState<DayView>(storedPrefs.accommodationView);
   // Which mapping app the viewer's "Navigate" links open. Default Google Maps.
-  const [mapProvider, setMapProvider] = useState<MapProvider>("google");
+  const [mapProvider, setMapProvider] = useState<MapProvider>(storedPrefs.mapProvider);
   // Which top-level view is showing. Starts on "viewer": with no file open its
   // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
   // first-run user can open a file without visiting Options.
@@ -483,6 +487,38 @@ export function App() {
       window.removeEventListener("offline", off);
     };
   }, []);
+
+  // Persist the Options choices whenever one changes. Compared against what was
+  // last loaded or written, so a launch alone writes nothing and the record's
+  // 30-day clock runs from the last *change*, not the last visit.
+  const savedPrefs = useRef(storedPrefs);
+  useEffect(() => {
+    const now: Prefs = {
+      lang,
+      interactiveMaps,
+      clampDescriptions,
+      showForecast,
+      daysView,
+      transportView,
+      accommodationView,
+      mapProvider,
+      inkSaver,
+    };
+    const prev = savedPrefs.current;
+    if ((Object.keys(now) as (keyof Prefs)[]).every((k) => now[k] === prev[k])) return;
+    savePrefs(now);
+    savedPrefs.current = now;
+  }, [
+    lang,
+    interactiveMaps,
+    clampDescriptions,
+    showForecast,
+    daysView,
+    transportView,
+    accommodationView,
+    mapProvider,
+    inkSaver,
+  ]);
 
   // Default the PDF's map toggle to whatever the opened file asks for.
   useEffect(() => {
