@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { fmtDate, type Lang } from "./render/format";
 import type { DayView } from "./render/Book";
 import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
@@ -86,6 +86,8 @@ export interface OptionsProps {
   exportingGpx: boolean;
   // App
   checkForUpdate: () => void;
+  // Forget the stored Options choices + the launch render cache (see App).
+  onResetSettings: () => Promise<void>;
   checking: boolean;
   updating: boolean;
   canInstall: boolean;
@@ -319,8 +321,38 @@ function ForecastRefresh({
           {t("🔄 Refresh forecast")}
         </button>
       </Tip>
-      {line && <span className="opt-forecast-stamp">{line}</span>}
+      {line && <span className="opt-inline-note">{line}</span>}
     </div>
+  );
+}
+
+// Options → App: forget the saved Options choices and the launch render cache.
+// Says so once done, since nothing else on screen may visibly change (the
+// options may already be on their defaults).
+function ResetSettingsButton({ onReset }: { onReset: () => Promise<void> }) {
+  const t = useT();
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const run = async () => {
+    setState("busy");
+    try {
+      await onReset();
+    } finally {
+      setState("done");
+    }
+  };
+  return (
+    <>
+      <Tip
+        text={t(
+          "Put every option back to its default and clear the saved book the app opens on (the map cache is kept)",
+        )}
+      >
+        <button className="btn subtle" onClick={run} disabled={state === "busy"}>
+          {t("Reset settings & render cache")}
+        </button>
+      </Tip>
+      {state === "done" && <span className="opt-inline-note">{t("Done ✓")}</span>}
+    </>
   );
 }
 
@@ -443,6 +475,7 @@ export function Options(props: OptionsProps) {
     onExportGpx,
     exportingGpx,
     checkForUpdate,
+    onResetSettings,
     checking,
     updating,
     canInstall,
@@ -824,6 +857,7 @@ export function Options(props: OptionsProps) {
               {updating ? t("Updating…") : checking ? t("Checking…") : t("Check for updates")}
             </button>
           </Tip>
+          <ResetSettingsButton onReset={onResetSettings} />
         </div>
       </section>
       </div>

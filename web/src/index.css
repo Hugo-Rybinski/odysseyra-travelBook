@@ -256,7 +256,7 @@ body {
   color: var(--fg);
   font-weight: 600;
 }
-.opt-forecast-stamp {
+.opt-inline-note {
   font-size: 0.85rem;
   color: var(--muted);
 }

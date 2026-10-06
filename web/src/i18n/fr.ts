@@ -95,6 +95,10 @@ export const FR: Record<string, string> = {
   "Fetch the weather forecast again now (it also updates every hour)":
     "Récupérer la météo maintenant (elle se met aussi à jour toutes les heures)",
   "🔄 Refresh forecast": "🔄 Actualiser la météo",
+  "Reset settings & render cache": "Réinitialiser les réglages et le cache d'affichage",
+  "Put every option back to its default and clear the saved book the app opens on (the map cache is kept)":
+    "Remettre chaque option à sa valeur par défaut et effacer le carnet enregistré à l'ouverture (le cache des cartes est conservé)",
+  "Done ✓": "Fait ✓",
   "Show more": "Voir plus",
   "Show less": "Voir moins",
   "Open an itinerary, reopen the last one, or load a bundled sample.":
