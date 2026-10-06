@@ -26,8 +26,8 @@ import {
   type OpenedFile,
 } from "./file/openFile";
 import { shiftDemoDates } from "./file/demoDates";
-import { loadPrefs, savePrefs, type Prefs } from "./file/prefs";
-import { loadRender, RENDER_BUILD, saveRender } from "./file/renderCache";
+import { clearPrefs, DEFAULT_PREFS, loadPrefs, savePrefs, type Prefs } from "./file/prefs";
+import { clearRender, loadRender, RENDER_BUILD, saveRender } from "./file/renderCache";
 import { downloadBytes, downloadText, slugify } from "./file/saveExport";
 import { formatVersionedName, nextVersion, parseVersionedName } from "./file/version";
 import {
@@ -1216,6 +1216,28 @@ export function App() {
     [source],
   );
 
+  // Options → App → "Reset settings & render cache": forget the stored Options
+  // choices and the launch render cache, and put every option back to its
+  // default now. `savedPrefs` is moved first so the defaults aren't written
+  // straight back as a "change". The map cache is untouched — it has its own
+  // controls under Maps. The open book stays on screen; the render cache is
+  // simply rewritten by the next resolve.
+  const onResetSettings = useCallback(async () => {
+    clearPrefs();
+    await clearRender();
+    savedPrefs.current = DEFAULT_PREFS;
+    const d = DEFAULT_PREFS;
+    setInteractiveMaps(d.interactiveMaps);
+    setClampDescriptions(d.clampDescriptions);
+    setShowForecast(d.showForecast);
+    setDaysView(d.daysView);
+    setTransportView(d.transportView);
+    setAccommodationView(d.accommodationView);
+    setMapProvider(d.mapProvider);
+    setInkSaver(d.inkSaver);
+    if (lang !== d.lang) await onToggleLang(d.lang);
+  }, [lang, onToggleLang]);
+
   // Building a GPX file for a road leg that carries no recording — the engine
   // routes it (usually straight from the cache the day's map filled) and hands
   // back the file. Bound to the text the current preview was resolved from, so
@@ -1463,6 +1485,7 @@ export function App() {
           onExportGpx={onExportGpx}
           exportingGpx={exportingGpx}
           checkForUpdate={checkForUpdate}
+          onResetSettings={onResetSettings}
           checking={checking}
           updating={updating}
           canInstall={canInstall}

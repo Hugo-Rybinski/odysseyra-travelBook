@@ -98,6 +98,15 @@ export function loadPrefs(now = Date.now()): Prefs {
   }
 }
 
+/** Forget the stored options (the next launch opens on the defaults). */
+export function clearPrefs(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Store the options (best-effort: losing them costs a reset to defaults). */
 export function savePrefs(prefs: Prefs, now = Date.now()): void {
   try {
