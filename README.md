@@ -122,7 +122,7 @@ Validation runs first (errors are printed to stderr), then it builds regardless.
 | `-o`, `--output PATH` | Output PDF path (default: `<input>.pdf`) |
 | `--ink-saver` | Outlines + thin rules instead of solid accent fills — far less ink when printing. Drops every hyperlink, printing each **(Navigate)** target's `lat, long` instead |
 | `--maps` / `--no-maps` | Force per-day maps on/off, overriding `defaults.include_maps_in_render` |
-| `--map-provider google\|apple\|osm\|waze\|mapsme` | Which app the inline **(Navigate)** links open (default `google`) |
+| `--map-provider google\|apple\|osm\|waze\|mapsme\|yandex` | Which app the inline **(Navigate)** links open (default `google`) |
 | `--cache-dir PATH` | Where to cache map tiles / geocode / route results |
 | `-l`, `--lang en\|fr` | Language of the generated PDF (default `en`) |
 
