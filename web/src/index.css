@@ -256,6 +256,10 @@ body {
   color: var(--fg);
   font-weight: 600;
 }
+.opt-forecast-stamp {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
 .opt-row {
   display: flex;
   flex-wrap: wrap;

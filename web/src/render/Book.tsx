@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { Itinerary } from "../types/resolved";
+import type { Activity, Itinerary } from "../types/resolved";
+import type { Forecast } from "../weather";
 import { tr, type Lang } from "./format";
 import {
   allItemsPast,
@@ -14,7 +15,7 @@ import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
 import { DayCard } from "./DayCard";
 import { EmergencyContacts } from "./EmergencyContacts";
-import { ForecastProvider, useActivityForecasts } from "./forecast";
+import { ForecastProvider } from "./forecast";
 import { PastFold, usePastFold } from "./Parts";
 import { TransportList } from "./TransportList";
 import { TripMap } from "./TripMap";
@@ -23,6 +24,8 @@ import { AccommodationSummary } from "./AccommodationSummary";
 // How days/sections open on load: all collapsed, only past collapsed (default),
 // only the current one open, or all expanded. Shared with transport/accommodation.
 export type DayView = CollapseView;
+
+const NO_FORECASTS = new Map<Activity, Forecast>();
 
 // A day as a date span, so the day list answers to the same three rules as the
 // transport / accommodation card lists (`collapse.ts`). A day is one date, so
@@ -69,7 +72,7 @@ export function Book({
   accommodationView = "collapse-past",
   mapProvider = "google",
   show = "travel",
-  showForecast = true,
+  forecasts = NO_FORECASTS,
   onJumpDay,
   jumpTo = null,
   onJumped,
@@ -94,9 +97,10 @@ export function Book({
   // overview (cover + whole-trip map), or one of the transport / accommodation
   // summaries — each its own page in the app.
   show?: "travel" | "overview" | "transport" | "accommodations";
-  // Fetch and show a weather forecast per activity (near-term days only). Only
-  // meaningful for the travel view; networked and opt-in.
-  showForecast?: boolean;
+  // The per-activity weather forecasts to show on the day timeline (travel view
+  // only). Fetched by App's `useActivityForecasts`, not here, so the hourly
+  // refresh keeps running while another tab is on screen.
+  forecasts?: Map<Activity, Forecast>;
   // Overview mode: where a day-by-day row click goes. The days aren't rendered
   // here, so the app switches to the travel view and hands the day back via
   // `jumpTo` (below) instead of scrolling in place.
@@ -108,9 +112,6 @@ export function Book({
 }) {
   const style = paletteVars(itinerary.cover_color) as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
-  // Called unconditionally (before the early returns below) to keep hook order
-  // stable; disabled for the transport/accommodation views so they do no work.
-  const forecasts = useActivityForecasts(itinerary.days, showForecast && show === "travel");
 
   // Which days are folded away, and whether they're on screen at all. A past
   // day used to stay as a header band you could expand — so a trip halfway

@@ -87,6 +87,14 @@ export const FR: Record<string, string> = {
   "Show weather forecast": "Afficher la météo",
   "Fetch a weather forecast (from Open-Meteo) for each located activity in the next 7 days, shown as a small chip on its title; needs a connection":
     "Récupérer la météo (via Open-Meteo) pour chaque activité localisée dans les 7 prochains jours, affichée en petite pastille sur son titre ; nécessite une connexion",
+  "Updating the weather forecast…": "Mise à jour de la météo…",
+  "Weather forecast last updated: {when}": "Météo mise à jour : {when}",
+  "The weather forecast couldn't be fetched (offline?)": "La météo n'a pas pu être récupérée (hors ligne ?)",
+  "No located activity in the next 7 days to forecast": "Aucune activité localisée dans les 7 prochains jours",
+  "The weather forecast is switched off": "La météo est désactivée",
+  "Fetch the weather forecast again now (it also updates every hour)":
+    "Récupérer la météo maintenant (elle se met aussi à jour toutes les heures)",
+  "🔄 Refresh forecast": "🔄 Actualiser la météo",
   "Show more": "Voir plus",
   "Show less": "Voir moins",
   "Open an itinerary, reopen the last one, or load a bundled sample.":

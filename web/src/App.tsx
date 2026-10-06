@@ -45,6 +45,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
+import { useActivityForecasts } from "./render/forecast";
 import { MapProviderContext, type MapProvider } from "./render/nav";
 import { RouteGpxContext } from "./render/routeExport";
 import { Options } from "./Options";
@@ -83,6 +84,10 @@ import type {
 import type { SrcItinerary } from "./types/source";
 
 const SAMPLE = `${import.meta.env.BASE_URL}samples/france.json`;
+
+// Stable stand-in while no trip is open, so the forecast hook's effect doesn't
+// rerun on every render.
+const NO_DAYS: Day[] = [];
 
 // A minimal, valid starting point for "Create new blank itinerary": a titled
 // trip with one placeholder day, so the viewer renders something the moment it
@@ -223,6 +228,9 @@ export function App() {
   const [clampDescriptions, setClampDescriptions] = useState(true);
   // Fetch and show a per-activity weather forecast for near-term days (opt-out).
   const [showForecast, setShowForecast] = useState(true);
+  // Owned here rather than by <Book>, so its hourly refresh keeps running — and
+  // Options can show its timestamp and a refresh button — whichever tab is open.
+  const forecast = useActivityForecasts(itinerary?.days ?? NO_DAYS, showForecast && !!itinerary);
   // Which days / transport cards / accommodation cards start open (see DayView).
   // Default: past ones collapsed.
   const [daysView, setDaysView] = useState<DayView>("collapse-past");
@@ -1388,6 +1396,8 @@ export function App() {
           setClampDescriptions={setClampDescriptions}
           showForecast={showForecast}
           setShowForecast={setShowForecast}
+          forecastStatus={forecast.status}
+          onRefreshForecast={forecast.refresh}
           daysView={daysView}
           setDaysView={setDaysView}
           transportView={transportView}
@@ -1498,7 +1508,7 @@ export function App() {
             interactiveMaps={interactiveMaps}
             showMapLoaders={!mapsStale}
             clampDescriptions={clampDescriptions}
-            showForecast={showForecast}
+            forecasts={showForecast ? forecast.forecasts : undefined}
             daysView={daysView}
             mapProvider={mapProvider}
             jumpTo={dayAnchor}
