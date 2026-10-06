@@ -6,6 +6,7 @@ import { COMMIT_HASH, commitDateLabel, commitUrl } from "./version";
 import { useT, useTx } from "./i18n";
 import type { CachedDay } from "./maps/mapCache";
 import type { Day } from "./types/resolved";
+import type { ForecastStatus } from "./render/forecast";
 
 // The options panel: every control that used to live in the top bar, moved into
 // one place and grouped by theme (File / Language / Maps / PDF export / App).
@@ -60,6 +61,8 @@ export interface OptionsProps {
   setClampDescriptions: (v: boolean) => void;
   showForecast: boolean;
   setShowForecast: (v: boolean) => void;
+  forecastStatus: ForecastStatus;
+  onRefreshForecast: () => void;
   daysView: DayView;
   setDaysView: (v: DayView) => void;
   transportView: DayView;
@@ -281,6 +284,55 @@ function CacheList({
   );
 }
 
+// The forecast's freshness line plus its refresh button, under the Display
+// group's forecast checkbox. The forecast also refreshes itself every hour while
+// the page is open (`useActivityForecasts`); a failed update keeps the previous
+// one on screen, so the timestamp is simply that forecast's.
+function ForecastRefresh({
+  status,
+  onRefresh,
+  disabledReason,
+  lang,
+}: {
+  status: ForecastStatus;
+  onRefresh: () => void;
+  disabledReason: string;
+  lang: Lang;
+}) {
+  const t = useT();
+  let line = "";
+  if (!disabledReason) {
+    if (status.refreshing) line = t("Updating the weather forecast…");
+    else if (status.updatedAt != null) {
+      line = t("Weather forecast last updated: {when}", { when: fmtStamp(status.updatedAt, lang) });
+    } else if (status.failed) line = t("The weather forecast couldn't be fetched (offline?)");
+    else if (!status.planned) line = t("No located activity in the next 7 days to forecast");
+  }
+  return (
+    <div className="opt-row">
+      <Tip text={disabledReason || t("Fetch the weather forecast again now (it also updates every hour)")}>
+        <button
+          className="btn subtle"
+          onClick={onRefresh}
+          disabled={!!disabledReason || status.refreshing}
+        >
+          {t("🔄 Refresh forecast")}
+        </button>
+      </Tip>
+      {line && <span className="opt-forecast-stamp">{line}</span>}
+    </div>
+  );
+}
+
+// `14:05` for today, `Oct 5, 14:05` (localized) otherwise.
+function fmtStamp(ms: number, lang: Lang): string {
+  const d = new Date(ms);
+  const locale = lang === "fr" ? "fr-FR" : "en-GB";
+  const time = d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === new Date().toDateString()) return time;
+  return `${d.toLocaleDateString(locale, { day: "numeric", month: "short" })}, ${time}`;
+}
+
 // The File group (Open / Reopen / Sample + current-file line). Extracted so it
 // can also stand alone on the empty state, letting a first-run user open a file
 // without going to Options.
@@ -360,6 +412,8 @@ export function Options(props: OptionsProps) {
     setClampDescriptions,
     showForecast,
     setShowForecast,
+    forecastStatus,
+    onRefreshForecast,
     daysView,
     setDaysView,
     transportView,
@@ -613,6 +667,18 @@ export function Options(props: OptionsProps) {
             </label>
           </Tip>
         </div>
+        <ForecastRefresh
+          status={forecastStatus}
+          onRefresh={onRefreshForecast}
+          disabledReason={
+            !hasItinerary
+              ? noFile
+              : !showForecast
+                ? t("The weather forecast is switched off")
+                : ""
+          }
+          lang={lang}
+        />
       </section>
 
       <section className="opt-group">

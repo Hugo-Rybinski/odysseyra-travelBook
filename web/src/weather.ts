@@ -190,36 +190,62 @@ interface HourlyDay {
   wind_speed_10m?: number[];
 }
 
-// One in-flight/settled request per (coordinate, date), so two activities that
-// end up fetching the same day+place hit the network once. Coordinates are
-// rounded (~1 km) for the key. A failed request is evicted so it can retry.
-const dayCache = new Map<string, Promise<HourlyDay | null>>();
+/** What a fetch hands back: the series to show, when it was fetched, and
+ *  whether *this* attempt failed (`data` is then the previous good series, if
+ *  any — a failed refresh keeps the weather already on screen). */
+export interface DayResult {
+  data: HourlyDay | null;
+  at: number | null; // epoch ms the shown series was fetched
+  failed: boolean;
+}
 
-/** Fetch a day's hourly series for a coordinate (memoized). Null on any error. */
-export function fetchDayForecast(
-  lat: number,
-  long: number,
-  date: string,
-): Promise<HourlyDay | null> {
+// The forecast's *generation*: every refresh (the hourly timer, the Options
+// button) bumps it, and a request is reused only within the generation it was
+// made in. So re-rendering — the map loop merging days in, an Apply — costs no
+// request, while a refresh refetches everything once.
+let generation = 0;
+
+/** Make the next fetch of every (coordinate, date) go back to the network. */
+export function bumpForecastGeneration(): void {
+  generation++;
+}
+
+// One in-flight/settled request per (coordinate, date, generation), so two
+// activities that end up fetching the same day+place hit the network once.
+// Coordinates are rounded (~1 km) for the key. A failed request is evicted so a
+// later run can retry it.
+const dayCache = new Map<string, { gen: number; p: Promise<DayResult> }>();
+// The last series each key fetched successfully — what a failed refresh falls
+// back to. Lives for the page, like the request cache.
+const lastGood = new Map<string, { data: HourlyDay; at: number }>();
+
+/** Fetch a day's hourly series for a coordinate (memoized per generation).
+ *  Never rejects: on any error it returns the previous good series, if any. */
+export function fetchDayForecast(lat: number, long: number, date: string): Promise<DayResult> {
   const key = `${lat.toFixed(2)},${long.toFixed(2)},${date}`;
   const hit = dayCache.get(key);
-  if (hit) return hit;
+  if (hit && hit.gen === generation) return hit.p;
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${long}` +
     `&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m` +
     `&start_date=${date}&end_date=${date}&timezone=auto`;
+  const fallback = (): DayResult => {
+    dayCache.delete(key); // let a later run retry
+    const prev = lastGood.get(key);
+    return { data: prev?.data ?? null, at: prev?.at ?? null, failed: true };
+  };
   const p = fetch(url)
-    .then(async (r) => {
+    .then(async (r): Promise<DayResult> => {
       if (!r.ok) throw new Error(`weather ${r.status}`);
       const j = await r.json();
       const h = j?.hourly;
-      return h?.temperature_2m ? (h as HourlyDay) : null;
+      if (!h?.temperature_2m) return fallback();
+      const at = Date.now();
+      lastGood.set(key, { data: h as HourlyDay, at });
+      return { data: h as HourlyDay, at, failed: false };
     })
-    .catch(() => {
-      dayCache.delete(key); // let a later view retry
-      return null;
-    });
-  dayCache.set(key, p);
+    .catch(fallback);
+  dayCache.set(key, { gen: generation, p });
   return p;
 }
 
