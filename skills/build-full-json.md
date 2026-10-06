@@ -1069,7 +1069,7 @@ drive → activity → drive. Merge only when the two roads are adjacent in the
 | Field | Required | Format | Notes |
 |---|---|---|---|
 | `name` | **yes** | text | The place's name. |
-| `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `street`, `natural park`, `mountain`, `mountain pass`, `lake`, `beach`, `waterfall`, `canyon`, `spring`, `market`, `other`. Pick the specific one when it fits — a bazaar is a `market`, a hot or sacred spring is a `spring`, a gorge is a `canyon`, a col is a `mountain pass` — and fall back to `other` only when none does. |
+| `category` | no | enum (default `other`) | One of: `museum`, `church`, `building`, `viewpoint`, `ruins`, `castle`, `temple`, `mosque`, `street`, `natural park`, `mountain`, `mountain pass`, `lake`, `beach`, `waterfall`, `canyon`, `spring`, `hot spring`, `market`, `other`. Pick the specific one when it fits — a bazaar is a `market`, a hot spring is a `hot spring` (a sacred or plain one a `spring`), a mosque is a `mosque`, a gorge is a `canyon`, a col is a `mountain pass` — and fall back to `other` only when none does. |
 | `address` | no | text | |
 | `description` | no | text | |
 | `guidebook_pages` | no | page numbers (`"14"`, `"15-18"`, `"16, 23, 25-30"`) | The guidebook page(s) covering this sight. Numbers only — see *Guidebook page references*. |

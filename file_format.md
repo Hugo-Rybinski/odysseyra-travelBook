@@ -683,7 +683,7 @@ built on the click and downloaded.
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Point-of-interest name | string | any text | — |
-| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `mountain pass` \| `lake` \| `beach` \| `waterfall` \| `canyon` \| `spring` \| `market` \| `other` | `"other"` |
+| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `mosque` \| `street` \| `natural park` \| `mountain` \| `mountain pass` \| `lake` \| `beach` \| `waterfall` \| `canyon` \| `spring` \| `hot spring` \| `market` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |

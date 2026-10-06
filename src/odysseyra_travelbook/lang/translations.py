@@ -83,6 +83,7 @@ _FR = {
     "ruins": "ruines",
     "castle": "château",
     "temple": "temple",
+    "mosque": "mosquée",
     "street": "rue",
     "natural park": "parc naturel",
     "mountain": "montagne",
@@ -94,6 +95,7 @@ _FR = {
     "waterfall": "cascade",
     "canyon": "canyon",
     "spring": "source",
+    "hot spring": "source chaude",
     "market": "marché",
     "other": "autre",
     # -- PDF: transport --

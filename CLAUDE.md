@@ -1111,8 +1111,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
     all work on legs, via the `_all_legs` generator.
 - **Enums** (case-insensitive, validated in the model — the tuples in `models/`
   are the source of truth, so check them rather than this list): PoI `category`
-  (museum/church/building/viewpoint/ruins/castle/temple/street/natural park/
-  mountain/mountain pass/lake/beach/waterfall/canyon/spring/market/other,
+  (museum/church/building/viewpoint/ruins/castle/temple/mosque/street/natural park/
+  mountain/mountain pass/lake/beach/waterfall/canyon/spring/hot spring/market/other,
   default `other` — the last four were added for trips where they are the
   point, and `mountain pass` is the longest label that still fits the badge's
   14-character clip whole, which `tests/test_activity_extras.py` pins); hike `route`

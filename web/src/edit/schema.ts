@@ -78,6 +78,7 @@ export const POI_CATEGORIES = [
   "ruins",
   "castle",
   "temple",
+  "mosque",
   "street",
   "natural park",
   "mountain",
@@ -87,6 +88,7 @@ export const POI_CATEGORIES = [
   "waterfall",
   "canyon",
   "spring",
+  "hot spring",
   "market",
   "other",
 ] as const;

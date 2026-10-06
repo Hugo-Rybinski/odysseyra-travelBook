@@ -412,8 +412,8 @@ class Road(Activity):
 
 POI_CATEGORIES = (
     "museum", "church", "building", "viewpoint", "ruins", "castle", "temple",
-    "street", "natural park", "mountain", "mountain pass", "lake", "beach",
-    "waterfall", "canyon", "spring", "market", "other",
+    "mosque", "street", "natural park", "mountain", "mountain pass", "lake",
+    "beach", "waterfall", "canyon", "spring", "hot spring", "market", "other",
 )
 
 
