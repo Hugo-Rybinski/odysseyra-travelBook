@@ -5,7 +5,7 @@ import type { Activity, Coordinate, TransportLeg, Waypoint } from "../types/reso
 
 // Which mapping app the "Navigate" links open. Chosen in Options and shared with
 // every render component via MapProviderContext (default Google Maps).
-export type MapProvider = "google" | "apple" | "osm" | "waze" | "mapsme";
+export type MapProvider = "google" | "apple" | "osm" | "waze" | "mapsme" | "yandex";
 
 // The picker's options, in display order. Labels are plain product names, so
 // they read the same in both languages (no translation needed).
@@ -15,6 +15,7 @@ export const MAP_PROVIDERS: { id: MapProvider; label: string }[] = [
   { id: "osm", label: "OpenStreetMap" },
   { id: "waze", label: "Waze" },
   { id: "mapsme", label: "MAPS.ME" },
+  { id: "yandex", label: "Yandex Maps" },
 ];
 
 export const MapProviderContext = createContext<MapProvider>("google");
@@ -40,6 +41,9 @@ export function navUrl(
       case "mapsme":
         // MAPS.ME only opens via its app-scheme deep link (no web fallback).
         return `mapsme://map?v=1&ll=${lat},${long}&zoom=16`;
+      case "yandex":
+        // Yandex takes `long,lat`, the other way round from every other provider.
+        return `https://yandex.com/maps/?ll=${long},${lat}&pt=${long},${lat}&z=16`;
       case "google":
       default:
         return `https://www.google.com/maps/search/?api=1&query=${lat},${long}`;
@@ -57,6 +61,8 @@ export function navUrl(
       return `https://waze.com/ul?q=${q}&navigate=yes`;
     case "mapsme":
       return `mapsme://search?query=${q}`;
+    case "yandex":
+      return `https://yandex.com/maps/?text=${q}`;
     case "google":
     default:
       return `https://www.google.com/maps/search/?api=1&query=${q}`;
@@ -67,7 +73,8 @@ export function navUrl(
 // when known, else ``destName``) in the chosen app — used by the "Check online
 // to fill it." link on a road leg that's missing its travel time / distance, so
 // the provider shows the real figures. "" when there's no destination at all.
-// Google / Apple / OpenStreetMap render a full A→B route on the web; Waze and
+// Google / Apple / OpenStreetMap / Yandex render a full A→B route on the web
+// (Yandex's `rtext` points are `lat,long`, unlike its `pt`); Waze and
 // MAPS.ME have no usable web route link, so they fall back to the destination.
 export function directionsUrl(
   provider: MapProvider,
@@ -85,6 +92,9 @@ export function directionsUrl(
       return `https://maps.apple.com/?daddr=${d}&dirflg=d` + (org ? `&saddr=${o}` : "");
     case "osm":
       return `https://www.openstreetmap.org/directions?from=${o}&to=${d}`;
+    case "yandex":
+      // An empty origin routes from the user's current position.
+      return `https://yandex.com/maps/?rtext=${o}~${d}&rtt=auto`;
     case "waze":
     case "mapsme":
       return navUrl(provider, destCoord, destName ?? "");

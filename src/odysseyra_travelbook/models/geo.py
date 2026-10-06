@@ -56,7 +56,7 @@ def _parse_coordinate(value, name: str = "coordinate") -> Coordinate | None:
 
 # The navigation apps a "(Navigate)" link can target. Mirrors the web viewer's
 # MAP_PROVIDERS (see web/src/render/nav.ts) so the two stay in step.
-MAP_PROVIDERS = ("google", "apple", "osm", "waze", "mapsme")
+MAP_PROVIDERS = ("google", "apple", "osm", "waze", "mapsme", "yandex")
 DEFAULT_MAP_PROVIDER = "google"
 
 # Decimals a printed coordinate keeps. 5 is ~1 m at the equator — finer than any
@@ -95,7 +95,8 @@ def maps_url(
     Google Maps. Opening the link on a phone launches that maps / navigation app
     with the destination pre-filled (a tap away from turn-by-turn directions); in
     a desktop browser the ``https`` providers open their web map. Google, Apple,
-    OpenStreetMap and Waze are plain cross-platform ``https`` URLs; MAPS.ME uses
+    OpenStreetMap, Waze and Yandex Maps are plain cross-platform ``https`` URLs
+    (Yandex takes ``long,lat``, the other way round from the rest); MAPS.ME uses
     its app-scheme deep link (no web fallback)."""
     if coordinate is not None:
         lat, long = coordinate.lat, coordinate.long
@@ -111,6 +112,9 @@ def maps_url(
             return f"https://waze.com/ul?ll={lat},{long}&navigate=yes"
         if provider == "mapsme":
             return f"mapsme://map?v=1&ll={lat},{long}&zoom=16"
+        if provider == "yandex":
+            pt = f"{long},{lat}"
+            return f"https://yandex.com/maps/?ll={pt}&pt={pt}&z=16"
         return f"https://www.google.com/maps/search/?api=1&query={lat},{long}"
 
     query = next((p.strip() for p in query_parts if p and p.strip()), "")
@@ -125,4 +129,6 @@ def maps_url(
         return f"https://waze.com/ul?q={q}&navigate=yes"
     if provider == "mapsme":
         return f"mapsme://search?query={q}"
+    if provider == "yandex":
+        return f"https://yandex.com/maps/?text={q}"
     return "https://www.google.com/maps/search/?api=1&query=" + q
