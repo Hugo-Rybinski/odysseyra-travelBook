@@ -4,6 +4,13 @@ import { App } from "./App";
 import { PwaProvider } from "./pwa/PwaProvider";
 import "./index.css";
 import "./tipPosition";
+import { loadPrefs } from "./file/prefs";
+import { applyTheme, resolveTheme } from "./theme";
+
+// Theme before the first paint, so a night launch doesn't flash white. No trip
+// is loaded yet, so `auto` uses the 07:00–19:00 fallback here; <App> refines it
+// with the trip's sun times once the book is open.
+applyTheme(resolveTheme(loadPrefs().theme, new Date(), null));
 
 // The service worker is registered by useRegisterSW() inside <PwaProvider>, the
 // single owner of the update lifecycle. Its progress and the manual check's

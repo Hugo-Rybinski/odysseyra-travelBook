@@ -70,6 +70,7 @@ import {
 } from "./edit/autosave";
 import { usePwa } from "./pwa/PwaProvider";
 import { commitDateLabel } from "./version";
+import { sunForToday, ThemeContext, useTheme, type ThemePref } from "./theme";
 import {
   ActivityIndicator,
   type ActivityItem,
@@ -242,6 +243,9 @@ export function App() {
   const [accommodationView, setAccommodationView] = useState<DayView>(storedPrefs.accommodationView);
   // Which mapping app the viewer's "Navigate" links open. Default Google Maps.
   const [mapProvider, setMapProvider] = useState<MapProvider>(storedPrefs.mapProvider);
+  // Light / dark / auto (light between today's sunrise and sunset — see theme.ts).
+  const [themePref, setThemePref] = useState<ThemePref>(storedPrefs.theme);
+  const theme = useTheme(themePref, sunForToday(itinerary?.days));
   // Which top-level view is showing. Starts on "viewer": with no file open its
   // empty state carries the File box (Open JSON… / Reopen / Sample) inline, so a
   // first-run user can open a file without visiting Options.
@@ -503,6 +507,7 @@ export function App() {
       accommodationView,
       mapProvider,
       inkSaver,
+      theme: themePref,
     };
     const prev = savedPrefs.current;
     if ((Object.keys(now) as (keyof Prefs)[]).every((k) => now[k] === prev[k])) return;
@@ -518,6 +523,7 @@ export function App() {
     accommodationView,
     mapProvider,
     inkSaver,
+    themePref,
   ]);
 
   // Default the PDF's map toggle to whatever the opened file asks for.
@@ -1235,6 +1241,7 @@ export function App() {
     setAccommodationView(d.accommodationView);
     setMapProvider(d.mapProvider);
     setInkSaver(d.inkSaver);
+    setThemePref(d.theme);
     if (lang !== d.lang) await onToggleLang(d.lang);
   }, [lang, onToggleLang]);
 
@@ -1328,6 +1335,7 @@ export function App() {
 
   return (
     <I18nProvider lang={lang}>
+    <ThemeContext.Provider value={theme}>
     <RouteGpxContext.Provider value={routeGpx}>
     <main className="shell">
       <ActivityIndicator items={activities} notice={updateNotice} />
@@ -1464,6 +1472,8 @@ export function App() {
           setAccommodationView={setAccommodationView}
           mapProvider={mapProvider}
           setMapProvider={setMapProvider}
+          themePref={themePref}
+          setThemePref={setThemePref}
           onRedraw={onRedraw}
           redrawing={redrawing}
           days={itinerary?.days ?? []}
@@ -1670,6 +1680,7 @@ export function App() {
       )}
     </main>
     </RouteGpxContext.Provider>
+    </ThemeContext.Provider>
     </I18nProvider>
   );
 }
