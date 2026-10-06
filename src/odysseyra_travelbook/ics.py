@@ -356,8 +356,14 @@ def _accommodation_events(itin: Itinerary, uid_base: str, lang: str,
             _detail(lines, "Contact", acc.contact, lang)
             _detail(lines, "Status", tr(acc.status, lang) if acc.status else "", lang)
             _detail(lines, "Description", acc.description, lang)
-            _detail(lines, "Price",
+            # Each event is one night, so once there are several the stay's
+            # price says what it covers — like a multi-leg booking's.
+            per_night = acc.price_per_night
+            _detail(lines, "Price" if per_night is None else "Price (whole stay)",
                     _money(itin, acc.price, acc.currency, acc.paid, lang), lang)
+            if per_night is not None:
+                _detail(lines, "Price per night",
+                        _money(itin, per_night, acc.currency, None, lang), lang)
             _detail(lines, "Booking source", acc.booking_source, lang)
             _detail(lines, "Website", acc.website, lang)
             _detail(lines, "Booking", acc.booking_link, lang)

@@ -41,6 +41,9 @@ const LABELS = {
     days: "days",
     nights: "nights",
     night: "night",
+    // a 2+-night stay's price spread over its nights (translations.py's
+    // "{price} per night")
+    perNight: "{price} per night",
     // The one line a folded-away run of past entries leaves behind (`PastFold`
     // in Parts.tsx, used by the day list and the three card lists). The count is
     // in parentheses so no wording has to agree in number. Each list names the
@@ -214,6 +217,7 @@ const LABELS = {
     catRuins: "Ruins",
     catCastle: "Castle",
     catTemple: "Temple",
+    catMosque: "Mosque",
     catStreet: "Street",
     catNaturalPark: "Natural park",
     catMountain: "Mountain",
@@ -223,6 +227,7 @@ const LABELS = {
     catWaterfall: "Waterfall",
     catCanyon: "Canyon",
     catSpring: "Spring",
+    catHotSpring: "Hot spring",
     catMarket: "Market",
     catOther: "Other",
   },
@@ -236,6 +241,7 @@ const LABELS = {
     days: "jours",
     nights: "nuits",
     night: "nuit",
+    perNight: "{price} par nuit",
     showPastDays: "Afficher les jours passés ({n})",
     hidePastDays: "Masquer les jours passés ({n})",
     showPastBookings: "Afficher les réservations passées ({n})",
@@ -354,6 +360,7 @@ const LABELS = {
     catRuins: "Ruines",
     catCastle: "Château",
     catTemple: "Temple",
+    catMosque: "Mosquée",
     catStreet: "Rue",
     catNaturalPark: "Parc naturel",
     catMountain: "Montagne",
@@ -366,6 +373,7 @@ const LABELS = {
     catWaterfall: "Cascade",
     catCanyon: "Canyon",
     catSpring: "Source",
+    catHotSpring: "Source chaude",
     catMarket: "Marché",
     catOther: "Autre",
   },
@@ -388,6 +396,7 @@ const CATEGORY_KEYS: Record<string, LabelKey> = {
   ruins: "catRuins",
   castle: "catCastle",
   temple: "catTemple",
+  mosque: "catMosque",
   street: "catStreet",
   "natural park": "catNaturalPark",
   mountain: "catMountain",
@@ -397,6 +406,7 @@ const CATEGORY_KEYS: Record<string, LabelKey> = {
   waterfall: "catWaterfall",
   canyon: "catCanyon",
   spring: "catSpring",
+  "hot spring": "catHotSpring",
   market: "catMarket",
   other: "catOther",
 };

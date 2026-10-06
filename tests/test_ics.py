@@ -156,7 +156,8 @@ def test_descriptions_carry_detail():
     assert all("Night: " in e for e in nights)  # "Night: 1/2", "Night: 2/2"
     assert any("Night: 1/2" in e for e in nights)
     assert all("Breakfast included: Yes" in e for e in nights)
-    assert all("Price: " in e for e in nights)
+    assert all("Price (whole stay): " in e for e in nights)  # 2 nights
+    assert all("Price per night: " in e for e in nights)
 
 
 def test_guidebook_pages_reach_the_event_description():

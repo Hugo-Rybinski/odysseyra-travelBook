@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .base import FONT, INK, LIGHT, MUTED
+from .base import FAINT, FONT, INK, LIGHT, MUTED
 
 
 class AccommodationMixin:
@@ -60,6 +60,8 @@ class AccommodationMixin:
             h += 5
         if acc.price is not None:
             h += 5
+        if acc.price_per_night is not None:
+            h += 4.5
         if acc.breakfast_included:
             h += 6
         if has_links:
@@ -113,6 +115,9 @@ class AccommodationMixin:
         if acc.price is not None:
             self._draw_price(cx, yy, inner_w, acc.price, acc.currency)
             yy += 5
+        if acc.price_per_night is not None:
+            self._per_night_line(cx, yy, inner_w, acc)
+            yy += 4.5
         if acc.breakfast_included:
             self.set_xy(cx, yy + 1)
             self.set_font(FONT, "B", 9)
@@ -123,6 +128,22 @@ class AccommodationMixin:
             self._link_row(cx, yy, links)
 
         self.set_y(y + h + 4)
+
+    def _per_night_line(self, x: float, y: float, w: float, acc) -> None:
+        """``€180 per night  ($195, £152)`` under the stay's price — a step
+        down from it (regular weight, smaller), since the whole-stay figure is
+        what you pay and this is what it works out at."""
+        primary, secondary = self.price_parts(acc.price_per_night, acc.currency)
+        label = self.t("{price} per night").format(price=primary)
+        self.set_xy(x, y)
+        self.set_font(FONT, "", 9)
+        self.set_text_color(*MUTED)
+        lw = self.get_string_width(label)
+        self.cell(lw, 4.5, label)
+        if secondary:
+            self.set_font(FONT, "", 8.5)
+            self.set_text_color(*FAINT)
+            self.cell(w - lw, 4.5, "  " + secondary)
 
     def _acc_badges(self, acc, y: float) -> None:
         """Right-aligned payment + reservation-status pills on the name row."""

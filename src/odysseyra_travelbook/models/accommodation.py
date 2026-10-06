@@ -50,6 +50,17 @@ class Accommodation:
         return None
 
     @property
+    def price_per_night(self) -> float | None:
+        """``price`` spread over the nights, in the price's own currency — only
+        for a stay of **two or more** nights (for one night it *is* the price,
+        so printing it twice would say nothing). The viewer's `perNight` in
+        `AccommodationSummary.tsx` is the same rule — keep the two in step."""
+        n = self.nights
+        if self.price is None or n is None or n < 2:
+            return None
+        return self.price / n
+
+    @property
     def date_range(self) -> str:
         if self.arrival and self.departure:
             return f"{self.arrival:%b %d} → {self.departure:%b %d}"

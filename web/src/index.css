@@ -2330,6 +2330,12 @@ body {
 .card-price {
   margin: 8px 0 0;
 }
+/* "€180 per night" under a 2+-night stay's price: a step down from it. */
+.card-price-night {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
 
 /* The legs of a multi-leg transport booking, under everything the reservation
    covers: a grey rule marks the boundary (heavier than the hairlines between the

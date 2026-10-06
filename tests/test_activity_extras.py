@@ -318,7 +318,8 @@ def test_the_leg_distance_is_in_the_calendar_export():
 
 # -- the four new categories ----------------------------------------------
 
-@pytest.mark.parametrize("category", ["market", "spring", "canyon", "mountain pass"])
+@pytest.mark.parametrize("category", ["market", "spring", "canyon", "mountain pass",
+                                      "hot spring", "mosque"])
 def test_the_new_categories_are_accepted(category):
     assert category in POI_CATEGORIES
     day = _day([_poi("P", duration="1h", category=category)])
@@ -330,6 +331,7 @@ def test_the_new_categories_are_accepted(category):
     # The badge is clipped to 14 characters, so this is the longest label that
     # still fits whole — a test pins it because the next one wouldn't.
     ("mountain pass", "MOUNTAIN PASS"),
+    ("hot spring", "HOT SPRING"), ("mosque", "MOSQUE"),
 ])
 def test_the_new_categories_fit_the_badge(category, label):
     itin = Itinerary.from_dict(_doc([_poi("P", duration="1h", category=category)]))
@@ -340,6 +342,8 @@ def test_the_new_categories_fit_the_badge(category, label):
 @pytest.mark.parametrize("category,label", [
     ("market", "MARCHÉ"), ("spring", "SOURCE"), ("canyon", "CANYON"),
     ("mountain pass", "COL"),
+    # 13 characters: still inside the badge's 14-character clip
+    ("hot spring", "SOURCE CHAUDE"), ("mosque", "MOSQUÉE"),
 ])
 def test_the_new_categories_are_translated(category, label):
     itin = Itinerary.from_dict(_doc([_poi("P", duration="1h", category=category)]))

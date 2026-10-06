@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Accommodation, Itinerary } from "../types/resolved";
+import type { Accommodation, Itinerary, Money } from "../types/resolved";
 import { fill, fmtDate, tr, type Lang } from "./format";
 import {
   allItemsPast,
@@ -12,6 +12,34 @@ import { CardHead, PastFold, Price, Status, usePastFold } from "./Parts";
 import { Clamp } from "./Clamp";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, useMapProvider } from "./nav";
+import { primaryMoney, secondaryMoney } from "./money";
+
+/** The stay's price spread over its nights — only for **two or more** (for one
+ * night it *is* the price). Every figure of the resolved `Money` divides alike,
+ * since a conversion is linear. Mirrors `Accommodation.price_per_night` in
+ * models/accommodation.py — keep the two in step. */
+function perNight(a: Accommodation): Money | null {
+  const n = a.nights;
+  if (!a.price || n == null || n < 2) return null;
+  const p = a.price;
+  return {
+    ...p,
+    amount: p.amount / n,
+    in_default: p.in_default == null ? null : p.in_default / n,
+    secondaries: p.secondaries.map((s) => ({ ...s, amount: s.amount / n })),
+    paid: null,
+  };
+}
+
+function PerNight({ price, lang }: { price: Money; lang: Lang }) {
+  const secondary = secondaryMoney(price, lang);
+  return (
+    <span className="price price-night">
+      <span>{fill(tr(lang, "perNight"), { price: primaryMoney(price, lang) })}</span>
+      {secondary && <span className="price-sec">{secondary}</span>}
+    </span>
+  );
+}
 
 const TYPE_ICON: Record<string, string> = {
   hotel: "🏨",
@@ -99,6 +127,8 @@ function StayCard({
       ? `${a.nights} ${a.nights === 1 ? tr(lang, "night") : tr(lang, "nights")}`
       : "";
 
+  const night = perNight(a);
+
   const provider = useMapProvider();
   const bookedVia = a.booking_source
     ? fill(tr(lang, "bookedVia"), { source: a.booking_source })
@@ -136,6 +166,11 @@ function StayCard({
           {a.price && (
             <p className="card-price">
               <Price price={a.price} lang={lang} />
+            </p>
+          )}
+          {night && (
+            <p className="card-price-night">
+              <PerNight price={night} lang={lang} />
             </p>
           )}
           <Links lang={lang} website={a.website} reservation={a.booking_link} />

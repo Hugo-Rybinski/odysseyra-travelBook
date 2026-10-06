@@ -683,7 +683,7 @@ built on the click and downloaded.
 | Field | Required | Description | Type | Format | Default |
 | ----- | -------- | ----------- | ---- | ------ | ------- |
 | `name` | ✅ | Point-of-interest name | string | any text | — |
-| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `street` \| `natural park` \| `mountain` \| `mountain pass` \| `lake` \| `beach` \| `waterfall` \| `canyon` \| `spring` \| `market` \| `other` | `"other"` |
+| `category` |  | Kind of place, shown as the badge | string | `museum` \| `church` \| `building` \| `viewpoint` \| `ruins` \| `castle` \| `temple` \| `mosque` \| `street` \| `natural park` \| `mountain` \| `mountain pass` \| `lake` \| `beach` \| `waterfall` \| `canyon` \| `spring` \| `hot spring` \| `market` \| `other` | `"other"` |
 | `address` |  | Address | string | any text | `""` |
 | `description` |  | Description | string | any text | `""` |
 | `guidebook_pages` |  | Guidebook page(s) covering it | string | page numbers (`14`, `15-18`, `16, 23, 25-30`) | `""` |
@@ -1051,7 +1051,7 @@ the bar is pinned near the page foot; the viewer clamps it instead).
 | `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `description` |  | A short note for whatever the other fields don't cover (a door code, where to park, which bell to ring) | string | any text | `""` |
-| `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
+| `price` |  | Price for the whole stay (amount only, no symbol). A stay of two or more nights also shows what it works out at per night — computed, never written | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
 | `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |

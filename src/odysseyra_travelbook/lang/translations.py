@@ -83,6 +83,7 @@ _FR = {
     "ruins": "ruines",
     "castle": "château",
     "temple": "temple",
+    "mosque": "mosquée",
     "street": "rue",
     "natural park": "parc naturel",
     "mountain": "montagne",
@@ -94,6 +95,7 @@ _FR = {
     "waterfall": "cascade",
     "canyon": "canyon",
     "spring": "source",
+    "hot spring": "source chaude",
     "market": "marché",
     "other": "autre",
     # -- PDF: transport --
@@ -157,6 +159,8 @@ _FR = {
     "Road": "Route",
     "{nights} night": "{nights} nuit",
     "{nights} nights": "{nights} nuits",
+    # a 2+-night stay's price spread over its nights, under the price itself
+    "{price} per night": "{price} par nuit",
     # -- PDF: car rentals --
     "Car rentals": "Location de voiture",
     "Car rental": "Location de voiture",
@@ -1249,6 +1253,9 @@ _FR = {
     "Price": "Prix",
     # a multi-leg booking's fare covers every leg, so its label says so
     "Price (whole booking)": "Prix (réservation entière)",
+    # a 2+-night stay's events: each is one night, the price covers them all
+    "Price (whole stay)": "Prix (séjour entier)",
+    "Price per night": "Prix par nuit",
     # the booking's own note, kept apart from a leg's "Description"
     "Booking note": "Note de réservation",
     "Booking": "Réservation",
