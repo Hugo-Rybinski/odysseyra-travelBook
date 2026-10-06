@@ -1860,6 +1860,18 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   The **figure** the PNG is drawn in is shared: `Parts.tsx`'s `MapFigure`, used
   by both `MapView` and `HikeTrackFigure`, so a caption/markup change can't
   drift between the two.
+- **The viewer has a dark theme** (Options → Display → Theme: `auto` /
+  always light / always dark, stored with the other prefs). `web/src/theme.ts`
+  resolves `auto` to light between **today's** sunrise and sunset when the open
+  trip has a day dated today with sun times, 07:00–19:00 otherwise, re-checking
+  every minute, and puts `data-theme` on `<html>` (`main.tsx` applies it before
+  the first paint). Two rules keep the light theme untouched: every dark rule
+  lives in the **one `:root[data-theme="dark"]` block at the end of
+  `index.css`**, and accent-coloured *text* reads `--accent-text` (the accent
+  itself in light mode, lifted toward white in dark by `paletteVars(…, dark)`)
+  while accent *fills* keep `--accent`. A new rule that hard-codes a light
+  surface or sets text in the accent needs its dark twin there. Maps stay light
+  in both themes, and so does the PDF.
 - **A one-line row in the PDF neither wraps nor clips.** fpdf's `cell` draws
   straight past its own width, so any single-line row carrying a value a user
   can make arbitrarily long runs off the paper — and nothing reports it, because

@@ -7,6 +7,8 @@
   --accent: #122e4b;
   /* --accent 40% toward white; overridden per trip by paletteVars() */
   --accent-light: #718293;
+  /* the accent as text on the page; lifted toward white by the dark theme */
+  --accent-text: var(--accent);
   --topbar-h: 64px;
   /* height of a single-line Edit-tab control (input/select), matched by a bool
      field's switch so mixed grid rows stay aligned */
@@ -136,7 +138,7 @@ body {
   font: inherit;
   font-size: 0.9rem;
   text-align: left;
-  color: var(--accent);
+  color: var(--accent-text);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -280,7 +282,7 @@ body {
 /* a secondary button on the light panel (vs the solid primary .btn above) */
 .options .btn.subtle {
   background: rgba(18, 46, 75, 0.09);
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: transparent;
 }
 
@@ -390,7 +392,7 @@ body {
   border: 0;
   background: none;
   font: inherit;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
@@ -405,7 +407,7 @@ body {
 .prompt-inputs-label,
 .prompt-output-label {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .prompt-inputs ul {
   margin: 4px 0 0;
@@ -546,7 +548,7 @@ body {
 }
 .fc-detail-label {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -567,7 +569,7 @@ body {
   background: none;
   font: inherit;
   font-size: 0.8rem;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -576,7 +578,7 @@ body {
   text-decoration: underline;
 }
 .fc-inline-link {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   text-decoration: underline;
 }
@@ -797,7 +799,7 @@ body {
   color: var(--muted);
 }
 .app-version .version-link {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   font-variant-numeric: tabular-nums;
 }
@@ -1160,7 +1162,7 @@ body {
   flex: none;
   white-space: nowrap;
   background: #e7ebf0;
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: #e7ebf0;
 }
 .empty-action-buttons .btn:hover:not(:disabled) {
@@ -1183,6 +1185,7 @@ body {
   --accent-dark: #16323d;
   --accent-soft: #e9eff1;
   --on-accent: #fff;
+  --accent-text: var(--accent);
 }
 
 /* cover */
@@ -1247,7 +1250,7 @@ body {
 .overview-caret {
   font-size: 0.95rem;
   line-height: 1;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .overview table {
   width: 100%;
@@ -1270,7 +1273,7 @@ body {
 }
 .overview td.num {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   width: 2.5em;
 }
 .overview td.date {
@@ -1330,7 +1333,7 @@ body {
   outline-offset: 3px;
 }
 .past-days-caret {
-  color: var(--accent);
+  color: var(--accent-text);
   line-height: 1;
 }
 /* The same line inside a card list (transport, car rentals, stays) takes the
@@ -1413,7 +1416,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 .day-holiday-note {
@@ -1427,7 +1430,7 @@ body {
   padding: 12px 18px 0;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -1480,7 +1483,7 @@ body {
   overflow-wrap: anywhere;
 }
 .t-start {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -1503,7 +1506,7 @@ body {
   line-height: 1.3;
 }
 .act.meal .act-title {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* A detour: a stop kept in the book but probably not made. It is marked in the
@@ -1576,7 +1579,7 @@ body {
   text-align: center;
 }
 .day-map figcaption {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   font-size: 0.8rem;
   margin-bottom: 4px;
@@ -1660,7 +1663,7 @@ body {
   font-weight: 600;
 }
 .emergency-contact {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   font-size: 1.05rem;
   /* Never break a number across lines — it has to stay readable/dialable. */
@@ -1770,7 +1773,7 @@ body {
   margin-bottom: 3px;
 }
 .hike-profile-title {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   font-size: 0.8rem;
 }
@@ -1782,7 +1785,7 @@ body {
    read in the caption rather than labelled on the curve. Accent, because
    unlike everything else on this row it is about right now. */
 .hike-profile-here {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -1918,7 +1921,7 @@ body {
   color: var(--muted);
 }
 .chips-line.accent {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 .act-details .trail {
@@ -1934,7 +1937,7 @@ body {
 }
 .act-opening-label {
   margin-right: 7px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -1947,7 +1950,7 @@ body {
 }
 .act-contact-label {
   margin-right: 7px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 .act-details .act-contact a {
@@ -1965,7 +1968,7 @@ body {
 }
 .link-row .link,
 .link {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.82rem;
   text-decoration: none;
 }
@@ -1986,7 +1989,7 @@ body {
   border: 0;
   font: inherit;
   font-size: 0.82rem;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
   font-weight: 600;
   cursor: pointer;
@@ -2023,7 +2026,7 @@ body {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .via-leg {
   display: flex;
@@ -2067,7 +2070,7 @@ body {
 .via-route::before {
   content: "•";
   margin-right: 6px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .via-meta {
   color: var(--muted);
@@ -2104,7 +2107,7 @@ body {
   border-radius: 999px;
   border: 1px solid var(--accent-light);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.72rem;
   font-weight: 400;
   white-space: nowrap;
@@ -2129,7 +2132,7 @@ body {
   white-space: nowrap;
 }
 .prose-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .clamp-text.clamped {
   display: -webkit-box;
@@ -2143,7 +2146,7 @@ body {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -2153,7 +2156,7 @@ body {
 .act-details .link {
   display: inline-block;
   margin-top: 4px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.82rem;
 }
 .nested {
@@ -2187,7 +2190,7 @@ body {
   color: var(--muted);
 }
 .tonight {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 .stay-line {
@@ -2199,7 +2202,7 @@ body {
 .stay-progress {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 /* The night's moon phase — just the emoji before "Tonight:", the phase name on
@@ -2309,7 +2312,7 @@ body {
   margin: 8px 0 0;
   font-size: 0.84rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .card-meta {
   display: flex;
@@ -2470,7 +2473,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--accent);
+  color: var(--accent-text);
   list-style: none;
 }
 .edit-section > summary::-webkit-details-marker {
@@ -2655,7 +2658,7 @@ textarea.edit-input {
   font-size: 0.78rem;
   margin-left: 6px;
   padding: 2px 8px;
-  color: var(--accent);
+  color: var(--accent-text);
   background: none;
   border: 1px solid var(--accent-soft);
   border-radius: 999px;
@@ -2872,7 +2875,7 @@ textarea.edit-input {
 /* reuse the light-panel button styling inside the edit tab */
 .edit-panel .btn.subtle {
   background: rgba(18, 46, 75, 0.09);
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: transparent;
 }
 
@@ -2958,7 +2961,7 @@ textarea.edit-input {
   background: #fff6e5;
 }
 .road-check-link {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -3030,7 +3033,7 @@ textarea.edit-input {
 }
 .empty-state .restore-banner .btn.subtle {
   background: rgba(18, 46, 75, 0.09);
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: transparent;
 }
 /* the unapplied-edits dot on the ✏️ Edit tab */
@@ -3226,4 +3229,134 @@ textarea.edit-input {
   .act-map {
     grid-column: 1 / -1;
   }
+}
+
+/* ---- dark theme ------------------------------------------------------------
+   Options → Display → Theme (theme.ts puts `data-theme` on <html>). Everything
+   for it lives in this one block, so the light theme is exactly what it was:
+   the page tokens are redefined, and the rules that hard-code a light surface
+   or a tone meant for one are overridden below. The trip's accent tints arrive
+   from `paletteVars(…, dark)`; the maps (basemap tiles, static PNGs) stay
+   light — they are pictures of the ground, not chrome. */
+:root[data-theme="dark"] {
+  --fg: #e6e8eb;
+  --muted: #9aa3ad;
+  --bg: #121417;
+  --card: #1c1f24; /* palette.ts's DARK_CARD — keep the two in step */
+  --border: #2e333a;
+  --accent-light: #6a7b8c;
+  --accent-text: #a0abb7;
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .book {
+  --accent-soft: #19283a;
+}
+
+/* light surfaces → the card */
+:root[data-theme="dark"] .menu-list,
+:root[data-theme="dark"] .seg-btn,
+:root[data-theme="dark"] .opt-select select,
+:root[data-theme="dark"] .chip,
+:root[data-theme="dark"] .edit-input,
+:root[data-theme="dark"] .icon-btn {
+  background: var(--card);
+  color: var(--fg);
+}
+:root[data-theme="dark"] .chip.active,
+:root[data-theme="dark"] .seg-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+:root[data-theme="dark"] .menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="dark"] .menu-list,
+:root[data-theme="dark"] .activity,
+:root[data-theme="dark"] .edit-actions {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+:root[data-theme="dark"] .options .btn.subtle,
+:root[data-theme="dark"] .edit-panel .btn.subtle,
+:root[data-theme="dark"] .empty-state .restore-banner .btn.subtle {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="dark"] .empty-action-buttons .btn {
+  background: #2a2f36;
+  border-color: #2a2f36;
+}
+:root[data-theme="dark"] .array-item {
+  background: rgba(255, 255, 255, 0.03);
+}
+:root[data-theme="dark"] [data-tip]:hover::after,
+:root[data-theme="dark"] [data-tip]:focus-within::after {
+  background: #2c3138;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+/* the prompt cards' kind chips */
+:root[data-theme="dark"] .kind-input .fc-chip {
+  background: #2a2f36;
+  color: #c9d0d8;
+}
+:root[data-theme="dark"] .kind-skill .fc-chip {
+  background: #17304a;
+  color: #a9cdf3;
+}
+:root[data-theme="dark"] .kind-app .fc-chip {
+  background: #3d2228;
+  color: #f2b7c1;
+}
+
+/* status tones: a dark wash, a light text */
+:root[data-theme="dark"] .banner.error,
+:root[data-theme="dark"] .findings li.error,
+:root[data-theme="dark"] .finding-pill.error,
+:root[data-theme="dark"] .field-findings .ff.error,
+:root[data-theme="dark"] .chip.topay {
+  background: #3a1d1b;
+  color: #f4a9a0;
+}
+:root[data-theme="dark"] .findings li.warning,
+:root[data-theme="dark"] .finding-pill.warning,
+:root[data-theme="dark"] .field-findings .ff.warning,
+:root[data-theme="dark"] .road-check {
+  background: #352a12;
+  color: #f0c56a;
+}
+:root[data-theme="dark"] .findings li.info {
+  background: #1b2a30;
+}
+:root[data-theme="dark"] .chip.paid {
+  background: #15301f;
+  color: #7ad6a0;
+}
+:root[data-theme="dark"] .icon-btn.danger:hover:not(:disabled) {
+  background: #3a1d1b;
+  color: #f4a9a0;
+  border-color: #6b2f29;
+}
+:root[data-theme="dark"] .cache-warn,
+:root[data-theme="dark"] .prompt-hint-error,
+:root[data-theme="dark"] .gpx-error,
+:root[data-theme="dark"] .edit-gpx-error,
+:root[data-theme="dark"] .edit-field-label .req {
+  color: #f4a9a0;
+}
+:root[data-theme="dark"] .edit-coord-note,
+:root[data-theme="dark"] .edit-dirty,
+:root[data-theme="dark"] .net-status.offline {
+  color: #f0c56a;
+}
+:root[data-theme="dark"] .engine.ok,
+:root[data-theme="dark"] .net-status.online {
+  color: #7ad6a0;
+}
+/* text set in the deep accent, which a dark card swallows */
+:root[data-theme="dark"] .stay-bar .link,
+:root[data-theme="dark"] .card-leg-badge,
+:root[data-theme="dark"] .chip.outline {
+  color: var(--accent-text);
+}
+:root[data-theme="dark"] .mono {
+  color: #f4a9a0;
 }

@@ -1,4 +1,4 @@
-// The viewer's Options choices (language, display, maps, PDF ink-saver), kept
+// The viewer's Options choices (language, display, theme, maps, PDF ink-saver), kept
 // across launches.
 //
 // In `localStorage` rather than IndexedDB because the first render needs them:
@@ -22,6 +22,7 @@ import type { CollapseView as DayView } from "../render/collapse";
 import type { MapProvider } from "../render/nav";
 import { MAP_PROVIDERS } from "../render/nav";
 import { RENDER_BUILD } from "./renderCache";
+import { THEME_PREFS, type ThemePref } from "../theme";
 
 export interface Prefs {
   lang: Lang;
@@ -33,6 +34,7 @@ export interface Prefs {
   accommodationView: DayView;
   mapProvider: MapProvider;
   inkSaver: boolean;
+  theme: ThemePref;
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -45,6 +47,7 @@ export const DEFAULT_PREFS: Prefs = {
   accommodationView: "collapse-past",
   mapProvider: "google",
   inkSaver: false,
+  theme: "auto",
 };
 
 export const PREFS_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -71,6 +74,7 @@ function clean(raw: Partial<Prefs>): Prefs {
   for (const k of ["daysView", "transportView", "accommodationView"] as const) {
     if (typeof raw[k] === "string" && VIEWS.includes(raw[k] as string)) out[k] = raw[k] as DayView;
   }
+  if (THEME_PREFS.includes(raw.theme as ThemePref)) out.theme = raw.theme as ThemePref;
   if (MAP_PROVIDERS.some((p) => p.id === raw.mapProvider)) out.mapProvider = raw.mapProvider as MapProvider;
   return out;
 }

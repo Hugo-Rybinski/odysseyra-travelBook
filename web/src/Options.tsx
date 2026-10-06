@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { fmtDate, type Lang } from "./render/format";
 import type { DayView } from "./render/Book";
 import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
+import type { ThemePref } from "./theme";
 import { COMMIT_HASH, commitDateLabel, commitUrl } from "./version";
 import { useT, useTx } from "./i18n";
 import type { CachedDay } from "./maps/mapCache";
@@ -71,6 +72,8 @@ export interface OptionsProps {
   setAccommodationView: (v: DayView) => void;
   mapProvider: MapProvider;
   setMapProvider: (v: MapProvider) => void;
+  themePref: ThemePref;
+  setThemePref: (v: ThemePref) => void;
   // PDF export
   inkSaver: boolean;
   setInkSaver: (v: boolean) => void;
@@ -454,6 +457,8 @@ export function Options(props: OptionsProps) {
     setAccommodationView,
     mapProvider,
     setMapProvider,
+    themePref,
+    setThemePref,
     onRedraw,
     redrawing,
     days,
@@ -657,6 +662,22 @@ export function Options(props: OptionsProps) {
       <section className="opt-group">
         <h2>{t("Display")}</h2>
         <p className="opt-desc">{t("How the on-screen travel book collapses sections and shows long text.")}</p>
+        <div className="opt-row">
+          <Tip
+            text={t(
+              "Auto is light between today's sunrise and sunset when the open trip has a day dated today (07:00–19:00 otherwise), and dark the rest of the time",
+            )}
+          >
+            <label className="opt-select">
+              {t("Theme")}
+              <select value={themePref} onChange={(e) => setThemePref(e.target.value as ThemePref)}>
+                <option value="auto">{t("Auto (light by day)")}</option>
+                <option value="light">{t("Always light")}</option>
+                <option value="dark">{t("Always dark")}</option>
+              </select>
+            </label>
+          </Tip>
+        </div>
         <div className="opt-row">
           <CollapseSelect label={t("Days")} value={daysView} onChange={setDaysView} />
         </div>

@@ -85,6 +85,12 @@ export const FR: Record<string, string> = {
   "Truncate long descriptions to a few lines with a 'Show more' link; off shows them in full":
     "Tronquer les descriptions longues à quelques lignes avec un lien « Voir plus » ; désactivé pour tout afficher",
   "Show weather forecast": "Afficher la météo",
+  Theme: "Thème",
+  "Auto (light by day)": "Auto (clair le jour)",
+  "Always light": "Toujours clair",
+  "Always dark": "Toujours sombre",
+  "Auto is light between today's sunrise and sunset when the open trip has a day dated today (07:00–19:00 otherwise), and dark the rest of the time":
+    "Auto est clair entre le lever et le coucher du soleil du jour quand le voyage ouvert a une journée datée d'aujourd'hui (07:00–19:00 sinon), et sombre le reste du temps",
   "Fetch a weather forecast (from Open-Meteo) for each located activity in the next 7 days, shown as a small chip on its title; needs a connection":
     "Récupérer la météo (via Open-Meteo) pour chaque activité localisée dans les 7 prochains jours, affichée en petite pastille sur son titre ; nécessite une connexion",
   "Updating the weather forecast…": "Mise à jour de la météo…",

@@ -10,6 +10,7 @@ import {
   type DateSpan,
 } from "./collapse";
 import { AccentContext, paletteVars } from "./palette";
+import { useThemeValue } from "../theme";
 import { MapProviderContext, type MapProvider } from "./nav";
 import { ClampProvider } from "./Clamp";
 import { Cover } from "./Cover";
@@ -110,7 +111,7 @@ export function Book({
   jumpTo?: number | null;
   onJumped?: () => void;
 }) {
-  const style = paletteVars(itinerary.cover_color) as CSSProperties;
+  const style = paletteVars(itinerary.cover_color, useThemeValue() === "dark") as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
 
   // Which days are folded away, and whether they're on screen at all. A past

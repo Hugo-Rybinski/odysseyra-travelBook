@@ -4,7 +4,8 @@ import { downloadBytes, slugify } from "../file/saveExport";
 import { elevationGrid, fill, fmtKm, roundElevation, roundKm, tr, type Lang } from "./format";
 import { MapErrorBoundary } from "./MapErrorBoundary";
 import { MapFigure } from "./Parts";
-import { useAccent } from "./palette";
+import { palette, useAccent } from "./palette";
+import { useThemeValue } from "../theme";
 import { useRouteGpx } from "./routeExport";
 import { elevationAt, nearestOnTrail, type Fix, type TrailFix } from "./trailPosition";
 
@@ -43,6 +44,10 @@ export function HikeTrackFigure({
 }) {
   const track = act.track ?? null;
   const accent = useAccent();
+  // The trail map is a light picture whatever the theme; the profile sits on
+  // the card, so on a dark one it takes the accent lifted for text.
+  const dark = useThemeValue() === "dark";
+  const profileAccent = dark ? palette(accent, true).accentText : accent;
   const [failed, setFailed] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const onFail = useCallback(() => setFailed(true), []);
@@ -112,7 +117,7 @@ export function HikeTrackFigure({
       ) : track.map ? (
         <MapFigure rendered={track.map} caption={caption} />
       ) : null}
-      <ElevationProfile track={track} lang={lang} accent={accent} here={here} />
+      <ElevationProfile track={track} lang={lang} accent={profileAccent} here={here} />
     </div>
   );
 }
