@@ -41,6 +41,9 @@ const LABELS = {
     days: "days",
     nights: "nights",
     night: "night",
+    // a 2+-night stay's price spread over its nights (translations.py's
+    // "{price} per night")
+    perNight: "{price} per night",
     // The one line a folded-away run of past entries leaves behind (`PastFold`
     // in Parts.tsx, used by the day list and the three card lists). The count is
     // in parentheses so no wording has to agree in number. Each list names the
@@ -236,6 +239,7 @@ const LABELS = {
     days: "jours",
     nights: "nuits",
     night: "nuit",
+    perNight: "{price} par nuit",
     showPastDays: "Afficher les jours passés ({n})",
     hidePastDays: "Masquer les jours passés ({n})",
     showPastBookings: "Afficher les réservations passées ({n})",

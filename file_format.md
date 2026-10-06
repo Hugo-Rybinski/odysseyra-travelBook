@@ -1051,7 +1051,7 @@ the bar is pinned near the page foot; the viewer clamps it instead).
 | `booking_link` |  | Direct link to this reservation, shown as a clickable link | string | a link like `https://example.com` | `""` |
 | `status` |  | Reservation status, shown as a badge | string | `booked` \| `confirmed` | none (no badge) |
 | `description` |  | A short note for whatever the other fields don't cover (a door code, where to park, which bell to ring) | string | any text | `""` |
-| `price` |  | Price for the whole stay (amount only, no symbol) | number | number | none (not shown) |
+| `price` |  | Price for the whole stay (amount only, no symbol). A stay of two or more nights also shows what it works out at per night — computed, never written | number | number | none (not shown) |
 | `currency` |  | Currency this price is in | string | 3-letter ISO code | `defaults.currency` |
 | `paid` |  | Payment state, shown as a badge | string or boolean | `paid` \| `to pay` (or `true` / `false`) | none (no badge) |
 | `breakfast_included` |  | Show a "Breakfast included" line | boolean | `true` / `false` | `false` |
