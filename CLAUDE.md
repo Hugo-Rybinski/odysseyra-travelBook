@@ -749,8 +749,11 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       - **A heading beam rides on the same tap.** `render/compass.ts` reads the
         phone's compass (`webkitCompassHeading` on iOS, which must be
         *requested* from inside the tap — hence `DayMapGL`'s capture-phase
-        click listener on the geolocate button rather than a control event;
-        `deviceorientationabsolute` on Android) and smooths it as a unit vector
+        click listener on the geolocate button rather than a control event —
+        and where a prompt is needed it **takes the tap over**, asking for the
+        compass first and calling `geolocate.trigger()` from the answer, since
+        Safari shows one prompt per gesture and the location one won when both
+        were asked at once; `deviceorientationabsolute` on Android) and smooths it as a unit vector
         so 359°/1° don't average to 180°. It is drawn on **every** interactive
         map, not only a hike's, as a map-aligned `Marker` beneath the others.
         A relative-only heading is ignored rather than guessed at, so desktop
