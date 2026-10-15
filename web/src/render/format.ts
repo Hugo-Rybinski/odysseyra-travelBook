@@ -479,16 +479,17 @@ export function fmtElevation(value: number | null | undefined): string {
 
 // The elevation profile's horizontal scale. A curve between a low and a high
 // mark says how much you climb, not how high you are anywhere in between — so
-// the band is ruled at round altitudes, off the ladder below. Mirrors
+// the band is ruled at round altitudes, off the ladder below — multiples of
+// 100 m only, so a walk crossing none gets no line. Mirrors
 // `models/parsers.py`'s `elevation_grid` (and `MAX_GRID_LINES`); there is no JS
 // test runner here, so `tests/test_elevation_grid.py` is the contract both sides
 // implement — keep the two in step.
-const GRID_STEPS = [5, 10, 20, 50, 100, 200, 500, 1000, 2000];
+const GRID_STEPS = [100, 200, 500, 1000, 2000];
 const MAX_GRID_LINES = 8;
 
 /** The round altitudes to rule an elevation band at, strictly between `low` and
- *  `high`: `elevationGrid(2432, 3245)` → `[2500, 2600, … 3200]`. Empty when the
- *  walk is too flat to hold a round line. */
+ *  `high`: `elevationGrid(2432, 3245)` → `[2500, 2600, … 3200]`. Multiples of
+ *  100 m only — empty when the walk crosses none. */
 export function elevationGrid(low: number, high: number): number[] {
   if (high <= low) return [];
   for (const step of GRID_STEPS) {

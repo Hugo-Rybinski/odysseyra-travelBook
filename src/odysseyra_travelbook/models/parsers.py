@@ -147,10 +147,13 @@ def format_elevation(value) -> str:
 # how high you are anywhere in between, which on a mountain day is the question
 # (is that saddle above the snow line?). So the band is ruled at round altitudes,
 # and the step is chosen off the ladder below — the coarsest that still fits
-# inside the walk. Both renderers compute this from the same ``profile`` samples
+# inside the walk. Every step is a whole multiple of 100 m — a line at 450 m
+# reads as precision a profile off a GPS altimeter doesn't have — so a walk
+# that never crosses a hundred (a riverside stroll, a 60 m climb) gets no line
+# at all and is read off its low and high marks. Both renderers compute this from the same ``profile`` samples
 # (the viewer in ``render/format.ts``'s ``elevationGrid``) — keep the two in
 # step; ``tests/test_elevation_grid.py`` is the contract they answer to.
-_GRID_STEPS = (5, 10, 20, 50, 100, 200, 500, 1000, 2000)
+_GRID_STEPS = (100, 200, 500, 1000, 2000)
 
 # Lines are drawn *between* the walk's own low and high marks, so at most this
 # many fit before the numbers start crowding each other in a band a centimetre
@@ -163,9 +166,9 @@ def elevation_grid(low: float, high: float) -> list[int]:
     """The round altitudes to rule an elevation band at, strictly between
     ``low`` and ``high``.
 
-    ``elevation_grid(2432, 3245)`` → ``[2500, 2600, … 3200]``. Empty when the
-    walk is too flat to hold a round line (a 4 m range between two multiples of
-    five has nothing to say) — the low and high marks are then the whole scale.
+    ``elevation_grid(2432, 3245)`` → ``[2500, 2600, … 3200]``. Lines fall on
+    multiples of 100 m only, so this is empty when the walk crosses none (a
+    1210 → 1290 m stroll) — the low and high marks are then the whole scale.
     """
     if high <= low:
         return []
