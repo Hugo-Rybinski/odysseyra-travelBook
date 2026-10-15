@@ -112,8 +112,13 @@ export function watchCompass(onHeading: (deg: number) => void): () => void {
   };
 
   // Chrome fires both events; only the absolute one is north-referenced, so it
-  // is taken alone where it exists. iOS has only the plain one.
-  const type = "ondeviceorientationabsolute" in window ? "deviceorientationabsolute" : "deviceorientation";
+  // is taken alone where it exists. iOS carries its heading on the plain one,
+  // so that platform (the one that prompts) is sent there explicitly rather
+  // than trusting it never to grow the absolute event's handler.
+  const type =
+    !compassNeedsPrompt() && "ondeviceorientationabsolute" in window
+      ? "deviceorientationabsolute"
+      : "deviceorientation";
   window.addEventListener(type, onEvent);
   return () => {
     window.removeEventListener(type, onEvent);
