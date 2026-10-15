@@ -1692,6 +1692,23 @@ body {
   cursor: pointer;
 }
 
+/* The compass beam round MapLibre's "you are here" dot, pointing the way the
+   phone faces (render/compass.ts). The marker is a square centred on the fix
+   and rotated by the heading; the wedge is cut out of its upper half, so at
+   rotation 0 it points north. Same blue as the dot, fading outwards, so it reads
+   as part of it — the way a phone's own map app draws it. */
+.heading-beam {
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+}
+.heading-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(29, 161, 242, 0.6) 0, rgba(29, 161, 242, 0) 70%);
+  clip-path: polygon(50% 50%, 25% 0, 75% 0);
+}
 /* A trail's own markers on the interactive map, mirroring what maps/render.py's
    `_draw_trail` rasterizes for the print: the shapes carry the meaning, not the
    colour, because the printed twin is read at a few centimetres wide and

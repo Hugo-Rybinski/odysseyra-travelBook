@@ -746,6 +746,18 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
         phone without hovering. No PDF twin at all — paper has no live position,
         the same divergence as `(Get GPX track)` — so `translations.py` is
         untouched.
+      - **A heading beam rides on the same tap.** `render/compass.ts` reads the
+        phone's compass (`webkitCompassHeading` on iOS, which must be
+        *requested* from inside the tap — hence `DayMapGL`'s capture-phase
+        click listener on the geolocate button rather than a control event;
+        `deviceorientationabsolute` on Android) and smooths it as a unit vector
+        so 359°/1° don't average to 180°. It is drawn on **every** interactive
+        map, not only a hike's, as a map-aligned `Marker` beneath the others.
+        A relative-only heading is ignored rather than guessed at, so desktop
+        and Firefox show the plain dot. It stops only when the geolocate
+        button's state says tracking is off — `trackuserlocationend` also fires
+        on a pan that merely drops the lock — and when the map gives up its GL
+        context.
 
   Both renderers draw map-then-profile from the same `track`, with one deliberate
   difference: the PDF's profile is drawn vector, the viewer's is inline SVG. The
