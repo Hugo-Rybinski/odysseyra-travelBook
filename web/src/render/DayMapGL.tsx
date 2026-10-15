@@ -18,6 +18,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { MapGeo } from "../types/resolved";
 import { cartoStyle, prefetchTiles } from "../maps/carto";
+import { requestCompass, watchCompass } from "./compass";
 
 setWorkerUrl(workerUrl);
 
@@ -243,6 +244,37 @@ export function DayMapGL({
     let disposing = false;
     let loaded = false;
     let timer = 0;
+    // The compass beam round the location dot: drawn only once there is both a
+    // fix and a heading, so a phone with no compass shows the plain dot.
+    const heading: {
+      stop: (() => void) | null;
+      deg: number | null;
+      at: [number, number] | null;
+      beam: Marker | null;
+    } = { stop: null, deg: null, at: null, beam: null };
+    const placeBeam = (m: MapLibreMap) => {
+      if (heading.deg == null || !heading.at) return;
+      if (!heading.beam) {
+        const el = document.createElement("div");
+        el.className = "heading-beam";
+        // Map-aligned, so it keeps pointing at the ground's north when the map
+        // is rotated or tilted.
+        heading.beam = new Marker({ element: el, rotationAlignment: "map", pitchAlignment: "map" })
+          .setLngLat(heading.at)
+          .addTo(m);
+        // Beneath every other marker — the dot it surrounds and the pins.
+        el.parentElement?.insertBefore(el, el.parentElement.firstChild);
+      }
+      heading.beam.setLngLat(heading.at).setRotation(heading.deg);
+    };
+    const stopHeading = () => {
+      heading.stop?.();
+      heading.stop = null;
+      heading.deg = null;
+      heading.at = null;
+      heading.beam?.remove();
+      heading.beam = null;
+    };
 
     void (async () => {
       let style;
@@ -282,6 +314,44 @@ export function DayMapGL({
       });
       geolocate.on("trackuserlocationend", () => position.current?.(null));
       geolocate.on("error", () => position.current?.(null));
+
+      // The heading beam. Started by the same tap as the location — iOS only
+      // grants the compass from inside one, which is why this listens for the
+      // button's click itself (capture phase, so it runs within the gesture)
+      // rather than for the control's events, which may fire after it.
+      holder.current.addEventListener(
+        "click",
+        (e) => {
+          const btn = (e.target as Element | null)?.closest?.(".maplibregl-ctrl-geolocate");
+          if (!btn || heading.stop) return;
+          void requestCompass().then((ok) => {
+            if (!ok || disposing || heading.stop) return;
+            heading.stop = watchCompass((deg) => {
+              heading.deg = deg;
+              placeBeam(m);
+            });
+          });
+        },
+        true,
+      );
+      geolocate.on("geolocate", (e) => {
+        const c = (e as unknown as GeolocationPosition).coords;
+        heading.at = [c.longitude, c.latitude];
+        placeBeam(m);
+      });
+      // `trackuserlocationend` also fires when a pan merely drops the lock (the
+      // watch carries on in the background), and `error` for a fix that merely
+      // timed out, so the button's state is what says tracking is really off.
+      const maybeOff = () =>
+        window.setTimeout(() => {
+          const btn = holder.current?.querySelector(".maplibregl-ctrl-geolocate");
+          const on = btn?.matches(
+            ".maplibregl-ctrl-geolocate-active, .maplibregl-ctrl-geolocate-background, .maplibregl-ctrl-geolocate-waiting",
+          );
+          if (!on) stopHeading();
+        }, 0);
+      geolocate.on("trackuserlocationend", maybeOff);
+      geolocate.on("error", maybeOff);
       m.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
 
       // MapLibre's attribution is already `compact: true` by default, but it
@@ -605,6 +675,8 @@ export function DayMapGL({
       cancelled = true;
       disposing = true;
       window.clearTimeout(timer);
+      // A map scrolled out of view gives up its compass along with its context.
+      stopHeading();
       map?.remove();
     };
   }, [geo, onFail, live]);

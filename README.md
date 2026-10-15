@@ -467,6 +467,23 @@ they reuse of what's already here.
   rail source. Needs an answer for `other` too, and note that a routed leg would
   start widening a printed map's extent, which legs
   [deliberately never do](file_format.md#maps--coordinates).
+- **Contour lines on a hike's interactive map** — Positron carries no relief,
+  so a trail is drawn over flat ground. The likely route is `maplibre-contour`,
+  which builds contour vector tiles in a worker from a keyless Terrarium DEM
+  (AWS Terrain Tiles; Mapterhorn is worth comparing first), added in
+  `DayMapGL.tsx` only when `geo.trail` is set: minor + major lines under the
+  trail, major ones every **100 m** so they agree with the elevation profile's
+  grid, labelled with the glyphs the Carto style already loads. The limits are
+  the data's, not the code's: mostly SRTM (2000, ~30 m, none above 60° N, so
+  coarser fallback data there), smoothed or void-filled on cliffs and in gorges,
+  measuring treetops rather than ground in forest, and so invented detail past
+  ~z13 — no step finer than 20 m. It will also disagree with the GPX's own
+  heights by tens of metres in places, and its tiles weigh 50–150 KB each, which
+  the service-worker cache and `prefetchTiles` would have to take on (plus a
+  public bucket with no SLA, and an attribution line). Viewer-only to start,
+  like the live position dot — the PDF and the static PNG would need the DEM
+  decoded and contoured in pure Python (slow in Pyodide) and a `SCHEMA_VERSION`
+  bump, which is a separate decision.
 - **Reuse a pin number automatically in more cases** — `fold_pins` merges two of
   a day's located points into one number when their **names** key alike *and*
   they sit within `PIN_MERGE_KM`, and `pin_aliases` shares a number between a

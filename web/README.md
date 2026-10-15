@@ -448,7 +448,11 @@ by the Python engine (`validate(text, lang)`).
   against its first half only — the two legs are metres apart and one fix can't
   tell them apart, so it reads as the outward kilometre — and a fix more than a
   kilometre off the trail draws nothing, so a hike read at home isn't pinned to
-  its trailhead. `defaults.include_hike_maps` (default **on**)
+  its trailhead. The same tap also starts the phone's **compass**
+  (`render/compass.ts`), drawn as a blue beam round the location dot on every
+  interactive map, pointing the way the phone faces — iOS asks for motion-sensor
+  access first, and a device with no absolute compass (desktop, Firefox) simply
+  shows the plain dot. `defaults.include_hike_maps` (default **on**)
   switches the pair off, and does it by leaving `track` out of the payload
   entirely — so the geometry never enters the IndexedDB day cache either.
   Beside the hike's other inline links sits **`(Get GPX track)`**, which
