@@ -28,18 +28,33 @@ interface OrientationWithCompass extends DeviceOrientationEvent {
 
 type PermissionApi = { requestPermission?: () => Promise<"granted" | "denied"> };
 
+function permissionApi(): PermissionApi | undefined {
+  return (globalThis as { DeviceOrientationEvent?: PermissionApi }).DeviceOrientationEvent;
+}
+
+/** Whether reading the compass needs a permission prompt first (iOS). */
+export function compassNeedsPrompt(): boolean {
+  return typeof permissionApi()?.requestPermission === "function";
+}
+
 /**
  * Ask for the compass where the platform requires it (iOS). **Call it
  * synchronously from a tap handler** — WebKit refuses the prompt otherwise.
  * Resolves true where no permission is needed.
  */
 export function requestCompass(): Promise<boolean> {
-  const api = (globalThis as { DeviceOrientationEvent?: PermissionApi }).DeviceOrientationEvent;
+  const api = permissionApi();
   if (!api) return Promise.resolve(false);
   if (typeof api.requestPermission !== "function") return Promise.resolve(true);
   return api.requestPermission().then(
     (r) => r === "granted",
-    () => false,
+    (err) => {
+      // A rejection (rather than "denied") means the request itself was
+      // refused — no gesture, another prompt up — which is worth seeing in
+      // Safari's Web Inspector, since the page otherwise just shows no beam.
+      console.warn("compass permission request failed", err);
+      return false;
+    },
   );
 }
 

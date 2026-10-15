@@ -18,7 +18,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { MapGeo } from "../types/resolved";
 import { cartoStyle, prefetchTiles } from "../maps/carto";
-import { requestCompass, watchCompass } from "./compass";
+import { compassNeedsPrompt, requestCompass, watchCompass } from "./compass";
 
 setWorkerUrl(workerUrl);
 
@@ -317,20 +317,40 @@ export function DayMapGL({
 
       // The heading beam. Started by the same tap as the location — iOS only
       // grants the compass from inside one, which is why this listens for the
-      // button's click itself (capture phase, so it runs within the gesture)
-      // rather than for the control's events, which may fire after it.
+      // button's click itself (capture phase, so it runs before MapLibre's own
+      // handler) rather than for the control's events, which fire after it.
+      //
+      // Where the compass needs a prompt (iOS), the tap is taken over: Safari
+      // shows one permission prompt per gesture, and the location one the
+      // control asks for in the same tap won, so the compass request was
+      // dropped without a word. So the compass is asked first, and location is
+      // started from its answer — geolocation needs no gesture of its own, and
+      // `trigger()` is exactly what the control's click handler calls.
+      const ON_STATES =
+        ".maplibregl-ctrl-geolocate-active, .maplibregl-ctrl-geolocate-background, .maplibregl-ctrl-geolocate-waiting";
+      const startHeading = () => {
+        if (disposing || heading.stop) return;
+        heading.stop = watchCompass((deg) => {
+          heading.deg = deg;
+          placeBeam(m);
+        });
+      };
       holder.current.addEventListener(
         "click",
         (e) => {
           const btn = (e.target as Element | null)?.closest?.(".maplibregl-ctrl-geolocate");
-          if (!btn || heading.stop) return;
-          void requestCompass().then((ok) => {
-            if (!ok || disposing || heading.stop) return;
-            heading.stop = watchCompass((deg) => {
-              heading.deg = deg;
-              placeBeam(m);
+          // A tap that turns tracking off is MapLibre's alone.
+          if (!btn || heading.stop || btn.matches(ON_STATES)) return;
+          if (compassNeedsPrompt()) {
+            e.stopImmediatePropagation();
+            void requestCompass().then((ok) => {
+              if (disposing) return;
+              if (ok) startHeading();
+              geolocate.trigger();
             });
-          });
+            return;
+          }
+          void requestCompass().then((ok) => ok && startHeading());
         },
         true,
       );
@@ -345,10 +365,7 @@ export function DayMapGL({
       const maybeOff = () =>
         window.setTimeout(() => {
           const btn = holder.current?.querySelector(".maplibregl-ctrl-geolocate");
-          const on = btn?.matches(
-            ".maplibregl-ctrl-geolocate-active, .maplibregl-ctrl-geolocate-background, .maplibregl-ctrl-geolocate-waiting",
-          );
-          if (!on) stopHeading();
+          if (!btn?.matches(ON_STATES)) stopHeading();
         }, 0);
       geolocate.on("trackuserlocationend", maybeOff);
       geolocate.on("error", maybeOff);
