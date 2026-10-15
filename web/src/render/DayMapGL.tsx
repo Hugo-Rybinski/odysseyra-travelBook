@@ -262,8 +262,12 @@ export function DayMapGL({
         heading.beam = new Marker({ element: el, rotationAlignment: "map", pitchAlignment: "map" })
           .setLngLat(heading.at)
           .addTo(m);
-        // Beneath every other marker — the dot it surrounds and the pins.
-        el.parentElement?.insertBefore(el, el.parentElement.firstChild);
+        // Beneath every other marker — the dot it surrounds and the pins — but
+        // above the map itself: markers share their container with the GL
+        // canvas, so the front of that container is *under* the map, where the
+        // beam was drawn and painted over. Right after the canvas is the spot.
+        const canvas = m.getCanvas();
+        canvas.parentElement?.insertBefore(el, canvas.nextSibling);
       }
       heading.beam.setLngLat(heading.at).setRotation(heading.deg);
     };
