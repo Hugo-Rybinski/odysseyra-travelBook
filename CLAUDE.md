@@ -665,7 +665,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       you are at the saddle halfway along, which on a mountain day is the
       question. So the band carries horizontal scale lines, chosen by
       `models/parsers.py`'s **`elevation_grid(low, high)`** — the coarsest step
-      off a 5 m…2 km ladder that fits at most `MAX_GRID_LINES` (8) lines
+      off a 100 m…2 km ladder (multiples of 100 m only, so a near-flat walk
+      gets fewer lines, or none) that fits at most `MAX_GRID_LINES` (8) lines
       **strictly between** the walk's own low and high marks (2432 → 3245 m is
       ruled every 100 m). Strictly between, because the band's ±10 % padding is
       air the walk never reached. Mirrored in the viewer as `format.ts`'s
