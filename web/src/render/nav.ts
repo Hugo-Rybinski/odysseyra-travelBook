@@ -120,6 +120,9 @@ export interface RoadLeg {
   // the leg's recorded track (base64), when one was attached — offered for
   // download on the leg's row; the drawn route already comes from it
   gpx: string | null;
+  // `gpx` was computed by the CLI's `route` command, not recorded — offered as
+  // a built route rather than as a track
+  gpxGenerated: boolean;
 }
 
 // Collapse a road's waypoints into display legs, mirroring
@@ -146,6 +149,7 @@ export function roadLegs(
   let pin: string | null = null;
   let srcPin: string | null = startPin;
   let gpx: string | null = null;
+  let gpxGenerated = false;
 
   const flush = (dest: string | null) => {
     legs.push({
@@ -158,6 +162,7 @@ export function roadLegs(
       srcPin,
       destPin: pin,
       gpx,
+      gpxGenerated,
     });
     prev = dest ?? prev;
     srcPin = pin; // this arrival is the next leg's departure
@@ -170,6 +175,7 @@ export function roadLegs(
     off = false;
     pin = null;
     gpx = null;
+    gpxGenerated = false;
   };
 
   for (const wp of waypoints) {
@@ -179,6 +185,7 @@ export function roadLegs(
     // duration/distance — a shaping point carries neither
     pin = wp.map_pin ?? null;
     gpx = wp.gpx ?? null;
+    gpxGenerated = !!wp.gpx_generated;
     if (wp.duration_min != null) {
       dur += wp.duration_min;
       hasDur = true;

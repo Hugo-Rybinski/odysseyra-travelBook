@@ -18,7 +18,8 @@ What a day contributes, and why each kind is what it is:
   one route and the start of the next — which is where a route's names belong,
   and why a drive's own map pins (``display_*_on_maps``) are not exported as
   waypoints. Computed geometry, hence a route: see :mod:`.models.gpx_export`.
-* a ``<trk>`` per **recording** — a hike's ``gpx``, and a road leg's — with the
+* a ``<trk>`` per **recording** — a hike's ``gpx``, and a road leg's unless
+  ``gpx_generated`` says the ``route`` command computed it — with the
   hike's own named ``<wpt>``s alongside. Those really were walked or driven, so
   they are tracks; the same file drawn as a route would claim otherwise.
 
@@ -137,7 +138,10 @@ def _road_lines(day, itinerary, cache, desc: str) -> tuple[list[GpxLine], list[G
             name = f"{previous} → {wp.location}" if previous else wp.location
             previous = wp.location
             if line and len(line) >= 2:
-                recorded = getattr(wp, "track", None) is not None
+                # A file the `route` command wrote is our own computed line
+                # stored for later, so it stays a route like any other.
+                recorded = (getattr(wp, "track", None) is not None
+                            and not getattr(wp, "gpx_generated", False))
                 (tracks if recorded else routes).append(GpxLine(line, name, desc))
     return routes, tracks
 

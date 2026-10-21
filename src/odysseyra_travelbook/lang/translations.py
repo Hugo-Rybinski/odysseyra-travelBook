@@ -30,6 +30,26 @@ _FR = {
     "↓ {m} m": "↓ {m} m",
     "Geocoded {filled} coordinate(s), {missed} not found → {path}":
         "{filled} coordonnée(s) géocodée(s), {missed} introuvable(s) → {path}",
+    "'gpx_generated' must be true or false.":
+        "'gpx_generated' doit valoir true ou false.",
+    "'gpx_generated' is set but the leg has no 'gpx' — the flag has nothing to "
+    "describe and is ignored.":
+        "'gpx_generated' est indiqué mais l'étape n'a pas de 'gpx' — l'indicateur "
+        "ne décrit rien et est ignoré.",
+    "this generated route starts {km} km from the leg's departure coordinate — "
+    "the endpoint moved since it was computed; re-run `route` to recompute it.":
+        "cet itinéraire généré part à {km} km de la coordonnée de départ de "
+        "l'étape — le point a changé depuis son calcul ; relancez `route` pour "
+        "le recalculer.",
+    "this generated route ends {km} km from the leg's arrival coordinate — "
+    "the endpoint moved since it was computed; re-run `route` to recompute it.":
+        "cet itinéraire généré arrive à {km} km de la coordonnée d'arrivée de "
+        "l'étape — le point a changé depuis son calcul ; relancez `route` pour "
+        "le recalculer.",
+    "Routed {written} drive leg(s), kept {recorded} recording(s), "
+    "{missed} not routable → {path}":
+        "{written} étape(s) de trajet calculée(s), {recorded} enregistrement(s) "
+        "conservé(s), {missed} sans itinéraire → {path}",
     "this area has no 'coordinate' of its own — its map pin will be placed at "
     "the average position of its located sub-activities.":
         "cette zone n'a pas de 'coordinate' propre — son point sur la carte sera "

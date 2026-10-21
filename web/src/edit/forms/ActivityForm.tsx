@@ -276,7 +276,16 @@ export function ActivityForm({ activity, path, onChange, allowedTypes, allowNest
                     specs={ROAD_LEG_FIELDS}
                     value={leg as unknown as Rec}
                     path={itemPath}
-                    onChange={(next) => onItemChange(next as unknown as SrcRoadLeg)}
+                    onChange={(next) => {
+                      const leg2 = next as unknown as SrcRoadLeg;
+                      // A file picked (or cleared) by hand is the user's own,
+                      // so it stops being the `route` command's to replace.
+                      if (leg2.gpx !== leg.gpx && leg2.gpx_generated) {
+                        const { gpx_generated: _dropped, ...rest } = leg2;
+                        return onItemChange(rest);
+                      }
+                      onItemChange(leg2);
+                    }}
                   />
                   {(gap.missingTime || gap.missingDist) && (
                     <GapWarning

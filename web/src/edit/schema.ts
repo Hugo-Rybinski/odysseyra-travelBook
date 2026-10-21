@@ -309,6 +309,7 @@ export const ROAD_LEG_FIELDS: FieldSpec[] = [
   { key: "distance_km", label: "Distance (km)", kind: "number", help: "Driving distance for this hop. Optional, but validation warns when it's missing." },
   { key: "off_road", label: "Off-road", kind: "bool", help: "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off." },
   { key: "gpx", label: "GPX recording", kind: "gpx", help: "A .gpx recording of this hop, stored in the itinerary itself. It becomes this leg's line on the day map instead of the routed guess — there's no separate trail map or elevation profile, unlike a hike's. Optional." },
+  { key: "gpx_generated", label: "Generated route", kind: "bool", help: "Set by the command line's `route` command on a GPX it computed from the routed line, rather than recorded: it's offered as a built route, and the next `route` run replaces it. Picking your own file above clears it. Defaults to off." },
 ];
 
 // A booking: what is reserved once. Its hops live in `legs` (TRANSPORT_LEG_FIELDS),

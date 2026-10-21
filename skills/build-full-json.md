@@ -791,6 +791,7 @@ Each **leg** is an object:
 | `off_road` | no | boolean | `true` if **this hop** runs off-road. |
 | `waypoints` | no | array of `{ "lat": .., "long": .. }` | Points the hop's route bends through, in order from its start to its end. Coordinates only — no names, no figures. |
 | `gpx` | no | the `.gpx` file base64-encoded (gzip allowed) | A recording of **this hop**, drawn as its line on the map instead of the routed guess. Only ever a file the user supplied — see below. |
+| `gpx_generated` | no | boolean | **Never emit it yourself.** Written by the `route` command next to a `gpx` it computed. When updating a base JSON, keep a leg's `gpx` and `gpx_generated` together exactly as they are. |
 
 - A road needs **at least one** leg. For a plain A → B drive that is a single leg
   with `start_location: "A"` and `end_location: "B"`.

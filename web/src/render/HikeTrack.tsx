@@ -419,10 +419,15 @@ export function GpxDownload({
   base64,
   name,
   lang,
+  generated = false,
 }: {
   base64: string | null | undefined;
   name: string;
   lang: Lang;
+  // The file is a route the CLI's `route` command computed and stored, not a
+  // recording: worded like `GpxBuildLink`, since that is what it is — the
+  // same built route, just made ahead of time.
+  generated?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   if (!base64) return null;
@@ -440,7 +445,7 @@ export function GpxDownload({
   if (failed) return <span className="gpx-error">{tr(lang, "gpxFailed")}</span>;
   return (
     <button type="button" className="link gpx-link" onClick={() => void download()}>
-      {tr(lang, "getGpx")}
+      {tr(lang, generated ? "buildGpx" : "getGpx")}
     </button>
   );
 }

@@ -530,6 +530,7 @@ crossing. Both renderers print it under the drive's meta line and **above** the
 | `off_road` |  | This hop runs off-road | boolean | `true` / `false` | `false` |
 | `waypoints` |  | Points the hop's route bends through, in order | array | array of `{ "lat": .., "long": .. }` coordinates | `[]` (a straight route between the hop's ends) |
 | `gpx` |  | A recording of this hop, drawn as its line on the map | string | the `.gpx` file base64-encoded (gzip allowed) | none (the line is routed) |
+| `gpx_generated` |  | The `gpx` was computed by [`route`](README.md#route--bake-in-drive-routes), not recorded | boolean | `true` / `false` | `false` |
 
 **A junction is written once.** Two consecutive legs meet at one place, so
 either side may name it: a leg's `start_location` / `start_coordinate` fall back
@@ -677,6 +678,26 @@ reached the link reports that instead of handing back the straight line the map
 would draw, because a crow-flight line between two towns is a wrong route rather
 than a rough one. Nothing is written into your JSON either way — the file is
 built on the click and downloaded.
+
+#### Storing the computed route (`gpx_generated`)
+
+The [`route`](README.md#route--bake-in-drive-routes) command does ahead of time
+what that link does on a click, for every leg at once: it writes the line the
+map draws into the leg's `gpx` — a gzipped GPX **route** — and marks it
+`gpx_generated: true`, so later builds draw it offline and identically. The flag
+is what keeps a computed line reading as one: the viewer still offers it as
+**(Build GPX file)** rather than **(Get GPX track)**, and the trip's GPX export
+writes it as a `<rte>`, never a `<trk>`.
+
+It is also what makes `route` safe to re-run. A `gpx` with the flag is the
+command's to replace — it is recomputed every run, so it follows an endpoint
+you have since moved — while a `gpx` **without** it is your recording and is
+never touched. A leg the router can't reach on a run keeps the line it had.
+Until you re-run, validation **warns** when either end of a generated route sits
+more than 2 km from the leg's coordinate there (the endpoint moved since it was
+computed), and when the flag is set on a leg with no `gpx`. Picking your own
+file for the leg in the Edit tab clears the flag. You never need to write it by
+hand.
 
 ### `point_of_interest` — a specific place
 

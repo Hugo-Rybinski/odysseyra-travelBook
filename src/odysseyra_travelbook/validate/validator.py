@@ -20,7 +20,7 @@ from ..models import (
     _parse_tz,
     gpx_track,
 )
-from ..models.gpx import MAX_NAMED_POINTS
+from ..models.gpx import MAX_NAMED_POINTS, _haversine_km
 from .findings import Finding
 from .jsonpos import JSONPositionError, load_with_lines
 from .specs import (
@@ -37,6 +37,7 @@ from .specs import (
     TRANSPORT_LEG_SPECS,
     TRANSPORT_SPECS,
     TRAVEL_DESCRIPTION,
+    V_BOOL,
     V_COORDINATE,
     V_CURRENCY,
     V_ISO_COUNTRY,
@@ -249,6 +250,10 @@ def _all_legs(transport):
 # to tens of thousands of characters, and quoting the whole blob would bury the
 # message it belongs to (and every finding after it).
 _MAX_SHOWN = 60
+
+# How far either end of a generated road route may sit from the leg's endpoint
+# before it reads as stale (see `_stale_generated_route`).
+STALE_ROUTE_KM = 2.0
 
 
 def _shown(value) -> str:
@@ -699,7 +704,7 @@ class _Validator:
                 borrow_start=borrow_start, borrow_end=borrow_end))
             self._road_leg_junction(leg, lp, prev)
             self._road_leg_waypoints(leg, lp)
-            self._road_leg_gpx(leg, lp)
+            self._road_leg_gpx(leg, lp, prev, nxt)
             self._magnitudes(leg, lp, "road")
             d = _dur(leg.get("duration"))
             if d is not None:
@@ -837,18 +842,65 @@ class _Validator:
                          "each of a leg's 'waypoints' must be a coordinate with "
                          "a 'lat' and a 'long' ({error}).", error=self._terr(err))
 
-    def _road_leg_gpx(self, leg, lp):
+    def _road_leg_gpx(self, leg, lp, prev=None, nxt=None):
         """What a leg's recording does, and the one thing that can silence it.
         Unlike a hike's GPX it is never drawn as a figure of its own — no trail
         map, no elevation profile — it *is* the leg's line on the day map, so a
         file with no elevations is no loss here. With maps off nothing is drawn
-        at all, which is worth saying since the file is still being carried."""
-        if self._gpx_of(leg) is None:
+        at all, which is worth saying since the file is still being carried.
+
+        Also checks ``gpx_generated``, the ``route`` command's mark on a file it
+        computed. It is deliberately not in ``ROAD_LEG_SPECS``: as an optional
+        field there it would add an info to every leg in the file, for a flag
+        nobody writes by hand."""
+        flag = leg.get("gpx_generated")
+        if flag is not None:
+            if V_BOOL(flag):
+                self.add("error", lp + ("gpx_generated",),
+                         "'gpx_generated' must be true or false.")
+            elif _truthy(flag) and not leg.get("gpx"):
+                self.add("warning", lp + ("gpx_generated",),
+                         "'gpx_generated' is set but the leg has no 'gpx' — the "
+                         "flag has nothing to describe and is ignored.")
+        track = self._gpx_of(leg)
+        if track is None:
             return  # none given, or one that won't decode (the field check said so)
+        if flag is not None and _truthy(flag) and track.points:
+            self._stale_generated_route(leg, lp, prev, nxt, track)
         if not _truthy(self._defaults().get("include_maps_in_render")):
             self.add("info", lp + ("gpx",), "'include_maps_in_render' is off, so "
                      "this GPX is parsed but no map is drawn from it (the viewer "
                      "still offers the file for download).")
+
+    def _stale_generated_route(self, leg, lp, prev, nxt, track):
+        """A generated route is a snapshot of the leg's endpoints when ``route``
+        last ran; moving an endpoint afterwards leaves the drawn line going to
+        the old place, with nothing else to say so. Warn when either end of the
+        stored line sits over ``STALE_ROUTE_KM`` from the endpoint it should run
+        from — wide enough for a router snapping a remote point onto the nearest
+        road, far narrower than an endpoint that moved to another place."""
+        ends = (
+            ("this generated route starts {km} km from the leg's departure "
+             "coordinate — the endpoint moved since it was computed; re-run "
+             "`route` to recompute it.",
+             leg.get("start_coordinate") or (prev or {}).get("end_coordinate"),
+             track.points[0]),
+            ("this generated route ends {km} km from the leg's arrival "
+             "coordinate — the endpoint moved since it was computed; re-run "
+             "`route` to recompute it.",
+             leg.get("end_coordinate") or (nxt or {}).get("start_coordinate"),
+             track.points[-1]),
+        )
+        for message, raw, drawn in ends:
+            try:
+                coord = _parse_coordinate(raw)
+            except ItineraryError:
+                continue
+            if coord is None:
+                continue
+            km = _haversine_km((coord.lat, coord.long), drawn)
+            if km > STALE_ROUTE_KM:
+                self.add("warning", lp + ("gpx",), message, km=f"{km:.1f}")
 
     def _road_shared_endpoints(self, act, path, siblings, index):
         """Check a drive's ``same_start_as_previous_activity`` /
