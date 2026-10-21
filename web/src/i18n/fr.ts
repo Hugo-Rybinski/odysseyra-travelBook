@@ -711,6 +711,9 @@ export const FR: Record<string, string> = {
   "Mark just this hop as off-road. The drive as a whole counts as off-road only when every leg is. Defaults to off.":
     "Marquer cette seule étape comme hors-piste (route non goudronnée). Le trajet entier n'est hors-piste que si toutes ses étapes le sont. Désactivé par défaut.",
   "GPX recording": "Enregistrement GPX",
+  "Generated route": "Itinéraire généré",
+  "Set by the command line's `route` command on a GPX it computed from the routed line, rather than recorded: it's offered as a built route, and the next `route` run replaces it. Picking your own file above clears it. Defaults to off.":
+    "Indiqué par la commande `route` de la ligne de commande sur un GPX qu'elle a calculé à partir de l'itinéraire routé, plutôt qu'enregistré : il est proposé comme un itinéraire généré, et la prochaine exécution de `route` le remplace. Choisir votre propre fichier ci-dessus le désactive. Désactivé par défaut.",
   "A .gpx recording of this hop, stored in the itinerary itself. It becomes this leg's line on the day map instead of the routed guess — there's no separate trail map or elevation profile, unlike a hike's. Optional.":
     "Un enregistrement .gpx de cette étape, stocké dans l'itinéraire lui-même. Il devient le tracé de cette étape sur la carte du jour à la place de l'itinéraire calculé — sans carte ni profil altimétrique dédiés, contrairement à une randonnée. Facultatif.",
   "From coordinate": "Coordonnée de départ",

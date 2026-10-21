@@ -99,8 +99,8 @@ remove build artifacts / the venv + `node_modules`.
 
 ## Command-line tool
 
-`odysseyra-travelBook <command> [options]`, with seven commands: `build`, `validate`,
-`ics`, `gpx`, `geocode`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
+`odysseyra-travelBook <command> [options]`, with eight commands: `build`, `validate`,
+`ics`, `gpx`, `geocode`, `route`, `stitch` and `create-skeleton`. Two options recur: `-l` / `--lang`
 (`en` default, or `fr`) picks the language of *generated* text and diagnostics
 (never your JSON content), and `-v` / `--verbose` sets validation verbosity.
 Running `odysseyra-travelBook <file.json>` with no command implies `build`. Without the
@@ -251,6 +251,24 @@ address) and writes the results **back into the JSON**, so later builds are
 offline and deterministic. `-o` / `--output` writes elsewhere (default: overwrite
 in place); `--country` restricts geocoding (default: the trip's
 `inference_countries`).
+
+### `route` — bake in drive routes
+
+```bash
+odysseyra-travelBook route examples/france.json
+```
+
+Computes the driving line of every road leg that has no `gpx` of its own — the
+same routing the maps draw, through the leg's `waypoints` — and writes it **back
+into the JSON** as that leg's `gpx`, marked `gpx_generated: true`. Later builds
+then draw the drives offline and identically. A generated route still shows as
+computed everywhere: **(Build GPX file)** in the viewer, a `<rte>` in the GPX
+export. Re-running recomputes every generated route (so a moved endpoint is
+followed) and never touches a recording you attached; a leg the router can't
+reach keeps the route it had, and a straight line is never stored. Run `geocode`
+first if a departure has no coordinate. `-o` / `--output` writes elsewhere
+(default: overwrite in place); `--cache-dir` as for `build`. See
+[storing the computed route](file_format.md#storing-the-computed-route-gpx_generated).
 
 ### `stitch` & `create-skeleton` — build from fragments
 

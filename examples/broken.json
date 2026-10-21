@@ -47,10 +47,10 @@
             { "end_location": "No coordinate of its own" },
             { "start_location": "Elsewhere", "start_coordinate": { "lat": 91, "long": 2 },
               "end_location": "Bad figures", "end_coordinate": { "lat": 1, "long": 2, "show_on_map": false },
-              "duration": "nope", "distance_km": -3, "off_road": "maybe" },
+              "duration": "nope", "distance_km": -3, "off_road": "maybe", "gpx_generated": "maybe" },
             { "start_coordinate": { "lat": 50, "long": 2 },
               "end_location": "Too long", "end_coordinate": { "lat": 1, "long": 2 }, "duration": "8h",
-              "waypoints": [ "not-a-coordinate", { "lat": 1 } ] },
+              "waypoints": [ "not-a-coordinate", { "lat": 1 } ], "gpx_generated": true },
             { "end_coordinate": { "lat": 1, "long": 2 }, "duration": "8h",
               "gpx": "not a gpx file" }
           ],

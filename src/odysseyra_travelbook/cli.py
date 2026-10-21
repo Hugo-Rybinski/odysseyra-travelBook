@@ -82,6 +82,38 @@ def _run_geocode(input_path: Path, output: Path | None, country: str | None,
     return 0
 
 
+def _run_route(input_path: Path, output: Path | None, lang: str,
+               cache_dir: Path | None = None) -> int:
+    """Store the computed driving line of every road leg that has no ``gpx``,
+    writing it back into the JSON marked ``gpx_generated`` (see
+    :func:`.maps.writeback.fill_routes`). Re-running replaces the generated
+    lines and never touches a recording the user attached."""
+    from .maps import Cache
+    from .maps.writeback import fill_routes
+
+    try:
+        data = json.loads(Path(input_path).read_text(encoding="utf-8"))
+        cache = Cache.open(cache_dir)
+        written, recorded, missed = fill_routes(data, cache)
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except ItineraryError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    try:
+        cache.save()
+    except OSError:
+        pass
+    out = output or input_path
+    out.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                   encoding="utf-8")
+    print(tr("Routed {written} drive leg(s), kept {recorded} recording(s), "
+             "{missed} not routable → {path}", lang).format(
+        written=written, recorded=recorded, missed=missed, path=out))
+    return 0
+
+
 def _run_ics(input_path: Path, output: Path | None, lang: str) -> int:
     """Export the itinerary to an iCalendar (.ics) file for Google Calendar."""
     output = output or input_path.with_suffix(".ics")
@@ -314,6 +346,16 @@ def main(argv: list[str] | None = None) -> int:
                         "the trip's inference_countries)")
     _add_lang(g)
 
+    r = sub.add_parser("route", help="store each drive leg's computed route in "
+                       "the JSON (as a generated GPX), so later builds draw it "
+                       "offline; re-running refreshes them")
+    r.add_argument("input", type=Path, help="path to the itinerary JSON")
+    r.add_argument("-o", "--output", type=Path, default=None,
+                   help="output path (default: overwrite the input in place)")
+    r.add_argument("--cache-dir", type=Path, default=None,
+                   help="where to cache the geocode / route results")
+    _add_lang(r)
+
     c = sub.add_parser("create-skeleton", help="scaffold an empty fragment "
                        "directory (sub-folders + a travel_description.json stub) "
                        "for `stitch`")
@@ -322,7 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("name", help="name of the skeleton directory to create")
 
     _commands = ("build", "validate", "stitch", "create-skeleton", "geocode",
-                 "ics", "gpx")
+                 "route", "ics", "gpx")
     # Backward-compat: `odysseyra-travelBook trip.json ...` implies `build`.
     if argv and argv[0] not in _commands + ("-h", "--help"):
         argv = ["build"] + argv
@@ -336,6 +378,9 @@ def main(argv: list[str] | None = None) -> int:
         return _run_create_skeleton(args.path, args.name)
     if args.command == "geocode":
         return _run_geocode(args.input, args.output, args.country, args.lang)
+    if args.command == "route":
+        return _run_route(args.input, args.output, args.lang,
+                          cache_dir=args.cache_dir)
     if args.command == "ics":
         return _run_ics(args.input, args.output, args.lang)
     if args.command == "gpx":

@@ -56,6 +56,9 @@ export interface Waypoint {
   // route on the day map (the map render carries it), never as a figure of its
   // own, which is what makes it unlike a hike's `track`.
   gpx?: string | null;
+  // `gpx` was computed and stored by the CLI's `route` command rather than
+  // recorded: offered as a built route, not a track. Absent on older caches.
+  gpx_generated?: boolean;
 }
 
 // A hike's embedded GPX, reduced by the Python model (models/gpx.py) to what

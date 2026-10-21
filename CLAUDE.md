@@ -18,6 +18,7 @@ odysseyra-travelBook build examples/france_fr.json --lang fr -o out_fr.pdf
 odysseyra-travelBook build examples/pyrenees.json --ink-saver -o out.pdf   # outlines, not solid fills
 odysseyra-travelBook build examples/pyrenees.json --maps -o out.pdf   # per-day maps
 odysseyra-travelBook geocode examples/pyrenees.json --country FR   # fill coordinates, write back
+odysseyra-travelBook route examples/pyrenees.json                  # store each drive leg's routed line as a generated gpx
 odysseyra-travelBook ics examples/pyrenees.json -o trip.ics        # export a calendar (.ics) for Google Calendar
 odysseyra-travelBook gpx examples/pyrenees.json out/               # write the trip's GPX files (whole trip + one per day)
 
@@ -168,7 +169,8 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   `render_trip_map` for the whole-trip map and `render_hike_map(track, …)` for a
   hike's GPX — the one map with nothing to resolve, so it geocodes and routes
   nothing and needs only tiles), `writeback.py` (`fill_coordinates` for the
-  `geocode` command),
+  `geocode` command, `fill_routes` for `route` — see the *A stored route*
+  bullet),
   and `Cache` (geocode/routes/tiles on disk under `~/.cache/odysseyra`, or
   `$ODYSSEYRA_CACHE`; tiles are `vec_<z>_<x>_<y>.mvt` — the old raster
   `nolabels_*`/`onlylabels_*.png` files are dead and can be deleted). Uses
@@ -231,7 +233,7 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
   Prompts for `travel_description` when its file is absent. `create_skeleton`
   scaffolds the reverse — an empty fragment dir (`SKELETON_DIRS` sub-folders +
   a `{"title": "FIXME"}` stub). `safe_filename` and `StitchError` round it out.
-- `cli.py` — argparse CLI (`build` / `validate` / `ics` / `gpx` / `stitch` /
+- `cli.py` — argparse CLI (`build` / `validate` / `ics` / `gpx` / `route` / `stitch` /
   `geocode` / `create-skeleton`, `--lang`, `--verbose`). `build` also takes
   `--maps/--no-maps`,
   `--map-provider`, `--cache-dir`; `geocode` fills coordinates and writes them back
@@ -1059,6 +1061,27 @@ paths are stable (`from odysseyra_travelbook.models import Itinerary`, etc.).
       into the resolved timeline — that has buffers woven through it, so its
       activity numbers don't match the input's, while a day's roads do (hence
       `roadOrdinals` in `DayCard`).
+  - **A computed line can be stored, and stays computed** — the CLI's `route`
+    command (`maps/writeback.py`'s `fill_routes`) writes each leg's drawn line
+    into its `gpx` (gzipped `<rte>`, simplified by `models/gpx.py`'s own
+    `_simplify`, no gzip timestamp so a re-run is byte-stable) and marks it
+    `gpx_generated: true`. Drawing then needs no routing — the leg reads as if
+    it carried a recording — but everything that tells the two apart reads the
+    flag: `gpx_bundle.py` keeps it a `<rte>`, the viewer's `GpxDownload` labels
+    it `buildGpx` like `GpxBuildLink`. Three rules make re-running safe: a `gpx`
+    **without** the flag is the user's and never touched; a generated one is
+    recomputed from a model built with every generated file **stripped**, so the
+    stored line can't feed itself; a leg unroutable this run keeps its old line
+    (`fallback=False`, so a straight line is never stored). Raw roads are
+    matched to model roads by order within each day — roads are top-level only,
+    the same assumption as `bridge.leg_gpx`. The flag is **not** in
+    `ROAD_LEG_SPECS` (an optional spec would add an info per leg); `_road_leg_gpx`
+    checks it by hand and `_stale_generated_route` warns when a stored route's
+    end is over `STALE_ROUTE_KM` (2 km) from the leg's endpoint. The Edit tab
+    drops the flag when a file is picked by hand. The resolved waypoint gained
+    `gpx_generated`, hence `SCHEMA_VERSION` **v32**; no example stores routes
+    (they'd add ~70 KB of base64 to `france.json`), so
+    `tests/test_route_writeback.py` holds the behaviour.
   - Both of those change the resolved `Day`, hence the `SCHEMA_VERSION` bump to
     **18**.
 - **Transport is a booking plus its `legs`.** What is reserved once — `type`,

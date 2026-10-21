@@ -147,6 +147,13 @@ class Waypoint:
     elevation profile — it **is** the leg's line on the day map, replacing the
     routed guess (see ``maps/build.py``).
 
+    ``gpx_generated`` says the file was **computed**, not recorded: the ``route``
+    command (``maps/writeback.py``'s ``fill_routes``) wrote the routed line into
+    the JSON so later builds draw it offline. It is drawn exactly like a
+    recording, but everything that tells the two apart — the GPX export's
+    ``<rte>`` against ``<trk>``, the viewer's download label — reads it as the
+    computed route it is, and the next ``route`` run is free to replace it.
+
     ``coordinate`` is typed optional for one transient state only: a road with
     ``same_end_as_next_activity`` may leave its arrival unlocated in the JSON, and
     the point is then filled in from the next activity by
@@ -160,6 +167,7 @@ class Waypoint:
     off_road: bool = False
     gpx: str = ""                       # base64 GPX of the leg reaching here
     track: GpxTrack | None = None       # parsed from `gpx`
+    gpx_generated: bool = False         # `gpx` was computed by `route`, not recorded
 
     @property
     def duration_display(self) -> str:
@@ -258,6 +266,7 @@ def _road_chain(
             off_road=_leg_off_road(leg),
             gpx=str(raw_gpx) if raw_gpx else "",
             track=gpx_track(raw_gpx) if raw_gpx not in (None, "") else None,
+            gpx_generated=bool(raw_gpx) and _parse_bool(leg.get("gpx_generated", False)),
         ))
     # The drive as a whole is off-road only when every one of its legs is; a
     # single rough stretch stays that leg's own flag.

@@ -151,11 +151,14 @@ const BUDGET_BYTES = 160 * 1024 * 1024;
 // finish where there used to be two identical discs. A v29 entry has neither
 // field *and* a `track.map` PNG rendered without any of it, so a trail would
 // keep coming back as a shape with no story.
+// v32: a road waypoint gained `gpx_generated` (its `gpx` was computed by the
+// CLI's `route` command, not recorded). A v31 entry lacks it, so a stored
+// route would be offered as "(Get GPX track)" — a recording it isn't.
 // Exported because it is the resolved document's version, not just this cache's
 // key: `file/renderCache.ts` pairs it with the build's commit hash to decide
 // whether a cached *rendering* could have come from today's engine. One bump,
 // both caches — which is the same rule this list already states.
-export const SCHEMA_VERSION = 31;
+export const SCHEMA_VERSION = 32;
 
 interface Entry {
   day: Day;

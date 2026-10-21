@@ -217,6 +217,9 @@ def _waypoint(wp) -> dict:
         # a leg's recording is drawn as the route on the day map, which the map
         # render already carries, so there is no geometry or profile to ship.
         "gpx": wp.gpx or None,
+        # Whether that file was computed by the `route` command rather than
+        # recorded — the viewer then offers it as a built route, not a track.
+        "gpx_generated": wp.gpx_generated,
     }
 
 

@@ -648,6 +648,7 @@ function ActivityDetails({
             base64={legs[0].gpx}
             name={legs[0].dest || act.title}
             lang={lang}
+            generated={legs[0].gpxGenerated}
           />,
         );
       else if (dayIndex != null && roadIndex != null)
@@ -761,6 +762,7 @@ function RoadVia({
                     base64={leg.gpx}
                     name={leg.dest || act.title}
                     lang={lang}
+                    generated={leg.gpxGenerated}
                   />
                 ) : dayIndex != null && roadIndex != null ? (
                   <GpxBuildLink

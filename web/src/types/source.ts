@@ -101,6 +101,9 @@ export interface SrcRoadLeg {
   // map instead of the routed guess, and it is never drawn as a map + profile
   // of its own.
   gpx?: string;
+  // Set by the CLI's `route` command on a `gpx` it computed (never on a
+  // recording): the next run may replace it.
+  gpx_generated?: boolean;
 }
 
 export interface SrcRoad extends SrcScheduled {
