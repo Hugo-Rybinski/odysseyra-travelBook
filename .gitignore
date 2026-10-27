@@ -26,3 +26,4 @@ docs/
 
 # Local-only extracted badge icons (kept on disk, not shipped)
 src/odysseyra_travelbook/icons/
+.wrangler/

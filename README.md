@@ -424,6 +424,25 @@ Itinerary` stays stable):
 
 The browser viewer is a separate Vite/React app under `web/` (see its README).
 
+### Deployment
+
+Every push to `main` deploys the viewer twice, from the same build:
+
+- **GitHub Pages** (`.github/workflows/deploy-pages.yml`), served under
+  `/odysseyra-travelBook/` — <https://hugo-rybinski.github.io/odysseyra-travelBook/>.
+- **Cloudflare Workers static assets** (`.github/workflows/deploy-cloudflare.yml`,
+  config in `web/wrangler.jsonc`), served from the root as the
+  `odysseyra-travelbook` worker (`https://odysseyra-travelbook.<subdomain>.workers.dev`).
+
+The Cloudflare workflow needs, in the repo's Settings → Secrets and variables → Actions:
+
+| Name                    | Kind   | Value                                                 |
+| ----------------------- | ------ | ----------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | secret | API token from the "Edit Cloudflare Workers" template |
+| `CLOUDFLARE_ACCOUNT_ID` | secret | Account ID, shown on the Workers & Pages page         |
+
+To deploy by hand: `make wheel && cd web && npm run build && npx wrangler deploy`.
+
 ### Example files
 
 - `examples/france.json` — the flagship: a full, valid France tour (Paris → the Loire → the Dordogne → the Pyrenees) exercising most features, maps on. Also the in-browser **Demo**, where its September-2026 dates are shifted onto today's calendar so its **second day is today** — the file itself stays pinned, since the example PDFs and the tests are built from it.
