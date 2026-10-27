@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { Finding, FindingLevel } from "../types/resolved";
 import { useT } from "../i18n";
+import { Icon } from "../render/Icon";
 
-const LEVEL_ICON: Record<FindingLevel, string> = {
-  error: "❌",
-  warning: "⚠️",
-  info: "ℹ️",
+const LEVEL_ICON: Record<FindingLevel, ReactNode> = {
+  error: <Icon name="error" size={15} />,
+  warning: <Icon name="warning" size={15} />,
+  info: <Icon name="info" size={15} />,
 };
 
 const LEVEL_ORDER: FindingLevel[] = ["error", "warning", "info"];

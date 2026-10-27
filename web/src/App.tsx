@@ -46,6 +46,7 @@ import {
 } from "./maps/mapCache";
 import { FindingsPanel } from "./findings/FindingsPanel";
 import { Book, type DayView } from "./render/Book";
+import { Icon, stripEmoji, type IconName } from "./render/Icon";
 import { useActivityForecasts } from "./render/forecast";
 import { MapProviderContext, type MapProvider } from "./render/nav";
 import { RouteGpxContext } from "./render/routeExport";
@@ -132,6 +133,20 @@ type View =
   | "edit"
   | "guide"
   | "prompts";
+
+// The line icon each view's menu entry carries, in place of the emoji its
+// translated label starts with (stripped at render; the strings stay the keys).
+const MENU_ICON: Record<View, IconName> = {
+  viewer: "compass",
+  overview: "map",
+  transport: "plane",
+  accommodations: "hotel",
+  findings: "search",
+  edit: "pencil",
+  guide: "book",
+  prompts: "prompt",
+  options: "gear",
+};
 
 // A loaded source: its name, raw text, and (if opened via the FS Access API) a
 // handle we can re-read later. `handle` shape is opaque here.
@@ -1348,14 +1363,31 @@ export function App() {
           }}
           aria-label={t("🧭 Travel")}
         >
+          {/* The mark in ink on the sheet, in vellum on the dark one; CSS shows
+              the one that matches the theme. */}
           <img
-            className="logo"
+            className="logo logo-ink"
+            src={`${import.meta.env.BASE_URL}img/odysseyra-ink-no-bg.svg`}
+            alt=""
+            aria-hidden="true"
+          />
+          <img
+            className="logo logo-paper"
             src={`${import.meta.env.BASE_URL}img/odysseyra-white-no-bg.svg`}
             alt=""
             aria-hidden="true"
           />
         </button>
-        <h1>{t("Odysseyra TravelBook")}</h1>
+        {/* The running head: the series name in tracked capitals, the product
+            after it, as a map sheet's head names its series. */}
+        <h1 aria-label={t("Odysseyra TravelBook")}>
+          <span className="rh-brand" aria-hidden>
+            Odysseyra
+          </span>
+          <span className="rh-product" aria-hidden>
+            TravelBook
+          </span>
+        </h1>
         <div className="menu" ref={menuRef}>
           <button
             className="btn ghost burger"
@@ -1364,7 +1396,7 @@ export function App() {
             aria-label={t("Menu")}
             onClick={() => setMenuOpen((o) => !o)}
           >
-            ☰
+            <Icon name="menu" size={22} />
             {dirty && (
               <span className="dirty-dot" aria-label={t("unapplied edits")} title={t("Unapplied edits")}>
                 {" "}
@@ -1399,7 +1431,10 @@ export function App() {
                   >
                     {/* `.fade-label` so a disabled item greys out without also
                         fading its `data-tip` bubble (see index.css). */}
-                    <span className="fade-label">{item.label}</span>
+                    <span className="fade-label">
+                      <Icon name={MENU_ICON[item.id]} size={18} />
+                      {stripEmoji(item.label)}
+                    </span>
                     {item.dot && (
                       <span
                         className="dirty-dot"
@@ -1423,7 +1458,10 @@ export function App() {
                   setMenuOpen(false);
                 }}
               >
-                {updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update app")}
+                <span className="fade-label">
+                  <Icon name="refresh" size={18} />
+                  {stripEmoji(updating ? t("🔄 Updating…") : checking ? t("🔄 Checking…") : t("🔄 Update app"))}
+                </span>
               </button>
             </div>
           )}
@@ -1638,10 +1676,12 @@ export function App() {
               </p>
               <div className="empty-action-buttons">
                 <button className="btn" onClick={onCreateBlank} disabled={busy}>
-                  {t("➕ Create blank")}
+                  <Icon name="plus" size={16} />
+                  {stripEmoji(t("➕ Create blank"))}
                 </button>
                 <button className="btn" onClick={onOpen} disabled={busy}>
-                  {t("📂 Open JSON…")}
+                  <Icon name="folder" size={16} />
+                  {stripEmoji(t("📂 Open JSON…"))}
                 </button>
                 <button
                   className="btn"
@@ -1650,10 +1690,12 @@ export function App() {
                     setMenuOpen(false);
                   }}
                 >
-                  {t("📘 Usage guide")}
+                  <Icon name="book" size={16} />
+                  {stripEmoji(t("📘 Usage guide"))}
                 </button>
                 <button className="btn" onClick={onOpenSample} disabled={busy}>
-                  {t("🚀 Demo")}
+                  <Icon name="play" size={16} />
+                  {stripEmoji(t("🚀 Demo"))}
                 </button>
               </div>
             </div>

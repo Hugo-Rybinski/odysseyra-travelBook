@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Money, RenderedMap } from "../types/resolved";
 import { primaryMoney, secondaryMoney } from "./money";
 import { fill, tr, type Lang, type LabelKey } from "./format";
+import { Caret } from "./Icon";
 
 /** One pre-rendered map image with its caption — a day's map, an area's zoom, or
  * a hike's trail. Shown only with the Options interactive-maps toggle **off**
@@ -79,9 +80,7 @@ export function PastFold({
       aria-expanded={shown}
       onClick={onToggle}
     >
-      <span className="past-days-caret" aria-hidden>
-        {shown ? "▾" : "▸"}
-      </span>
+      <Caret open={shown} className="past-days-caret" />
       {fill(tr(lang, shown ? hideKey : showKey), { n })}
     </button>
   );
@@ -132,9 +131,7 @@ export function CardHead({
       }}
     >
       {children}
-      <span className="card-caret" aria-hidden>
-        {collapsed ? "▸" : "▾"}
-      </span>
+      <Caret open={!collapsed} className="card-caret" />
     </div>
   );
 }

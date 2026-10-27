@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { fmtDate, type Lang } from "./render/format";
+import { Icon, stripEmoji } from "./render/Icon";
 import type { DayView } from "./render/Book";
 import { MAP_PROVIDERS, type MapProvider } from "./render/nav";
 import type { ThemePref } from "./theme";
@@ -321,7 +322,8 @@ function ForecastRefresh({
           onClick={onRefresh}
           disabled={!!disabledReason || status.refreshing}
         >
-          {t("🔄 Refresh forecast")}
+          <Icon name="refresh" size={16} />
+          {stripEmoji(t("🔄 Refresh forecast"))}
         </button>
       </Tip>
       {line && <span className="opt-inline-note">{line}</span>}
@@ -397,12 +399,14 @@ export function FileGroup({
       <div className="opt-row">
         <Tip text={t("Start a new blank itinerary and edit it from scratch")}>
           <button className="btn" onClick={onCreateBlank} disabled={busy}>
-            {t("➕ Create blank")}
+            <Icon name="plus" size={16} />
+            {stripEmoji(t("➕ Create blank"))}
           </button>
         </Tip>
         <Tip text={t("Open an Odysseyra TravelBook JSON file from your device")}>
           <button className="btn" onClick={onOpen} disabled={busy}>
-            {t("📂 Open JSON…")}
+            <Icon name="folder" size={16} />
+            {stripEmoji(t("📂 Open JSON…"))}
           </button>
         </Tip>
         <Tip text={reopenReason || t("Reopen the last opened file")}>

@@ -28,6 +28,9 @@ export type DayView = CollapseView;
 
 const NO_FORECASTS = new Map<Activity, Forecast>();
 
+// The survey sheet's ink (odysseyra-blog DESIGN.md → Colors → Survey Navy).
+export const SHEET_INK = "#12294f";
+
 // A day as a date span, so the day list answers to the same three rules as the
 // transport / accommodation card lists (`collapse.ts`). A day is one date, so
 // its span opens and closes on it — which makes `current-only`'s
@@ -111,7 +114,11 @@ export function Book({
   jumpTo?: number | null;
   onJumped?: () => void;
 }) {
-  const style = paletteVars(itinerary.cover_color, useThemeValue() === "dark") as CSSProperties;
+  // The viewer prints every trip in the brand's two inks (navy + gold, the
+  // Odysseyra survey sheet) rather than in its `cover_color`, which stays the
+  // PDF's. The vars are still spread from `paletteVars` so everything that reads
+  // `--accent*` keeps working; `SHEET_INK` is the ink they derive from.
+  const style = paletteVars(SHEET_INK, useThemeValue() === "dark") as CSSProperties;
   const [collapsed, setCollapsed] = useState<Set<number>>(() => collapsedFor(daysView, itinerary));
 
   // Which days are folded away, and whether they're on screen at all. A past
@@ -173,7 +180,7 @@ export function Book({
 
   if (show === "overview") {
     return (
-      <AccentContext.Provider value={itinerary.cover_color}>
+      <AccentContext.Provider value={SHEET_INK}>
       <MapProviderContext.Provider value={mapProvider}>
         <ClampProvider value={clampDescriptions}>
           <div className="book" style={style}>
@@ -197,7 +204,7 @@ export function Book({
   if (show === "transport") {
     const empty = !itinerary.transports.length && !itinerary.car_rentals.length;
     return (
-      <AccentContext.Provider value={itinerary.cover_color}>
+      <AccentContext.Provider value={SHEET_INK}>
       <MapProviderContext.Provider value={mapProvider}>
         {/* ClampProvider reaches here too since the cards carry prose of their
             own now (a leg's / rental's `description`) — without it these notes
@@ -218,7 +225,7 @@ export function Book({
 
   if (show === "accommodations") {
     return (
-      <AccentContext.Provider value={itinerary.cover_color}>
+      <AccentContext.Provider value={SHEET_INK}>
       <MapProviderContext.Provider value={mapProvider}>
         <ClampProvider value={clampDescriptions}>
           <div className="book" style={style}>
@@ -235,7 +242,7 @@ export function Book({
   }
 
   return (
-    <AccentContext.Provider value={itinerary.cover_color}>
+    <AccentContext.Provider value={SHEET_INK}>
     <MapProviderContext.Provider value={mapProvider}>
     <ClampProvider value={clampDescriptions}>
     <ForecastProvider value={forecasts}>
@@ -261,6 +268,7 @@ export function Book({
               collapsed={collapsed.has(day.day_number)}
               onToggle={toggle}
               mapExpected={itinerary.maps.include_in_render && showMapLoaders}
+              total={itinerary.day_count}
               interactive={interactiveMaps}
             />
           ),

@@ -189,7 +189,7 @@ export default defineConfig({
         // with the correct MIME from cache and works offline — rather than being
         // fetched at runtime, which risked the navigation fallback returning
         // index.html for it (a "non-JavaScript MIME type" module error).
-        globPatterns: ["**/*.{js,css,html,svg,json,whl,md}"],
+        globPatterns: ["**/*.{js,css,html,svg,json,whl,md,woff2}"],
         // `version.json` answers "what is deployed?" — precaching it would
         // make it answer "what is already running", i.e. always "up to date".
         globIgnores: ["**/version.json"],
