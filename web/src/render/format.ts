@@ -30,10 +30,20 @@ export function fmtDateRange(
   return "";
 }
 
+/** An index number as the sheet prints it: always two digits (day 03, pin 07).
+ * Counts stay plain numbers; only things that are *numbered* go through this. */
+export function idx(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
 const LABELS = {
   en: {
     day: "Day",
     overview: "Day-by-day",
+    // the cover cartouche's facts ledger
+    ledgerDates: "Dates",
+    ledgerDays: "Days",
+    ledgerStays: "Stays",
     dayCol: "Day",
     dateCol: "Date",
     activitiesCol: "Highlights",
@@ -234,6 +244,9 @@ const LABELS = {
   fr: {
     day: "Jour",
     overview: "Jour par jour",
+    ledgerDates: "Dates",
+    ledgerDays: "Jours",
+    ledgerStays: "Hébergements",
     dayCol: "Jour",
     dateCol: "Date",
     activitiesCol: "Temps forts",

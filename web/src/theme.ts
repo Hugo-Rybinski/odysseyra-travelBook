@@ -9,7 +9,7 @@
 // on local time, which is the case this is for.
 //
 // The theme is a `data-theme` attribute on <html>; index.css carries the dark
-// overrides under `:root[data-theme="dark"]`, and `paletteVars` derives the
+// overrides under `:root[data-theme="dark"]` in survey.css, and `paletteVars` derives the
 // trip's accent tints for the dark surfaces.
 
 import { createContext, useContext, useEffect, useState } from "react";

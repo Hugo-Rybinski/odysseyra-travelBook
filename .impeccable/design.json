@@ -1,0 +1,745 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-27T21:51:49+00:00",
+  "title": "Design System: Odysseyra TravelBook (viewer)",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Sheet White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#222222",
+          "#3a3a3a",
+          "#555555",
+          "#7a7a7a",
+          "#9e9e9e",
+          "#c7c7c7",
+          "#eeeeee"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Survey Navy",
+        "canonical": "#12294f",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "#3c5172",
+        "tonalRamp": [
+          "#040b1a",
+          "#132238",
+          "#273b5a",
+          "#415677",
+          "#657b9f",
+          "#8ba0c0",
+          "#b9c8e0",
+          "#e6effe"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Margin Ink",
+        "canonical": "#5d6f8c",
+        "tonalRamp": [
+          "#050b17",
+          "#162235",
+          "#2b3b55",
+          "#455672",
+          "#697b99",
+          "#8e9fbb",
+          "#bcc8dc",
+          "#e7effb"
+        ]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(18 41 79 / 0.18)",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "hair-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "rgb(18 41 79 / 0.45)",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field Grey",
+        "canonical": "#f4f6f9",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#202224",
+          "#393b3d",
+          "#545558",
+          "#797a7d",
+          "#9d9ea1",
+          "#c5c7ca",
+          "#edeff1"
+        ]
+      },
+      "gold": {
+        "role": "secondary",
+        "displayName": "Route Gold",
+        "canonical": "#b08d3e",
+        "tonalRamp": [
+          "#160700",
+          "#331c00",
+          "#533400",
+          "#704f00",
+          "#977522",
+          "#b99a57",
+          "#dbc597",
+          "#faedd2"
+        ]
+      },
+      "gold-ink": {
+        "role": "secondary",
+        "displayName": "Gold Ink",
+        "canonical": "#7d6224",
+        "tonalRamp": [
+          "#140800",
+          "#301e00",
+          "#4f3600",
+          "#6b510e",
+          "#92763a",
+          "#b49b66",
+          "#d7c5a1",
+          "#f8edd7"
+        ]
+      },
+      "gold-wash": {
+        "role": "secondary",
+        "displayName": "Gold Wash",
+        "canonical": "rgb(176 141 62 / 0.12)",
+        "tonalRamp": [
+          "#160700",
+          "#331c00",
+          "#533400",
+          "#704f00",
+          "#977522",
+          "#b99a57",
+          "#dbc597",
+          "#faedd2"
+        ]
+      },
+      "grid-minor": {
+        "role": "neutral",
+        "displayName": "Graph Lines (minor)",
+        "canonical": "rgb(18 41 79 / 0.045)",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "grid-major": {
+        "role": "neutral",
+        "displayName": "Graph Lines (major)",
+        "canonical": "rgb(18 41 79 / 0.08)",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "strip": {
+        "role": "primary",
+        "displayName": "Strip Navy",
+        "canonical": "#12294f",
+        "tonalRamp": [
+          "#020a1d",
+          "#10213e",
+          "#223a61",
+          "#3c557f",
+          "#607ba7",
+          "#86a0c9",
+          "#b6c8e6",
+          "#e4efff"
+        ]
+      },
+      "on-strip": {
+        "role": "neutral",
+        "displayName": "Strip White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#222222",
+          "#3a3a3a",
+          "#555555",
+          "#7a7a7a",
+          "#9e9e9e",
+          "#c7c7c7",
+          "#eeeeee"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Survey Red",
+        "canonical": "#9b2c22",
+        "tonalRamp": [
+          "#250000",
+          "#4b0000",
+          "#750000",
+          "#96271e",
+          "#c35144",
+          "#e47c6e",
+          "#fdb1a5",
+          "#ffe2da"
+        ]
+      },
+      "danger-wash": {
+        "role": "tertiary",
+        "displayName": "Red Wash",
+        "canonical": "rgb(155 44 34 / 0.08)",
+        "tonalRamp": [
+          "#250000",
+          "#4b0000",
+          "#750000",
+          "#96271e",
+          "#c35144",
+          "#e47c6e",
+          "#fdb1a5",
+          "#ffe2da"
+        ]
+      },
+      "dark-paper": {
+        "role": "neutral",
+        "displayName": "Night Sheet",
+        "canonical": "#0f1b30",
+        "tonalRamp": [
+          "#060b16",
+          "#182232",
+          "#2d3b52",
+          "#47566e",
+          "#6b7b95",
+          "#919fb8",
+          "#bdc8da",
+          "#e8effa"
+        ]
+      },
+      "dark-ground": {
+        "role": "neutral",
+        "displayName": "Night Ground",
+        "canonical": "#0a1424",
+        "tonalRamp": [
+          "#060b14",
+          "#1a222f",
+          "#303b4d",
+          "#4a566a",
+          "#6e7b90",
+          "#939fb3",
+          "#bfc8d6",
+          "#e9eff8"
+        ]
+      },
+      "dark-ink": {
+        "role": "primary",
+        "displayName": "Vellum",
+        "canonical": "#e3e9f3",
+        "tonalRamp": [
+          "#090b0f",
+          "#1e2227",
+          "#363b42",
+          "#51565e",
+          "#757b83",
+          "#9a9fa7",
+          "#c4c7cd",
+          "#eceff2"
+        ]
+      },
+      "dark-ink-2": {
+        "role": "neutral",
+        "displayName": "Secondary Vellum",
+        "canonical": "#b9c4d6",
+        "tonalRamp": [
+          "#070b12",
+          "#1c222c",
+          "#323b49",
+          "#4c5665",
+          "#717b8b",
+          "#969fae",
+          "#c1c8d3",
+          "#ebeff6"
+        ]
+      },
+      "dark-ink-3": {
+        "role": "neutral",
+        "displayName": "Margin Vellum",
+        "canonical": "#8f9db5",
+        "tonalRamp": [
+          "#060b15",
+          "#192230",
+          "#2f3b4f",
+          "#49566b",
+          "#6e7b92",
+          "#939fb4",
+          "#bfc8d7",
+          "#e9eff8"
+        ]
+      },
+      "dark-hair": {
+        "role": "neutral",
+        "displayName": "Night Hairline",
+        "canonical": "rgb(227 233 243 / 0.16)",
+        "tonalRamp": [
+          "#090b0f",
+          "#1e2227",
+          "#363b42",
+          "#51565e",
+          "#757b83",
+          "#9a9fa7",
+          "#c4c7cd",
+          "#eceff2"
+        ]
+      },
+      "dark-hair-strong": {
+        "role": "neutral",
+        "displayName": "Night Strong Hairline",
+        "canonical": "rgb(227 233 243 / 0.4)",
+        "tonalRamp": [
+          "#090b0f",
+          "#1e2227",
+          "#363b42",
+          "#51565e",
+          "#757b83",
+          "#9a9fa7",
+          "#c4c7cd",
+          "#eceff2"
+        ]
+      },
+      "dark-field": {
+        "role": "neutral",
+        "displayName": "Night Field",
+        "canonical": "#16243c",
+        "tonalRamp": [
+          "#050b17",
+          "#172234",
+          "#2c3b54",
+          "#465671",
+          "#6a7b98",
+          "#8f9fba",
+          "#bcc8dc",
+          "#e8effb"
+        ]
+      },
+      "dark-gold": {
+        "role": "secondary",
+        "displayName": "Night Gold",
+        "canonical": "#c9a55a",
+        "tonalRamp": [
+          "#160700",
+          "#331c00",
+          "#533400",
+          "#704f00",
+          "#977426",
+          "#b99a59",
+          "#dbc599",
+          "#faedd3"
+        ]
+      },
+      "dark-gold-ink": {
+        "role": "secondary",
+        "displayName": "Night Gold Ink",
+        "canonical": "#dcbd76",
+        "tonalRamp": [
+          "#150800",
+          "#311e00",
+          "#503500",
+          "#6c5100",
+          "#93762e",
+          "#b69b5e",
+          "#d8c59c",
+          "#f9eed4"
+        ]
+      },
+      "dark-gold-wash": {
+        "role": "secondary",
+        "displayName": "Night Gold Wash",
+        "canonical": "rgb(201 165 90 / 0.16)",
+        "tonalRamp": [
+          "#160700",
+          "#331c00",
+          "#533400",
+          "#704f00",
+          "#977426",
+          "#b99a59",
+          "#dbc599",
+          "#faedd3"
+        ]
+      },
+      "dark-grid-minor": {
+        "role": "neutral",
+        "displayName": "Night Graph Lines (minor)",
+        "canonical": "rgb(227 233 243 / 0.03)",
+        "tonalRamp": [
+          "#090b0f",
+          "#1e2227",
+          "#363b42",
+          "#51565e",
+          "#757b83",
+          "#9a9fa7",
+          "#c4c7cd",
+          "#eceff2"
+        ]
+      },
+      "dark-grid-major": {
+        "role": "neutral",
+        "displayName": "Night Graph Lines (major)",
+        "canonical": "rgb(227 233 243 / 0.06)",
+        "tonalRamp": [
+          "#090b0f",
+          "#1e2227",
+          "#363b42",
+          "#51565e",
+          "#757b83",
+          "#9a9fa7",
+          "#c4c7cd",
+          "#eceff2"
+        ]
+      },
+      "dark-strip": {
+        "role": "primary",
+        "displayName": "Deep Strip Navy",
+        "canonical": "#22385f",
+        "tonalRamp": [
+          "#030a1d",
+          "#11213d",
+          "#243a60",
+          "#3d557f",
+          "#617ba7",
+          "#889fc8",
+          "#b7c8e6",
+          "#e4efff"
+        ]
+      },
+      "dark-on-strip": {
+        "role": "neutral",
+        "displayName": "Strip Vellum",
+        "canonical": "#eef2f8",
+        "tonalRamp": [
+          "#090b0f",
+          "#1f2226",
+          "#383b3f",
+          "#52555a",
+          "#777b80",
+          "#9b9fa4",
+          "#c4c8cd",
+          "#ebeff5"
+        ]
+      },
+      "dark-danger": {
+        "role": "tertiary",
+        "displayName": "Night Red",
+        "canonical": "#f0a499",
+        "tonalRamp": [
+          "#1d0201",
+          "#3d100c",
+          "#62241e",
+          "#813f37",
+          "#aa645b",
+          "#cc8b82",
+          "#eabab3",
+          "#ffe7e2"
+        ]
+      },
+      "dark-danger-wash": {
+        "role": "tertiary",
+        "displayName": "Night Red Wash",
+        "canonical": "rgb(240 164 153 / 0.1)",
+        "tonalRamp": [
+          "#1d0201",
+          "#3d100c",
+          "#62241e",
+          "#813f37",
+          "#aa645b",
+          "#cc8b82",
+          "#eabab3",
+          "#ffe7e2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The trip title in the cartouche; Options and empty-state titles at clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Transport and Accommodation section heads, ruled off beneath in ink."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Day strip, activity and booking titles (16.5-17px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Cover summary and day intro, 68ch max."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Activity descriptions; details and notes at 14px/1.5."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The cartouche subtitle in ink-2, 52ch max."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Buttons, links, menu items, the sun line."
+      },
+      "time": {
+        "displayName": "Time",
+        "purpose": "Clock times, distances, durations and prices: Overpass with tabular figures, never mono."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tracked capitals naming a field (ledger, table heads, Tonight, Open, VIA, captions). Uppercase."
+      },
+      "tag": {
+        "displayName": "Tag",
+        "purpose": "Status, payment, leg and off-road tags; type badges at 9px."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Overpass Mono for bare index numbers (the strip's 03 / 08, ledger day column) and copyable refs (line numbers, file names, guidebook pages, emergency numbers)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "popup",
+        "value": "0 6px 18px rgb(18 41 79 / 0.14)",
+        "purpose": "Floating chrome only: menu list, tooltips, engine activity card, Edit Apply bar."
+      },
+      {
+        "name": "popup-dark",
+        "value": "0 8px 24px rgb(0 0 0 / 0.45)",
+        "purpose": "The popup shadow on the dark sheet."
+      },
+      {
+        "name": "pin-lift",
+        "value": "0 1px 3px rgb(18 41 79 / 0.35)",
+        "purpose": "MapLibre DOM markers, lifted off the tiles."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-sheet",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "state",
+        "value": "160ms",
+        "purpose": "Background/colour on buttons."
+      },
+      {
+        "name": "caret",
+        "value": "200ms",
+        "purpose": "Chevron rotation on expand/collapse."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion drops button and chevron transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "480px"
+      },
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "wide",
+        "value": "900px"
+      },
+      {
+        "name": "coarse",
+        "value": "(pointer: coarse)"
+      },
+      {
+        "name": "no-hover",
+        "value": "(hover: none)"
+      }
+    ],
+    "tokensCss": ":root{--paper:#fff;--ink:#12294f;--ink-2:#3c5172;--ink-3:#5d6f8c;--hair:rgb(18 41 79/.18);--hair-strong:rgb(18 41 79/.45);--field:#f4f6f9;--gold:#b08d3e;--gold-ink:#7d6224;--gold-wash:rgb(176 141 62/.12);--strip:#12294f;--on-strip:#fff;--sans:'Overpass Variable','Overpass',system-ui,sans-serif;--mono:'Overpass Mono',ui-monospace,Menlo,monospace}"
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Printed-form box: paper and 1px ink at rest, inverted to strip ink under the pointer.",
+      "html": "<button class=\"ds-btn\">Open JSON</button>",
+      "css": ".ds-btn{min-height:36px;padding:7px 14px;border:1px solid var(--ink,#12294f);border-radius:0;background:var(--paper,#fff);color:var(--ink,#12294f);font:600 14px/1.5 var(--sans,'Overpass',system-ui,sans-serif);cursor:pointer;transition:background-color 160ms cubic-bezier(0.16, 1, 0.3, 1),color 160ms cubic-bezier(0.16, 1, 0.3, 1)}.ds-btn:hover{background:var(--strip,#12294f);color:var(--on-strip,#fff)}.ds-btn:focus-visible{outline:2px solid var(--gold,#b08d3e);outline-offset:3px}"
+    },
+    {
+      "name": "Filled Button",
+      "kind": "button",
+      "refersTo": "button-filled",
+      "description": "The Options and restore-banner primary: strip fill at rest, lightened on hover.",
+      "html": "<button class=\"ds-btn-filled\">Export PDF</button>",
+      "css": ".ds-btn-filled{min-height:36px;padding:7px 14px;border:1px solid var(--ink,#12294f);border-radius:0;background:var(--strip,#12294f);color:var(--on-strip,#fff);font:600 14px/1.5 var(--sans,'Overpass',system-ui,sans-serif);cursor:pointer;transition:background-color 160ms cubic-bezier(0.16, 1, 0.3, 1)}.ds-btn-filled:hover{background:color-mix(in srgb,var(--strip,#12294f) 82%,var(--on-strip,#fff))}.ds-btn-filled:focus-visible{outline:2px solid var(--gold,#b08d3e);outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Square paper field on a strong hairline; ink on hover, gold outline on focus.",
+      "html": "<input class=\"ds-input\" value=\"Grand Tour of France\" aria-label=\"Title\">",
+      "css": ".ds-input{min-height:36px;padding:6px 10px;border:1px solid var(--hair-strong,rgb(18 41 79/.45));border-radius:0;background:var(--paper,#fff);color:var(--ink,#12294f);font:400 14px var(--sans,'Overpass',system-ui,sans-serif)}.ds-input:hover{border-color:var(--ink,#12294f)}.ds-input:focus{outline:2px solid var(--gold,#b08d3e);outline-offset:1px;border-color:var(--ink,#12294f)}"
+    },
+    {
+      "name": "Running Head",
+      "kind": "nav",
+      "refersTo": "menu-item",
+      "description": "A ruled header row: tracked series name, product label in margin ink, a square menu cell ruled off at the right (on phones the bar spans the screen with only its bottom rule, and the menu cell has no rule).",
+      "html": "<header class=\"ds-head\"><span class=\"ds-head-brand\">Odysseyra</span><span class=\"ds-head-prod\">TravelBook</span><button class=\"ds-head-menu\" aria-label=\"Menu\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\"><path d=\"M4 7h16\"/><path d=\"M4 12h16\"/><path d=\"M4 17h16\"/></svg></button></header>",
+      "css": ".ds-head{display:flex;align-items:center;gap:10px;height:48px;padding-left:14px;border-top:1px solid var(--ink,#12294f);border-bottom:1px solid var(--ink,#12294f);background:var(--paper,#fff);color:var(--ink,#12294f);font-family:var(--sans,'Overpass',system-ui,sans-serif)}.ds-head-brand{font-weight:800;font-size:14px;letter-spacing:.16em;text-transform:uppercase}.ds-head-prod{flex:1;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3,#5d6f8c)}.ds-head-menu{display:grid;place-items:center;width:48px;height:100%;border:0;border-left:1px solid var(--ink,#12294f);border-radius:0;background:var(--paper,#fff);color:var(--ink,#12294f);cursor:pointer}.ds-head-menu:hover{background:var(--strip,#12294f);color:var(--on-strip,#fff)}.ds-head-menu:focus-visible{outline:2px solid var(--gold,#b08d3e);outline-offset:-4px}"
+    },
+    {
+      "name": "Day Strip",
+      "kind": "custom",
+      "refersTo": "day-strip",
+      "description": "Signature: each day opens on a solid ink strip numbering its sheet: DAY in label caps, 03 / 08 in mono, the date, the title.",
+      "html": "<div class=\"ds-strip\"><div class=\"ds-strip-num\"><b>Day</b> <span>03<i> / 08</i></span> <em>Wednesday, October 28, 2026</em></div><div class=\"ds-strip-title\">Île de la Cité to the Latin Quarter</div><div class=\"ds-strip-city\">Paris</div></div>",
+      "css": ".ds-strip{min-height:56px;padding:12px 18px;background:var(--strip,#12294f);color:var(--on-strip,#fff);font-family:var(--sans,'Overpass',system-ui,sans-serif);cursor:pointer}.ds-strip:hover{background:color-mix(in srgb,var(--strip,#12294f) 88%,var(--on-strip,#fff))}.ds-strip-num{font-size:12px}.ds-strip-num b{font-weight:700;letter-spacing:.12em;text-transform:uppercase}.ds-strip-num span{font-family:var(--mono,'Overpass Mono',monospace)}.ds-strip-num i{font-style:normal;opacity:.7}.ds-strip-num em{font-style:normal;font-size:13px;opacity:.75;margin-left:8px}.ds-strip-title{font-size:17px;font-weight:650;line-height:1.25}.ds-strip-city{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8}"
+    },
+    {
+      "name": "Timeline Row",
+      "kind": "card",
+      "refersTo": "type-badge",
+      "description": "A ruled ledger row: time column (square type badge at one fixed width, 95% of the column, centred, over tabular times) beside the stop, its 22px stop disc and meta.",
+      "html": "<div class=\"ds-act\"><div class=\"ds-gutter\"><span class=\"ds-badge\">Church</span><span class=\"ds-start\">08:30</span><span class=\"ds-end\">09:30</span></div><div><div class=\"ds-title\"><span class=\"ds-disc\">1</span>Cathédrale Notre-Dame de Paris</div><div class=\"ds-meta\">1h · Free · Parvis Notre-Dame</div></div></div>",
+      "css": ".ds-act{display:grid;grid-template-columns:72px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--hair,rgb(18 41 79/.18));font-family:var(--sans,'Overpass',system-ui,sans-serif);color:var(--ink,#12294f)}.ds-gutter{display:grid;gap:5px;align-content:start}.ds-badge{box-sizing:border-box;width:95%;text-align:center;padding:3px 5px 2px;background:var(--strip,#12294f);color:var(--on-strip,#fff);font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}.ds-start{font-size:15px;font-weight:650;font-variant-numeric:tabular-nums}.ds-end{font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-3,#5d6f8c)}.ds-title{display:flex;align-items:center;font-size:16.5px;font-weight:650;line-height:1.3}.ds-disc{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-right:8px;border-radius:999px;background:var(--strip,#12294f);color:var(--on-strip,#fff);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}.ds-meta{margin-top:5px;font-size:14px;color:var(--ink-2,#3c5172)}"
+    },
+    {
+      "name": "Tags",
+      "kind": "chip",
+      "refersTo": "tag-filled",
+      "description": "Square tracked tags: filled ink, outline ink, paid on field, to-pay in gold.",
+      "html": "<span class=\"ds-tag filled\">CONFIRMED</span> <span class=\"ds-tag outline\">OFF-ROAD</span> <span class=\"ds-tag paid\">PAID</span> <span class=\"ds-tag topay\">TO PAY</span>",
+      "css": ".ds-tag{display:inline-flex;align-items:center;min-height:20px;padding:2px 7px 1px;border-radius:0;font:700 10.5px/1.2 var(--sans,'Overpass',system-ui,sans-serif);letter-spacing:.1em}.ds-tag.filled{background:var(--strip,#12294f);color:var(--on-strip,#fff);border:1px solid var(--strip,#12294f)}.ds-tag.outline{background:var(--paper,#fff);color:var(--ink,#12294f);border:1px solid var(--ink,#12294f)}.ds-tag.paid{background:var(--field,#f4f6f9);color:var(--ink,#12294f);border:1px solid var(--hair-strong,rgb(18 41 79/.45))}.ds-tag.topay{background:var(--gold-wash,rgb(176 141 62/.12));color:var(--gold-ink,#7d6224);border:1px solid var(--gold,#b08d3e)}"
+    },
+    {
+      "name": "Stay Bar",
+      "kind": "custom",
+      "refersTo": "stay-bar",
+      "description": "Tonight's stay closes the day sheet: field fill under a 1px ink rule.",
+      "html": "<div class=\"ds-stay\"><strong class=\"ds-tonight\">Tonight</strong> <strong>Hôtel des Grands Hommes</strong><div class=\"ds-stay-sub\">17 Place du Panthéon · Night 2 of 3</div></div>",
+      "css": ".ds-stay{padding:14px 18px 16px;background:var(--field,#f4f6f9);border-top:1px solid var(--ink,#12294f);color:var(--ink,#12294f);font:400 15px var(--sans,'Overpass',system-ui,sans-serif)}.ds-stay strong{font-weight:650}.ds-tonight{margin-right:4px;color:var(--ink-3,#5d6f8c);font-size:11px;font-weight:700!important;letter-spacing:.12em;text-transform:uppercase}.ds-stay-sub{margin-top:6px;font-size:14px;line-height:1.5;color:var(--ink-2,#3c5172)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Pocket Survey Sheet",
+    "overview": "The viewer is the Odysseyra blog's Survey Sheet folded into a pocket. The whole app is one sheet: white drafting paper with light 10px squares and a stronger line every 50px, held in a ruled double frame (2px ink, a gap, 1px ink), and every box laid on it keeps a solid paper fill so the squares only show between boxes. Navy ink draws every rule, word and fill; gold marks only where the traveller is, what has focus and what needs attention. Corners are square because printed sheets are square.\n\nIt is built for a phone held in one hand outdoors (390px is the design width; desktop is the expansion up to a 980px sheet). Each day is a numbered sheet strip in solid ink (\"DAY 03 / 08\"), its timeline ruled into a time column and a body column on hairlines, tonight's stay closing the sheet on a field fill. Density is a map margin's: small tracked capitals that name fields, tabular figures for every time, distance and price, Overpass Mono for bare index numbers and copyable references.\n\nThe dark theme is the same drawing printed in vellum ink on deep navy, not a separate design. Maps stay light in both themes.",
+    "keyCharacteristics": [
+      "One sheet: drafting squares inside a ruled double frame (2px + 1px ink, 6px apart). On phones the sheet is the screen: no frame at all (neither rule) and no paper margin; the squares run to every edge, the boxes keep the width they had inside the frame, and the running head spans the screen edge to edge with only its bottom rule.",
+      "Ink in three strengths plus two hairline alphas; gold only for a live position, focus, warnings and the unsaved/offline state.",
+      "Square corners everywhere; the circle belongs to map stop symbols and their in-text twin.",
+      "Cells separated by 1px ink rules and 0.18-alpha hairlines, never by shadows or tinted cards.",
+      "Overpass for words, tabular Overpass for clock times and figures, Overpass Mono for index numbers and refs.",
+      "24-unit line icons, 1.75 stroke, in currentColor, for every glyph the chrome draws.",
+      "44px targets on any coarse pointer."
+    ],
+    "rules": [
+      {
+        "name": "The Two-Ink Rule",
+        "body": "Navy draws; gold marks the reader's place. If a gold element is not a live position, a focus, a warning or an unsaved/offline state, it is wrong. Gold never appears on a map line.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold-Ink Split Rule",
+        "body": "Raw gold (#b08d3e, dark #c9a55a) never carries text. Gold at text size uses gold-ink. The one exception is the bank-holiday band, where ink capitals sit on a solid gold fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Ink Rule",
+        "body": "The viewer has one palette. Nothing in the viewer derives colour from the trip file; `cover_color` belongs to the PDF.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular-Time Rule",
+        "body": "Every clock time, distance, duration and price is set in Overpass with tabular figures, never in mono. Mono is for bare index numbers and copyable references.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two-Digit Index Rule",
+        "body": "An index number shows two digits (`idx()`): 03, \"03 / 08\". Counts stay plain numbers (8 days, 4 stays).",
+        "section": "typography"
+      },
+      {
+        "name": "The Label-Carries-Data Rule",
+        "body": "Tracked capitals name a field or carry data (\"DAY 03 / 08\", DATES, TONIGHT). A label that names nothing is not set.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled-Not-Raised Rule",
+        "body": "Page surfaces never cast shadows; separate them with a rule of the right weight. A shadow means the thing floats.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** frame the app in the ruled double border (2px ink, 6px gap, 1px ink) over 10px/50px drafting squares; on phones drop both rules and the margin and let the squares fill the screen, keeping the boxes' width.",
+      "**Do** give every box on the sheet a solid paper fill and a 1px ink border, and rule cells inside it with 0.18-alpha hairlines.",
+      "**Do** set clock times, distances and prices in Overpass with tabular figures, and index numbers and refs in Overpass Mono, always two digits for an index.",
+      "**Do** keep gold for a live position, focus and warnings; use gold-ink (#7d6224, dark #dcbd76) for any gold text.",
+      "**Do** draw every chrome glyph as a 24-unit, 1.75-stroke line icon in currentColor.",
+      "**Do** give every control a 44px target under `(pointer: coarse)`.",
+      "**Do** add a dark twin for any new colour in the single `:root[data-theme=\"dark\"]` token block."
+    ],
+    "donts": [
+      "**Don't** round corners on boxes, buttons, inputs, tags or map controls; the circle belongs to stop symbols and the state dot.",
+      "**Don't** put shadows on page surfaces; only floating chrome and map markers carry one.",
+      "**Don't** use gold for decoration, headings, body links or map lines.",
+      "**Don't** tint the viewer from the trip's `cover_color`.",
+      "**Don't** set clock times in mono.",
+      "**Don't** set a tracked-capital label that names no field and carries no data."
+    ]
+  }
+}

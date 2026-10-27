@@ -16,16 +16,17 @@ import {
 } from "./collapse";
 import { CardHead, PastFold, Price, Status, usePastFold } from "./Parts";
 import { Clamp } from "./Clamp";
+import { Icon, type IconName } from "./Icon";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, transportTimes, useMapProvider } from "./nav";
 
-const TYPE_ICON: Record<string, string> = {
-  plane: "✈️",
-  train: "🚆",
-  bus: "🚌",
-  taxi: "🚕",
-  ferry: "⛴️",
-  other: "🚊",
+const TYPE_ICON: Record<string, IconName> = {
+  plane: "plane",
+  train: "train",
+  bus: "bus",
+  taxi: "taxi",
+  ferry: "ferry",
+  other: "transit",
 };
 
 // The transport section: travel legs plus rental-car bookings. Each card is
@@ -262,7 +263,7 @@ function TransportCard({
     <div className={`card ${collapsed ? "collapsed" : ""}`}>
       <CardHead collapsed={collapsed} onToggle={onToggle}>
         <span className="badge" aria-hidden>
-          {TYPE_ICON[t.type] ?? TYPE_ICON.other}
+          <Icon name={TYPE_ICON[t.type] ?? TYPE_ICON.other} />
         </span>
         <span className="card-title">{t.title}</span>
       </CardHead>
@@ -351,7 +352,7 @@ function CarRentalCard({
     <div className={`card ${collapsed ? "collapsed" : ""}`}>
       <CardHead collapsed={collapsed} onToggle={onToggle}>
         <span className="badge" aria-hidden>
-          🚙
+          <Icon name="car" />
         </span>
         <span className="card-title">
           {c.title}

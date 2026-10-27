@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { Activity, Day } from "../types/resolved";
 import { fill, tr, type Lang, type LabelKey } from "./format";
 import { todayISO } from "./collapse";
+import { Icon, type IconName } from "./Icon";
 import {
   bumpForecastGeneration,
   fetchDayForecast,
@@ -15,6 +16,22 @@ import {
   wmo,
   type Forecast,
 } from "../weather";
+
+// The forecast's weather as a line icon, keyed on `wmo`'s label key (the emoji
+// `wmo` also returns is the platform-coloured glyph the chip no longer uses).
+const WX_ICON: Record<string, IconName> = {
+  wxClear: "sun",
+  wxMainlyClear: "partly",
+  wxPartlyCloudy: "partly",
+  wxOvercast: "cloud",
+  wxFog: "fog",
+  wxDrizzle: "rain",
+  wxRain: "rain",
+  wxRainShowers: "rain",
+  wxSnow: "snow",
+  wxSnowShowers: "snow",
+  wxThunder: "storm",
+};
 
 // Keyed by the resolved Activity object itself (stable across renders while the
 // itinerary is unchanged), so rows look their forecast up by identity — no index
@@ -135,7 +152,7 @@ export function ForecastChip({ act, lang }: { act: Activity; lang: Lang }) {
   const map = useContext(ForecastContext);
   const fc = map?.get(act);
   if (!fc) return null;
-  const { emoji, key } = wmo(fc.code);
+  const { key } = wmo(fc.code);
   const tip = [tr(lang, key as LabelKey), `${fc.tempC}°C`];
   if (fc.precipProb != null) tip.push(fill(tr(lang, "wxPrecip"), { p: fc.precipProb }));
   if (fc.windKph != null) tip.push(fill(tr(lang, "wxWind"), { v: fc.windKph }));
@@ -143,7 +160,7 @@ export function ForecastChip({ act, lang }: { act: Activity; lang: Lang }) {
   const precip = fc.precipProb != null && fc.precipProb > 5 ? fc.precipProb : null;
   return (
     <span className="wx-chip" data-tip={tip.join(" · ")}>
-      {emoji} {fc.tempC}°
+      <Icon name={WX_ICON[key] ?? "thermo"} size={15} /> {fc.tempC}°
       {precip != null && (
         <span className="wx-precip">{fill(tr(lang, "wxPrecip"), { p: precip })}</span>
       )}

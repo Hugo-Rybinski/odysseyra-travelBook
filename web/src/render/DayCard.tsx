@@ -15,11 +15,13 @@ import {
   fmtElevation,
   fmtKm,
   fmtWeekdayRuns,
+  idx,
   tr,
   type Lang,
   type LabelKey,
 } from "./format";
 import { Clamp } from "./Clamp";
+import { Caret, Icon, MoonIcon, PinLabel, stripEmoji } from "./Icon";
 import { contactHref } from "./contact";
 import { ForecastChip } from "./forecast";
 import { GpxBuildLink, GpxDownload, GpxDownloadLink, HikeTrackFigure } from "./HikeTrack";
@@ -54,7 +56,7 @@ function PinDisc({ label, mid }: { label: string | null | undefined; mid?: boole
   if (!label) return null;
   return (
     <span className={mid ? "pin-disc pin-disc-mid" : "pin-disc"} aria-hidden>
-      {label}
+      <PinLabel label={label} />
     </span>
   );
 }
@@ -184,9 +186,12 @@ export function DayCard({
   onToggle,
   mapExpected = false,
   interactive = false,
+  total,
 }: {
   day: Day;
   lang: Lang;
+  // the trip's day count, for the strip's "03 / 08"
+  total?: number;
   collapsed: boolean;
   onToggle: (dayNumber: number) => void;
   mapExpected?: boolean; // the itinerary opts into maps; show a loader until day.map arrives
@@ -225,13 +230,17 @@ export function DayCard({
           }
         }}
       >
-        <span className="day-caret" aria-hidden>
-          {collapsed ? "▸" : "▾"}
-        </span>
+        <Caret open={!collapsed} className="day-caret" />
         <span className="day-band-body">
           <span className="day-meta">
+            {/* "DAY 03 / 08": the strip numbers its sheet like the blog's day
+                strips do, so it reads against the index under the head. */}
             <span className="day-num">
-              {tr(lang, "day")} {day.day_number}
+              <span className="day-num-label">{tr(lang, "day")}</span>{" "}
+              <span className="day-num-n">
+                {idx(day.day_number)}
+                {total ? <span className="day-num-total"> / {idx(total)}</span> : null}
+              </span>
             </span>
             <span className="day-date">{fmtDate(day.date, lang, true)}</span>
           </span>
@@ -888,16 +897,33 @@ function CarEventRow({ event, lang }: { event: CarEvent; lang: Lang }) {
 function SunTimes({ day, lang }: { day: Day; lang: Lang }) {
   if (!day.sun) return null;
   const { sunrise, sunset } = day.sun;
+  // The templates carry the PDF's ☀️ and an {emoji} slot; the viewer draws its
+  // own sun and moon instead, so the glyphs are cut out of the filled string and
+  // the moon disc is set where {emoji} stood.
+  const MOON = "\u0000";
+  const text = stripEmoji(
+    day.moon
+      ? fill(tr(lang, "sunTimesMoon"), {
+          sunrise,
+          sunset,
+          emoji: MOON,
+          moon: tr(lang, day.moon.key as LabelKey),
+        })
+      : fill(tr(lang, "sunTimes"), { sunrise, sunset }),
+  );
+  const [sun, moon] = text.split(MOON);
   return (
     <p className="day-sun">
-      {day.moon
-        ? fill(tr(lang, "sunTimesMoon"), {
-            sunrise,
-            sunset,
-            emoji: day.moon.emoji,
-            moon: tr(lang, day.moon.key as LabelKey),
-          })
-        : fill(tr(lang, "sunTimes"), { sunrise, sunset })}
+      <Icon name="sun" size={16} />
+      {/* the template's ", " before the moon is the line's own separator; with
+          the moon set as its own unit (icon + name, never split) it goes */}
+      <span>{day.moon ? sun.trim().replace(/,$/, "") : sun.trim()}</span>
+      {day.moon && moon != null && (
+        <span className="day-moon">
+          <MoonIcon phaseKey={day.moon.key} />
+          {moon.trim()}
+        </span>
+      )}
     </p>
   );
 }
@@ -910,7 +936,7 @@ function BankHolidayBanner({ day, lang }: { day: Day; lang: Lang }) {
   return (
     <p className="day-holiday">
       <span className="day-holiday-label">
-        <span aria-hidden>⚠️</span> {tr(lang, "bankHoliday")}
+        <Icon name="warning" size={15} /> {tr(lang, "bankHoliday")}
       </span>
       <span className="day-holiday-note">{tr(lang, "bankHolidayNote")}</span>
     </p>
@@ -927,7 +953,7 @@ function StayBar({ day, lang }: { day: Day; lang: Lang }) {
   // centimetres below would just be noise.
   const moon = day.moon && !day.sun ? (
     <span className="moon-phase" data-tip={tr(lang, day.moon.key as LabelKey)}>
-      {day.moon.emoji}
+      <MoonIcon phaseKey={day.moon.key} label={tr(lang, day.moon.key as LabelKey)} />
     </span>
   ) : null;
   if (day.stay) {

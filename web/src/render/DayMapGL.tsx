@@ -19,6 +19,8 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { MapGeo } from "../types/resolved";
 import { cartoStyle, prefetchTiles } from "../maps/carto";
 import { compassNeedsPrompt, requestCompass, watchCompass } from "./compass";
+import { useAccent } from "./palette";
+import { fillPinLabel } from "./Icon";
 
 setWorkerUrl(workerUrl);
 
@@ -182,6 +184,10 @@ export function DayMapGL({
   onPosition?: (fix: { lat: number; long: number; accuracyM: number } | null) => void;
 }) {
   const holder = useRef<HTMLDivElement | null>(null);
+  // The viewer's ink, not the trip colour Python baked into `geo.accent`: the
+  // pins, routes and trail marks are drawn in the same navy as the itinerary's
+  // discs beside them (Book.tsx's SHEET_INK).
+  const ink = useAccent();
   // Held in a ref so a caller passing a fresh closure each render can't tear the
   // map down — the setup effect below rebuilds on every dependency change.
   const position = useRef(onPosition);
@@ -466,7 +472,7 @@ export function DayMapGL({
           source: "tb-legs",
           layout: { "line-cap": "butt", "line-join": "round" },
           paint: {
-            "line-color": geo.accent,
+            "line-color": ink,
             "line-width": 2,
             "line-opacity": 0.85,
             "line-dasharray": [1.5, 2],
@@ -494,7 +500,7 @@ export function DayMapGL({
           type: "line",
           source: "tb-routes",
           layout: { "line-cap": "round", "line-join": "round" },
-          paint: { "line-color": geo.accent, "line-width": 4, "line-opacity": 0.6 },
+          paint: { "line-color": ink, "line-width": 4, "line-opacity": 0.6 },
         });
       }
 
@@ -516,7 +522,7 @@ export function DayMapGL({
           source: "tb-nodes",
           paint: {
             "circle-radius": 4,
-            "circle-color": geo.accent,
+            "circle-color": ink,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
           },
@@ -536,8 +542,8 @@ export function DayMapGL({
         // keeps clear of them. That is the same "a tick across the line under a
         // head along it is a smudge" rule the print applies with `blocked`.
         const marks = trail.km_marks ?? [];
-        const tick = marks.length ? tickImage(geo.accent) : null;
-        const tickArrow = marks.length ? arrowImage(geo.accent) : null;
+        const tick = marks.length ? tickImage(ink) : null;
+        const tickArrow = marks.length ? arrowImage(ink) : null;
         if (tick && tickArrow) {
           if (!m.hasImage(TICK_IMAGE)) m.addImage(TICK_IMAGE, tick, { pixelRatio: 2 });
           if (!m.hasImage(ARROW_IMAGE))
@@ -590,7 +596,7 @@ export function DayMapGL({
         }
 
         const arrows = arrowCandidates(trail.line);
-        const image = arrows.length ? arrowImage(geo.accent) : null;
+        const image = arrows.length ? arrowImage(ink) : null;
         if (image) {
           // pixelRatio 2: the bitmap is drawn at twice the CSS size it shows at,
           // so the head stays crisp on a retina screen.
@@ -626,11 +632,11 @@ export function DayMapGL({
 
         const [first] = trail.line;
         const last = trail.line[trail.line.length - 1];
-        new Marker({ element: trailMarker("start", geo.accent), anchor: "center" })
+        new Marker({ element: trailMarker("start", ink), anchor: "center" })
           .setLngLat([first[1], first[0]])
           .addTo(m);
         if (apartKm(first, last) > LOOP_MERGE_KM) {
-          new Marker({ element: trailMarker("end", geo.accent), anchor: "center" })
+          new Marker({ element: trailMarker("end", ink), anchor: "center" })
             .setLngLat([last[1], last[0]])
             .addTo(m);
         }
@@ -640,11 +646,11 @@ export function DayMapGL({
           el.className = "trail-wpt";
           const dot = document.createElement("span");
           dot.className = "trail-wpt-dot";
-          dot.style.background = geo.accent;
+          dot.style.background = ink;
           const name = document.createElement("span");
           name.className = "trail-wpt-name";
           name.textContent = w.name;
-          name.style.color = geo.accent;
+          name.style.color = ink;
           el.append(dot, name);
           // Anchored on its dot, with the name running off to the right — the
           // print places the label the same way (and tries the other three sides
@@ -661,7 +667,7 @@ export function DayMapGL({
           const el = document.createElement("div");
           el.className = "trail-km";
           el.textContent = String(mk.km);
-          el.style.color = geo.accent;
+          el.style.color = ink;
           // Left of travel, in screen space: heading β points at
           // (sin β, −cos β) with y downwards, whose left is (−cos β, −sin β).
           const b = ((mk.bearing ?? 0) * Math.PI) / 180;
@@ -678,8 +684,8 @@ export function DayMapGL({
       for (const p of geo.points) {
         const marker = document.createElement("div");
         marker.className = "map-marker";
-        marker.textContent = p.label;
-        marker.style.background = geo.accent;
+        fillPinLabel(marker, p.label);
+        marker.style.background = ink;
         new Marker({ element: marker, anchor: "center" })
           .setLngLat([p.long, p.lat])
           .setPopup(new Popup({ offset: 14, closeButton: false }).setText(p.title))
@@ -700,7 +706,7 @@ export function DayMapGL({
       stopHeading();
       map?.remove();
     };
-  }, [geo, onFail, live]);
+  }, [geo, onFail, live, ink]);
 
   return (
     <figure className="day-map day-map-gl" ref={figure}>

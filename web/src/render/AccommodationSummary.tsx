@@ -10,6 +10,7 @@ import {
 } from "./collapse";
 import { CardHead, PastFold, Price, Status, usePastFold } from "./Parts";
 import { Clamp } from "./Clamp";
+import { Icon, type IconName } from "./Icon";
 import { AddressLink, Links, NavLink } from "./Links";
 import { navUrl, useMapProvider } from "./nav";
 import { primaryMoney, secondaryMoney } from "./money";
@@ -41,11 +42,11 @@ function PerNight({ price, lang }: { price: Money; lang: Lang }) {
   );
 }
 
-const TYPE_ICON: Record<string, string> = {
-  hotel: "🏨",
-  camping: "⛺",
-  "b&b": "🛏",
-  other: "🏠",
+const TYPE_ICON: Record<string, IconName> = {
+  hotel: "hotel",
+  camping: "tent",
+  "b&b": "bed",
+  other: "house",
 };
 
 // The accommodation summary: one collapsible card per stay. `view` decides which
@@ -138,7 +139,7 @@ function StayCard({
     <div className={`card ${collapsed ? "collapsed" : ""}`}>
       <CardHead collapsed={collapsed} onToggle={onToggle}>
         <span className="badge" aria-hidden>
-          {TYPE_ICON[a.type] ?? TYPE_ICON.other}
+          <Icon name={TYPE_ICON[a.type] ?? TYPE_ICON.other} />
         </span>
         <span className="card-title">{a.name}</span>
       </CardHead>

@@ -1,0 +1,2145 @@
+/* =============================================================================
+   The survey sheet — the viewer drawn in the Odysseyra blog's world
+   (odysseyra-blog/DESIGN.md, "The Survey Sheet"): navy ink ruled on white
+   drafting paper, gold only for a live position, focus, warnings and the
+   unsaved state, square corners, Overpass for words (clock times and distances in
+   its tabular figures) and Overpass Mono for bare index numbers and refs.
+
+   Loaded after index.css, which keeps the layout (grids, flows, what wraps and
+   what doesn't) and the behaviour notes; this file owns every colour, rule,
+   corner and face. Mobile is the design width (390px); the sheet grows from
+   there. The dark sheet is the same drawing in vellum ink on deep navy, and
+   lives with the light one in the token block below — the two are one system.
+   ============================================================================= */
+
+/* Overpass draws "·" with no advance width (the blog draws its dots for the
+   same reason), so every "1h · Free · address" line collapsed into "1h ·Free".
+   The separator alone is taken from the system sans, ahead of Overpass. */
+@font-face {
+  font-family: "Sheet Dot";
+  src: local("Helvetica Neue"), local("Helvetica"), local("Arial"), local("Roboto"), local("Segoe UI");
+  unicode-range: U+00B7;
+}
+
+/* ---------------------------------------------------------------- tokens --- */
+:root {
+  --paper: #ffffff;
+  --ground: #ffffff;
+  --ink: #12294f;
+  --ink-2: #3c5172;
+  --ink-3: #5d6f8c;
+  --hair: rgb(18 41 79 / 0.18);
+  --hair-strong: rgb(18 41 79 / 0.45);
+  --field: #f4f6f9;
+  --gold: #b08d3e;
+  --gold-ink: #7d6224;
+  --gold-wash: rgb(176 141 62 / 0.12);
+  --grid-minor: rgb(18 41 79 / 0.045);
+  --grid-major: rgb(18 41 79 / 0.08);
+  /* the solid strips (day bands, badges, filled tags, pin discs) */
+  --strip: #12294f;
+  --on-strip: #ffffff;
+  /* state tones, only where a state is the message */
+  --danger: #9b2c22;
+  --danger-wash: rgb(155 44 34 / 0.08);
+  --ok: #24613f;
+  --popup-shadow: 0 6px 18px rgb(18 41 79 / 0.14);
+
+  --sans: "Sheet Dot", "Overpass Variable", "Overpass", system-ui, sans-serif;
+  --mono: "Overpass Mono", ui-monospace, Menlo, monospace;
+
+  /* index.css's tokens, re-pointed at the sheet */
+  --fg: var(--ink);
+  --muted: var(--ink-3);
+  --bg: var(--ground);
+  --card: var(--paper);
+  --border: var(--hair);
+  --accent: var(--ink);
+  --accent-text: var(--ink);
+  --accent-light: var(--ink-3);
+
+  /* the sticky chrome: the running head alone; a day jumped to lands under it */
+  --topbar-h: 56px;
+  --sticky-h: var(--topbar-h);
+  --gutter: 20px;
+  --pad: clamp(14px, 3vw, 24px);
+  /* the double frame's depth: outer rule + gap + inner rule, from the padding
+     edge; the head sits inside it */
+  --frame-in: 6px;
+
+  font-family: var(--sans);
+  font-feature-settings: "kern", "liga";
+  color: var(--ink);
+  accent-color: var(--ink);
+}
+
+:root[data-theme="dark"] {
+  --paper: #0f1b30;
+  --ground: #0a1424;
+  --ink: #e3e9f3;
+  --ink-2: #b9c4d6;
+  --ink-3: #8f9db5;
+  --hair: rgb(227 233 243 / 0.16);
+  --hair-strong: rgb(227 233 243 / 0.4);
+  --field: #16243c;
+  --gold: #c9a55a;
+  --gold-ink: #dcbd76;
+  --gold-wash: rgb(201 165 90 / 0.16);
+  --grid-minor: rgb(227 233 243 / 0.03);
+  --grid-major: rgb(227 233 243 / 0.06);
+  --strip: #22385f;
+  --on-strip: #eef2f8;
+  --danger: #f0a499;
+  --danger-wash: rgb(240 164 153 / 0.1);
+  --ok: #8fd3ab;
+  --popup-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+/* The book's inline palette (Book.tsx → paletteVars(SHEET_INK)) re-derives
+   --accent* on .book; the sheet decides them instead, so the book and the
+   chrome around it never disagree. */
+.book,
+:root[data-theme="dark"] .book {
+  --accent: var(--ink);
+  --accent-dark: var(--ink);
+  --accent-text: var(--ink);
+  --accent-light: var(--ink-3);
+  --accent-soft: var(--field);
+  --on-accent: var(--on-strip);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 48px;
+    --gutter: 12px;
+  }
+}
+
+/* ------------------------------------------------------- browser surfaces --- */
+html,
+body {
+  background: var(--ground);
+}
+body {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: rgb(176 141 62 / 0.18);
+}
+::selection {
+  background: var(--gold-wash);
+  color: inherit;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-strong) transparent;
+}
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+.mono,
+code,
+kbd {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+:root[data-theme="dark"] .mono {
+  color: inherit;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+
+/* ----------------------------------------------------------------- sheet --- */
+/* The page is one survey sheet: drafting squares inside a ruled double frame
+   (2px ink, a gap, 1px ink). Every box laid on it keeps a solid paper fill, so
+   the squares show only in the open areas between them. */
+#root {
+  background: var(--ground);
+  padding: 0 clamp(6px, 3vw, 40px) clamp(6px, 3vw, 40px);
+}
+.shell {
+  position: relative;
+  max-width: 980px;
+  min-height: 100vh;
+  padding: 0 var(--gutter) 56px;
+  border: 2px solid var(--ink);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+  background-position: -2px -2px;
+}
+/* the frame's inner rule */
+.shell::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--ink);
+  pointer-events: none;
+  z-index: 45;
+}
+/* Phones: the sheet is the screen. No frame at all, neither the outer bold
+   rule nor the inner one, and no paper margin: the drafting squares run to
+   every edge. The boxes keep the width they had inside the frame (the gutter
+   is unchanged), and the running head, which no frame holds in any more,
+   spans the screen edge to edge. */
+@media (max-width: 640px) {
+  :root {
+    --frame-in: 0px;
+  }
+  html,
+  body {
+    background: var(--paper);
+  }
+  #root {
+    padding: 0;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(var(--grid-minor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+    background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+  }
+  .shell {
+    border: 0;
+    padding-bottom: 32px;
+    background: none;
+  }
+  .shell::before {
+    content: none;
+  }
+}
+
+/* --------------------------------------------------------- running head --- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--topbar-h);
+  margin: calc(var(--frame-in) - 1px) calc(var(--frame-in) - var(--gutter)) 20px;
+  padding: 0 0 0 calc(var(--gutter) - var(--frame-in));
+  color: var(--ink);
+  background: var(--paper);
+  /* the inner frame's top rule, carried by the head so it stays when stuck */
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  box-shadow: none;
+}
+.topbar .logo-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  border-radius: 0;
+}
+.topbar .logo-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -4px;
+}
+.topbar .logo {
+  height: calc(var(--topbar-h) - 20px);
+}
+.topbar .logo-paper,
+:root[data-theme="dark"] .topbar .logo-ink {
+  display: none;
+}
+:root[data-theme="dark"] .topbar .logo-paper {
+  display: block;
+}
+.topbar h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1;
+  justify-self: auto;
+  text-align: left;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.rh-brand {
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.rh-product {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* the menu: a ruled square cell closing the head on the right */
+.menu {
+  align-self: stretch;
+}
+.btn.ghost.burger {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: var(--topbar-h);
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+.btn.ghost.burger:hover:not(:disabled),
+.btn.ghost.burger[aria-expanded="true"] {
+  filter: none;
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.btn.ghost.burger .dirty-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--gold);
+  color: transparent;
+}
+.menu-list {
+  top: 100%;
+  right: -1px;
+  min-width: 232px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: var(--popup-shadow);
+}
+.menu-item {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.menu-item + .menu-item {
+  border-top: 1px solid var(--hair);
+}
+.menu-item:hover:not(:disabled) {
+  background: var(--field);
+}
+.menu-item.active,
+.menu-item.active:hover:not(:disabled) {
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.menu-item.active .dirty-dot,
+.dirty-dot {
+  color: var(--gold);
+}
+.menu-sep {
+  height: 1px;
+  margin: 0;
+  background: var(--ink);
+}
+.menu-sep + .menu-item {
+  border-top: 0;
+}
+@media (max-width: 640px) {
+  /* edge to edge on a phone (--frame-in is 0 there), the screen's own top
+     edge closing it: no rule above, only the one below */
+  .topbar {
+    margin-top: 0;
+    border-top: 0;
+  }
+  /* no rule between the name and the menu: on a phone the bar is one strip,
+     and the menu icon lines up with the boxes' right edge on its own */
+  .btn.ghost.burger {
+    border-left: 0;
+  }
+  .rh-product {
+    font-size: 12px;
+  }
+  .menu-list {
+    position: fixed;
+    top: var(--topbar-h);
+    right: 0;
+    left: 0;
+    border-left: 0;
+    border-right: 0;
+    min-width: 0;
+  }
+  .menu-item {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* --------------------------------------------------------------- shared --- */
+.report {
+  gap: 20px;
+}
+.book {
+  gap: 20px;
+}
+.days {
+  gap: 20px;
+}
+/* a box on the sheet */
+.cover,
+.day,
+.section,
+.trip-map,
+.emergency,
+.findings,
+.cover-preview,
+.opt-group,
+.edit-section {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+.day,
+[id^="day-"] {
+  scroll-margin-top: calc(var(--sticky-h) + 10px);
+}
+
+/* labels: small tracked capitals that name a field */
+.label,
+.overview th,
+.cover-fact dt,
+.via-head,
+.edit-section > summary,
+.sub-array > h4,
+.field-group > h4,
+.edit-coord > legend,
+.fc-detail-label,
+.day-map figcaption,
+.hike-profile-title {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* links: ink, a hairline underline at rest, gold-ink under the pointer */
+.link,
+.link-row .link,
+.act-details .link,
+.gpx-link,
+.textlink-btn,
+.fc-link,
+.fc-inline-link,
+.clamp-toggle,
+.road-check-link,
+.app-version .version-link,
+.emergency-contact[href],
+.act-details .act-contact a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.link:hover,
+.link-row .link:hover,
+.gpx-link:hover,
+.textlink-btn:hover,
+.fc-link:hover,
+.clamp-toggle:hover,
+.emergency-contact[href]:hover,
+.act-details .act-contact a:hover {
+  color: var(--gold-ink);
+  text-decoration-color: currentColor;
+}
+.prose-link {
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+}
+.prose-link:hover {
+  color: var(--gold-ink);
+}
+
+/* buttons: printed-form boxes, inverted under the pointer */
+.btn {
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn:hover:not(:disabled) {
+  filter: none;
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.options .btn,
+.empty-state .restore-banner .btn {
+  background: var(--strip);
+  color: var(--on-strip);
+  border-color: var(--ink);
+}
+.options .btn:hover:not(:disabled),
+.empty-state .restore-banner .btn:hover:not(:disabled) {
+  filter: none;
+  background: color-mix(in srgb, var(--strip) 82%, var(--on-strip));
+  border-color: var(--ink);
+}
+.options .btn.subtle,
+.edit-panel .btn.subtle,
+.empty-state .restore-banner .btn.subtle {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.options .btn.subtle:hover:not(:disabled),
+.edit-panel .btn.subtle:hover:not(:disabled),
+.empty-state .restore-banner .btn.subtle:hover:not(:disabled) {
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.options .btn.tiny {
+  min-height: 28px;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+  .options .btn.tiny {
+    min-height: 36px;
+  }
+}
+
+/* tags (status, payment, off-road, route, overnight) */
+.chip.paid,
+.chip.topay,
+.chip.status,
+.chip.filled,
+.chip.outline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px 1px;
+  border-radius: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+.chip.filled {
+  background: var(--strip);
+  color: var(--on-strip);
+  border: 1px solid var(--strip);
+}
+.chip.outline {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+.chip.paid {
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--hair-strong);
+}
+.chip.topay {
+  background: var(--gold-wash);
+  color: var(--gold-ink);
+  border: 1px solid var(--gold);
+}
+.chip {
+  border-radius: 0;
+  border-color: var(--hair-strong);
+  background: var(--paper);
+  color: var(--ink);
+}
+/* the clickable filter chips (findings, edit) */
+.chips .chip {
+  border-radius: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+  min-height: 32px;
+}
+.chips .chip.active {
+  background: var(--strip);
+  border-color: var(--ink);
+  color: var(--on-strip);
+}
+
+/* --------------------------------------------------------- cartouche ------ */
+.cover-band {
+  background: none;
+  color: var(--ink);
+  padding: var(--pad);
+  padding-bottom: 0;
+}
+.cover-band h1 {
+  font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+.cover-sub {
+  margin: 10px 0 0;
+  max-width: 52ch;
+  opacity: 1;
+  color: var(--ink-2);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+/* the facts ledger: field name over value, ruled off above */
+.cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin: 18px 0 0;
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 1;
+}
+.cover-fact {
+  display: grid;
+  gap: 5px;
+}
+.cover-fact dt {
+  margin: 0;
+}
+.cover-fact dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cover-summary {
+  margin: 0;
+  padding: 14px var(--pad) 18px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.cover-summary .clamp-text {
+  max-width: 68ch;
+}
+
+/* the day-by-day ledger */
+.overview {
+  padding: 0 var(--pad) var(--pad);
+}
+.overview h2,
+.overview h2.overview-toggle {
+  min-height: 44px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.overview.collapsed {
+  padding-bottom: 0;
+}
+.overview-caret,
+.card-caret,
+.past-days-caret,
+.day-caret {
+  flex: none;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.icon-chevron.open {
+  transform: rotate(90deg);
+}
+.overview table {
+  font-size: 14px;
+}
+.overview th {
+  padding: 8px 10px 7px;
+  border-bottom: 1px solid var(--ink);
+}
+.overview th:first-child,
+.overview td:first-child {
+  padding-left: 0;
+}
+.overview td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--hair);
+  line-height: 1.4;
+}
+.overview td.num {
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.overview td.date {
+  color: var(--ink-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.overview tr.row-link:hover td {
+  background: var(--field);
+}
+.overview tr.row-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+@media (max-width: 640px) {
+  .overview {
+    padding: 0 var(--pad) 6px;
+  }
+  /* stacked rows, on hairlines like the ledger they replace */
+  .overview tr.row-link {
+    padding: 11px 0 12px;
+    border: 0;
+    border-bottom: 1px solid var(--hair);
+    border-radius: 0;
+  }
+  .overview tr.row-link:last-child {
+    border-bottom: 0;
+  }
+  .overview tr.row-link + tr.row-link {
+    margin-top: 0;
+  }
+  .overview tr.row-link:hover {
+    background: var(--field);
+  }
+  .overview td.num {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .overview td.num::before {
+    content: attr(data-label) " ";
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .overview td.date {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .overview td.date::before {
+    content: "  ·  ";
+  }
+  .overview td:nth-child(3) {
+    margin-top: 4px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .overview td.sleep {
+    margin-top: 3px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .overview td.sleep::before {
+    content: none;
+  }
+}
+
+/* ------------------------------------------------------------- the days --- */
+.past-days {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px dashed var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+.past-days:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.cards > .past-days {
+  border-radius: 0;
+  margin: 10px 0;
+}
+
+/* the day strip: solid ink, "DAY 03 / 08", the date, the title */
+.day-band {
+  /* one height whether the day is open or folded: the strip is the day's
+     title, and toggling it must not move anything below it */
+  gap: 8px 14px;
+  min-height: 56px;
+  padding: 12px var(--pad);
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.day-band:hover {
+  filter: none;
+  background: color-mix(in srgb, var(--strip) 88%, var(--on-strip));
+}
+.day-band:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -4px;
+}
+.day-caret {
+  opacity: 1;
+}
+.day-num {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.day-num-label {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.day-num-n {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.day-num-total {
+  opacity: 0.7;
+}
+.day-date {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.day-title {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.day-city {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* a bank holiday: the blog's warning box — gold double frame, a solid gold
+   head band in ink capitals, the advice on paper */
+.day-holiday {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin: var(--pad) var(--pad) 0;
+  padding: 0;
+  background: var(--paper);
+  border: 1px solid var(--gold);
+  border-left-width: 1px;
+  border-radius: 0;
+  outline: 1px solid rgb(176 141 62 / 0.55);
+  outline-offset: 2px;
+  font-size: 14px;
+}
+.day-holiday-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 6px;
+  background: var(--gold);
+  color: #12294f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.day-holiday-note {
+  padding: 9px 12px 10px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.day-sun {
+  padding: 14px var(--pad) 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+}
+.day-intro {
+  padding: 10px var(--pad) 6px;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.day-intro .clamp-text {
+  max-width: 68ch;
+}
+
+/* maps on the sheet: a flush ink outline, the caption as a field label */
+.day-map {
+  margin: 14px var(--pad) 6px;
+  text-align: left;
+}
+.day > .day-map,
+.day > .day-map-gl,
+.day > figure {
+  margin-left: var(--pad);
+  margin-right: var(--pad);
+}
+.day-map figcaption {
+  margin: 0 0 6px;
+}
+.day-map img,
+.day-map-gl .gl-canvas {
+  max-width: none;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+.act-map .day-map {
+  margin: 10px 0 4px;
+}
+.day-map-loading {
+  max-width: none;
+  margin: 14px var(--pad) 6px;
+  border: 1px dashed var(--hair-strong);
+  border-radius: 0;
+  background: var(--field);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.day-map-loading .spin,
+.activity-spin,
+.spinner {
+  border-color: var(--hair);
+  border-top-color: var(--gold);
+}
+
+/* the timeline: a ruled ledger, time column then the stop */
+.timeline {
+  gap: 0;
+  padding: 6px var(--pad) 10px;
+}
+.act {
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.act:last-child {
+  padding-bottom: 12px;
+}
+.act.buffer {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.act.buffer .buffer-label {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.gutter {
+  gap: 5px;
+  text-align: left;
+  padding-top: 2px;
+}
+.type-badge {
+  /* every badge one width — 95% of the time column — so ROAD, CHURCH and
+     MOUNTAIN PASS read as one column of labels rather than ragged tags */
+  align-self: start;
+  box-sizing: border-box;
+  width: 95%;
+  max-width: 95%;
+  text-align: center;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  padding: 3px 5px 2px;
+  border-radius: 0;
+  background: var(--strip);
+  color: var(--on-strip);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  line-height: 1.25;
+}
+.t-start {
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+.t-end {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.t-start em,
+.t-end em {
+  font-size: 10px;
+  font-weight: 600;
+}
+.t-detour {
+  /* the badge's column width, so the mark reads as part of the same label */
+  align-self: start;
+  box-sizing: border-box;
+  width: 95%;
+  text-align: center;
+  padding: 2px 5px 1px;
+  border: 1px dashed var(--hair-strong);
+  color: var(--ink-3);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+}
+.act.detour .type-badge {
+  background: var(--paper);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--hair-strong);
+}
+.act.detour .act-body {
+  opacity: 1;
+}
+.act.detour .act-title,
+.act.detour .act-details .desc,
+.act.detour .act-details .chips-line {
+  color: var(--ink-3);
+}
+
+.act-title {
+  font-size: 16.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  gap: 4px 2px;
+}
+.act.meal .act-title {
+  color: var(--ink);
+}
+.act-title .chip,
+.act-title .chip.outline {
+  margin-left: 8px;
+}
+
+/* the map's own stop symbol beside the name it labels */
+.pin-disc {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: var(--strip);
+  color: var(--on-strip);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.pin-disc-mid {
+  margin-left: 6px;
+}
+/* The label sits on the disc's centre, not on the font's line box: Overpass
+   puts its figures high in the em, so the box is trimmed to the cap height
+   and the baseline before flex centres it. The stay's star is drawn. */
+.pin-n {
+  display: block;
+  line-height: 1;
+  text-box: trim-both cap alphabetic;
+}
+.pin-star {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+/* a star is not a number: no side padding, so its disc stays a circle */
+.pin-disc:has(> .pin-star),
+.map-marker:has(> .pin-star) {
+  padding: 0;
+  width: 22px;
+}
+.via-leg .pin-disc:has(> .pin-star) {
+  width: 18px;
+}
+.via-leg .pin-star {
+  width: 12px;
+  height: 12px;
+}
+.map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.via-leg .pin-disc {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.act-details {
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.act-details .chips-line,
+.chips-line {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.chips-line.accent {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.act-details .trail,
+.act-details .act-opening,
+.act-details .act-contact {
+  /* an email or URL is one unbreakable word wider than a phone's column */
+  overflow-wrap: anywhere;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.act-opening-label,
+.act-contact-label {
+  margin-right: 8px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.act-details .desc {
+  margin-top: 7px;
+  line-height: 1.55;
+  font-size: 15px;
+  color: var(--ink);
+}
+.act-details .desc .clamp-text {
+  max-width: 68ch;
+}
+.act-note,
+.card-note,
+.stay-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.nav-inline {
+  font-weight: 600;
+}
+.gpx-error {
+  color: var(--danger);
+}
+.chip.guidebook {
+  padding: 1px 6px 0;
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  min-height: 0;
+}
+
+/* a drive's legs and a place's nested stops: indented under a hairline */
+.via {
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 1px solid var(--hair-strong);
+}
+.via-head {
+  margin-bottom: 4px;
+}
+.via-leg {
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.via-route {
+  color: var(--ink);
+  font-weight: 600;
+}
+.via-route::before {
+  content: none;
+}
+.via-meta {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.nested {
+  margin: 10px 0 2px;
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--hair-strong);
+  gap: 0;
+}
+.nested > .act {
+  padding: 10px 0;
+}
+.nested > .act:first-child {
+  padding-top: 4px;
+}
+.nested > .act:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+/* the forecast tag on a stop */
+.wx-chip {
+  min-height: 22px;
+  padding: 1px 7px 0;
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wx-chip .wx-precip {
+  color: var(--ink-3);
+}
+
+/* tonight's stay closes the sheet: field-filled, ruled off in ink */
+.stay-bar {
+  padding: 14px var(--pad) 16px;
+  background: var(--field);
+  border-top: 1px solid var(--ink);
+  font-size: 15px;
+}
+.stay-bar.none {
+  color: var(--ink-3);
+}
+.tonight {
+  margin-right: 4px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.stay-line strong:not(.tonight) {
+  font-weight: 650;
+}
+.stay-progress {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.stay-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.stay-bar .link,
+:root[data-theme="dark"] .stay-bar .link {
+  color: var(--ink);
+}
+
+/* the hike's trail figure */
+.hike-track {
+  margin: 12px 0 4px;
+}
+.hike-profile {
+  max-width: none;
+  margin: 10px 0 4px;
+}
+.hike-profile-climb,
+.hike-profile-here {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.hike-profile-here {
+  color: var(--gold-ink);
+}
+.hike-profile-plot svg {
+  border-bottom: 1px solid var(--ink);
+}
+.hike-profile-scale span,
+.hike-profile-high,
+.hike-profile-axis {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.hike-profile-you {
+  background: var(--gold) !important;
+  border-color: var(--paper);
+}
+
+/* map markers drawn by MapLibre (DOM): the ink disc with a paper ring */
+.map-marker {
+  font-family: var(--sans);
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgb(18 41 79 / 0.35);
+}
+.trail-wpt-name,
+.trail-km {
+  font-family: var(--sans);
+}
+.maplibregl-ctrl-group,
+.maplibregl-ctrl-group button {
+  border-radius: 0 !important;
+}
+.maplibregl-ctrl-group {
+  border: 1px solid #12294f;
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------- transport & stays ---- */
+.section {
+  padding: 0 var(--pad) var(--pad);
+}
+.section h2 {
+  margin: 0 calc(-1 * var(--pad)) 0;
+  padding: 18px var(--pad) 14px;
+  border-bottom: 1px solid var(--ink);
+  font-size: clamp(1.6rem, 1.3rem + 1.4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.section h3.sub {
+  margin: 28px calc(-1 * var(--pad)) 0;
+  padding: 12px var(--pad) 10px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* bookings are rows of one ledger, not boxes in a box */
+.cards {
+  gap: 0;
+}
+.card {
+  padding: 16px 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+}
+.card:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.card-head {
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+}
+.card-head:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+.card .badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+}
+.card-title {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+.card-caret {
+  color: var(--ink-3);
+}
+.card-pills {
+  margin-top: 10px;
+}
+.card-info {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.card-meta,
+.card-addr {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.card-price {
+  margin-top: 12px;
+}
+.price-main {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.price-sec,
+.card-price-night {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.card-legs {
+  margin-top: 16px;
+  padding-top: 0;
+  border-top: 1px solid var(--ink);
+}
+.card-leg {
+  padding: 12px 0 0 14px;
+  border-left: 1px solid var(--hair-strong);
+}
+.card-leg {
+  padding-bottom: 12px;
+}
+.card-leg-title .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px 1px;
+  border: 1px solid var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.card-leg + .card-leg {
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+}
+.card-leg-title {
+  margin-top: 0;
+  font-weight: 650;
+}
+.card-leg-badge,
+:root[data-theme="dark"] .card-leg-badge {
+  padding: 2px 6px 1px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@media (min-width: 900px) {
+  .section .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* the whole-trip map and the emergency directory (Overview tab) */
+.trip-map {
+  padding: 0;
+}
+.trip-map .day-map-gl .gl-canvas {
+  border: 0;
+}
+.emergency {
+  padding: 0 var(--pad) 4px;
+}
+.emergency h2 {
+  margin: 0 calc(-1 * var(--pad)) 0;
+  padding: 16px var(--pad) 12px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.emergency li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.emergency-name {
+  font-weight: 600;
+}
+.emergency-contact {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+/* ----------------------------------------------------------- findings ---- */
+.findings,
+.cover-preview {
+  padding: var(--pad);
+}
+.findings h3,
+.findings-head h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.findings ul {
+  gap: 0;
+  border-top: 1px solid var(--ink);
+}
+.findings li {
+  padding: 11px 6px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: 14px;
+  line-height: 1.45;
+  background: none;
+}
+.findings li.error {
+  background: var(--danger-wash);
+}
+.findings li.warning {
+  background: var(--gold-wash);
+}
+.findings li.info,
+.findings li.empty {
+  background: none;
+}
+.findings .line {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.banner {
+  border-radius: 0;
+}
+.banner.error {
+  border: 1px solid var(--danger);
+  background: var(--danger-wash);
+  color: var(--danger);
+}
+
+/* ---------------------------------------------------------- options ------ */
+.options-title {
+  margin: 8px 0 16px;
+  font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.08;
+}
+.options {
+  gap: 20px;
+}
+.opt-group {
+  gap: 10px;
+  padding: var(--pad);
+}
+.opt-group h2 {
+  margin: calc(-1 * var(--pad)) calc(-1 * var(--pad)) 4px;
+  padding: 12px var(--pad) 10px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.opt-desc,
+.opt-current-file,
+.opt-inline-note,
+.prompts-intro {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.opt-note {
+  font-size: 14px;
+}
+.engine,
+.net-status,
+.app-version {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.engine.ok,
+.net-status.online {
+  color: var(--ink-2);
+}
+.net-status.offline {
+  color: var(--gold-ink);
+}
+.cache-warn {
+  color: var(--danger);
+}
+.cache-row {
+  border-top-color: var(--hair);
+  font-size: 13px;
+}
+.cache-size,
+.cache-date {
+  font-family: var(--mono);
+}
+
+/* segmented control, selects, checkboxes */
+.seg {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+.seg-btn,
+:root[data-theme="dark"] .seg-btn {
+  min-height: 36px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+}
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--ink);
+}
+.seg-btn.active,
+:root[data-theme="dark"] .seg-btn.active {
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.opt-select select,
+.edit-input,
+:root[data-theme="dark"] .opt-select select,
+:root[data-theme="dark"] .edit-input {
+  min-height: 36px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+}
+.opt-select select:hover,
+.edit-input:hover {
+  border-color: var(--ink);
+}
+.opt-select select:focus-visible,
+.edit-input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--ink);
+}
+.opt-check {
+  font-size: 14px;
+  min-height: 32px;
+}
+.opt-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ink);
+}
+@media (pointer: coarse) {
+  .seg-btn,
+  .opt-select select,
+  .edit-input {
+    min-height: 44px;
+  }
+  input.edit-input,
+  select.edit-input {
+    height: 44px;
+  }
+  .opt-check {
+    min-height: 44px;
+  }
+}
+
+/* tooltips: an ink label, square */
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after,
+[data-tip]:focus-within::after {
+  border-radius: 0;
+  background: var(--strip);
+  color: var(--on-strip);
+  font: 500 12.5px/1.45 var(--sans);
+  box-shadow: var(--popup-shadow);
+}
+
+/* the engine activity card: floats, so it is the one box with a shadow */
+.activity {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--popup-shadow);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------- LLM prompts / guide - */
+.flow-card {
+  border: 1px solid var(--ink);
+  border-left-width: 1px;
+  border-radius: 0;
+  background: var(--paper);
+}
+.flow-stage-num {
+  border-radius: 0;
+  background: var(--strip);
+  color: var(--on-strip);
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.fc-chip,
+.kind-input .fc-chip,
+.kind-skill .fc-chip,
+.kind-app .fc-chip {
+  border-radius: 0;
+  letter-spacing: 0.1em;
+  padding: 2px 6px 1px;
+}
+.kind-input .fc-chip {
+  background: var(--field);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--hair-strong);
+}
+.kind-skill .fc-chip {
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.kind-app .fc-chip {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.fc-io code,
+.fc-detail code {
+  border-radius: 0;
+  background: var(--field);
+  border-color: var(--hair);
+}
+.prompt-hint-error {
+  color: var(--danger);
+}
+@keyframes prompt-card-flash {
+  from {
+    box-shadow: 0 0 0 3px var(--gold);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+/* ------------------------------------------------------------- edit tab --- */
+.edit-section > summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px var(--pad);
+  color: var(--ink);
+}
+.edit-section > summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin: 0 12px 0 2px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.edit-section[open] > summary::before {
+  transform: rotate(45deg);
+}
+.edit-section-body {
+  padding: 4px var(--pad) var(--pad);
+  border-top: 1px solid var(--ink);
+}
+.edit-field-label {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.edit-field-label .req,
+:root[data-theme="dark"] .edit-field-label .req {
+  color: var(--danger);
+}
+.edit-help {
+  border-radius: 0;
+  background: var(--field);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--hair-strong);
+}
+.edit-toggle {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+}
+.edit-toggle::after {
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--ink-3);
+  box-shadow: none;
+}
+.edit-toggle-input:checked + .edit-toggle {
+  background: var(--strip);
+  border-color: var(--ink);
+}
+.edit-toggle-input:checked + .edit-toggle::after {
+  background: var(--on-strip);
+}
+.edit-toggle-input:focus-visible + .edit-toggle {
+  outline: 2px solid var(--gold);
+}
+.edit-color input[type="color"] {
+  border-radius: 0;
+  border-color: var(--hair-strong);
+}
+.edit-gpx-clear {
+  border-radius: 0;
+  border-color: var(--hair-strong);
+  color: var(--ink);
+}
+.edit-gpx-error,
+:root[data-theme="dark"] .edit-gpx-error {
+  color: var(--danger);
+}
+.edit-coord {
+  border: 1px dashed var(--hair-strong);
+  border-radius: 0;
+}
+.edit-coord-note,
+.edit-dirty,
+:root[data-theme="dark"] .edit-coord-note,
+:root[data-theme="dark"] .edit-dirty {
+  color: var(--gold-ink);
+}
+.array-item,
+:root[data-theme="dark"] .array-item {
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+}
+.array-item[open] {
+  border-color: var(--ink);
+}
+.array-item-head {
+  min-height: 44px;
+}
+.array-item-body {
+  border-top: 1px solid var(--hair);
+}
+.day-pill {
+  border-radius: 0;
+  background: var(--strip);
+  color: var(--on-strip);
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.finding-pill {
+  border-radius: 0;
+}
+.finding-pill.error,
+.field-findings .ff.error,
+:root[data-theme="dark"] .finding-pill.error,
+:root[data-theme="dark"] .field-findings .ff.error {
+  background: var(--danger-wash);
+  color: var(--danger);
+  border-radius: 0;
+}
+.finding-pill.warning,
+.field-findings .ff.warning,
+.road-check,
+:root[data-theme="dark"] .finding-pill.warning,
+:root[data-theme="dark"] .field-findings .ff.warning,
+:root[data-theme="dark"] .road-check {
+  background: var(--gold-wash);
+  color: var(--gold-ink);
+  border-radius: 0;
+}
+.edit-field-wrap.has-error .edit-input,
+.edit-field-wrap.has-error .edit-color input[type="color"],
+.edit-field-wrap.has-error .edit-toggle {
+  border-color: var(--danger);
+}
+.edit-field-wrap.has-warning .edit-input,
+.edit-field-wrap.has-warning .edit-color input[type="color"],
+.edit-field-wrap.has-warning .edit-toggle {
+  border-color: var(--gold);
+}
+.icon-btn,
+:root[data-theme="dark"] .icon-btn {
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--field);
+  border-color: var(--ink);
+}
+.icon-btn.danger:hover:not(:disabled),
+:root[data-theme="dark"] .icon-btn.danger:hover:not(:disabled) {
+  background: var(--danger-wash);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+/* the Apply bar floats over the form, so it carries the popup shadow */
+.edit-actions {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: var(--popup-shadow);
+}
+.edit-actions-sep {
+  background: var(--hair-strong);
+}
+.restore-banner {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+}
+
+/* ------------------------------------------------------- empty & splash -- */
+.empty-state {
+  margin: 0 auto;
+  max-width: 560px;
+  padding: 56px var(--pad);
+  color: var(--ink-2);
+}
+.empty-state h2 {
+  font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.08;
+  color: var(--ink);
+}
+.empty-state p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+.empty-actions-text {
+  margin-bottom: 22px;
+  color: var(--ink);
+}
+/* the mark in place of the empty state's emoji */
+.empty-state .book-mark {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  background: url("/img/odysseyra-ink-no-bg.svg") center / contain no-repeat;
+}
+:root[data-theme="dark"] .empty-state .book-mark {
+  background-image: url("/img/odysseyra-white-no-bg.svg");
+}
+/* the four ways in, as the blog's export boxes: a 2 × 2 grid of ruled cells */
+.empty-action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.empty-action-buttons .btn,
+:root[data-theme="dark"] .empty-action-buttons .btn {
+  min-height: 48px;
+  white-space: normal;
+  background: var(--paper);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.empty-action-buttons .btn:hover:not(:disabled) {
+  filter: none;
+  background: var(--strip);
+  color: var(--on-strip);
+}
+.splash-mark {
+  border-radius: 0;
+  background: var(--strip);
+  box-shadow: none;
+}
+.section-empty {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.note {
+  border-top: 1px dashed var(--hair-strong);
+  color: var(--ink-2);
+}
+.filename,
+.report-caption .filename {
+  font-family: var(--mono);
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- icons -- */
+.icon {
+  flex: none;
+  vertical-align: -0.2em;
+}
+.btn:has(> .icon) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.menu-item > .fade-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-item .icon {
+  color: var(--ink-3);
+}
+.menu-item.active .icon {
+  color: inherit;
+}
+.day-sun {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.day-sun .icon-sun {
+  color: var(--ink-2);
+}
+.day-sun .icon-moon,
+.moon-phase .icon-moon {
+  color: var(--ink-2);
+}
+.day-moon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.moon-phase {
+  font-size: inherit;
+}
+.wx-chip .icon {
+  color: var(--ink-2);
+}
+.findings .icon,
+.findings-head .chip .icon {
+  vertical-align: -0.22em;
+}
+.findings li.error .icon,
+.chips .chip.error:not(.active) .icon {
+  color: var(--danger);
+}
+.findings li.warning .icon,
+.chips .chip.warning:not(.active) .icon {
+  color: var(--gold-ink);
+}
+.findings li.info .icon {
+  color: var(--ink-3);
+}
+
+/* -------------------------------------------------------- narrow sheets -- */
+/* Grid tracks sized to their content let one wide item (the Edit tab's action
+   row, a long finding) push the whole column past a phone's edge. */
+.report,
+.book,
+.edit-panel,
+.options,
+.array-editor {
+  grid-template-columns: minmax(0, 1fr);
+}
+.array-item-head > *,
+.edit-section-body,
+.array-item-body {
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  /* the message under its line number, not in the 20px icon column */
+  .findings .msg {
+    grid-column: 2;
+  }
+}
+@media (max-width: 640px) {
+  /* the stacked day-by-day rows carry their own spacing */
+  .overview td,
+  .overview td:first-child {
+    padding: 0;
+    border: 0;
+  }
+  .edit-actions {
+    padding: 10px;
+  }
+  .edit-actions .btn {
+    flex: 1 1 auto;
+  }
+  .edit-actions-sep {
+    display: none;
+  }
+}
+/* Touch keeps :hover on whatever was last tapped, so the inverted hover of a
+   button or the menu cell would stay on after the tap. Pointers only. */
+@media (hover: none) {
+  .btn:hover:not(:disabled),
+  .btn.ghost.burger:hover:not(:disabled),
+  .empty-action-buttons .btn:hover:not(:disabled),
+  .options .btn.subtle:hover:not(:disabled),
+  .edit-panel .btn.subtle:hover:not(:disabled) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .options .btn:hover:not(:disabled),
+  .empty-state .restore-banner .btn:hover:not(:disabled) {
+    background: var(--strip);
+    color: var(--on-strip);
+  }
+  .btn.ghost.burger[aria-expanded="true"] {
+    background: var(--strip);
+    color: var(--on-strip);
+  }
+  .day-band:hover {
+    background: var(--strip);
+  }
+  .menu-item:not(.active):hover:not(:disabled) {
+    background: none;
+  }
+  .overview tr.row-link:hover td,
+  .overview tr.row-link:hover {
+    background: none;
+  }
+}
+@media (max-width: 480px) {
+  .act {
+    grid-template-columns: 66px 1fr;
+    gap: 12px;
+  }
+  .type-badge {
+    font-size: 8.5px;
+    letter-spacing: 0.05em;
+  }
+  .day-band {
+    padding: 12px var(--pad);
+  }
+  .day-title {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .icon-chevron {
+    transition: none;
+  }
+}

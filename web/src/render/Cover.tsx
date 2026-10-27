@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Day, Itinerary, TransportLeg } from "../types/resolved";
-import { fill, fmtDate, fmtDateRange, tr, type Lang } from "./format";
+import { fill, fmtDate, fmtDateRange, idx, tr, type Lang } from "./format";
 import { Clamp } from "./Clamp";
+import { Caret } from "./Icon";
 
 // The cover: title / subtitle / inferred date range / day count / summary, plus
 // a day-by-day overview table (day number, date, the day's highlights, and the
@@ -35,12 +36,26 @@ export function Cover({
       <div className="cover-band">
         <h1>{itinerary.title}</h1>
         {itinerary.subtitle && <p className="cover-sub">{itinerary.subtitle}</p>}
-        <p className="cover-meta">
-          {range && <span>{range}</span>}
-          <span>
-            {itinerary.day_count} {tr(lang, "days")}
-          </span>
-        </p>
+        {/* The cartouche's facts ledger: a field name over each value, as a
+            map sheet's margin states its edition. */}
+        <dl className="cover-meta">
+          {range && (
+            <div className="cover-fact cover-fact-wide">
+              <dt>{tr(lang, "ledgerDates")}</dt>
+              <dd>{range}</dd>
+            </div>
+          )}
+          <div className="cover-fact">
+            <dt>{tr(lang, "ledgerDays")}</dt>
+            <dd>{itinerary.day_count}</dd>
+          </div>
+          {itinerary.accommodations.length > 0 && (
+            <div className="cover-fact">
+              <dt>{tr(lang, "ledgerStays")}</dt>
+              <dd>{itinerary.accommodations.length}</dd>
+            </div>
+          )}
+        </dl>
       </div>
 
       {itinerary.summary && <Clamp className="cover-summary" text={itinerary.summary} />}
@@ -59,9 +74,7 @@ export function Cover({
             }
           }}
         >
-          <span className="overview-caret" aria-hidden>
-            {overviewOpen ? "▾" : "▸"}
-          </span>
+          <Caret open={overviewOpen} className="overview-caret" />
           {tr(lang, "overview")}
         </h2>
         {overviewOpen && (
@@ -90,7 +103,7 @@ export function Cover({
                 }}
               >
                 <td className="num" data-label={tr(lang, "day")}>
-                  {d.day_number}
+                  {idx(d.day_number)}
                 </td>
                 <td className="date">{fmtDate(d.date, lang)}</td>
                 <td>{highlightsOf(d, lang)}</td>
